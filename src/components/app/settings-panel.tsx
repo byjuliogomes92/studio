@@ -4,7 +4,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { CloudPage, ComponentType, PageComponent } from "@/lib/types";
 import React, { useEffect, useState } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 import {
   Accordion,
   AccordionContent,
@@ -94,54 +94,6 @@ export function SettingsPanel({
 
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
 
-  const renderComponentList = () => {
-    if (!isClient) {
-      return null;
-    }
-
-    return (
-       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="components">
-          {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-              {pageState.components.map((c, index) => (
-                <Draggable key={c.id} draggableId={c.id} index={index}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      className="flex items-center gap-2 group"
-                    >
-                       <div {...provided.dragHandleProps}>
-                         <GripVertical className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <Button
-                        variant={selectedComponentId === c.id ? "secondary" : "ghost"}
-                        className="flex-grow justify-start"
-                        onClick={() => setSelectedComponentId(c.id)}
-                      >
-                        {c.type}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive/80 hover:text-destructive"
-                        onClick={() => removeComponent(c.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
-    );
-  }
-
   return (
     <ScrollArea className="h-full">
     <div className="p-4 space-y-6">
@@ -170,7 +122,47 @@ export function SettingsPanel({
         <AccordionItem value="components">
           <AccordionTrigger>Components</AccordionTrigger>
           <AccordionContent className="space-y-4 pt-2">
-            {renderComponentList()}
+            {isClient && (
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="components">
+                  {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                      {pageState.components.map((c, index) => (
+                        <Draggable key={c.id} draggableId={c.id} index={index}>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className="flex items-center gap-2 group"
+                            >
+                              <div {...provided.dragHandleProps}>
+                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <Button
+                                variant={selectedComponentId === c.id ? "secondary" : "ghost"}
+                                className="flex-grow justify-start"
+                                onClick={() => setSelectedComponentId(c.id)}
+                              >
+                                {c.type}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive/80 hover:text-destructive"
+                                onClick={() => removeComponent(c.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full">

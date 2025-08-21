@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Plus, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -35,30 +35,29 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      const fetchData = async () => {
-        setIsLoading(true);
-        try {
-          const currentProject = await getProject(projectId);
-          if (currentProject && currentProject.userId === user.uid) {
-            setProject(currentProject);
-            const projectPages = await getPagesForProject(projectId);
-            setPages(projectPages);
-          } else {
-            toast({ variant: 'destructive', title: 'Erro', description: 'Projeto não encontrado ou acesso negado.' });
-            router.push('/');
-          }
-        } catch (error) {
-          console.error(error);
-          toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar o projeto.' });
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const currentProject = await getProject(projectId);
+        // Temporarily allow access without user check
+        if (currentProject) {
+          setProject(currentProject);
+          const projectPages = await getPagesForProject(projectId);
+          setPages(projectPages);
+        } else {
+          toast({ variant: 'destructive', title: 'Erro', description: 'Projeto não encontrado.' });
           router.push('/');
-        } finally {
-          setIsLoading(false);
         }
-      };
-      fetchData();
-    }
-  }, [projectId, router, user, toast]);
+      } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar o projeto.' });
+        router.push('/');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [projectId, router, toast]);
 
   const handleCreatePage = () => {
     router.push(`/editor/new?projectId=${projectId}`);
@@ -146,7 +145,7 @@ export function PageList({ projectId }: PageListProps) {
                 </div>
                 <h3 className="mt-4 font-semibold">{page.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Editado em: {new Date(page.updatedAt.toDate()).toLocaleDateString()}
+                  {page.updatedAt && page.updatedAt.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : ''}
                 </p>
               </div>
             ))}

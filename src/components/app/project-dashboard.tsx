@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, Loader2 } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,28 +43,32 @@ export function ProjectDashboard() {
   const [newProjectName, setNewProjectName] = useState("");
 
   useEffect(() => {
-    if (user) {
-        setIsLoading(true);
-        getProjectsForUser(user.uid)
-            .then(({ projects, pages }) => {
-                setProjects(projects);
-                setPages(pages);
-            })
-            .catch(err => {
-                console.error(err);
-                toast({variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os projetos.'})
-            })
-            .finally(() => setIsLoading(false));
-    }
+    // A mock user ID for when auth is disabled.
+    const mockUserId = "anonymous";
+    setIsLoading(true);
+    // Use a mock user ID if auth is disabled, otherwise use the real user's UID
+    const userIdToFetch = user?.uid || mockUserId;
+
+    getProjectsForUser(userIdToFetch)
+        .then(({ projects, pages }) => {
+            setProjects(projects);
+            setPages(pages);
+        })
+        .catch(err => {
+            console.error(err);
+            toast({variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os projetos.'})
+        })
+        .finally(() => setIsLoading(false));
   }, [user, toast]);
 
   const handleAddProject = async () => {
-    if (newProjectName.trim() === "" || !user) {
+    if (newProjectName.trim() === "") {
       toast({ variant: "destructive", title: "Erro", description: "O nome do projeto não pode ser vazio." });
       return;
     }
+     const userId = user?.uid || "anonymous";
     try {
-        const newProject = await addProject(newProjectName, user.uid);
+        const newProject = await addProject(newProjectName, userId);
         setProjects(prev => [...prev, newProject]);
         setNewProjectName("");
         setIsModalOpen(false);
@@ -113,9 +117,11 @@ export function ProjectDashboard() {
             <Button onClick={() => setIsModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" /> Criar Projeto
             </Button>
-            <Button variant="outline" onClick={logout}>
-              <LogOut className="mr-2 h-4 w-4" /> Sair
-            </Button>
+            {user && (
+              <Button variant="outline" onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" /> Sair
+              </Button>
+            )}
         </div>
       </header>
 

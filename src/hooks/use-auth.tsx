@@ -5,7 +5,6 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { getAuth, onAuthStateChanged, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Logo } from '@/components/icons';
 
 interface AuthContextType {
   user: User | null;
@@ -43,14 +42,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup: (email, password) => createUserWithEmailAndPassword(auth, email, password),
     logout,
   };
-
-  if (loading) {
-     return (
-       <div className="flex h-screen w-full items-center justify-center">
-            <Logo className="h-10 w-10 animate-spin text-primary" />
-       </div>
-    );
-  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

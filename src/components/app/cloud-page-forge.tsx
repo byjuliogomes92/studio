@@ -11,16 +11,6 @@ import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { addPage, getPage, updatePage } from "@/lib/firestore";
@@ -94,19 +84,17 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [pageState, setPageState] = useState<CloudPage | null>(null);
   const [htmlCode, setHtmlCode] = useState("");
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
-  const [isSaveAlertOpen, setIsSaveAlertOpen] = useState(false);
   const [pageName, setPageName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-
     const fetchPage = async () => {
       setIsLoading(true);
       if (pageId !== "new") {
         const pageData = await getPage(pageId);
-        if (pageData && pageData.userId === user.uid) {
+        // Temporarily allow access without user check
+        if (pageData) {
            let needsUpdate = false;
             const updatedComponents = pageData.components.map((component: PageComponent) => {
               if (component.type === 'Form' && (!component.props.placeholders || !component.props.fields)) {
@@ -128,7 +116,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           setPageState(pageData);
           setPageName(pageData.name);
         } else {
-          toast({ variant: "destructive", title: "Erro", description: "Página não encontrada ou acesso negado." });
+          toast({ variant: "destructive", title: "Erro", description: "Página não encontrada." });
           router.push('/');
         }
       } else {
@@ -141,7 +129,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         const newPage: CloudPage = {
             ...initialPage,
             id: '',
-            userId: user.uid,
+            // Use a mock user ID or handle it differently if auth is disabled
+            userId: user?.uid || "anonymous", 
             projectId,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -206,7 +195,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if (!pageState) return;
     setIsSaving(true);
     
-    const pageDataToSave = { ...pageState, name: pageName };
+    // Make sure userId is set, even if it's a mock one
+    const finalPageState = { 
+        ...pageState, 
+        name: pageName,
+        userId: pageState.userId || user?.uid || "anonymous"
+    };
 
     try {
       if (pageId === "new") {
@@ -215,11 +209,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             setIsSaving(false);
             return;
         }
-        const newPageId = await addPage(pageDataToSave);
+        const newPageId = await addPage(finalPageState);
         toast({ title: "Página salva!", description: `A página "${pageName}" foi criada com sucesso.` });
         router.push(`/editor/${newPageId}`);
       } else {
-        await updatePage(pageId, pageDataToSave);
+        await updatePage(pageId, finalPageState);
         toast({ title: "Página atualizada!", description: `A página "${pageName}" foi salva com sucesso.` });
       }
     } catch(error) {
@@ -231,7 +225,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   };
 
 
-  if (isLoading || !pageState || !user) {
+  if (isLoading || !pageState) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
             <Logo className="h-10 w-10 animate-spin text-primary" />

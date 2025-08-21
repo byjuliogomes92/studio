@@ -1,12 +1,15 @@
+
 "use client";
 
 import { useState } from "react";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Copy, Loader2, Sparkles } from "lucide-react";
+import { Copy, Loader2, Sparkles, Download, Monitor, Smartphone } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MainPanelProps {
   htmlCode: string;
@@ -16,6 +19,7 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
 
   const handleCopy = () => {
     navigator.clipboard.writeText(htmlCode);
@@ -24,6 +28,22 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
       description: "The HTML code has been copied.",
     });
   };
+
+  const handleDownload = () => {
+    const blob = new Blob([htmlCode], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cloudpage.html";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({
+      title: "Download Started",
+      description: "Your HTML file is downloading.",
+    });
+  }
 
   const handleAccessibilityCheck = async () => {
     setChecking(true);
@@ -44,35 +64,51 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
   };
 
   return (
-    <Tabs defaultValue="preview" className="w-full h-full flex flex-col">
-      <div className="flex-shrink-0 border-b">
-        <TabsList className="grid w-full grid-cols-3 bg-transparent p-0">
+    <Tabs defaultValue="preview" className="w-full h-full flex flex-col bg-muted/20">
+      <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
+        <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 max-w-sm">
           <TabsTrigger value="preview" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Preview</TabsTrigger>
           <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Code</TabsTrigger>
           <TabsTrigger value="accessibility" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Accessibility</TabsTrigger>
         </TabsList>
+         <div className="flex items-center gap-2">
+            <Button variant={previewMode === 'desktop' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')} aria-label="Desktop preview">
+                <Monitor className="h-5 w-5"/>
+            </Button>
+            <Button variant={previewMode === 'mobile' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('mobile')} aria-label="Mobile preview">
+                <Smartphone className="h-5 w-5"/>
+            </Button>
+        </div>
       </div>
       <div className="flex-grow overflow-auto">
-        <TabsContent value="preview" className="w-full h-full m-0">
-          <iframe
-            srcDoc={htmlCode}
-            title="Cloud Page Preview"
-            className="w-full h-full border-0 bg-white"
-          />
+        <TabsContent value="preview" className="w-full h-full m-0 p-4">
+           <div className="h-full w-full flex items-center justify-center">
+             <iframe
+                srcDoc={htmlCode}
+                title="Cloud Page Preview"
+                className={cn(
+                    "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out",
+                    previewMode === 'desktop' ? 'w-full h-full' : 'w-[375px] h-[667px]'
+                )}
+             />
+           </div>
         </TabsContent>
         <TabsContent value="code" className="w-full h-full m-0 p-4 flex flex-col gap-4">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center gap-2">
             <Button onClick={handleCopy} variant="outline">
               <Copy className="mr-2 h-4 w-4" />
               Copy Code
             </Button>
+             <Button onClick={handleDownload} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
           </div>
-          <Textarea
-            readOnly
-            value={htmlCode}
-            className="w-full flex-grow text-xs font-mono bg-muted/50"
-            aria-label="Generated HTML Code"
-          />
+           <div className="w-full flex-grow text-xs font-mono bg-card rounded-md overflow-hidden">
+             <SyntaxHighlighter language="html" style={vscDarkPlus} showLineNumbers customStyle={{ margin: 0, height: '100%', width: '100%', fontSize: '14px' }}>
+                {htmlCode}
+             </SyntaxHighlighter>
+           </div>
         </TabsContent>
         <TabsContent value="accessibility" className="w-full h-full m-0 p-6">
           <div className="flex flex-col items-start gap-4">
@@ -86,7 +122,7 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
             </Button>
             {checking && <p>Analyzing your code...</p>}
             {accessibilityIssues && (
-              <div className="prose prose-sm dark:prose-invert mt-4 p-4 border rounded-md bg-muted/50 w-full max-w-none">
+              <div className="prose prose-sm dark:prose-invert mt-4 p-4 border rounded-md bg-card w-full max-w-none">
                 <h3 className="font-semibold">Accessibility Suggestions</h3>
                 <pre className="whitespace-pre-wrap font-sans text-sm">{accessibilityIssues}</pre>
               </div>

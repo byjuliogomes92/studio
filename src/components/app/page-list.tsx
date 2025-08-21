@@ -35,15 +35,13 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) {
-      return; 
-    }
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
     const fetchData = async () => {
+      if (!user) {
+         setIsLoading(false);
+         router.push('/login');
+         return;
+      }
+
       setIsLoading(true);
       try {
         const data = await getProjectWithPages(projectId, user.uid);
@@ -63,7 +61,9 @@ export function PageList({ projectId }: PageListProps) {
       }
     };
 
-    fetchData();
+    if (!authLoading) {
+        fetchData();
+    }
   }, [projectId, router, user, toast, authLoading]);
 
   const handleCreatePage = () => {

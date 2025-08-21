@@ -6,24 +6,44 @@ import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
-import { Separator } from "@/components/ui/separator";
 
 const initialPage: CloudPage = {
   meta: {
-    title: 'My Awesome Cloud Page',
+    title: 'Avon - Cadastro',
+    faviconUrl: 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png',
+    loaderImageUrl: 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png',
+    redirectUrl: 'https://cloud.hello.avon.com/cadastroavonagradecimento',
   },
   styles: {
-    backgroundColor: '#f8fafc',
-    primaryColor: '#34495E',
-    accentColor: '#E67E22',
-    textColor: '#0f172a',
-    fontFamily: 'Inter',
+    backgroundColor: '#E4004B',
+    backgroundImage: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-bg.png',
+    themeColor: '#E5004B',
+    themeColorHover: '#B3003B',
   },
   components: [
-    { id: '1', type: 'Header', props: { title: 'Cloud Page Forge' } },
-    { id: '2', type: 'TextBlock', props: { text: 'Welcome to your new Cloud Page. Use the panel on the left to customize it.' } },
-    { id: '3', type: 'Form', props: { title: 'Subscribe to our Newsletter', buttonText: 'Sign Up' } },
-    { id: '4', type: 'Footer', props: { text: `© ${new Date().getFullYear()} Cloud Page Forge. All rights reserved.` } },
+    { id: '1', type: 'Header', props: { logoUrl: 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png' } },
+    { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },
+    { 
+      id: '3', 
+      type: 'Form', 
+      props: { 
+        namePlaceholder: 'Nome',
+        emailPlaceholder: 'Email',
+        phonePlaceholder: 'Telefone - Ex:(11) 9 9999-9999',
+        cpfPlaceholder: 'CPF',
+        consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co, por meio do fornecimento dos meus dados para contato via telefone e/ou e-mail, inclusive por parte de Consultoras Natura. Sei que posso revogar meu consentimento e solicitar outros direitos como titular de dados neste <a target="_blank" href="https://privacyportal-br.onetrust.com/webform/00181faa-85e7-4785-848b-f12d02b3f614/6f7e1250-be9f-4b2c-8610-98afc44fb2c0">link</a>. Ao entrar no espaço, estou ciente que o ambiente está sendo filmado e, desde já, AUTORIZO a Natura Cosméticos S/A e todas as empresas do Grupo Natura, ou terceiro à sua ordem, a utilizar meus direitos de personalidade, tais como minha imagem, nome, depoimento e voz, nos materiais de comunicação utilizados pela NATURA&CO para veiculação e divulgação de conteúdo da Ativação TODODIA Cereja na mídia em geral, em todas as formas, e transmissão por qualquer meio de comunicação, pelo prazo de 10 (dez) anos. Entendo que o uso da minha imagem é uma condição para acessar o ambiente e as experiências imersivas nos espaços da Natura na Ativação TODODIA Cereja.`,
+        buttonText: 'Finalizar',
+      } 
+    },
+    { 
+      id: '4', 
+      type: 'Footer', 
+      props: { 
+        footerText1: `© ${new Date().getFullYear()} Natura. Todos os direitos reservados.`,
+        footerText2: `NATURA COSMÉTICOS S/A, com sede na Av. Alexandre Colares, 1188, Vila Jaguara, São Paulo/SP, CEP 05106-000, Fone 0800 11 55 66 de telefones fixos ou 0300 711 55 66 de celulares (custo da ligação local), inscrita no CNPJ sob o n° 71.673.990/0001-77, IM 15.679, IE142.484.958.110, sociedade que executa atividades comerciais em geral e se dedica à pesquisa e desenvolvimento de produtos. Atividades fabris realizadas por INDÚSTRIA E COMÉRCIO DE COSMÉTICOS NATURA LTDA., com sede na Rodovia Anhanguera, s/n, KM 30,5, Prédio C, Polvilho, Cajamar/SP, CEP 07790-190, Fone (11) 4389-7317, inscrita no CNPJ sob o nº 00.190.373/0001-72, IE 241.022.419.113.`,
+        footerText3: `Todos os preços e condições deste site são válidos apenas para compras no site. Destacamos que os preços previstos no site prevalecem aos demais anunciados em outros meios de comunicação e sites de buscas. Em caso de divergência, o preço válido é o do carrinho de compras. Imagens meramente ilustrativas. Confira condições na sacola de compras.`,
+      }
+    },
   ],
 };
 

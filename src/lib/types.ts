@@ -1,4 +1,4 @@
-export type ComponentType = 'Header' | 'Form' | 'TextBlock' | 'Footer' | 'Image';
+export type ComponentType = 'Header' | 'Banner' | 'Form' | 'Footer' | 'TextBlock' | 'Image';
 
 export interface PageComponent {
   id: string;
@@ -9,13 +9,15 @@ export interface PageComponent {
 export interface CloudPage {
   styles: {
     backgroundColor: string;
-    primaryColor: string;
-    accentColor: string;
-    textColor: string;
-    fontFamily: string;
+    backgroundImage: string;
+    themeColor: string;
+    themeColorHover: string;
   };
   components: PageComponent[];
   meta: {
     title: string;
+    faviconUrl: string;
+    loaderImageUrl: string;
+    redirectUrl: string;
   };
 }

@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ComponentSettings } from "./component-settings";
 import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -102,29 +101,17 @@ export function SettingsPanel({
               <Label>Background Color</Label>
               <Input type="color" value={pageState.styles.backgroundColor} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="p-1"/>
             </div>
-            <div className="space-y-2">
-              <Label>Primary Color</Label>
-              <Input type="color" value={pageState.styles.primaryColor} onChange={(e) => handleStyleChange('primaryColor', e.target.value)} className="p-1"/>
+             <div className="space-y-2">
+              <Label>Background Image URL</Label>
+              <Input value={pageState.styles.backgroundImage} onChange={(e) => handleStyleChange('backgroundImage', e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Accent Color</Label>
-              <Input type="color" value={pageState.styles.accentColor} onChange={(e) => handleStyleChange('accentColor', e.target.value)} className="p-1"/>
+              <Label>Theme Color</Label>
+              <Input type="color" value={pageState.styles.themeColor} onChange={(e) => handleStyleChange('themeColor', e.target.value)} className="p-1"/>
             </div>
              <div className="space-y-2">
-              <Label>Text Color</Label>
-              <Input type="color" value={pageState.styles.textColor} onChange={(e) => handleStyleChange('textColor', e.target.value)} className="p-1"/>
-            </div>
-            <div className="space-y-2">
-              <Label>Font Family</Label>
-              <Select value={pageState.styles.fontFamily} onValueChange={(value) => handleStyleChange('fontFamily', value)}>
-                <SelectTrigger><SelectValue/></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Inter">Inter</SelectItem>
-                  <SelectItem value="Roboto">Roboto</SelectItem>
-                  <SelectItem value="Lato">Lato</SelectItem>
-                  <SelectItem value="Georgia">Georgia</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Theme Color (Hover)</Label>
+              <Input type="color" value={pageState.styles.themeColorHover} onChange={(e) => handleStyleChange('themeColorHover', e.target.value)} className="p-1"/>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -162,6 +149,7 @@ export function SettingsPanel({
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => addComponent("Header")}>Header</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addComponent("Banner")}>Banner</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => addComponent("TextBlock")}>Text Block</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => addComponent("Image")}>Image</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => addComponent("Form")}>Form</DropdownMenuItem>
@@ -187,6 +175,18 @@ export function SettingsPanel({
             <div className="space-y-2">
               <Label>Page Title</Label>
               <Input value={pageState.meta.title} onChange={(e) => handleMetaChange('title', e.target.value)} />
+            </div>
+             <div className="space-y-2">
+              <Label>Favicon URL</Label>
+              <Input value={pageState.meta.faviconUrl} onChange={(e) => handleMetaChange('faviconUrl', e.target.value)} />
+            </div>
+             <div className="space-y-2">
+              <Label>Loader Image URL</Label>
+              <Input value={pageState.meta.loaderImageUrl} onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} />
+            </div>
+             <div className="space-y-2">
+              <Label>Redirect URL on Submit</Label>
+              <Input value={pageState.meta.redirectUrl} onChange={(e) => handleMetaChange('redirectUrl', e.target.value)} />
             </div>
           </AccordionContent>
         </AccordionItem>

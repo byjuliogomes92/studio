@@ -47,10 +47,10 @@ export default function SignupPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
-      <Card className="mx-auto max-w-sm">
+      <Card className="mx-auto max-w-sm w-full">
         <CardHeader className="text-center">
           <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
-          <CardTitle className="text-xl">Cadastro</CardTitle>
+          <CardTitle className="text-2xl">Cadastro</CardTitle>
           <CardDescription>
             Crie sua conta para começar a construir suas páginas
           </CardDescription>

@@ -41,9 +41,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
-      <Card className="mx-auto max-w-sm">
+      <Card className="mx-auto max-w-sm w-full">
         <CardHeader className="text-center">
-            <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
+          <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
             Entre com seu email e senha para acessar seus projetos

@@ -89,7 +89,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   const smartCaptureScript = `
 <script id="smartcapture-script-uttuiggngg">
  var scFormLoaded = function () {
-  window.ScForm.init({"gearID":"uttuiggngg","smartCaptureFormID":0,"sourceKey":"2D6B0E7A-DE4A-4FD8-92B7-900EBF4B3A60","source":"dataExtension","triggeredSend":"","confirmationMessage":"Obrigada por participar!","buttonText":"Submit","formStyling":{"background-color":"transparent","margin-top":"0px","margin-right":"0px","margin-bottom":"0px","margin-left":"0px","padding-top":"0px","padding-right":"0px","padding-bottom":"0px","padding-left":"0px","text-align":"left"},"fieldStyling":{"width":"200px"},"buttonStyling":{"background-color":"#009DDC","border-color":"#009DDC","border-radius":"3px","border-style":"solid","-webkit-border-radius":"3px","-moz-border-radius":"3px","color":"#FFFFFF","font-family":"Arial, Helvetica, sans-serif","font-size":"16px","line-height":"normal","padding":"10px"},onSubmitShouldGotoUrl: true,
+  window.ScForm.init({"gearID":"uttuiggngg","smartCaptureFormID":0,"sourceKey":"${meta.dataExtensionKey || ''}","source":"dataExtension","triggeredSend":"","confirmationMessage":"Obrigada por participar!","buttonText":"Submit","formStyling":{"background-color":"transparent","margin-top":"0px","margin-right":"0px","margin-bottom":"0px","margin-left":"0px","padding-top":"0px","padding-right":"0px","padding-bottom":"0px","padding-left":"0px","text-align":"left"},"fieldStyling":{"width":"200px"},"buttonStyling":{"background-color":"#009DDC","border-color":"#009DDC","border-radius":"3px","border-style":"solid","-webkit-border-radius":"3px","-moz-border-radius":"3px","color":"#FFFFFF","font-family":"Arial, Helvetica, sans-serif","font-size":"16px","line-height":"normal","padding":"10px"},onSubmitShouldGotoUrl: true,
         onSubmitGotoUrlType: 2,
         onSubmitGotoUrl:  "${meta.redirectUrl}",});
  };
@@ -595,5 +595,3 @@ export const generateHtml = (pageState: CloudPage): string => {
 </body>
 </html>`.trim();
 };
-
-    

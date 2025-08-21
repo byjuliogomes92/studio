@@ -22,6 +22,7 @@ export interface CloudPage {
     faviconUrl: string;
     loaderImageUrl: string;
     redirectUrl: string;
+    dataExtensionKey: string;
   };
 }
 

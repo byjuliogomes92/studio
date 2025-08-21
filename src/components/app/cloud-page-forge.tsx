@@ -33,6 +33,7 @@ const initialPage: CloudPage = {
     faviconUrl: 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png',
     loaderImageUrl: 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png',
     redirectUrl: 'https://cloud.hello.avon.com/cadastroavonagradecimento',
+    dataExtensionKey: '2D6B0E7A-DE4A-4FD8-92B7-900EBF4B3A60',
   },
   styles: {
     backgroundColor: '#E4004B',

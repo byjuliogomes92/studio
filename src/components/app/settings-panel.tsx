@@ -210,6 +210,10 @@ export function SettingsPanel({
               <Label>Redirect URL on Submit</Label>
               <Input value={pageState.meta.redirectUrl} onChange={(e) => handleMetaChange('redirectUrl', e.target.value)} />
             </div>
+            <div className="space-y-2">
+              <Label>Data Extension Key</Label>
+              <Input value={pageState.meta.dataExtensionKey} onChange={(e) => handleMetaChange('dataExtensionKey', e.target.value)} />
+            </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

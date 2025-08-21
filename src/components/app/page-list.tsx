@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -53,6 +53,7 @@ export function PageList({ projectId }: PageListProps) {
   const [project, setProject] = useState<Project | null>(null);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
@@ -79,17 +80,20 @@ export function PageList({ projectId }: PageListProps) {
       }
     };
 
-    if (!authLoading) {
-      if(user) {
+    if (!authLoading && user) {
         fetchData();
-      } else {
+    } else if (!authLoading && !user) {
         router.push('/login');
-      }
     }
   }, [projectId, user, authLoading, toast, router]);
 
+  const handleNavigate = (path: string) => {
+    setIsNavigating(true);
+    router.push(path);
+  };
+
   const handleCreatePage = () => {
-    router.push(`/editor/new?projectId=${projectId}`);
+    handleNavigate(`/editor/new?projectId=${projectId}`);
   };
 
   const handleDeletePage = async () => {
@@ -122,6 +126,14 @@ export function PageList({ projectId }: PageListProps) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Logo className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isNavigating) {
+    return (
+      <div className="page-transition-loader">
+        <Loader2 className="h-10 w-10 animate-spin text-white" />
       </div>
     );
   }
@@ -202,7 +214,7 @@ export function PageList({ projectId }: PageListProps) {
                 key={page.id}
                 className="group relative flex flex-col bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
               >
-                 <div className="flex-grow cursor-pointer" onClick={() => router.push(`/editor/${page.id}`)}>
+                 <div className="flex-grow cursor-pointer" onClick={() => handleNavigate(`/editor/${page.id}`)}>
                     <div className="flex items-start justify-between">
                       <FileText className="h-10 w-10 text-primary" />
                       <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>

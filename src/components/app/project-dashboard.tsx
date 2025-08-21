@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,7 @@ export function ProjectDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // State for modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -66,7 +67,7 @@ export function ProjectDashboard() {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      if (!user || authLoading) return;
+      if (!user) return;
       setIsLoading(true);
       try {
         const { projects, pages } = await getProjectsForUser(user.uid);
@@ -88,6 +89,11 @@ export function ProjectDashboard() {
       }
     }
   }, [user, authLoading, toast, router]);
+
+  const handleNavigateToProject = (projectId: string) => {
+    setIsNavigating(true);
+    router.push(`/project/${projectId}`);
+  };
 
   const handleAddProject = async () => {
     if (newProjectName.trim() === "" || !user) {
@@ -189,6 +195,14 @@ export function ProjectDashboard() {
     );
   }
 
+  if (isNavigating) {
+    return (
+      <div className="page-transition-loader">
+        <Loader2 className="h-10 w-10 animate-spin text-white" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
@@ -248,7 +262,7 @@ export function ProjectDashboard() {
                 key={project.id}
                 className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
               >
-                <div onClick={() => router.push(`/project/${project.id}`)} className="cursor-pointer">
+                <div onClick={() => handleNavigateToProject(project.id)} className="cursor-pointer">
                     <Folder className="h-10 w-10 text-primary mb-4" />
                     <h3 className="font-semibold text-lg">{project.name}</h3>
                     <p className="text-sm text-muted-foreground mt-2">

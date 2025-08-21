@@ -105,7 +105,7 @@ export function SettingsPanel({
     <ScrollArea className="h-full">
     <TooltipProvider>
     <div className="p-4 space-y-6">
-      <Accordion type="multiple" defaultValue={["components"]} className="w-full">
+      <Accordion type="multiple" className="w-full">
         <AccordionItem value="styles">
           <AccordionTrigger>Estilos Globais</AccordionTrigger>
           <AccordionContent className="space-y-4 pt-2">

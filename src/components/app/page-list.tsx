@@ -41,6 +41,7 @@ export function PageList({ projectId }: PageListProps) {
     }
     if (!user) {
       setIsLoading(false);
+      router.push('/login');
       return;
     }
     const fetchData = async () => {
@@ -80,7 +81,7 @@ export function PageList({ projectId }: PageListProps) {
     }
   }
 
-  if (isLoading || !project) {
+  if (isLoading || authLoading || !project) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Logo className="h-10 w-10 animate-spin text-primary" />

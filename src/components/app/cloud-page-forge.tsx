@@ -95,6 +95,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     }
     if (!user) {
       setIsLoading(false);
+      router.push('/login');
       return;
     }
     
@@ -238,7 +239,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   };
 
 
-  if (isLoading || !pageState) {
+  if (isLoading || authLoading || !pageState) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
             <Logo className="h-10 w-10 animate-spin text-primary" />

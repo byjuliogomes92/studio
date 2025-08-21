@@ -49,10 +49,11 @@ export function ProjectDashboard() {
     }
     if (!user) {
         setIsLoading(false);
+        router.push('/login');
         return;
     };
+    
     setIsLoading(true);
-
     getProjectsForUser(user.uid)
         .then(({ projects, pages }) => {
             setProjects(projects);
@@ -63,7 +64,7 @@ export function ProjectDashboard() {
             toast({variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os projetos.'})
         })
         .finally(() => setIsLoading(false));
-  }, [user, authLoading, toast]);
+  }, [user, authLoading, toast, router]);
 
   const handleAddProject = async () => {
     if (newProjectName.trim() === "") {
@@ -105,7 +106,7 @@ export function ProjectDashboard() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Logo className="h-10 w-10 animate-spin text-primary" />

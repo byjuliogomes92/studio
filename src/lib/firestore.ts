@@ -69,6 +69,29 @@ export const getPagesForProject = async (projectId: string): Promise<CloudPage[]
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
 };
 
+export const getProjectWithPages = async (projectId: string, userId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
+    const projectRef = doc(db, 'projects', projectId);
+    const projectDoc = await getDoc(projectRef);
+
+    if (!projectDoc.exists() || projectDoc.data().userId !== userId) {
+        return null; // Project doesn't exist or user doesn't have access
+    }
+
+    const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
+
+    const pagesQuery = query(
+        collection(db, 'pages'),
+        where('projectId', '==', projectId),
+        where('userId', '==', userId),
+        orderBy('updatedAt', 'desc')
+    );
+    
+    const pagesSnapshot = await getDocs(pagesQuery);
+    const pages = pagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
+
+    return { project, pages };
+};
+
 
 export const deletePage = async (pageId: string): Promise<void> => {
     await deleteDoc(doc(db, "pages", pageId));

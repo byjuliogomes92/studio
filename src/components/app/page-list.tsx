@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { getProject, getPagesForProject, deletePage } from "@/lib/firestore";
+import { getProjectWithPages, deletePage } from "@/lib/firestore";
 
 interface PageListProps {
   projectId: string;
@@ -35,19 +35,21 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      return; 
+    }
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
     const fetchData = async () => {
-      if (!user) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
-        router.push('/login');
-        return;
-      }
       setIsLoading(true);
       try {
-        const currentProject = await getProject(projectId);
-        if (currentProject && currentProject.userId === user.uid) {
-          setProject(currentProject);
-          const projectPages = await getPagesForProject(projectId);
-          setPages(projectPages);
+        const data = await getProjectWithPages(projectId, user.uid);
+        if (data) {
+          setProject(data.project);
+          setPages(data.pages);
         } else {
           toast({ variant: 'destructive', title: 'Erro', description: 'Projeto não encontrado ou acesso negado.' });
           router.push('/');
@@ -61,13 +63,7 @@ export function PageList({ projectId }: PageListProps) {
       }
     };
 
-    if (!authLoading) {
-      if (user) {
-        fetchData();
-      } else {
-        router.push('/login');
-      }
-    }
+    fetchData();
   }, [projectId, router, user, toast, authLoading]);
 
   const handleCreatePage = () => {

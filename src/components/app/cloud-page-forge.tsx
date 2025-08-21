@@ -16,9 +16,8 @@ import { Label } from "@/components/ui/label";
 import { addPage, getPage, updatePage } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 
-const initialPage: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
+const initialPage: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'projectId'> = {
   name: "Nova CloudPage",
-  projectId: "",
   meta: {
     title: 'Avon - Cadastro',
     faviconUrl: 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png',
@@ -156,7 +155,9 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       }
     };
 
-    fetchPage();
+    if(!authLoading && user) {
+        fetchPage();
+    }
   }, [pageId, router, user, toast, authLoading]);
   
   useEffect(() => {
@@ -210,12 +211,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if (!pageState || !user) return;
     setIsSaving(true);
     
-    const finalPageState = { 
-        ...pageState, 
-        name: pageName,
-        userId: user.uid,
-    };
-
     try {
       if (pageId === "new") {
          if (pageName.trim() === "") {
@@ -223,10 +218,23 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             setIsSaving(false);
             return;
         }
+        const { id, createdAt, updatedAt, ...newPageData } = pageState;
+        const finalPageState = {
+            ...newPageData,
+            name: pageName,
+            userId: user.uid,
+        };
+
         const newPageId = await addPage(finalPageState);
+        setPageState(prev => prev ? ({ ...prev, id: newPageId }) : null);
         toast({ title: "Página salva!", description: `A página "${pageName}" foi criada com sucesso.` });
         router.push(`/editor/${newPageId}`);
       } else {
+        const finalPageState = { 
+            ...pageState, 
+            name: pageName,
+            userId: user.uid,
+        };
         await updatePage(pageId, finalPageState);
         toast({ title: "Página atualizada!", description: `A página "${pageName}" foi salva com sucesso.` });
       }

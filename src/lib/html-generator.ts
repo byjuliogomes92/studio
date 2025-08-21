@@ -594,4 +594,3 @@ export const generateHtml = (pageState: CloudPage): string => {
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}
 </body>
 </html>`.trim();
-};

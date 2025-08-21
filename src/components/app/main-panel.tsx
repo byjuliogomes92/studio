@@ -24,8 +24,8 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
   const handleCopy = () => {
     navigator.clipboard.writeText(htmlCode);
     toast({
-      title: "Copied to Clipboard",
-      description: "The HTML code has been copied.",
+      title: "Copiado para a Área de Transferência",
+      description: "O código HTML foi copiado.",
     });
   };
 
@@ -40,8 +40,8 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast({
-      title: "Download Started",
-      description: "Your HTML file is downloading.",
+      title: "Download Iniciado",
+      description: "O download do seu arquivo HTML começou.",
     });
   }
 
@@ -52,11 +52,11 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
       const result = await accessibilityCheck({ htmlCode });
       setAccessibilityIssues(result.suggestions);
     } catch (error) {
-      console.error("Accessibility check failed:", error);
+      console.error("A verificação de acessibilidade falhou:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to run accessibility check.",
+        title: "Erro",
+        description: "Falha ao executar a verificação de acessibilidade.",
       });
     } finally {
       setChecking(false);
@@ -68,14 +68,14 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
       <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
         <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 max-w-sm">
           <TabsTrigger value="preview" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Preview</TabsTrigger>
-          <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Code</TabsTrigger>
-          <TabsTrigger value="accessibility" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Accessibility</TabsTrigger>
+          <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Código</TabsTrigger>
+          <TabsTrigger value="accessibility" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Acessibilidade</TabsTrigger>
         </TabsList>
          <div className="flex items-center gap-2">
-            <Button variant={previewMode === 'desktop' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')} aria-label="Desktop preview">
+            <Button variant={previewMode === 'desktop' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')} aria-label="Visualização Desktop">
                 <Monitor className="h-5 w-5"/>
             </Button>
-            <Button variant={previewMode === 'mobile' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('mobile')} aria-label="Mobile preview">
+            <Button variant={previewMode === 'mobile' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('mobile')} aria-label="Visualização Mobile">
                 <Smartphone className="h-5 w-5"/>
             </Button>
         </div>
@@ -85,7 +85,7 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
            <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
              <iframe
                 srcDoc={htmlCode}
-                title="Cloud Page Preview"
+                title="Preview da Cloud Page"
                 className={cn(
                     "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
                     previewMode === 'desktop' ? 'w-full h-full' : 'w-[375px] h-[667px]'
@@ -97,7 +97,7 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
           <div className="flex-shrink-0 flex items-center gap-2">
             <Button onClick={handleCopy} variant="outline">
               <Copy className="mr-2 h-4 w-4" />
-              Copy Code
+              Copiar Código
             </Button>
              <Button onClick={handleDownload} variant="outline">
               <Download className="mr-2 h-4 w-4" />
@@ -118,12 +118,12 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              Check for Accessibility Issues
+              Verificar Problemas de Acessibilidade
             </Button>
-            {checking && <p>Analyzing your code...</p>}
+            {checking && <p>Analisando seu código...</p>}
             {accessibilityIssues && (
               <div className="prose prose-sm dark:prose-invert mt-4 p-4 border rounded-md bg-card w-full max-w-none">
-                <h3 className="font-semibold">Accessibility Suggestions</h3>
+                <h3 className="font-semibold">Sugestões de Acessibilidade</h3>
                 <pre className="whitespace-pre-wrap font-sans text-sm">{accessibilityIssues}</pre>
               </div>
             )}

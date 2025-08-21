@@ -24,10 +24,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
         return (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label htmlFor="logo-url">Logo URL</Label>
+              <Label htmlFor="logo-url">URL do Logo</Label>
               <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>URL for the header logo image.</p></TooltipContent>
+                  <TooltipContent><p>URL para a imagem do logo no cabeçalho.</p></TooltipContent>
               </Tooltip>
             </div>
             <Input
@@ -41,10 +41,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
         return (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label htmlFor="image-url">Image URL</Label>
+              <Label htmlFor="image-url">URL da Imagem</Label>
               <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>URL for the main banner image.</p></TooltipContent>
+                  <TooltipContent><p>URL para a imagem principal do banner.</p></TooltipContent>
               </Tooltip>
             </div>
             <Input
@@ -58,10 +58,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
         return (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label htmlFor="text-block-content">Text</Label>
+              <Label htmlFor="text-block-content">Texto</Label>
               <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Content for the text block. Supports basic HTML.</p></TooltipContent>
+                  <TooltipContent><p>Conteúdo para o bloco de texto. Suporta HTML básico.</p></TooltipContent>
               </Tooltip>
             </div>
             <Textarea
@@ -77,10 +77,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
           <div className="space-y-4">
              <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="image-src">Image URL</Label>
+                  <Label htmlFor="image-src">URL da Imagem</Label>
                    <Tooltip>
                     <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Source URL for the image.</p></TooltipContent>
+                    <TooltipContent><p>URL de origem para a imagem.</p></TooltipContent>
                   </Tooltip>
                 </div>
                 <Input
@@ -92,17 +92,17 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
              </div>
               <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
-                    <Label htmlFor="image-alt">Alt Text</Label>
+                    <Label htmlFor="image-alt">Texto Alternativo</Label>
                     <Tooltip>
                       <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                      <TooltipContent><p>Descriptive text for accessibility.</p></TooltipContent>
+                      <TooltipContent><p>Texto descritivo para acessibilidade.</p></TooltipContent>
                     </Tooltip>
                   </div>
                   <Input
                       id="image-alt"
                       value={component.props.alt || ""}
                       onChange={(e) => onPropChange("alt", e.target.value)}
-                      placeholder="Descriptive text for the image"
+                      placeholder="Texto descritivo para a imagem"
                   />
               </div>
           </div>
@@ -112,10 +112,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-name-placeholder">Name Placeholder</Label>
+                <Label htmlFor="form-name-placeholder">Placeholder do Nome</Label>
                  <Tooltip>
                     <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Placeholder text for the name field.</p></TooltipContent>
+                    <TooltipContent><p>Texto de exemplo para o campo de nome.</p></TooltipContent>
                   </Tooltip>
               </div>
               <Input
@@ -126,10 +126,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-email-placeholder">Email Placeholder</Label>
+                <Label htmlFor="form-email-placeholder">Placeholder do Email</Label>
                  <Tooltip>
                     <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Placeholder text for the email field.</p></TooltipContent>
+                    <TooltipContent><p>Texto de exemplo para o campo de email.</p></TooltipContent>
                   </Tooltip>
               </div>
               <Input
@@ -140,10 +140,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
             </div>
              <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-phone-placeholder">Phone Placeholder</Label>
+                <Label htmlFor="form-phone-placeholder">Placeholder do Telefone</Label>
                 <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Placeholder text for the phone field.</p></TooltipContent>
+                  <TooltipContent><p>Texto de exemplo para o campo de telefone.</p></TooltipContent>
                 </Tooltip>
               </div>
               <Input
@@ -154,10 +154,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
             </div>
              <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-cpf-placeholder">CPF Placeholder</Label>
+                <Label htmlFor="form-cpf-placeholder">Placeholder do CPF</Label>
                 <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Placeholder text for the CPF field.</p></TooltipContent>
+                  <TooltipContent><p>Texto de exemplo para o campo de CPF.</p></TooltipContent>
                 </Tooltip>
               </div>
               <Input
@@ -168,10 +168,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-button-text">Button Text</Label>
+                <Label htmlFor="form-button-text">Texto do Botão</Label>
                 <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Text displayed on the form submission button.</p></TooltipContent>
+                  <TooltipContent><p>Texto exibido no botão de envio do formulário.</p></TooltipContent>
                 </Tooltip>
               </div>
               <Input
@@ -182,10 +182,10 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
             </div>
              <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-consent-text">Consent Text</Label>
+                <Label htmlFor="form-consent-text">Texto de Consentimento</Label>
                 <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>The legal text for user consent. Supports HTML.</p></TooltipContent>
+                  <TooltipContent><p>O texto legal para o consentimento do usuário. Suporta HTML.</p></TooltipContent>
                 </Tooltip>
               </div>
               <Textarea
@@ -202,30 +202,30 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
           <div className="space-y-4">
             <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-1">Footer Text 1</Label>
+                  <Label htmlFor="footer-text-1">Texto do Rodapé 1</Label>
                   <Tooltip>
                     <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>First line of text in the footer (e.g., copyright).</p></TooltipContent>
+                    <TooltipContent><p>Primeira linha de texto no rodapé (ex: copyright).</p></TooltipContent>
                   </Tooltip>
                 </div>
                 <Textarea id="footer-text-1" value={component.props.footerText1 || ""} onChange={(e) => onPropChange("footerText1", e.target.value)} rows={3}/>
             </div>
             <div className="space-y-2">
                  <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-2">Footer Text 2</Label>
+                  <Label htmlFor="footer-text-2">Texto do Rodapé 2</Label>
                    <Tooltip>
                     <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Second line of text in the footer (e.g., company info).</p></TooltipContent>
+                    <TooltipContent><p>Segunda linha de texto no rodapé (ex: informações da empresa).</p></TooltipContent>
                   </Tooltip>
                 </div>
                 <Textarea id="footer-text-2" value={component.props.footerText2 || ""} onChange={(e) => onPropChange("footerText2", e.target.value)} rows={6} />
             </div>
             <div className="space-y-2">
                  <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-3">Footer Text 3</Label>
+                  <Label htmlFor="footer-text-3">Texto do Rodapé 3</Label>
                    <Tooltip>
                     <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Third line of text in the footer (e.g., legal disclaimer).</p></TooltipContent>
+                    <TooltipContent><p>Terceira linha de texto no rodapé (ex: aviso legal).</p></TooltipContent>
                   </Tooltip>
                 </div>
                 <Textarea id="footer-text-3" value={component.props.footerText3 || ""} onChange={(e) => onPropChange("footerText3", e.target.value)} rows={4}/>
@@ -233,7 +233,7 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
           </div>
         );
       default:
-        return <p className="text-sm text-muted-foreground">No settings available for this component.</p>;
+        return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;
     }
   };
 

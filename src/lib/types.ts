@@ -1,3 +1,4 @@
+
 export type ComponentType = 'Header' | 'Banner' | 'Form' | 'Footer' | 'TextBlock' | 'Image';
 
 export interface PageComponent {

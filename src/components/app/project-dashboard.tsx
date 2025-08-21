@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, FileText, Trash2 } from "lucide-react";
+import { Folder, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,

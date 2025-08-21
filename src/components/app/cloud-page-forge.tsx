@@ -91,54 +91,59 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   useEffect(() => {
     const fetchPage = async () => {
       setIsLoading(true);
-      if (pageId !== "new") {
-        const pageData = await getPage(pageId);
-        // Temporarily allow access without user check
-        if (pageData) {
-           let needsUpdate = false;
+      try {
+        if (pageId !== "new") {
+          const pageData = await getPage(pageId);
+          if (pageData) {
+            let needsUpdate = false;
             const updatedComponents = pageData.components.map((component: PageComponent) => {
               if (component.type === 'Form' && (!component.props.placeholders || !component.props.fields)) {
                 needsUpdate = true;
-                const newProps = {...component.props};
+                const newProps = { ...component.props };
                 if (!newProps.fields) {
                   newProps.fields = { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true };
                 }
                 if (!newProps.placeholders) {
-                   newProps.placeholders = { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', birthdate: 'Data de Nascimento' };
+                  newProps.placeholders = { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', birthdate: 'Data de Nascimento' };
                 }
                 return { ...component, props: newProps };
               }
               return component;
             });
-             if(needsUpdate) {
-                pageData.components = updatedComponents;
+            if (needsUpdate) {
+              pageData.components = updatedComponents;
             }
-          setPageState(pageData);
-          setPageName(pageData.name);
+            setPageState(pageData);
+            setPageName(pageData.name);
+          } else {
+            toast({ variant: "destructive", title: "Erro", description: "Página não encontrada." });
+            router.push('/');
+          }
         } else {
-          toast({ variant: "destructive", title: "Erro", description: "Página não encontrada." });
-          router.push('/');
-        }
-      } else {
-        const projectId = new URLSearchParams(window.location.search).get('projectId');
-        if (!projectId) {
-          toast({ variant: "destructive", title: "Erro", description: "ID do projeto não encontrado." });
-          router.push('/');
-          return;
-        }
-        const newPage: CloudPage = {
+          const projectId = new URLSearchParams(window.location.search).get('projectId');
+          if (!projectId) {
+            toast({ variant: "destructive", title: "Erro", description: "ID do projeto não encontrado." });
+            router.push('/');
+            return;
+          }
+          const newPage: CloudPage = {
             ...initialPage,
             id: '',
-            // Use a mock user ID or handle it differently if auth is disabled
-            userId: user?.uid || "anonymous", 
+            userId: user?.uid || "anonymous",
             projectId,
             createdAt: new Date(),
             updatedAt: new Date(),
-        };
-        setPageState(newPage);
-        setPageName(newPage.name);
+          };
+          setPageState(newPage);
+          setPageName(newPage.name);
+        }
+      } catch (error) {
+        console.error("Failed to fetch page:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar a página." });
+        router.push('/');
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchPage();
@@ -170,7 +175,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         let needsUpdate = false;
         
         const newLogo = isAvon ? avonLogo : naturaLogo;
-        const newFavicon = isAvon ? avonFavicon : naturaFavicon;
+        const newFavicon = isAvon ? avonFavicon : naturaLoader;
         const newLoader = isAvon ? avonLoader : naturaLoader;
 
         const newState = JSON.parse(JSON.stringify(prev));
@@ -268,3 +273,5 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     </div>
   );
 }
+
+    

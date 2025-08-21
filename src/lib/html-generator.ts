@@ -180,10 +180,11 @@ export const generateHtml = (pageState: CloudPage): string => {
 
     #loader img {
         width: 150px;
-      height: 150px;
-      border-radius: 0%;
-      animation: pulse 2s infinite;
-      filter: brightness(0) invert(1);
+        height: 150px;
+        object-fit: contain;
+        border-radius: 0%;
+        animation: pulse 2s infinite;
+        filter: brightness(0) invert(1);
     }
 
   @keyframes pulse {

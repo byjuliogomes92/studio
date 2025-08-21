@@ -162,14 +162,10 @@ export function PageList({ projectId }: PageListProps) {
                     key={tag}
                     onClick={() => setActiveTag(tag === activeTag ? null : tag)}
                     className={cn(
-                        "cursor-pointer transition-all hover:brightness-110",
-                        activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : ''
+                        "cursor-pointer transition-all hover:brightness-110 border",
+                        activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
+                        getTagColor(tag)
                     )}
-                    style={{
-                        backgroundColor: getTagColor(tag).split(' ')[0],
-                        color: getTagColor(tag).split(' ')[1],
-                        borderColor: getTagColor(tag).split(' ')[2],
-                    }}
                 >
                     {tag}
                 </Badge>

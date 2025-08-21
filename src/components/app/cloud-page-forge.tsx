@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const initialPage: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'projectId'> = {
   name: "Nova CloudPage",
+  tags: ["Brasil"],
   meta: {
     title: 'Avon - Cadastro',
     faviconUrl: 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png',
@@ -30,8 +31,8 @@ const initialPage: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'userId' |
   styles: {
     backgroundColor: '#E4004B',
     backgroundImage: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-bg.png',
-    themeColor: '#E5004B',
-    themeColorHover: '#B3003B',
+    themeColor: '#0070D2',
+    themeColorHover: '#005fb8',
   },
   components: [
     { id: '1', type: 'Header', props: { logoUrl: 'https://gkpb.com.br/wp-content/uploads/2021/01/novo-logo-avon-png.png' } },
@@ -93,7 +94,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       return;
     }
     if (!user) {
-      setIsLoading(false);
       router.push('/login');
       return;
     }
@@ -218,6 +218,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             setIsSaving(false);
             return;
         }
+        // Destructure to remove id, which should not be sent for a new document
         const { id, createdAt, updatedAt, ...newPageData } = pageState;
         const finalPageState = {
             ...newPageData,

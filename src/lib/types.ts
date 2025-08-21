@@ -12,6 +12,7 @@ export interface CloudPage {
   name: string;
   projectId: string;
   userId: string;
+  tags?: string[];
   styles: {
     backgroundColor: string;
     backgroundImage: string;

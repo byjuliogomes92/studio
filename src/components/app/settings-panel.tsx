@@ -53,6 +53,11 @@ export function SettingsPanel({
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+    setPageState(prev => ({ ...prev, tags }));
+  };
 
   const handleStyleChange = (prop: keyof CloudPage["styles"], value: string) => {
     setPageState((prev) => ({ ...prev, styles: { ...prev.styles, [prop]: value } }));
@@ -155,6 +160,21 @@ export function SettingsPanel({
                     value={pageName}
                     onChange={(e) => setPageName(e.target.value)}
                     placeholder="Ex: Campanha Dia das Mães"
+                  />
+                </div>
+                 <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                        <Label htmlFor="page-tags">Tags</Label>
+                        <Tooltip>
+                            <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                            <TooltipContent><p>Separe as tags por vírgulas (ex: Brasil, Latam, CF).</p></TooltipContent>
+                        </Tooltip>
+                    </div>
+                  <Input
+                    id="page-tags"
+                    value={(pageState.tags || []).join(', ')}
+                    onChange={handleTagChange}
+                    placeholder="Ex: Brasil, Latam, CF"
                   />
                 </div>
               </AccordionContent>

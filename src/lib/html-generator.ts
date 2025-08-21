@@ -1,6 +1,29 @@
 
 import type { CloudPage, PageComponent } from './types';
 
+const renderField = (
+  id: string, 
+  name: string, 
+  type: string, 
+  dataType: string, 
+  placeholder: string,
+  required: boolean = true
+  ): string => {
+  return `
+    <div class="input-wrapper">
+      <input 
+        type="${type}" 
+        id="${name.toUpperCase()}" 
+        name="${name.toUpperCase()}" 
+        data-field-type="${dataType}" 
+        placeholder="${placeholder}" 
+        ${required ? 'required="required"' : ''}
+      >
+      <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
+    </div>
+  `;
+}
+
 const renderComponent = (component: PageComponent): string => {
   switch (component.type) {
     case 'Header':
@@ -14,44 +37,34 @@ const renderComponent = (component: PageComponent): string => {
             <img src="${component.props.imageUrl || 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png'}" alt="Banner">
         </div>`;
     case 'Form':
+      const { fields, placeholders, consentText, buttonText } = component.props;
       const formHtml = `
         <div class="form-container">
             <form id="smartcapture-block-uttuiggngg" novalidate="novalidate" onsubmit="return validateForm()">
                 <div class="row">
-                  <div class="input-wrapper">
-                    <input type="text" id="NOME" name="NOME" data-field-type="Text" placeholder="${component.props.namePlaceholder || 'Nome'}" required="required">
-                    <div class="error-message" id="error-nome">Por favor, preencha seu nome.</div>
-                  </div>
-                  <div class="input-wrapper">
-                    <input type="email" id="EMAIL" name="EMAIL" data-field-type="EmailAddress" data-validation="email" placeholder="${component.props.emailPlaceholder || 'Email'}" required="required">
-                    <div class="error-message" id="error-email">Por favor, insira um email válido.</div>
-                  </div>
+                  ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name) : ''}
+                  ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email) : ''}
                 </div>
                 <div class="row">
-                  <div class="input-wrapper">
-                    <input type="text" id="TELEFONE" name="TELEFONE" data-field-type="Phone" placeholder="${component.props.phonePlaceholder || 'Telefone - Ex:(11) 9 9999-9999'}">
-                    <div class="error-message" id="error-telefone">Por favor, insira um número de telefone válido.</div>
-                  </div>
-                  <div class="input-wrapper">
-                    <input type="text" id="CPF" name="CPF" data-field-type="Text" placeholder="${component.props.cpfPlaceholder || 'CPF'}" required="">
-                     <div class="error-message" id="error-cpf">Por favor, insira seu CPF.</div>
-                  </div>
+                  ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone) : ''}
+                  ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf) : ''}
+                </div>
+                 <div class="row">
+                  ${fields.city ? renderField('city', 'CIDADE', 'text', 'Text', placeholders.city, false) : ''}
+                  ${fields.birthdate ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate, false) : ''}
                 </div>
            
-              
-                <div class="error-message" id="error-message">
-                    Por favor, insira um número de telefone válido no formato (11) 9 9999-9999.
-                </div>
-    
+                ${fields.optin ? `
                 <div class="consent">
                     <input type="checkbox" id="OPTIN" name="OPTIN" data-field-type="Boolean" required="required" data-validation-message="Por favor preencha este campo.">
                     <label for="OPTIN">
-                        ${component.props.consentText || 'Quero receber novidades e promoções da Natura...'}
+                        ${consentText || 'Quero receber novidades e promoções...'}
                     </label>
                   <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
                 </div>
+                ` : ''}
                 <div data-type="slot" data-key="qaiwdlu6h29"></div>
-                <button type="submit">${component.props.buttonText || 'Finalizar'}</button>
+                <button type="submit">${buttonText || 'Finalizar'}</button>
             </form>
         </div>
       `;
@@ -490,41 +503,28 @@ export const generateHtml = (pageState: CloudPage): string => {
 
     function validateForm() {
         let valid = true;
-        const fields = ['NOME', 'EMAIL', 'TELEFONE', 'CPF'];
-        fields.forEach(id => {
-            const input = document.getElementById(id);
-            const error = document.getElementById('error-' + id.toLowerCase());
-            if (!input || !error) return;
+        const form = document.getElementById('smartcapture-block-uttuiggngg');
+        const requiredInputs = form.querySelectorAll('input[required]');
 
+        requiredInputs.forEach(input => {
+            const error = document.getElementById('error-' + input.name.toLowerCase());
             let isInvalid = false;
-            if (id === 'EMAIL') {
+            
+            if(input.type === 'checkbox') {
+                isInvalid = !input.checked;
+            } else if (input.type === 'email') {
                 isInvalid = !input.value.includes('@');
-            } else if (id === 'TELEFONE') {
-                const phoneNumbers = input.value.replace(/\\D/g, '');
-                const phonePattern = /^119\\d{8}$/;
-                isInvalid = input.value.trim() === '' || !phonePattern.test(phoneNumbers)
             } else {
                 isInvalid = input.value.trim() === '';
             }
 
-            if (isInvalid) {
+            if (isInvalid && error) {
                 error.style.display = 'block';
                 valid = false;
-            } else {
+            } else if (error) {
                 error.style.display = 'none';
             }
         });
-
-        const consent = document.getElementById("OPTIN");
-        const consentError = document.getElementById("error-consent");
-        if (consent && consentError) {
-          if (!consent.checked) {
-              consentError.style.display = "block";
-              valid = false;
-          } else {
-              consentError.style.display = "none";
-          }
-        }
 
         if (!valid) return false;
         toggleButtonLoader(true);
@@ -555,17 +555,6 @@ export const generateHtml = (pageState: CloudPage): string => {
               emailWrapper.appendChild(emailInput);
             }
         }
-        
-        const inputsToWrap = ['NOME', 'TELEFONE', 'CPF'];
-        inputsToWrap.forEach(id => {
-            const input = document.getElementById(id);
-            if (input && !input.parentElement.classList.contains('input-wrapper')) {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'input-wrapper';
-                input.parentNode.insertBefore(wrapper, input);
-                wrapper.appendChild(input);
-            }
-        });
             
         const submitButton = document.querySelector('.form-container button');
         if (submitButton && !submitButton.querySelector('.button-loader')) {

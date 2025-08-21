@@ -11,13 +11,25 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
+  onSubPropChange: (prop: string, subProp: string, value: any) => void;
 }
 
-export function ComponentSettings({ component, onPropChange }: ComponentSettingsProps) {
+const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] = [
+    { id: 'name', label: 'Nome' },
+    { id: 'email', label: 'Email' },
+    { id: 'phone', label: 'Telefone' },
+    { id: 'cpf', label: 'CPF' },
+    { id: 'city', label: 'Cidades' },
+    { id: 'birthdate', label: 'Data de Nascimento' },
+];
+
+export function ComponentSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
   const renderSettings = () => {
     switch (component.type) {
       case "Header":
@@ -110,65 +122,75 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
       case "Form":
         return (
           <div className="space-y-4">
+             <div>
+                <Label className="font-semibold">Campos do Formulário</Label>
+                <div className="space-y-3 mt-2">
+                    {formFields.map((field) => (
+                        <div key={field.id} className="flex items-center justify-between">
+                            <Label htmlFor={`field-${field.id}`}>{field.label}</Label>
+                            <Switch
+                                id={`field-${field.id}`}
+                                checked={component.props.fields?.[field.id] || false}
+                                onCheckedChange={(checked) => onSubPropChange('fields', field.id, checked)}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <Separator />
+
+            <div>
+                <Label className="font-semibold">Placeholders dos Campos</Label>
+                <div className="space-y-3 mt-2">
+                    {formFields.filter(f => component.props.fields?.[f.id]).map((field) => (
+                         <div className="space-y-2" key={`placeholder-${field.id}`}>
+                            <Label htmlFor={`placeholder-${field.id}`}>{field.label}</Label>
+                            <Input
+                                id={`placeholder-${field.id}`}
+                                value={component.props.placeholders?.[field.id] || ''}
+                                onChange={(e) => onSubPropChange('placeholders', field.id, e.target.value)}
+                             />
+                        </div>
+                    ))}
+                </div>
+            </div>
+            
+            <Separator />
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="field-optin" className="font-semibold">Opt-in de Consentimento</Label>
+                <Switch
+                    id="field-optin"
+                    checked={component.props.fields?.optin || false}
+                    onCheckedChange={(checked) => onSubPropChange('fields', 'optin', checked)}
+                />
+              </div>
+              {component.props.fields?.optin && (
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="form-consent-text">Texto de Consentimento</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                      <TooltipContent><p>O texto legal para o consentimento do usuário. Suporta HTML.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    id="form-consent-text"
+                    value={component.props.consentText || ""}
+                    onChange={(e) => onPropChange("consentText", e.target.value)}
+                    rows={10}
+                  />
+                </div>
+              )}
+            </div>
+
+            <Separator />
+            
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-name-placeholder">Placeholder do Nome</Label>
-                 <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Texto de exemplo para o campo de nome.</p></TooltipContent>
-                  </Tooltip>
-              </div>
-              <Input
-                id="form-name-placeholder"
-                value={component.props.namePlaceholder || ""}
-                onChange={(e) => onPropChange("namePlaceholder", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-email-placeholder">Placeholder do Email</Label>
-                 <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Texto de exemplo para o campo de email.</p></TooltipContent>
-                  </Tooltip>
-              </div>
-              <Input
-                id="form-email-placeholder"
-                value={component.props.emailPlaceholder || ""}
-                onChange={(e) => onPropChange("emailPlaceholder", e.target.value)}
-              />
-            </div>
-             <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-phone-placeholder">Placeholder do Telefone</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Texto de exemplo para o campo de telefone.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input
-                id="form-phone-placeholder"
-                value={component.props.phonePlaceholder || ""}
-                onChange={(e) => onPropChange("phonePlaceholder", e.target.value)}
-              />
-            </div>
-             <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-cpf-placeholder">Placeholder do CPF</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Texto de exemplo para o campo de CPF.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input
-                id="form-cpf-placeholder"
-                value={component.props.cpfPlaceholder || ""}
-                onChange={(e) => onPropChange("cpfPlaceholder", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-button-text">Texto do Botão</Label>
+                <Label htmlFor="form-button-text" className="font-semibold">Texto do Botão de Envio</Label>
                 <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
                   <TooltipContent><p>Texto exibido no botão de envio do formulário.</p></TooltipContent>
@@ -178,21 +200,6 @@ export function ComponentSettings({ component, onPropChange }: ComponentSettings
                 id="form-button-text"
                 value={component.props.buttonText || ""}
                 onChange={(e) => onPropChange("buttonText", e.target.value)}
-              />
-            </div>
-             <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-consent-text">Texto de Consentimento</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>O texto legal para o consentimento do usuário. Suporta HTML.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Textarea
-                id="form-consent-text"
-                value={component.props.consentText || ""}
-                onChange={(e) => onPropChange("consentText", e.target.value)}
-                rows={10}
               />
             </div>
           </div>

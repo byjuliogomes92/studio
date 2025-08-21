@@ -61,10 +61,19 @@ export function SettingsPanel({
   };
 
   const addComponent = (type: ComponentType) => {
+    let props = {};
+    if (type === 'Form') {
+        props = {
+            fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
+            placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
+            consentText: 'Eu aceito os termos e condições.',
+            buttonText: 'Enviar'
+        };
+    }
     const newComponent: PageComponent = {
       id: Date.now().toString(),
       type,
-      props: {},
+      props,
     };
     setPageState((prev) => ({
       ...prev,
@@ -96,6 +105,26 @@ export function SettingsPanel({
       ...prev,
       components: prev.components.map((c) =>
         c.id === id ? { ...c, props: { ...c.props, [prop]: value } } : c
+      ),
+    }));
+  };
+
+   const handleSubPropChange = (id: string, prop: string, subProp: string, value: any) => {
+    setPageState((prev) => ({
+      ...prev,
+      components: prev.components.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              props: {
+                ...c.props,
+                [prop]: {
+                  ...c.props[prop],
+                  [subProp]: value,
+                },
+              },
+            }
+          : c
       ),
     }));
   };
@@ -157,7 +186,7 @@ export function SettingsPanel({
           <AccordionContent className="space-y-4 pt-2">
              {isClient && (
               <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="components">
+                <Droppable droppableId="components" isDropDisabled={!isClient}>
                   {(provided) => (
                     <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                       {pageState.components.map((c, index) => (
@@ -218,8 +247,9 @@ export function SettingsPanel({
             <AccordionTrigger>Configurações de {selectedComponent.type}</AccordionTrigger>
             <AccordionContent className="pt-2">
                 <ComponentSettings
-                component={selectedComponent}
-                onPropChange={(prop, value) => handlePropChange(selectedComponent.id, prop, value)}
+                    component={selectedComponent}
+                    onPropChange={(prop, value) => handlePropChange(selectedComponent.id, prop, value)}
+                    onSubPropChange={(prop, subProp, value) => handleSubPropChange(selectedComponent.id, prop, subProp, value)}
                 />
             </AccordionContent>
           </AccordionItem>
@@ -289,8 +319,7 @@ export function SettingsPanel({
             </div>
             <div className="space-y-2">
                <div className="flex items-center gap-1.5">
-                <Label>Chave da Data Extension</Label>
-                 <Tooltip>
+                <Label>Chave da Data Extension</Label>                 <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
                   <TooltipContent><p>A Chave Externa da Data Extension do Salesforce Marketing Cloud.</p></TooltipContent>
                 </Tooltip>

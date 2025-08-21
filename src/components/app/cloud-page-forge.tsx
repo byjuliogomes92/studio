@@ -90,11 +90,15 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
   useEffect(() => {
     const fetchPage = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
         if (pageId !== "new") {
           const pageData = await getPage(pageId);
-          if (pageData) {
+          if (pageData && pageData.userId === user.uid) {
             let needsUpdate = false;
             const updatedComponents = pageData.components.map((component: PageComponent) => {
               if (component.type === 'Form' && (!component.props.placeholders || !component.props.fields)) {
@@ -116,7 +120,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             setPageState(pageData);
             setPageName(pageData.name);
           } else {
-            toast({ variant: "destructive", title: "Erro", description: "Página não encontrada." });
+            toast({ variant: "destructive", title: "Erro", description: "Página não encontrada ou acesso negado." });
             router.push('/');
           }
         } else {
@@ -129,7 +133,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           const newPage: CloudPage = {
             ...initialPage,
             id: '',
-            userId: user?.uid || "anonymous",
+            userId: user.uid,
             projectId,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -197,14 +201,13 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   }, [pageState?.meta.title]);
 
   const handleSave = async () => {
-    if (!pageState) return;
+    if (!pageState || !user) return;
     setIsSaving(true);
     
-    // Make sure userId is set, even if it's a mock one
     const finalPageState = { 
         ...pageState, 
         name: pageName,
-        userId: pageState.userId || user?.uid || "anonymous"
+        userId: user.uid,
     };
 
     try {
@@ -273,5 +276,3 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     </div>
   );
 }
-
-    

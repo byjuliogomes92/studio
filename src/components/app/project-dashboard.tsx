@@ -43,13 +43,15 @@ export function ProjectDashboard() {
   const [newProjectName, setNewProjectName] = useState("");
 
   useEffect(() => {
-    // A mock user ID for when auth is disabled.
-    const mockUserId = "anonymous";
+    if (!user) {
+        // Não busca dados se o usuário não estiver logado.
+        // O AuthProvider cuidará do redirecionamento.
+        setIsLoading(false);
+        return;
+    };
     setIsLoading(true);
-    // Use a mock user ID if auth is disabled, otherwise use the real user's UID
-    const userIdToFetch = user?.uid || mockUserId;
 
-    getProjectsForUser(userIdToFetch)
+    getProjectsForUser(user.uid)
         .then(({ projects, pages }) => {
             setProjects(projects);
             setPages(pages);
@@ -66,9 +68,12 @@ export function ProjectDashboard() {
       toast({ variant: "destructive", title: "Erro", description: "O nome do projeto não pode ser vazio." });
       return;
     }
-     const userId = user?.uid || "anonymous";
+     if (!user) {
+        toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado para criar um projeto." });
+        return;
+    }
     try {
-        const newProject = await addProject(newProjectName, userId);
+        const newProject = await addProject(newProjectName, user.uid);
         setProjects(prev => [...prev, newProject]);
         setNewProjectName("");
         setIsModalOpen(false);

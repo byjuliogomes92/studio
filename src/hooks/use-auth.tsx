@@ -4,7 +4,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { getAuth, onAuthStateChanged, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { Logo } from '@/components/icons';
 
 interface AuthContextType {
   user: User | null;
@@ -16,11 +17,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const publicRoutes = ['/login', '/signup'];
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const auth = getAuth(app);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -29,6 +33,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     return () => unsubscribe();
   }, [auth]);
+
+  useEffect(() => {
+    if (!loading && !user && !publicRoutes.includes(pathname)) {
+      router.push('/login');
+    }
+  }, [loading, user, router, pathname]);
 
   const logout = async () => {
     await signOut(auth);
@@ -42,6 +52,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup: (email, password) => createUserWithEmailAndPassword(auth, email, password),
     logout,
   };
+
+  if (loading && !publicRoutes.includes(pathname)) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Logo className="h-10 w-10 animate-spin text-primary" />
+        </div>
+      );
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

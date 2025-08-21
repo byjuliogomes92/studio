@@ -35,17 +35,20 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
     const fetchData = async () => {
       setIsLoading(true);
       try {
         const currentProject = await getProject(projectId);
-        // Temporarily allow access without user check
-        if (currentProject) {
+        if (currentProject && currentProject.userId === user.uid) {
           setProject(currentProject);
           const projectPages = await getPagesForProject(projectId);
           setPages(projectPages);
         } else {
-          toast({ variant: 'destructive', title: 'Erro', description: 'Projeto não encontrado.' });
+          toast({ variant: 'destructive', title: 'Erro', description: 'Projeto não encontrado ou acesso negado.' });
           router.push('/');
         }
       } catch (error) {
@@ -57,7 +60,7 @@ export function PageList({ projectId }: PageListProps) {
       }
     };
     fetchData();
-  }, [projectId, router, toast]);
+  }, [projectId, router, user, toast]);
 
   const handleCreatePage = () => {
     router.push(`/editor/new?projectId=${projectId}`);

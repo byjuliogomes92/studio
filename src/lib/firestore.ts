@@ -11,11 +11,16 @@ export const addProject = async (name: string, userId: string): Promise<Project>
         userId,
         createdAt: serverTimestamp(),
     });
-    return { id: projectRef.id, name, userId, createdAt: new Date() };
+    const newProjectDoc = await getDoc(projectRef);
+    return { id: newProjectDoc.id, ...newProjectDoc.data() } as Project;
 };
 
+export const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {
+    await updateDoc(doc(db, "projects", projectId), data);
+}
+
 export const getProjectsForUser = async (userId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
-    const projectsQuery = query(collection(db, "projects"), where("userId", "==", userId), orderBy("createdAt", "desc"));
+    const projectsQuery = query(collection(db, "projects"), where("userId", "==", userId));
     const pagesQuery = query(collection(db, "pages"), where("userId", "==", userId));
 
     const projectSnapshot = await getDocs(projectsQuery);
@@ -42,11 +47,12 @@ export const deleteProject = async (projectId: string): Promise<void> => {
 // Pages
 
 export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-    const pageRef = await addDoc(collection(db, "pages"), {
-        ...pageData,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    });
+    const pageWithTimestamps = {
+      ...pageData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    const pageRef = await addDoc(collection(db, "pages"), pageWithTimestamps);
     return pageRef.id;
 };
 
@@ -60,7 +66,16 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
 export const getPage = async (pageId: string): Promise<CloudPage | null> => {
     const docRef = doc(db, "pages", pageId);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as CloudPage : null;
+    if (!docSnap.exists()) return null;
+    const data = docSnap.data();
+    // Ensure timestamps are converted correctly, especially after being written by serverTimestamp
+    const page = {
+        id: docSnap.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+    } as CloudPage;
+    return page;
 };
 
 export const getPagesForProject = async (projectId: string): Promise<CloudPage[]> => {

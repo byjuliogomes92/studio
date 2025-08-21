@@ -65,35 +65,59 @@ export function CloudPageForge() {
   }, [pageState, isMounted]);
 
   useEffect(() => {
-    const headerIndex = pageState.components.findIndex(c => c.type === 'Header');
-    if (headerIndex === -1) return;
-
-    const currentLogo = pageState.components[headerIndex].props.logoUrl;
     const title = pageState.meta.title.toLowerCase();
-    const avonLogo = 'https://gkpb.com.br/wp-content/uploads/2021/01/novo-logo-avon-png.png';
+    const isAvon = title.includes('avon');
+
+    // URLs for Natura
     const naturaLogo = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png';
-    
-    let newLogo = currentLogo;
+    const naturaFavicon = 'https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.natura.com.br/&size=64';
+    const naturaLoader = 'https://arcgis.natura.com.br/portal/sharing/rest/content/items/32111ed7537b474db26ed253c721117a/data';
 
-    if (title.includes('avon') && currentLogo !== avonLogo) {
-      newLogo = avonLogo;
-    } else if (!title.includes('avon') && currentLogo !== naturaLogo) {
-      newLogo = naturaLogo;
-    }
+    // URLs for Avon
+    const avonLogo = 'https://gkpb.com.br/wp-content/uploads/2021/01/novo-logo-avon-png.png';
+    const avonFavicon = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
+    const avonLoader = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
 
-    if (newLogo !== currentLogo) {
-        setPageState(prev => {
-            const newComponents = [...prev.components];
-            newComponents[headerIndex] = {
-                ...newComponents[headerIndex],
-                props: {
-                    ...newComponents[headerIndex].props,
-                    logoUrl: newLogo
-                }
+    setPageState(prev => {
+        const headerIndex = prev.components.findIndex(c => c.type === 'Header');
+        let needsUpdate = false;
+        
+        const newLogo = isAvon ? avonLogo : naturaLogo;
+        const newFavicon = isAvon ? avonFavicon : naturaFavicon;
+        const newLoader = isAvon ? avonLoader : naturaLoader;
+
+        const newState = {...prev};
+
+        // Check and update meta
+        if (prev.meta.faviconUrl !== newFavicon || prev.meta.loaderImageUrl !== newLoader) {
+            needsUpdate = true;
+            newState.meta = {
+                ...prev.meta,
+                faviconUrl: newFavicon,
+                loaderImageUrl: newLoader,
             };
-            return {...prev, components: newComponents};
-        });
-    }
+        }
+        
+        // Check and update logo in header component
+        if (headerIndex !== -1) {
+            const currentLogo = prev.components[headerIndex].props.logoUrl;
+            if (currentLogo !== newLogo) {
+                needsUpdate = true;
+                const newComponents = [...prev.components];
+                newComponents[headerIndex] = {
+                    ...newComponents[headerIndex],
+                    props: {
+                        ...newComponents[headerIndex].props,
+                        logoUrl: newLogo
+                    }
+                };
+                newState.components = newComponents;
+            }
+        }
+        
+        return needsUpdate ? newState : prev;
+    });
+
   }, [pageState.meta.title]);
 
   if (!isMounted) {
@@ -124,5 +148,3 @@ export function CloudPageForge() {
     </div>
   );
 }
-
-    

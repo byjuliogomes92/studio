@@ -24,6 +24,8 @@ export interface CloudPage {
     loaderImageUrl: string;
     redirectUrl: string;
     dataExtensionKey: string;
+    metaDescription: string;
+    metaKeywords: string;
   };
 }
 

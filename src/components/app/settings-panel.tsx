@@ -29,6 +29,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Textarea } from "../ui/textarea";
 
 
 interface SettingsPanelProps {
@@ -224,17 +225,37 @@ export function SettingsPanel({
           </AccordionItem>
         )}
          <AccordionItem value="meta">
-          <AccordionTrigger>Configurações da Página</AccordionTrigger>
+          <AccordionTrigger>Configurações e SEO</AccordionTrigger>
           <AccordionContent className="space-y-4 pt-2">
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
                 <Label>Título da Página</Label>
                 <Tooltip>
                   <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>O título que aparece na aba do navegador.</p></TooltipContent>
+                  <TooltipContent><p>O título que aparece na aba do navegador (tag &lt;title&gt;).</p></TooltipContent>
                 </Tooltip>
               </div>
               <Input value={pageState.meta.title} onChange={(e) => handleMetaChange('title', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Label>Meta Descrição</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>Um resumo conciso do conteúdo da página para os motores de busca.</p></TooltipContent>
+                </Tooltip>
+              </div>
+              <Textarea value={pageState.meta.metaDescription} onChange={(e) => handleMetaChange('metaDescription', e.target.value)} rows={3} />
+            </div>
+             <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Label>Meta Palavras-chave</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>Palavras-chave relevantes para a página, separadas por vírgulas.</p></TooltipContent>
+                </Tooltip>
+              </div>
+              <Input value={pageState.meta.metaKeywords} onChange={(e) => handleMetaChange('metaKeywords', e.target.value)} />
             </div>
              <div className="space-y-2">
                <div className="flex items-center gap-1.5">

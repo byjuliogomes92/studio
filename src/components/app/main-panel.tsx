@@ -81,13 +81,13 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
         </div>
       </div>
       <div className="flex-grow overflow-auto">
-        <TabsContent value="preview" className="w-full h-full m-0 p-4">
-           <div className="h-full w-full flex items-center justify-center">
+        <TabsContent value="preview" className="w-full h-full m-0">
+           <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
              <iframe
                 srcDoc={htmlCode}
                 title="Cloud Page Preview"
                 className={cn(
-                    "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out",
+                    "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
                     previewMode === 'desktop' ? 'w-full h-full' : 'w-[375px] h-[667px]'
                 )}
              />

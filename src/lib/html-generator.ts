@@ -1,3 +1,4 @@
+
 import type { CloudPage, PageComponent } from './types';
 
 const renderComponent = (component: PageComponent): string => {
@@ -228,7 +229,8 @@ export const generateHtml = (pageState: CloudPage): string => {
 
     .banner img {
         width: 100%;
-        height: auto;
+        height: 100%;
+        object-fit: cover;
     }
 
     .form-container {
@@ -592,3 +594,5 @@ export const generateHtml = (pageState: CloudPage): string => {
 </body>
 </html>`.trim();
 };
+
+    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,7 +22,7 @@ const initialPage: CloudPage = {
     themeColorHover: '#B3003B',
   },
   components: [
-    { id: '1', type: 'Header', props: { logoUrl: 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png' } },
+    { id: '1', type: 'Header', props: { logoUrl: 'https://gkpb.com.br/wp-content/uploads/2021/01/novo-logo-avon-png.png' } },
     { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },
     { 
       id: '3', 
@@ -63,6 +64,38 @@ export function CloudPageForge() {
     }
   }, [pageState, isMounted]);
 
+  useEffect(() => {
+    const headerIndex = pageState.components.findIndex(c => c.type === 'Header');
+    if (headerIndex === -1) return;
+
+    const currentLogo = pageState.components[headerIndex].props.logoUrl;
+    const title = pageState.meta.title.toLowerCase();
+    const avonLogo = 'https://gkpb.com.br/wp-content/uploads/2021/01/novo-logo-avon-png.png';
+    const naturaLogo = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png';
+    
+    let newLogo = currentLogo;
+
+    if (title.includes('avon') && currentLogo !== avonLogo) {
+      newLogo = avonLogo;
+    } else if (!title.includes('avon') && currentLogo !== naturaLogo) {
+      newLogo = naturaLogo;
+    }
+
+    if (newLogo !== currentLogo) {
+        setPageState(prev => {
+            const newComponents = [...prev.components];
+            newComponents[headerIndex] = {
+                ...newComponents[headerIndex],
+                props: {
+                    ...newComponents[headerIndex].props,
+                    logoUrl: newLogo
+                }
+            };
+            return {...prev, components: newComponents};
+        });
+    }
+  }, [pageState.meta.title]);
+
   if (!isMounted) {
     return null; // or a loading spinner
   }
@@ -91,3 +124,5 @@ export function CloudPageForge() {
     </div>
   );
 }
+
+    

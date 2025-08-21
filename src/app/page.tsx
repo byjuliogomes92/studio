@@ -1,9 +1,9 @@
-import { CloudPageForge } from "@/components/app/cloud-page-forge";
+import { ProjectDashboard } from "@/components/app/project-dashboard";
 
 export default function Home() {
   return (
-    <main>
-      <CloudPageForge />
+    <main className="bg-muted/40">
+      <ProjectDashboard />
     </main>
   );
 }

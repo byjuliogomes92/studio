@@ -1,7 +1,10 @@
+
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
 import type { CloudPage, ComponentType, PageComponent } from "@/lib/types";
+import React, { useEffect, useState } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import {
   Accordion,
   AccordionContent,
@@ -18,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SettingsPanelProps {
@@ -34,6 +37,12 @@ export function SettingsPanel({
   selectedComponentId,
   setSelectedComponentId,
 }: SettingsPanelProps) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const handleStyleChange = (prop: keyof CloudPage["styles"], value: string) => {
     setPageState((prev) => ({ ...prev, styles: { ...prev.styles, [prop]: value } }));
@@ -66,18 +75,13 @@ export function SettingsPanel({
     }
   };
   
-  const moveComponent = (id: string, direction: 'up' | 'down') => {
-    const index = pageState.components.findIndex(c => c.id === id);
-    if (index === -1) return;
-
-    const newComponents = [...pageState.components];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (targetIndex < 0 || targetIndex >= newComponents.length) return;
-
-    [newComponents[index], newComponents[targetIndex]] = [newComponents[targetIndex], newComponents[index]];
-    setPageState(prev => ({...prev, components: newComponents}));
-  }
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const items = Array.from(pageState.components);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setPageState(prev => ({...prev, components: items}));
+  };
 
   const handlePropChange = (id: string, prop: string, value: any) => {
     setPageState((prev) => ({
@@ -89,6 +93,54 @@ export function SettingsPanel({
   };
 
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
+
+  const renderComponentList = () => {
+    if (!isClient) {
+      return null;
+    }
+
+    return (
+       <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="components">
+          {(provided) => (
+            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+              {pageState.components.map((c, index) => (
+                <Draggable key={c.id} draggableId={c.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className="flex items-center gap-2 group"
+                    >
+                       <div {...provided.dragHandleProps}>
+                         <GripVertical className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <Button
+                        variant={selectedComponentId === c.id ? "secondary" : "ghost"}
+                        className="flex-grow justify-start"
+                        onClick={() => setSelectedComponentId(c.id)}
+                      >
+                        {c.type}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive/80 hover:text-destructive"
+                        onClick={() => removeComponent(c.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    );
+  }
 
   return (
     <ScrollArea className="h-full">
@@ -118,29 +170,7 @@ export function SettingsPanel({
         <AccordionItem value="components">
           <AccordionTrigger>Components</AccordionTrigger>
           <AccordionContent className="space-y-4 pt-2">
-            <div className="space-y-2">
-                {pageState.components.map((c, index) => (
-                    <div key={c.id} className="flex items-center gap-2 group">
-                        <GripVertical className="h-5 w-5 text-muted-foreground" />
-                        <Button
-                            variant={selectedComponentId === c.id ? "secondary" : "ghost"}
-                            className="flex-grow justify-start"
-                            onClick={() => setSelectedComponentId(c.id)}
-                        >
-                            {c.type}
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveComponent(c.id, 'up')} disabled={index === 0}>
-                            <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveComponent(c.id, 'down')} disabled={index === pageState.components.length - 1}>
-                            <ArrowDown className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/80 hover:text-destructive" onClick={() => removeComponent(c.id)}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </div>
-                ))}
-            </div>
+            {renderComponentList()}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full">

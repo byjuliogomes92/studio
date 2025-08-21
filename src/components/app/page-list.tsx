@@ -1,0 +1,143 @@
+
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import type { Project, CloudPage } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, FileText, Plus, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Logo } from "@/components/icons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+interface PageListProps {
+  projectId: string;
+}
+
+export function PageList({ projectId }: PageListProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [project, setProject] = useState<Project | null>(null);
+  const [pages, setPages] = useState<CloudPage[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const storedProjects: Project[] = JSON.parse(localStorage.getItem("cloudProjects") || "[]");
+    const storedPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
+
+    const currentProject = storedProjects.find(p => p.id === projectId);
+    if (currentProject) {
+      setProject(currentProject);
+      setPages(storedPages.filter(page => page.projectId === projectId));
+    } else {
+      router.push('/');
+    }
+  }, [projectId, router]);
+
+  const handleCreatePage = () => {
+    router.push(`/editor/new?projectId=${projectId}`);
+  };
+
+  const deletePage = (pageId: string) => {
+    const updatedPages = pages.filter(p => p.id !== pageId);
+    const allPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
+    const newAllPages = allPages.filter(p => p.id !== pageId);
+    
+    setPages(updatedPages);
+    localStorage.setItem("cloudPages", JSON.stringify(newAllPages));
+    toast({ title: "Página excluída!" });
+  }
+
+  if (!isMounted || !project) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Logo className="h-10 w-10 animate-pulse text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
+        <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => router.push('/')}>
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2 font-semibold text-lg">
+                <h1 className="text-muted-foreground">Projetos /</h1>
+                <h1>{project.name}</h1>
+            </div>
+        </div>
+        <Button onClick={handleCreatePage}>
+          <Plus className="mr-2 h-4 w-4" /> Criar Página
+        </Button>
+      </header>
+
+      <main className="p-6">
+        {pages.length === 0 ? (
+          <div className="text-center py-16">
+            <FileText size={48} className="mx-auto text-muted-foreground" />
+            <h2 className="mt-4 text-xl font-semibold">Nenhuma página encontrada</h2>
+            <p className="mt-2 text-muted-foreground">Comece criando a primeira página para este projeto.</p>
+            <Button onClick={handleCreatePage} className="mt-6">
+              <Plus className="mr-2 h-4 w-4" /> Criar Página
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {pages.map((page) => (
+              <div
+                key={page.id}
+                className="group relative bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/editor/${page.id}`)}
+              >
+                 <div className="flex items-start justify-between">
+                    <FileText className="h-10 w-10 text-primary" />
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá permanentemente a página.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={(e) => {e.stopPropagation(); deletePage(page.id)}}>Excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+                <h3 className="mt-4 font-semibold">{page.name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Editado em: {new Date(page.id).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

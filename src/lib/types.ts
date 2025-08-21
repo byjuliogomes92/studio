@@ -7,6 +7,9 @@ export interface PageComponent {
 }
 
 export interface CloudPage {
+  id: string;
+  name: string;
+  projectId: string | null;
   styles: {
     backgroundColor: string;
     backgroundImage: string;
@@ -20,4 +23,10 @@ export interface CloudPage {
     loaderImageUrl: string;
     redirectUrl: string;
   };
+}
+
+export interface Project {
+    id: string;
+    name: string;
+    createdAt: string;
 }

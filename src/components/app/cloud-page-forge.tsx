@@ -2,13 +2,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { CloudPage } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Save } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const initialPage: CloudPage = {
+  id: "new",
+  name: "Nova CloudPage",
+  projectId: null,
   meta: {
     title: 'Avon - Cadastro',
     faviconUrl: 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png',
@@ -48,15 +67,40 @@ const initialPage: CloudPage = {
   ],
 };
 
-export function CloudPageForge() {
+interface CloudPageForgeProps {
+  pageId: string;
+}
+
+export function CloudPageForge({ pageId }: CloudPageForgeProps) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
   const [pageState, setPageState] = useState<CloudPage>(initialPage);
   const [htmlCode, setHtmlCode] = useState("");
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  const [isSaveAlertOpen, setIsSaveAlertOpen] = useState(false);
+  const [pageName, setPageName] = useState(initialPage.name);
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    if (pageId !== "new") {
+      const storedPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
+      const pageToLoad = storedPages.find(p => p.id === pageId);
+      if (pageToLoad) {
+        setPageState(pageToLoad);
+        setPageName(pageToLoad.name);
+      } else {
+        router.push('/');
+      }
+    } else {
+        const projectId = new URLSearchParams(window.location.search).get('projectId');
+        if (!projectId) {
+          router.push('/');
+          return;
+        }
+        setPageState(prev => ({...prev, projectId}));
+    }
+  }, [pageId, router]);
   
   useEffect(() => {
     if(isMounted) {
@@ -68,12 +112,10 @@ export function CloudPageForge() {
     const title = pageState.meta.title.toLowerCase();
     const isAvon = title.includes('avon');
 
-    // URLs for Natura
     const naturaLogo = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png';
     const naturaFavicon = 'https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.natura.com.br/&size=64';
     const naturaLoader = 'https://arcgis.natura.com.br/portal/sharing/rest/content/items/32111ed7537b474db26ed253c721117a/data';
 
-    // URLs for Avon
     const avonLogo = 'https://gkpb.com.br/wp-content/uploads/2021/01/novo-logo-avon-png.png';
     const avonFavicon = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
     const avonLoader = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
@@ -86,33 +128,17 @@ export function CloudPageForge() {
         const newFavicon = isAvon ? avonFavicon : naturaFavicon;
         const newLoader = isAvon ? avonLoader : naturaLoader;
 
-        const newState = {...prev};
+        const newState = JSON.parse(JSON.stringify(prev));
 
-        // Check and update meta
         if (prev.meta.faviconUrl !== newFavicon || prev.meta.loaderImageUrl !== newLoader) {
             needsUpdate = true;
-            newState.meta = {
-                ...prev.meta,
-                faviconUrl: newFavicon,
-                loaderImageUrl: newLoader,
-            };
+            newState.meta.faviconUrl = newFavicon;
+            newState.meta.loaderImageUrl = newLoader;
         }
         
-        // Check and update logo in header component
-        if (headerIndex !== -1) {
-            const currentLogo = prev.components[headerIndex].props.logoUrl;
-            if (currentLogo !== newLogo) {
-                needsUpdate = true;
-                const newComponents = [...prev.components];
-                newComponents[headerIndex] = {
-                    ...newComponents[headerIndex],
-                    props: {
-                        ...newComponents[headerIndex].props,
-                        logoUrl: newLogo
-                    }
-                };
-                newState.components = newComponents;
-            }
+        if (headerIndex !== -1 && newState.components[headerIndex].props.logoUrl !== newLogo) {
+            needsUpdate = true;
+            newState.components[headerIndex].props.logoUrl = newLogo;
         }
         
         return needsUpdate ? newState : prev;
@@ -120,17 +146,65 @@ export function CloudPageForge() {
 
   }, [pageState.meta.title]);
 
-  if (!isMounted) {
-    return null; // or a loading spinner
+  const handleSave = () => {
+    if (pageId === "new") {
+      setIsSaveAlertOpen(true);
+    } else {
+      savePage(pageState.name);
+    }
+  };
+
+  const savePage = (name: string) => {
+    const storedPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
+    const newPage = { ...pageState, name, id: pageId === "new" ? Date.now().toString() : pageId };
+    
+    let updatedPages;
+    if (pageId === "new") {
+        updatedPages = [...storedPages, newPage];
+    } else {
+        updatedPages = storedPages.map(p => p.id === pageId ? newPage : p);
+    }
+
+    localStorage.setItem("cloudPages", JSON.stringify(updatedPages));
+    toast({ title: "Página salva!", description: `A página "${name}" foi salva com sucesso.` });
+
+    if (pageId === "new") {
+        router.push(`/editor/${newPage.id}`);
+    }
+  };
+
+  const handleConfirmSave = () => {
+    if (pageName.trim() === "") {
+        toast({variant: "destructive", title: "Erro", description: "O nome da página não pode ser vazio."});
+        return;
+    }
+    savePage(pageName);
+    setIsSaveAlertOpen(false);
+  }
+
+  if (!isMounted || !pageState.projectId) {
+    return (
+       <div className="flex h-screen w-full items-center justify-center">
+            <Logo className="h-10 w-10 animate-pulse text-primary" />
+       </div>
+    );
   }
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="flex items-center h-14 px-4 border-b flex-shrink-0">
-        <div className="flex items-center gap-2 font-semibold">
-          <Logo className="h-6 w-6 text-primary" />
-          <h1>Cloud Page Forge</h1>
+      <header className="flex items-center justify-between h-14 px-4 border-b flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => router.push(`/project/${pageState.projectId}`)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center gap-2 font-semibold">
+            <Logo className="h-6 w-6 text-primary" />
+            <h1>Cloud Page Forge</h1>
+          </div>
         </div>
+        <Button onClick={handleSave}>
+            <Save className="mr-2 h-4 w-4" /> Salvar Página
+        </Button>
       </header>
       <div className="flex flex-grow overflow-hidden">
         <aside className="w-[380px] border-r flex-shrink-0 bg-card/20">
@@ -145,6 +219,30 @@ export function CloudPageForge() {
           <MainPanel htmlCode={htmlCode} />
         </main>
       </div>
+       <AlertDialog open={isSaveAlertOpen} onOpenChange={setIsSaveAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Salvar Nova CloudPage</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dê um nome para a sua nova página para salvá-la.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="page-name">Nome da Página</Label>
+            <Input 
+              id="page-name"
+              value={pageName}
+              onChange={(e) => setPageName(e.target.value)}
+              className="mt-2"
+              placeholder="Ex: Campanha Dia das Mães"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSave}>Salvar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

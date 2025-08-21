@@ -33,14 +33,11 @@ export function PageList({ projectId }: PageListProps) {
   const [project, setProject] = useState<Project | null>(null);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [pageToDelete, setPageToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) {
-         setIsLoading(false);
-         router.push('/login');
-         return;
-      }
+      if (!user) return; // Wait for user to be available
 
       setIsLoading(true);
       try {
@@ -62,9 +59,14 @@ export function PageList({ projectId }: PageListProps) {
     };
 
     if (!authLoading) {
+      if(user) {
         fetchData();
+      } else {
+        setIsLoading(false);
+        router.push('/login');
+      }
     }
-  }, [projectId, router, user, toast, authLoading]);
+  }, [projectId, user, authLoading, toast, router]);
 
   const handleCreatePage = () => {
     router.push(`/editor/new?projectId=${projectId}`);
@@ -77,6 +79,8 @@ export function PageList({ projectId }: PageListProps) {
       toast({ title: "Página excluída!" });
     } catch (error) {
       toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a página." });
+    } finally {
+      setPageToDelete(null);
     }
   }
 
@@ -153,7 +157,7 @@ export function PageList({ projectId }: PageListProps) {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. Isso excluirá permanentemente a página.
+                          Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -165,7 +169,7 @@ export function PageList({ projectId }: PageListProps) {
                 </div>
                 <h3 className="mt-4 font-semibold">{page.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {page.updatedAt && page.updatedAt.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : ''}
+                  {page.updatedAt?.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : 'Recém-criado'}
                 </p>
               </div>
             ))}

@@ -104,25 +104,25 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       let pageToLoad = storedPages.find(p => p.id === pageId);
       if (pageToLoad) {
         
-        // Ensure form components have placeholders
         let needsUpdate = false;
         const updatedComponents = pageToLoad.components.map((component: PageComponent) => {
-          if (component.type === 'Form' && !component.props.placeholders) {
+          if (component.type === 'Form' && (!component.props.placeholders || !component.props.fields)) {
             needsUpdate = true;
-            return {
-              ...component,
-              props: {
-                ...component.props,
-                placeholders: { 
+            const newProps = {...component.props};
+            if (!newProps.fields) {
+              newProps.fields = { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true };
+            }
+            if (!newProps.placeholders) {
+               newProps.placeholders = { 
                     name: 'Nome', 
                     email: 'Email', 
                     phone: 'Telefone - Ex:(11) 9 9999-9999', 
                     cpf: 'CPF', 
                     city: 'Cidade', 
                     birthdate: 'Data de Nascimento' 
-                },
-              }
-            };
+                };
+            }
+            return { ...component, props: newProps };
           }
           return component;
         });

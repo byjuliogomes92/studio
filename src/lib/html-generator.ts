@@ -37,21 +37,21 @@ const renderComponent = (component: PageComponent): string => {
             <img src="${component.props.imageUrl || 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png'}" alt="Banner">
         </div>`;
     case 'Form':
-      const { fields, placeholders, consentText, buttonText } = component.props;
+      const { fields = {}, placeholders = {}, consentText, buttonText } = component.props;
       const formHtml = `
         <div class="form-container">
             <form id="smartcapture-block-uttuiggngg" novalidate="novalidate" onsubmit="return validateForm()">
                 <div class="row">
-                  ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name) : ''}
-                  ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email) : ''}
+                  ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
+                  ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email') : ''}
                 </div>
                 <div class="row">
-                  ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone) : ''}
-                  ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf) : ''}
+                  ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone') : ''}
+                  ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF') : ''}
                 </div>
                  <div class="row">
-                  ${fields.city ? renderField('city', 'CIDADE', 'text', 'Text', placeholders.city, false) : ''}
-                  ${fields.birthdate ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate, false) : ''}
+                  ${fields.city ? renderField('city', 'CIDADE', 'text', 'Text', placeholders.city || 'Cidade', false) : ''}
+                  ${fields.birthdate ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', false) : ''}
                 </div>
            
                 ${fields.optin ? `

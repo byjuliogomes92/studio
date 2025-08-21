@@ -5,7 +5,7 @@ import type { Project, CloudPage } from "./types";
 
 // Projects
 
-export const addProject = async (name: string, userId: string): Promise<Project> => {
+const addProject = async (name: string, userId: string): Promise<Project> => {
     const projectRef = await addDoc(collection(db, "projects"), {
         name,
         userId,
@@ -15,11 +15,11 @@ export const addProject = async (name: string, userId: string): Promise<Project>
     return { id: newProjectDoc.id, ...newProjectDoc.data() } as Project;
 };
 
-export const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {
+const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {
     await updateDoc(doc(db, "projects", projectId), data);
 }
 
-export const getProjectsForUser = async (userId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
+const getProjectsForUser = async (userId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
     const projectsQuery = query(collection(db, "projects"), where("userId", "==", userId));
     const pagesQuery = query(collection(db, "pages"), where("userId", "==", userId));
 
@@ -32,21 +32,21 @@ export const getProjectsForUser = async (userId: string): Promise<{ projects: Pr
     return { projects, pages };
 };
 
-export const getProject = async (projectId: string): Promise<Project | null> => {
+const getProject = async (projectId: string): Promise<Project | null> => {
     const docRef = doc(db, "projects", projectId);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Project : null;
 };
 
 
-export const deleteProject = async (projectId: string): Promise<void> => {
+const deleteProject = async (projectId: string): Promise<void> => {
     await deleteDoc(doc(db, "projects", projectId));
 };
 
 
 // Pages
 
-export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     const pageWithTimestamps = {
       ...pageData,
       createdAt: serverTimestamp(),
@@ -56,14 +56,14 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
     return pageRef.id;
 };
 
-export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
+const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     await updateDoc(doc(db, "pages", pageId), {
         ...pageData,
         updatedAt: serverTimestamp(),
     });
 };
 
-export const getPage = async (pageId: string): Promise<CloudPage | null> => {
+const getPage = async (pageId: string): Promise<CloudPage | null> => {
     const docRef = doc(db, "pages", pageId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return null;
@@ -78,13 +78,13 @@ export const getPage = async (pageId: string): Promise<CloudPage | null> => {
     return page;
 };
 
-export const getPagesForProject = async (projectId: string): Promise<CloudPage[]> => {
+const getPagesForProject = async (projectId: string): Promise<CloudPage[]> => {
     const q = query(collection(db, "pages"), where("projectId", "==", projectId), orderBy("updatedAt", "desc"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
 };
 
-export const getProjectWithPages = async (projectId: string, userId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
+const getProjectWithPages = async (projectId: string, userId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
     const projectRef = doc(db, 'projects', projectId);
     const projectDoc = await getDoc(projectRef);
 
@@ -108,6 +108,20 @@ export const getProjectWithPages = async (projectId: string, userId: string): Pr
 };
 
 
-export const deletePage = async (pageId: string): Promise<void> => {
+const deletePage = async (pageId: string): Promise<void> => {
     await deleteDoc(doc(db, "pages", pageId));
+};
+
+export {
+    addProject,
+    updateProject,
+    getProjectsForUser,
+    getProject,
+    deleteProject,
+    addPage,
+    updatePage,
+    getPage,
+    getPagesForProject,
+    getProjectWithPages,
+    deletePage
 };

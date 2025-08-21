@@ -10,7 +10,8 @@ export interface PageComponent {
 export interface CloudPage {
   id: string;
   name: string;
-  projectId: string | null;
+  projectId: string;
+  userId: string;
   styles: {
     backgroundColor: string;
     backgroundImage: string;
@@ -27,10 +28,13 @@ export interface CloudPage {
     metaDescription: string;
     metaKeywords: string;
   };
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface Project {
     id: string;
     name: string;
-    createdAt: string;
+    userId: string;
+    createdAt: any;
 }

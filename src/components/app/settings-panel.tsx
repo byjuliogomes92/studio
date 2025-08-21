@@ -31,12 +31,13 @@ import {
 } from "@/components/ui/tooltip";
 import { Textarea } from "../ui/textarea";
 
-
 interface SettingsPanelProps {
   pageState: CloudPage;
   setPageState: Dispatch<SetStateAction<CloudPage>>;
   selectedComponentId: string | null;
   setSelectedComponentId: Dispatch<SetStateAction<string | null>>;
+  pageName: string;
+  setPageName: Dispatch<SetStateAction<string>>;
 }
 
 export function SettingsPanel({
@@ -44,13 +45,14 @@ export function SettingsPanel({
   setPageState,
   selectedComponentId,
   setSelectedComponentId,
+  pageName,
+  setPageName,
 }: SettingsPanelProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
 
   const handleStyleChange = (prop: keyof CloudPage["styles"], value: string) => {
     setPageState((prev) => ({ ...prev, styles: { ...prev.styles, [prop]: value } }));
@@ -63,19 +65,19 @@ export function SettingsPanel({
   const addComponent = (type: ComponentType) => {
     let props: PageComponent['props'] = {};
     if (type === 'Form') {
-        props = {
-            fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
-            placeholders: { 
-                name: 'Nome', 
-                email: 'Email', 
-                phone: 'Telefone - Ex:(11) 9 9999-9999', 
-                cpf: 'CPF', 
-                city: 'Cidade', 
-                birthdate: 'Data de Nascimento' 
-            },
-            consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co, por meio do fornecimento dos meus dados para contato via telefone e/ou e-mail, inclusive por parte de Consultoras Natura. Sei que posso revogar meu consentimento e solicitar outros direitos como titular de dados neste <a target="_blank" href="https://privacyportal-br.onetrust.com/webform/00181faa-85e7-4785-848b-f12d02b3f614/6f7e1250-be9f-4b2c-8610-98afc44fb2c0">link</a>. Ao entrar no espaço, estou ciente que o ambiente está sendo filmado e, desde já, AUTORIZO a Natura Cosméticos S/A e todas as empresas do Grupo Natura, ou terceiro à sua ordem, a utilizar meus direitos de personalidade, tais como minha imagem, nome, depoimento e voz, nos materiais de comunicação utilizados pela NATURA&CO para veiculação e divulgação de conteúdo da Ativação TODODIA Cereja na mídia em geral, em todas as formas, e transmissão por qualquer meio de comunicação, pelo prazo de 10 (dez) anos. Entendo que o uso da minha imagem é uma condição para acessar o ambiente e as experiências imersivas nos espaços da Natura na Ativação TODODIA Cereja.`,
-            buttonText: 'Finalizar'
-        };
+      props = {
+        fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
+        placeholders: {
+          name: 'Nome',
+          email: 'Email',
+          phone: 'Telefone - Ex:(11) 9 9999-9999',
+          cpf: 'CPF',
+          city: 'Cidade',
+          birthdate: 'Data de Nascimento'
+        },
+        consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co, por meio do fornecimento dos meus dados para contato via telefone e/ou e-mail, inclusive por parte de Consultoras Natura. Sei que posso revogar meu consentimento e solicitar outros direitos como titular de dados neste <a target="_blank" href="https://privacyportal-br.onetrust.com/webform/00181faa-85e7-4785-848b-f12d02b3f614/6f7e1250-be9f-4b2c-8610-98afc44fb2c0">link</a>. Ao entrar no espaço, estou ciente que o ambiente está sendo filmado e, desde já, AUTORIZO a Natura Cosméticos S/A e todas as empresas do Grupo Natura, ou terceiro à sua ordem, a utilizar meus direitos de personalidade, tais como minha imagem, nome, depoimento e voz, nos materiais de comunicação utilizados pela NATURA&CO para veiculação e divulgação de conteúdo da Ativação TODODIA Cereja na mídia em geral, em todas as formas, e transmissão por qualquer meio de comunicação, pelo prazo de 10 (dez) anos. Entendo que o uso da minha imagem é uma condição para acessar o ambiente e as experiências imersivas nos espaços da Natura na Ativação TODODIA Cereja.`,
+        buttonText: 'Finalizar'
+      };
     }
     const newComponent: PageComponent = {
       id: Date.now().toString(),
@@ -98,13 +100,13 @@ export function SettingsPanel({
       setSelectedComponentId(null);
     }
   };
-  
+
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     const items = Array.from(pageState.components);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-    setPageState(prev => ({...prev, components: items}));
+    setPageState(prev => ({ ...prev, components: items }));
   };
 
   const handlePropChange = (id: string, prop: string, value: any) => {
@@ -116,21 +118,21 @@ export function SettingsPanel({
     }));
   };
 
-   const handleSubPropChange = (id: string, prop: string, subProp: string, value: any) => {
+  const handleSubPropChange = (id: string, prop: string, subProp: string, value: any) => {
     setPageState((prev) => ({
       ...prev,
       components: prev.components.map((c) =>
         c.id === id
           ? {
-              ...c,
-              props: {
-                ...c.props,
-                [prop]: {
-                  ...c.props[prop],
-                  [subProp]: value,
-                },
+            ...c,
+            props: {
+              ...c.props,
+              [prop]: {
+                ...c.props[prop],
+                [subProp]: value,
               },
-            }
+            },
+          }
           : c
       ),
     }));
@@ -140,204 +142,218 @@ export function SettingsPanel({
 
   return (
     <ScrollArea className="h-full">
-    <TooltipProvider>
-    <div className="p-4 space-y-6">
-      <Accordion type="multiple" className="w-full">
-        <AccordionItem value="styles">
-          <AccordionTrigger>Estilos Globais</AccordionTrigger>
-          <AccordionContent className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label>Cor de Fundo</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Selecione a cor de fundo principal da página.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input type="color" value={pageState.styles.backgroundColor} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="p-1"/>
-            </div>
-             <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label>URL da Imagem de Fundo</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Forneça uma URL para uma imagem de fundo.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input value={pageState.styles.backgroundImage} onChange={(e) => handleStyleChange('backgroundImage', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label>Cor do Tema</Label>
-                 <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Define a cor principal para botões e outros elementos.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input type="color" value={pageState.styles.themeColor} onChange={(e) => handleStyleChange('themeColor', e.target.value)} className="p-1"/>
-            </div>
-             <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label>Cor do Tema (Hover)</Label>
-                 <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>A cor dos botões quando o usuário passa o mouse sobre eles.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input type="color" value={pageState.styles.themeColorHover} onChange={(e) => handleStyleChange('themeColorHover', e.target.value)} className="p-1"/>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="components">
-          <AccordionTrigger>Componentes</AccordionTrigger>
-          <AccordionContent className="space-y-4 pt-2">
-             {isClient && (
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="components" isDropDisabled={!isClient}>
-                  {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                      {pageState.components.map((c, index) => (
-                        <Draggable key={c.id} draggableId={c.id} index={index}>
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className="flex items-center gap-2 group"
-                            >
-                              <div {...provided.dragHandleProps}>
-                                <GripVertical className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                              <Button
-                                variant={selectedComponentId === c.id ? "secondary" : "ghost"}
-                                className="flex-grow justify-start"
-                                onClick={() => setSelectedComponentId(c.id)}
-                              >
-                                {c.type}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive/80 hover:text-destructive"
-                                onClick={() => removeComponent(c.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full">
-                  <Plus className="mr-2 h-4 w-4" /> Adicionar Componente
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => addComponent("Header")}>Header</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addComponent("Banner")}>Banner</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addComponent("TextBlock")}>Bloco de Texto</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addComponent("Image")}>Imagem</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addComponent("Form")}>Formulário</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addComponent("Footer")}>Rodapé</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </AccordionContent>
-        </AccordionItem>
-         {selectedComponent && (
-          <AccordionItem value="component-settings">
-            <AccordionTrigger>Configurações de {selectedComponent.type}</AccordionTrigger>
-            <AccordionContent className="pt-2">
-                <ComponentSettings
+      <TooltipProvider>
+        <div className="p-4 space-y-6">
+          <Accordion type="multiple" defaultValue={['page-settings']} className="w-full">
+            <AccordionItem value="page-settings">
+              <AccordionTrigger>Configurações da Página</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="page-name">Nome da Página</Label>
+                  <Input
+                    id="page-name"
+                    value={pageName}
+                    onChange={(e) => setPageName(e.target.value)}
+                    placeholder="Ex: Campanha Dia das Mães"
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="styles">
+              <AccordionTrigger>Estilos Globais</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>Cor de Fundo</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>Selecione a cor de fundo principal da página.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input type="color" value={pageState.styles.backgroundColor} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="p-1" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>URL da Imagem de Fundo</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>Forneça uma URL para uma imagem de fundo.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input value={pageState.styles.backgroundImage} onChange={(e) => handleStyleChange('backgroundImage', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>Cor do Tema</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>Define a cor principal para botões e outros elementos.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input type="color" value={pageState.styles.themeColor} onChange={(e) => handleStyleChange('themeColor', e.target.value)} className="p-1" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>Cor do Tema (Hover)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>A cor dos botões quando o usuário passa o mouse sobre eles.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input type="color" value={pageState.styles.themeColorHover} onChange={(e) => handleStyleChange('themeColorHover', e.target.value)} className="p-1" />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="components">
+              <AccordionTrigger>Componentes</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                {isClient && (
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="components" isDropDisabled={!isClient}>
+                      {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                          {pageState.components.map((c, index) => (
+                            <Draggable key={c.id} draggableId={c.id} index={index}>
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className="flex items-center gap-2 group"
+                                >
+                                  <div {...provided.dragHandleProps}>
+                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                  <Button
+                                    variant={selectedComponentId === c.id ? "secondary" : "ghost"}
+                                    className="flex-grow justify-start"
+                                    onClick={() => setSelectedComponentId(c.id)}
+                                  >
+                                    {c.type}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive/80 hover:text-destructive"
+                                    onClick={() => removeComponent(c.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <Plus className="mr-2 h-4 w-4" /> Adicionar Componente
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => addComponent("Header")}>Header</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Banner")}>Banner</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("TextBlock")}>Bloco de Texto</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Image")}>Imagem</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Form")}>Formulário</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Footer")}>Rodapé</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </AccordionContent>
+            </AccordionItem>
+            {selectedComponent && (
+              <AccordionItem value="component-settings">
+                <AccordionTrigger>Configurações de {selectedComponent.type}</AccordionTrigger>
+                <AccordionContent className="pt-2">
+                  <ComponentSettings
                     component={selectedComponent}
                     onPropChange={(prop, value) => handlePropChange(selectedComponent.id, prop, value)}
                     onSubPropChange={(prop, subProp, value) => handleSubPropChange(selectedComponent.id, prop, subProp, value)}
-                />
-            </AccordionContent>
-          </AccordionItem>
-        )}
-         <AccordionItem value="meta">
-          <AccordionTrigger>Configurações e SEO</AccordionTrigger>
-          <AccordionContent className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label>Título da Página</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>O título que aparece na aba do navegador (tag &lt;title&gt;).</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input value={pageState.meta.title} onChange={(e) => handleMetaChange('title', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label>Meta Descrição</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Um resumo conciso do conteúdo da página para os motores de busca.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Textarea value={pageState.meta.metaDescription} onChange={(e) => handleMetaChange('metaDescription', e.target.value)} rows={3} />
-            </div>
-             <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label>Meta Palavras-chave</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Palavras-chave relevantes para a página, separadas por vírgulas.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input value={pageState.meta.metaKeywords} onChange={(e) => handleMetaChange('metaKeywords', e.target.value)} />
-            </div>
-             <div className="space-y-2">
-               <div className="flex items-center gap-1.5">
-                <Label>URL do Favicon</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>O ícone pequeno na aba do navegador (favicon).</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input value={pageState.meta.faviconUrl} onChange={(e) => handleMetaChange('faviconUrl', e.target.value)} />
-            </div>
-             <div className="space-y-2">
-               <div className="flex items-center gap-1.5">
-                <Label>URL da Imagem de Carregamento</Label>
-                 <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Imagem para exibir durante o carregamento da página.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input value={pageState.meta.loaderImageUrl} onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} />
-            </div>
-             <div className="space-y-2">
-               <div className="flex items-center gap-1.5">
-                <Label>URL de Redirecionamento</Label>
-                 <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>URL para redirecionar após o envio do formulário.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input value={pageState.meta.redirectUrl} onChange={(e) => handleMetaChange('redirectUrl', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-               <div className="flex items-center gap-1.5">
-                <Label>Chave da Data Extension</Label>                 <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>A Chave Externa da Data Extension do Salesforce Marketing Cloud.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input value={pageState.meta.dataExtensionKey} onChange={(e) => handleMetaChange('dataExtensionKey', e.target.value)} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </div>
-    </TooltipProvider>
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
+            <AccordionItem value="meta">
+              <AccordionTrigger>Configurações e SEO</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>Título da Página</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>O título que aparece na aba do navegador (tag &lt;title&gt;).</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input value={pageState.meta.title} onChange={(e) => handleMetaChange('title', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>Meta Descrição</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>Um resumo conciso do conteúdo da página para os motores de busca.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea value={pageState.meta.metaDescription} onChange={(e) => handleMetaChange('metaDescription', e.target.value)} rows={3} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>Meta Palavras-chave</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>Palavras-chave relevantes para a página, separadas por vírgulas.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input value={pageState.meta.metaKeywords} onChange={(e) => handleMetaChange('metaKeywords', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>URL do Favicon</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>O ícone pequeno na aba do navegador (favicon).</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input value={pageState.meta.faviconUrl} onChange={(e) => handleMetaChange('faviconUrl', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>URL da Imagem de Carregamento</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>Imagem para exibir durante o carregamento da página.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input value={pageState.meta.loaderImageUrl} onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>URL de Redirecionamento</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>URL para redirecionar após o envio do formulário.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input value={pageState.meta.redirectUrl} onChange={(e) => handleMetaChange('redirectUrl', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label>Chave da Data Extension</Label>                 <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent><p>A Chave Externa da Data Extension do Salesforce Marketing Cloud.</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input value={pageState.meta.dataExtensionKey} onChange={(e) => handleMetaChange('dataExtensionKey', e.target.value)} />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </TooltipProvider>
     </ScrollArea>
   );
 }

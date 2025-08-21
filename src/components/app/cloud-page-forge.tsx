@@ -9,7 +9,7 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -23,11 +23,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { addPage, getPage, updatePage } from "@/lib/firestore";
+import { useAuth } from "@/hooks/use-auth";
 
-const initialPage: CloudPage = {
-  id: "new",
+const initialPage: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
   name: "Nova CloudPage",
-  projectId: null,
+  projectId: "",
   meta: {
     title: 'Avon - Cadastro',
     faviconUrl: 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png',
@@ -88,69 +89,81 @@ interface CloudPageForgeProps {
 
 export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [isMounted, setIsMounted] = useState(false);
-  const [pageState, setPageState] = useState<CloudPage>(initialPage);
+  const [pageState, setPageState] = useState<CloudPage | null>(null);
   const [htmlCode, setHtmlCode] = useState("");
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [isSaveAlertOpen, setIsSaveAlertOpen] = useState(false);
-  const [pageName, setPageName] = useState(initialPage.name);
+  const [pageName, setPageName] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-    if (pageId !== "new") {
-      const storedPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
-      let pageToLoad = storedPages.find(p => p.id === pageId);
-      if (pageToLoad) {
-        
-        let needsUpdate = false;
-        const updatedComponents = pageToLoad.components.map((component: PageComponent) => {
-          if (component.type === 'Form' && (!component.props.placeholders || !component.props.fields)) {
-            needsUpdate = true;
-            const newProps = {...component.props};
-            if (!newProps.fields) {
-              newProps.fields = { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true };
-            }
-            if (!newProps.placeholders) {
-               newProps.placeholders = { 
-                    name: 'Nome', 
-                    email: 'Email', 
-                    phone: 'Telefone - Ex:(11) 9 9999-9999', 
-                    cpf: 'CPF', 
-                    birthdate: 'Data de Nascimento' 
-                };
-            }
-            return { ...component, props: newProps };
-          }
-          return component;
-        });
+    if (!user) return;
 
-        if(needsUpdate) {
-            pageToLoad.components = updatedComponents;
+    const fetchPage = async () => {
+      setIsLoading(true);
+      if (pageId !== "new") {
+        const pageData = await getPage(pageId);
+        if (pageData && pageData.userId === user.uid) {
+           let needsUpdate = false;
+            const updatedComponents = pageData.components.map((component: PageComponent) => {
+              if (component.type === 'Form' && (!component.props.placeholders || !component.props.fields)) {
+                needsUpdate = true;
+                const newProps = {...component.props};
+                if (!newProps.fields) {
+                  newProps.fields = { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true };
+                }
+                if (!newProps.placeholders) {
+                   newProps.placeholders = { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', birthdate: 'Data de Nascimento' };
+                }
+                return { ...component, props: newProps };
+              }
+              return component;
+            });
+             if(needsUpdate) {
+                pageData.components = updatedComponents;
+            }
+          setPageState(pageData);
+          setPageName(pageData.name);
+        } else {
+          toast({ variant: "destructive", title: "Erro", description: "Página não encontrada ou acesso negado." });
+          router.push('/');
         }
-
-        setPageState(pageToLoad);
-        setPageName(pageToLoad.name);
       } else {
-        router.push('/');
-      }
-    } else {
         const projectId = new URLSearchParams(window.location.search).get('projectId');
         if (!projectId) {
+          toast({ variant: "destructive", title: "Erro", description: "ID do projeto não encontrado." });
           router.push('/');
           return;
         }
-        setPageState(prev => ({...prev, projectId}));
-    }
-  }, [pageId, router]);
+        const newPage: CloudPage = {
+            ...initialPage,
+            id: '',
+            userId: user.uid,
+            projectId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+        setPageState(newPage);
+        setPageName(newPage.name);
+      }
+      setIsLoading(false);
+    };
+
+    fetchPage();
+  }, [pageId, router, user, toast]);
   
   useEffect(() => {
-    if(isMounted) {
+    if(pageState) {
       setHtmlCode(generateHtml(pageState));
     }
-  }, [pageState, isMounted]);
+  }, [pageState]);
 
   useEffect(() => {
+     if (!pageState) return;
+
     const title = pageState.meta.title.toLowerCase();
     const isAvon = title.includes('avon');
 
@@ -163,6 +176,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     const avonLoader = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
 
     setPageState(prev => {
+        if (!prev) return null;
         const headerIndex = prev.components.findIndex(c => c.type === 'Header');
         let needsUpdate = false;
         
@@ -186,48 +200,41 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         return needsUpdate ? newState : prev;
     });
 
-  }, [pageState.meta.title]);
+  }, [pageState?.meta.title]);
 
-  const handleSave = () => {
-    if (pageId === "new") {
-      setIsSaveAlertOpen(true);
-    } else {
-      savePage(pageState.name);
-    }
-  };
-
-  const savePage = (name: string) => {
-    const storedPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
-    const newPage = { ...pageState, name, id: pageId === "new" ? Date.now().toString() : pageId };
+  const handleSave = async () => {
+    if (!pageState) return;
+    setIsSaving(true);
     
-    let updatedPages;
-    if (pageId === "new") {
-        updatedPages = [...storedPages, newPage];
-    } else {
-        updatedPages = storedPages.map(p => p.id === pageId ? newPage : p);
-    }
+    const pageDataToSave = { ...pageState, name: pageName };
 
-    localStorage.setItem("cloudPages", JSON.stringify(updatedPages));
-    toast({ title: "Página salva!", description: `A página "${name}" foi salva com sucesso.` });
-
-    if (pageId === "new") {
-        router.push(`/editor/${newPage.id}`);
+    try {
+      if (pageId === "new") {
+         if (pageName.trim() === "") {
+            toast({variant: "destructive", title: "Erro", description: "O nome da página não pode ser vazio."});
+            setIsSaving(false);
+            return;
+        }
+        const newPageId = await addPage(pageDataToSave);
+        toast({ title: "Página salva!", description: `A página "${pageName}" foi criada com sucesso.` });
+        router.push(`/editor/${newPageId}`);
+      } else {
+        await updatePage(pageId, pageDataToSave);
+        toast({ title: "Página atualizada!", description: `A página "${pageName}" foi salva com sucesso.` });
+      }
+    } catch(error) {
+         toast({ variant: "destructive", title: "Erro ao salvar", description: "Não foi possível salvar a página." });
+         console.error("Save error:", error);
+    } finally {
+        setIsSaving(false);
     }
   };
 
-  const handleConfirmSave = () => {
-    if (pageName.trim() === "") {
-        toast({variant: "destructive", title: "Erro", description: "O nome da página não pode ser vazio."});
-        return;
-    }
-    savePage(pageName);
-    setIsSaveAlertOpen(false);
-  }
 
-  if (!isMounted || !pageState.projectId) {
+  if (isLoading || !pageState || !user) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
-            <Logo className="h-10 w-10 animate-pulse text-primary" />
+            <Logo className="h-10 w-10 animate-spin text-primary" />
        </div>
     );
   }
@@ -244,47 +251,26 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             <h1>Cloud Page Forge</h1>
           </div>
         </div>
-        <Button onClick={handleSave}>
-            <Save className="mr-2 h-4 w-4" /> Salvar Página
+        <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {isSaving ? 'Salvando...' : 'Salvar Página'}
         </Button>
       </header>
       <div className="flex flex-grow overflow-hidden">
         <aside className="w-[380px] border-r flex-shrink-0 bg-card/20">
           <SettingsPanel
             pageState={pageState}
-            setPageState={setPageState}
+            setPageState={setPageState as any}
             selectedComponentId={selectedComponentId}
             setSelectedComponentId={setSelectedComponentId}
+            pageName={pageName}
+            setPageName={setPageName}
           />
         </aside>
         <main className="flex-grow h-full">
           <MainPanel htmlCode={htmlCode} />
         </main>
       </div>
-       <AlertDialog open={isSaveAlertOpen} onOpenChange={setIsSaveAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Salvar Nova CloudPage</AlertDialogTitle>
-            <AlertDialogDescription>
-              Dê um nome para a sua nova página para salvá-la.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Label htmlFor="page-name">Nome da Página</Label>
-            <Input 
-              id="page-name"
-              value={pageName}
-              onChange={(e) => setPageName(e.target.value)}
-              className="mt-2"
-              placeholder="Ex: Campanha Dia das Mães"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSave}>Salvar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

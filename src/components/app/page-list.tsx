@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -19,6 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { getProject, getPagesForProject, deletePage } from "@/lib/firestore";
 
 interface PageListProps {
   projectId: string;
@@ -26,43 +28,56 @@ interface PageListProps {
 
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [pages, setPages] = useState<CloudPage[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsMounted(true);
-    const storedProjects: Project[] = JSON.parse(localStorage.getItem("cloudProjects") || "[]");
-    const storedPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
-
-    const currentProject = storedProjects.find(p => p.id === projectId);
-    if (currentProject) {
-      setProject(currentProject);
-      setPages(storedPages.filter(page => page.projectId === projectId));
-    } else {
-      router.push('/');
+    if (user) {
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          const currentProject = await getProject(projectId);
+          if (currentProject && currentProject.userId === user.uid) {
+            setProject(currentProject);
+            const projectPages = await getPagesForProject(projectId);
+            setPages(projectPages);
+          } else {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Projeto não encontrado ou acesso negado.' });
+            router.push('/');
+          }
+        } catch (error) {
+          console.error(error);
+          toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar o projeto.' });
+          router.push('/');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchData();
     }
-  }, [projectId, router]);
+  }, [projectId, router, user, toast]);
 
   const handleCreatePage = () => {
     router.push(`/editor/new?projectId=${projectId}`);
   };
 
-  const deletePage = (pageId: string) => {
-    const updatedPages = pages.filter(p => p.id !== pageId);
-    const allPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
-    const newAllPages = allPages.filter(p => p.id !== pageId);
-    
-    setPages(updatedPages);
-    localStorage.setItem("cloudPages", JSON.stringify(newAllPages));
-    toast({ title: "Página excluída!" });
+  const handleDeletePage = async (pageId: string) => {
+    try {
+      await deletePage(pageId);
+      setPages(prev => prev.filter(p => p.id !== pageId));
+      toast({ title: "Página excluída!" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a página." });
+    }
   }
 
-  if (!isMounted || !project) {
+  if (isLoading || !project) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Logo className="h-10 w-10 animate-pulse text-primary" />
+        <Logo className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -71,13 +86,13 @@ export function PageList({ projectId }: PageListProps) {
     <div className="min-h-screen">
       <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
         <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.push('/')}>
-                <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-2 font-semibold text-lg">
-                <h1 className="text-muted-foreground">Projetos /</h1>
-                <h1>{project.name}</h1>
-            </div>
+          <Button variant="outline" size="icon" onClick={() => router.push('/')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center gap-2 font-semibold text-lg">
+            <h1 className="text-muted-foreground">Projetos /</h1>
+            <h1>{project.name}</h1>
+          </div>
         </div>
         <Button onClick={handleCreatePage}>
           <Plus className="mr-2 h-4 w-4" /> Criar Página
@@ -102,36 +117,36 @@ export function PageList({ projectId }: PageListProps) {
                 className="group relative bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => router.push(`/editor/${page.id}`)}
               >
-                 <div className="flex items-start justify-between">
-                    <FileText className="h-10 w-10 text-primary" />
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                             <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta ação não pode ser desfeita. Isso excluirá permanentemente a página.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={(e) => {e.stopPropagation(); deletePage(page.id)}}>Excluir</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                <div className="flex items-start justify-between">
+                  <FileText className="h-10 w-10 text-primary" />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. Isso excluirá permanentemente a página.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage(page.id) }}>Excluir</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
                 <h3 className="mt-4 font-semibold">{page.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Editado em: {new Date(page.id).toLocaleDateString()}
+                  Editado em: {new Date(page.updatedAt.toDate()).toLocaleDateString()}
                 </p>
               </div>
             ))}

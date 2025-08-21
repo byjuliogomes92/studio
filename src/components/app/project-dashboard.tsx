@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2 } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,43 +29,52 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
+import { useAuth } from "@/hooks/use-auth";
+import { addProject, deleteProject, getProjectsForUser } from "@/lib/firestore";
 
 export function ProjectDashboard() {
   const router = useRouter();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
 
   useEffect(() => {
-    setIsMounted(true);
-    const storedProjects = JSON.parse(localStorage.getItem("cloudProjects") || "[]");
-    const storedPages = JSON.parse(localStorage.getItem("cloudPages") || "[]");
-    setProjects(storedProjects);
-    setPages(storedPages);
-  }, []);
+    if (user) {
+        setIsLoading(true);
+        getProjectsForUser(user.uid)
+            .then(({ projects, pages }) => {
+                setProjects(projects);
+                setPages(pages);
+            })
+            .catch(err => {
+                console.error(err);
+                toast({variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os projetos.'})
+            })
+            .finally(() => setIsLoading(false));
+    }
+  }, [user, toast]);
 
-  const handleAddProject = () => {
-    if (newProjectName.trim() === "") {
+  const handleAddProject = async () => {
+    if (newProjectName.trim() === "" || !user) {
       toast({ variant: "destructive", title: "Erro", description: "O nome do projeto não pode ser vazio." });
       return;
     }
-    const newProject: Project = {
-      id: Date.now().toString(),
-      name: newProjectName,
-      createdAt: new Date().toISOString(),
-    };
-    const updatedProjects = [...projects, newProject];
-    setProjects(updatedProjects);
-    localStorage.setItem("cloudProjects", JSON.stringify(updatedProjects));
-    setNewProjectName("");
-    setIsModalOpen(false);
-    toast({ title: "Projeto criado!", description: `O projeto "${newProjectName}" foi criado.` });
+    try {
+        const newProject = await addProject(newProjectName, user.uid);
+        setProjects(prev => [...prev, newProject]);
+        setNewProjectName("");
+        setIsModalOpen(false);
+        toast({ title: "Projeto criado!", description: `O projeto "${newProjectName}" foi criado.` });
+    } catch(error) {
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível criar o projeto." });
+    }
   };
   
-  const deleteProject = (projectId: string) => {
+  const handleDeleteProject = async (projectId: string) => {
     const pagesInProject = pages.filter(p => p.projectId === projectId);
     if (pagesInProject.length > 0) {
         toast({
@@ -75,17 +84,20 @@ export function ProjectDashboard() {
         });
         return;
     }
-
-    const updatedProjects = projects.filter(p => p.id !== projectId);
-    setProjects(updatedProjects);
-    localStorage.setItem("cloudProjects", JSON.stringify(updatedProjects));
-    toast({ title: "Projeto excluído!" });
+    
+    try {
+        await deleteProject(projectId);
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+        toast({ title: "Projeto excluído!" });
+    } catch(error) {
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir o projeto." });
+    }
   }
 
-  if (!isMounted) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Logo className="h-10 w-10 animate-pulse text-primary" />
+        <Logo className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -97,9 +109,14 @@ export function ProjectDashboard() {
           <Logo className="h-6 w-6 text-primary" />
           <h1>Meus Projetos</h1>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Criar Projeto
-        </Button>
+        <div className="flex items-center gap-4">
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Criar Projeto
+            </Button>
+            <Button variant="outline" onClick={logout}>
+              <LogOut className="mr-2 h-4 w-4" /> Sair
+            </Button>
+        </div>
       </header>
 
       <main className="p-6">
@@ -142,7 +159,7 @@ export function ProjectDashboard() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                             <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={(e) => {e.stopPropagation(); deleteProject(project.id)}}>Excluir</AlertDialogAction>
+                            <AlertDialogAction onClick={(e) => {e.stopPropagation(); handleDeleteProject(project.id)}}>Excluir</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>

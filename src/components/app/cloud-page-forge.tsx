@@ -79,7 +79,7 @@ interface CloudPageForgeProps {
 
 export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [pageState, setPageState] = useState<CloudPage | null>(null);
   const [htmlCode, setHtmlCode] = useState("");
@@ -89,11 +89,16 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    if (authLoading) {
+      setIsLoading(true);
+      return;
+    }
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    
     const fetchPage = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
       setIsLoading(true);
       try {
         if (pageId !== "new") {
@@ -151,7 +156,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     };
 
     fetchPage();
-  }, [pageId, router, user, toast]);
+  }, [pageId, router, user, toast, authLoading]);
   
   useEffect(() => {
     if(pageState) {

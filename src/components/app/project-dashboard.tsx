@@ -34,7 +34,7 @@ import { addProject, deleteProject, getProjectsForUser } from "@/lib/firestore";
 
 export function ProjectDashboard() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
@@ -43,9 +43,11 @@ export function ProjectDashboard() {
   const [newProjectName, setNewProjectName] = useState("");
 
   useEffect(() => {
+    if (authLoading) {
+      setIsLoading(true);
+      return;
+    }
     if (!user) {
-        // Não busca dados se o usuário não estiver logado.
-        // O AuthProvider cuidará do redirecionamento.
         setIsLoading(false);
         return;
     };
@@ -61,7 +63,7 @@ export function ProjectDashboard() {
             toast({variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os projetos.'})
         })
         .finally(() => setIsLoading(false));
-  }, [user, toast]);
+  }, [user, authLoading, toast]);
 
   const handleAddProject = async () => {
     if (newProjectName.trim() === "") {

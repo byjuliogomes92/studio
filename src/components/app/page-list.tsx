@@ -28,13 +28,17 @@ interface PageListProps {
 
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setIsLoading(true);
+      return;
+    }
     if (!user) {
       setIsLoading(false);
       return;
@@ -60,7 +64,7 @@ export function PageList({ projectId }: PageListProps) {
       }
     };
     fetchData();
-  }, [projectId, router, user, toast]);
+  }, [projectId, router, user, toast, authLoading]);
 
   const handleCreatePage = () => {
     router.push(`/editor/new?projectId=${projectId}`);

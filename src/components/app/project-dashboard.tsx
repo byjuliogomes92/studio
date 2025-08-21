@@ -48,7 +48,6 @@ export function ProjectDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isNavigating, setIsNavigating] = useState(false);
 
   // State for modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -91,7 +90,6 @@ export function ProjectDashboard() {
   }, [user, authLoading, toast, router]);
 
   const handleNavigateToProject = (projectId: string) => {
-    setIsNavigating(true);
     router.push(`/project/${projectId}`);
   };
 
@@ -191,14 +189,6 @@ export function ProjectDashboard() {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Logo className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (isNavigating) {
-    return (
-      <div className="page-transition-loader">
-        <Loader2 className="h-10 w-10 animate-spin text-white" />
       </div>
     );
   }

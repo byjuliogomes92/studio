@@ -37,6 +37,7 @@ const tagColors = [
   'bg-red-100 text-red-800 border-red-400',
   'bg-indigo-100 text-indigo-800 border-indigo-400',
 ];
+
 const getTagColor = (tag: string) => {
     let hash = 0;
     for (let i = 0; i < tag.length; i++) {
@@ -91,10 +92,11 @@ export function PageList({ projectId }: PageListProps) {
     router.push(`/editor/new?projectId=${projectId}`);
   };
 
-  const handleDeletePage = async (pageId: string) => {
+  const handleDeletePage = async () => {
+     if (!pageToDelete) return;
     try {
-      await deletePage(pageId);
-      setPages(prev => prev.filter(p => p.id !== pageId));
+      await deletePage(pageToDelete);
+      setPages(prev => prev.filter(p => p.id !== pageToDelete));
       toast({ title: "Página excluída!" });
     } catch (error) {
       toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a página." });
@@ -203,7 +205,7 @@ export function PageList({ projectId }: PageListProps) {
                  <div className="flex-grow cursor-pointer" onClick={() => router.push(`/editor/${page.id}`)}>
                     <div className="flex items-start justify-between">
                       <FileText className="h-10 w-10 text-primary" />
-                      <AlertDialog>
+                      <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
                         <AlertDialogTrigger asChild>
                           <Button
                             variant="ghost"
@@ -223,7 +225,7 @@ export function PageList({ projectId }: PageListProps) {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={(e) => { e.stopPropagation(); if(pageToDelete) handleDeletePage(pageToDelete) }}>Excluir</AlertDialogAction>
+                            <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>

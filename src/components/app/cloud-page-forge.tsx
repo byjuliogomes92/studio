@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { addPage, getPage, updatePage } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 
-const initialPage: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'projectId'> = {
+const getInitialPage = (): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'projectId'> => ({
   name: "Nova CloudPage",
   tags: ["Brasil"],
   meta: {
@@ -65,13 +65,14 @@ const initialPage: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'userId' |
       id: '4', 
       type: 'Footer', 
       props: { 
-        footerText1: `© ${new Date().getFullYear()} Natura. Todos os direitos reservados.`,
+        footerText1: `© 2024 Natura. Todos os direitos reservados.`,
         footerText2: `NATURA COSMÉTICOS S/A, com sede na Av. Alexandre Colares, 1188, Vila Jaguara, São Paulo/SP, CEP 05106-000, Fone 0800 11 55 66 de telefones fixos ou 0300 711 55 66 de celulares (custo da ligação local), inscrita no CNPJ sob o n° 71.673.990/0001-77, IM 15.679, IE142.484.958.110, sociedade que executa atividades comerciais em geral e se dedica à pesquisa e desenvolvimento de produtos. Atividades fabris realizadas por INDÚSTRIA E COMÉRCIO DE COSMÉTICOS NATURA LTDA., com sede na Rodovia Anhanguera, s/n, KM 30,5, Prédio C, Polvilho, Cajamar/SP, CEP 07790-190, Fone (11) 4389-7317, inscrita no CNPJ sob o nº 00.190.373/0001-72, IE 241.022.419.113.`,
         footerText3: `Todos os preços e condições deste site são válidos apenas para compras no site. Destacamos que os preços previstos no site prevalecem aos demais anunciados em outros meios de comunicação e sites de buscas. Em caso de divergência, o preço válido é o do carrinho de compras. Imagens meramente ilustrativas. Confira condições na sacola de compras.`,
       }
     },
   ],
-};
+});
+
 
 interface CloudPageForgeProps {
   pageId: string;
@@ -135,8 +136,14 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             router.push('/');
             return;
           }
+           const newPageData = getInitialPage();
+          const footerIndex = newPageData.components.findIndex(c => c.type === 'Footer');
+          if (footerIndex !== -1) {
+            newPageData.components[footerIndex].props.footerText1 = `© ${new Date().getFullYear()} Natura. Todos os direitos reservados.`;
+          }
+
           const newPage: CloudPage = {
-            ...initialPage,
+            ...newPageData,
             id: '',
             userId: user.uid,
             projectId,
@@ -212,7 +219,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     setIsSaving(true);
     
     try {
-      if (pageId === "new") {
+      if (pageId === "new" || pageState.id === '') {
          if (pageName.trim() === "") {
             toast({variant: "destructive", title: "Erro", description: "O nome da página não pode ser vazio."});
             setIsSaving(false);

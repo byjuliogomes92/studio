@@ -43,27 +43,28 @@ export function ProjectDashboard() {
   const [newProjectName, setNewProjectName] = useState("");
 
   useEffect(() => {
-    if (authLoading) {
-      setIsLoading(true);
-      return;
-    }
-    if (!user) {
-        setIsLoading(false);
-        router.push('/login');
-        return;
-    };
-    
-    setIsLoading(true);
-    getProjectsForUser(user.uid)
-        .then(({ projects, pages }) => {
+    const fetchProjects = async () => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const { projects, pages } = await getProjectsForUser(user.uid);
             setProjects(projects);
             setPages(pages);
-        })
-        .catch(err => {
+        } catch (err) {
             console.error(err);
-            toast({variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os projetos.'})
-        })
-        .finally(() => setIsLoading(false));
+            toast({variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os projetos.'});
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    if (!authLoading) {
+      if (user) {
+        fetchProjects();
+      } else {
+        router.push('/login');
+      }
+    }
   }, [user, authLoading, toast, router]);
 
   const handleAddProject = async () => {

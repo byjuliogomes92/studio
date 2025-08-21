@@ -35,16 +35,12 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) {
-      setIsLoading(true);
-      return;
-    }
-    if (!user) {
-      setIsLoading(false);
-      router.push('/login');
-      return;
-    }
     const fetchData = async () => {
+      if (!user) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
+        router.push('/login');
+        return;
+      }
       setIsLoading(true);
       try {
         const currentProject = await getProject(projectId);
@@ -64,7 +60,14 @@ export function PageList({ projectId }: PageListProps) {
         setIsLoading(false);
       }
     };
-    fetchData();
+
+    if (!authLoading) {
+      if (user) {
+        fetchData();
+      } else {
+        router.push('/login');
+      }
+    }
   }, [projectId, router, user, toast, authLoading]);
 
   const handleCreatePage = () => {
@@ -81,13 +84,26 @@ export function PageList({ projectId }: PageListProps) {
     }
   }
 
-  if (isLoading || authLoading || !project) {
+  if (isLoading || authLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Logo className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
+  
+  if (!project) {
+     return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+            <h2 className="text-xl font-semibold">Projeto não encontrado</h2>
+            <p className="text-muted-foreground">O projeto que você está tentando acessar não existe ou você não tem permissão.</p>
+            <Button onClick={() => router.push('/')} className="mt-4">Voltar para Projetos</Button>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen">

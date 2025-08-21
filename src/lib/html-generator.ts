@@ -24,6 +24,29 @@ const renderField = (
   `;
 }
 
+const renderCityDropdown = (required: boolean = false): string => {
+    const cities = [
+        'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Salvador', 'Fortaleza',
+        'Curitiba', 'Manaus', 'Recife', 'Porto Alegre', 'Brasília'
+    ];
+    const options = cities.map(city => `<option value="${city}">${city}</option>`).join('');
+    return `
+        <div class="input-wrapper">
+            <select
+                id="CIDADE"
+                name="CIDADE"
+                data-field-type="Text"
+                ${required ? 'required="required"' : ''}
+            >
+                <option value="" disabled selected>Selecione sua cidade</option>
+                ${options}
+            </select>
+            <div class="error-message" id="error-cidade">Por favor, selecione uma cidade.</div>
+        </div>
+    `;
+};
+
+
 const renderComponent = (component: PageComponent): string => {
   switch (component.type) {
     case 'Header':
@@ -50,8 +73,8 @@ const renderComponent = (component: PageComponent): string => {
                   ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF') : ''}
                 </div>
                  <div class="row">
-                  ${fields.city ? renderField('city', 'CIDADE', 'text', 'Text', placeholders.city || 'Cidade', false) : ''}
                   ${fields.birthdate ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', false) : ''}
+                  ${fields.city ? renderCityDropdown(false) : ''}
                 </div>
            
                 ${fields.optin ? `
@@ -376,7 +399,7 @@ export const generateHtml = (pageState: CloudPage): string => {
             border-radius: 30px;
         }
 
-        .input-wrapper input {
+        .input-wrapper input, .input-wrapper select {
             width: 100%;
             padding: 15px;
             margin: 0 0 10px;
@@ -504,7 +527,7 @@ export const generateHtml = (pageState: CloudPage): string => {
     function validateForm() {
         let valid = true;
         const form = document.getElementById('smartcapture-block-uttuiggngg');
-        const requiredInputs = form.querySelectorAll('input[required]');
+        const requiredInputs = form.querySelectorAll('input[required], select[required]');
 
         requiredInputs.forEach(input => {
             const error = document.getElementById('error-' + input.name.toLowerCase());
@@ -512,8 +535,6 @@ export const generateHtml = (pageState: CloudPage): string => {
             
             if(input.type === 'checkbox') {
                 isInvalid = !input.checked;
-            } else if (input.type === 'email') {
-                isInvalid = !input.value.includes('@');
             } else {
                 isInvalid = input.value.trim() === '';
             }

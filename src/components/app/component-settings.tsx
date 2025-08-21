@@ -143,7 +143,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
             <div>
                 <Label className="font-semibold">Placeholders dos Campos</Label>
                 <div className="space-y-3 mt-2">
-                    {formFields.filter(f => component.props.fields?.[f.id]).map((field) => (
+                    {formFields.filter(f => component.props.fields?.[f.id] && f.id !== 'city').map((field) => (
                          <div className="space-y-2" key={`placeholder-${field.id}`}>
                             <Label htmlFor={`placeholder-${field.id}`}>{field.label}</Label>
                             <Input

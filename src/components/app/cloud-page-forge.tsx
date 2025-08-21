@@ -64,7 +64,6 @@ const initialPage: CloudPage = {
             email: 'Email',
             phone: 'Telefone - Ex:(11) 9 9999-9999',
             cpf: 'CPF',
-            city: 'Cidade',
             birthdate: 'Data de Nascimento',
         },
         consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co, por meio do fornecimento dos meus dados para contato via telefone e/ou e-mail, inclusive por parte de Consultoras Natura. Sei que posso revogar meu consentimento e solicitar outros direitos como titular de dados neste <a target="_blank" href="https://privacyportal-br.onetrust.com/webform/00181faa-85e7-4785-848b-f12d02b3f614/6f7e1250-be9f-4b2c-8610-98afc44fb2c0">link</a>. Ao entrar no espaço, estou ciente que o ambiente está sendo filmado e, desde já, AUTORIZO a Natura Cosméticos S/A e todas as empresas do Grupo Natura, ou terceiro à sua ordem, a utilizar meus direitos de personalidade, tais como minha imagem, nome, depoimento e voz, nos materiais de comunicação utilizados pela NATURA&CO para veiculação e divulgação de conteúdo da Ativação TODODIA Cereja na mídia em geral, em todas as formas, e transmissão por qualquer meio de comunicação, pelo prazo de 10 (dez) anos. Entendo que o uso da minha imagem é uma condição para acessar o ambiente e as experiências imersivas nos espaços da Natura na Ativação TODODIA Cereja.`,
@@ -118,7 +117,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     email: 'Email', 
                     phone: 'Telefone - Ex:(11) 9 9999-9999', 
                     cpf: 'CPF', 
-                    city: 'Cidade', 
                     birthdate: 'Data de Nascimento' 
                 };
             }

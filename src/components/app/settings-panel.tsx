@@ -21,8 +21,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 interface SettingsPanelProps {
   pageState: CloudPage;
@@ -96,25 +103,50 @@ export function SettingsPanel({
 
   return (
     <ScrollArea className="h-full">
+    <TooltipProvider>
     <div className="p-4 space-y-6">
       <Accordion type="multiple" defaultValue={["components"]} className="w-full">
         <AccordionItem value="styles">
           <AccordionTrigger>Global Styles</AccordionTrigger>
           <AccordionContent className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label>Background Color</Label>
+              <div className="flex items-center gap-1.5">
+                <Label>Background Color</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>Select the main background color for the page.</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input type="color" value={pageState.styles.backgroundColor} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="p-1"/>
             </div>
              <div className="space-y-2">
-              <Label>Background Image URL</Label>
+              <div className="flex items-center gap-1.5">
+                <Label>Background Image URL</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>Provide a URL for a background image.</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input value={pageState.styles.backgroundImage} onChange={(e) => handleStyleChange('backgroundImage', e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Theme Color</Label>
+              <div className="flex items-center gap-1.5">
+                <Label>Theme Color</Label>
+                 <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>Defines the primary color for buttons and other elements.</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input type="color" value={pageState.styles.themeColor} onChange={(e) => handleStyleChange('themeColor', e.target.value)} className="p-1"/>
             </div>
              <div className="space-y-2">
-              <Label>Theme Color (Hover)</Label>
+              <div className="flex items-center gap-1.5">
+                <Label>Theme Color (Hover)</Label>
+                 <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>The color of buttons when a user hovers over them.</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input type="color" value={pageState.styles.themeColorHover} onChange={(e) => handleStyleChange('themeColorHover', e.target.value)} className="p-1"/>
             </div>
           </AccordionContent>
@@ -122,7 +154,7 @@ export function SettingsPanel({
         <AccordionItem value="components">
           <AccordionTrigger>Components</AccordionTrigger>
           <AccordionContent className="space-y-4 pt-2">
-            {isClient && (
+             {isClient && (
               <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="components">
                   {(provided) => (
@@ -195,29 +227,60 @@ export function SettingsPanel({
           <AccordionTrigger>Page Settings</AccordionTrigger>
           <AccordionContent className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label>Page Title</Label>
+              <div className="flex items-center gap-1.5">
+                <Label>Page Title</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>The title that appears in the browser tab.</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input value={pageState.meta.title} onChange={(e) => handleMetaChange('title', e.target.value)} />
             </div>
              <div className="space-y-2">
-              <Label>Favicon URL</Label>
+               <div className="flex items-center gap-1.5">
+                <Label>Favicon URL</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>The small icon in the browser tab (favicon).</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input value={pageState.meta.faviconUrl} onChange={(e) => handleMetaChange('faviconUrl', e.target.value)} />
             </div>
              <div className="space-y-2">
-              <Label>Loader Image URL</Label>
+               <div className="flex items-center gap-1.5">
+                <Label>Loader Image URL</Label>
+                 <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>Image to display during page load.</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input value={pageState.meta.loaderImageUrl} onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} />
             </div>
              <div className="space-y-2">
-              <Label>Redirect URL on Submit</Label>
+               <div className="flex items-center gap-1.5">
+                <Label>Redirect URL on Submit</Label>
+                 <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>URL to redirect to after successful form submission.</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input value={pageState.meta.redirectUrl} onChange={(e) => handleMetaChange('redirectUrl', e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Data Extension Key</Label>
+               <div className="flex items-center gap-1.5">
+                <Label>Data Extension Key</Label>
+                 <Tooltip>
+                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                  <TooltipContent><p>The External Key of the Salesforce Marketing Cloud Data Extension.</p></TooltipContent>
+                </Tooltip>
+              </div>
               <Input value={pageState.meta.dataExtensionKey} onChange={(e) => handleMetaChange('dataExtensionKey', e.target.value)} />
             </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
     </div>
+    </TooltipProvider>
     </ScrollArea>
   );
 }

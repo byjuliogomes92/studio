@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { CloudPage } from "@/lib/types";
+import type { CloudPage, PageComponent } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
@@ -101,8 +101,36 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     setIsMounted(true);
     if (pageId !== "new") {
       const storedPages: CloudPage[] = JSON.parse(localStorage.getItem("cloudPages") || "[]");
-      const pageToLoad = storedPages.find(p => p.id === pageId);
+      let pageToLoad = storedPages.find(p => p.id === pageId);
       if (pageToLoad) {
+        
+        // Ensure form components have placeholders
+        let needsUpdate = false;
+        const updatedComponents = pageToLoad.components.map((component: PageComponent) => {
+          if (component.type === 'Form' && !component.props.placeholders) {
+            needsUpdate = true;
+            return {
+              ...component,
+              props: {
+                ...component.props,
+                placeholders: { 
+                    name: 'Nome', 
+                    email: 'Email', 
+                    phone: 'Telefone - Ex:(11) 9 9999-9999', 
+                    cpf: 'CPF', 
+                    city: 'Cidade', 
+                    birthdate: 'Data de Nascimento' 
+                },
+              }
+            };
+          }
+          return component;
+        });
+
+        if(needsUpdate) {
+            pageToLoad.components = updatedComponents;
+        }
+
         setPageState(pageToLoad);
         setPageName(pageToLoad.name);
       } else {
@@ -262,5 +290,3 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     </div>
   );
 }
-
-    

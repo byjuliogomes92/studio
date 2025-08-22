@@ -95,7 +95,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
     components: [
       { id: '1', type: 'Header', props: { logoUrl: '' } }, // Will be set by useEffect
       { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },
-       { id: 'c1', type: 'Title', props: { text: 'Título da Sua Campanha Aqui' } },
+      { id: 'c1', type: 'Title', props: { text: 'Título da Sua Campanha Aqui', styles: { textAlign: 'center' } } },
       { id: 'c2', type: 'Paragraph', props: { text: 'Este é um ótimo lugar para descrever sua campanha. Fale sobre os benefícios, os produtos em destaque e o que os clientes podem esperar.' } },
       { 
         id: '3', 
@@ -105,6 +105,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
           placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', birthdate: 'Data de Nascimento' },
           consentText: `Quero receber novidades e promoções da ${brand} e de outras empresas do Grupo Natura &Co...`,
           buttonText: 'Finalizar',
+          buttonAlign: 'center',
         } 
       },
       { 

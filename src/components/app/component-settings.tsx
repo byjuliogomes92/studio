@@ -405,19 +405,28 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
 
             <Separator />
             
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Label htmlFor="form-button-text" className="font-semibold">Texto do Botão de Envio</Label>
-                <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Texto exibido no botão de envio do formulário.</p></TooltipContent>
-                </Tooltip>
-              </div>
-              <Input
-                id="form-button-text"
-                value={component.props.buttonText || ""}
-                onChange={(e) => onPropChange("buttonText", e.target.value)}
-              />
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="form-button-text">Texto do Botão de Envio</Label>
+                    <Input
+                        id="form-button-text"
+                        value={component.props.buttonText || ""}
+                        onChange={(e) => onPropChange("buttonText", e.target.value)}
+                    />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="form-button-align">Alinhamento do Botão</Label>
+                     <Select value={component.props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Selecione o alinhamento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="left">Esquerda</SelectItem>
+                        <SelectItem value="center">Centro</SelectItem>
+                        <SelectItem value="right">Direita</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
           </div>
         );
@@ -467,5 +476,3 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
     </TooltipProvider>
   )
 }
-
-    

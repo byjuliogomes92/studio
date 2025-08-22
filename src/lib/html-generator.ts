@@ -94,6 +94,8 @@ const renderComponent = (component: PageComponent): string => {
             <script>
               (function() {
                 var target = new Date("${targetDate}").getTime();
+                var el = document.getElementById("countdown-${component.id}");
+                if (!el) return;
                 var x = setInterval(function() {
                   var now = new Date().getTime();
                   var distance = target - now;
@@ -101,10 +103,10 @@ const renderComponent = (component: PageComponent): string => {
                   var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                   var minutes = Math.floor((distance % (1000 * 60 * 60)) / 1000 / 60);
                   var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                  document.getElementById("countdown-${component.id}").innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
+                  el.innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
                   if (distance < 0) {
                     clearInterval(x);
-                    document.getElementById("countdown-${component.id}").innerHTML = "EXPIRADO";
+                    el.innerHTML = "EXPIRADO";
                   }
                 }, 1000);
               })();
@@ -118,15 +120,11 @@ const renderComponent = (component: PageComponent): string => {
       const formHtml = `
         <div class="form-container">
             <form id="smartcapture-block-uttuiggngg" novalidate="novalidate" onsubmit="return validateForm()">
-                <div class="row">
+                <div class="form-grid">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
                   ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email') : ''}
-                </div>
-                <div class="row">
                   ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone') : ''}
                   ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF') : ''}
-                </div>
-                 <div class="row">
                   ${fields.birthdate ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', false) : ''}
                   ${fields.city ? renderCityDropdown(false) : ''}
                 </div>
@@ -141,7 +139,9 @@ const renderComponent = (component: PageComponent): string => {
                 </div>
                 ` : ''}
                 <div data-type="slot" data-key="qaiwdlu6h29"></div>
-                <button type="submit">${buttonText || 'Finalizar'}</button>
+                <div style="text-align: ${component.props.buttonAlign || 'center'};">
+                    <button type="submit">${buttonText || 'Finalizar'}</button>
+                </div>
             </form>
         </div>
       `;
@@ -383,13 +383,19 @@ export const generateHtml = (pageState: CloudPage): string => {
     .form-container {
         padding: 20px;
     }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px 20px;
+    }
 
     .form-container input,
     .form-container select,
     .form-container button {
         width: 100%;
         padding: 15px;
-        margin: 0 0 10px 0;
+        margin: 0;
         border: 1px solid #ccc;
         border-radius: 5px;
         box-sizing: border-box;
@@ -405,6 +411,11 @@ export const generateHtml = (pageState: CloudPage): string => {
         cursor: pointer;
         position: relative;
         transition: all 0.3s ease;
+        margin-top: 10px;
+        font-size: large;
+        width: 200px;
+        padding: 15px 20px;
+        border-radius: 30px;
     }
 
     .form-container button:hover {
@@ -489,30 +500,8 @@ export const generateHtml = (pageState: CloudPage): string => {
     }
 
     @media (min-width: 768px) {
-        .form-container .row {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px; /* Adiciona espaço entre os inputs */
-        }
-
-        .row .input-wrapper,
-        .row .email-wrapper {
-            flex: 1; /* Faz com que os wrappers ocupem espaço igual */
-            min-width: 0; /* Permite que os itens encolham */
-        }
-    
-        .form-container button {
-            font-size: large;
-            width: 200px;
-            padding: 15px 20px;
-            border-radius: 30px;
-        }
-
-        .input-helper-text {
-            font-size: 10px;
-            color: #666;
-            margin-top: 5px;
-            display: block;
+        .form-grid {
+          grid-template-columns: 1fr 1fr;
         }
     }
 
@@ -710,3 +699,4 @@ export const generateHtml = (pageState: CloudPage): string => {
 </html>`.trim();
 
     
+

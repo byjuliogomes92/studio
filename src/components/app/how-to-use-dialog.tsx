@@ -57,7 +57,7 @@ const getRequiredFields = (pageState: CloudPage): DeField[] => {
   
   // Logic for A/B Test fields
   pageState.components.forEach(component => {
-    if (component.props.abTestEnabled) {
+    if (component.abTestEnabled) {
       fields.push({
         name: `VARIANTE_${component.id.toUpperCase()}`,
         type: 'Text',

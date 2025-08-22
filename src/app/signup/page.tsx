@@ -50,9 +50,9 @@ export default function SignupPage() {
       <Card className="mx-auto max-w-sm w-full">
         <CardHeader className="text-center">
           <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
-          <CardTitle className="text-2xl">Cadastro</CardTitle>
+          <CardTitle className="text-2xl">Crie sua Conta</CardTitle>
           <CardDescription>
-            Crie sua conta para começar a construir suas páginas
+            É rápido e fácil. Comece a construir suas páginas agora mesmo.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -80,14 +80,14 @@ export default function SignupPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Criar conta"}
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Quero me Cadastrar"}
               </Button>
             </div>
           </form>
           <div className="mt-4 text-center text-sm">
-            Já tem uma conta?{" "}
+            Já possui uma conta?{" "}
             <Link href="/login" className="underline">
-              Login
+              Fazer Login
             </Link>
           </div>
         </CardContent>

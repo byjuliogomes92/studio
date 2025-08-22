@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Brand, Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -18,6 +18,14 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -271,50 +279,70 @@ export function PageList({ projectId }: PageListProps) {
               <h1>{project.name}</h1>
             </div>
           </div>
-          <Dialog open={isCreateModalOpen} onOpenChange={setCreateModalOpen}>
-              <DialogTrigger asChild>
-                  <Button>
-                      <Plus className="mr-2 h-4 w-4" /> Criar Página
-                  </Button>
-              </DialogTrigger>
-              <DialogContent>
-                  <DialogHeader>
-                      <DialogTitle>Criar Nova Página</DialogTitle>
-                      <DialogDescription>Escolha um nome e uma marca para sua nova CloudPage.</DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4 space-y-4">
-                      <div className="space-y-2">
-                          <Label htmlFor="page-name">Nome da Página</Label>
-                          <Input 
-                              id="page-name" 
-                              value={newPageName} 
-                              onChange={(e) => setNewPageName(e.target.value)} 
-                              placeholder="Ex: Campanha Dia das Mães"
-                          />
-                      </div>
-                      <div className="space-y-2">
-                          <Label>Marca</Label>
-                          <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
-                              <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                  <RadioGroupItem value="Natura" id="brand-natura" />
-                                  Natura
-                              </Label>
-                              <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                  <RadioGroupItem value="Avon" id="brand-avon" />
-                                  Avon
-                              </Label>
-                          </RadioGroup>
-                      </div>
-                  </div>
-                  <DialogFooter>
-                      <Button variant="outline" onClick={() => setCreateModalOpen(false)}>Cancelar</Button>
-                      <Button onClick={handleConfirmCreatePage} disabled={isCreating}>
-                          {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          {isCreating ? "Criando..." : "Criar Página"}
-                      </Button>
-                  </DialogFooter>
-              </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            <Dialog open={isCreateModalOpen} onOpenChange={setCreateModalOpen}>
+                <DialogTrigger asChild>
+                    <Button>
+                        <Plus className="mr-2 h-4 w-4" /> Criar Página
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Criar Nova Página</DialogTitle>
+                        <DialogDescription>Escolha um nome e uma marca para sua nova CloudPage.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="page-name">Nome da Página</Label>
+                            <Input 
+                                id="page-name" 
+                                value={newPageName} 
+                                onChange={(e) => setNewPageName(e.target.value)} 
+                                placeholder="Ex: Campanha Dia das Mães"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Marca</Label>
+                            <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
+                                <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                    <RadioGroupItem value="Natura" id="brand-natura" />
+                                    Natura
+                                </Label>
+                                <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                    <RadioGroupItem value="Avon" id="brand-avon" />
+                                    Avon
+                                </Label>
+                            </RadioGroup>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCreateModalOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleConfirmCreatePage} disabled={isCreating}>
+                            {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isCreating ? "Criando..." : "Criar Página"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="relative">
+                  <Bell className="h-4 w-4" />
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Nova funcionalidade: Duplique páginas!</DropdownMenuItem>
+                <DropdownMenuItem>Melhoria no alinhamento de formulários.</DropdownMenuItem>
+                <DropdownMenuItem>Bem-vindo ao Cloud Page Forge!</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
         <main className="p-6">

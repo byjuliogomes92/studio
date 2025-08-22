@@ -175,7 +175,7 @@ export function SettingsPanel({
     <ScrollArea className="h-full">
       <TooltipProvider>
         <div className="p-4 space-y-6">
-          <Accordion type="multiple" defaultValue={['page-settings']} className="w-full">
+          <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full">
             <AccordionItem value="page-settings">
               <AccordionTrigger>Configurações da Página</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
@@ -255,7 +255,7 @@ export function SettingsPanel({
               <AccordionContent className="space-y-4 pt-2">
                 {isClient && (
                   <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="components" isDropDisabled={!isClient}>
+                    <Droppable droppableId="components">
                       {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                           {pageState.components.map((c, index) => {
@@ -264,13 +264,12 @@ export function SettingsPanel({
                                 <Draggable key={c.id} draggableId={c.id} index={index}>
                                 {(provided) => (
                                     <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    className="flex items-center gap-2 group"
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className="flex items-center gap-2 group"
                                     >
-                                    <div {...provided.dragHandleProps}>
-                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                    </div>
+                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
                                     <Button
                                         variant={selectedComponentId === c.id ? "secondary" : "ghost"}
                                         className="flex-grow justify-start"

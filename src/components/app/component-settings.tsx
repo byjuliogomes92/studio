@@ -372,6 +372,27 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     ))}
                 </div>
             </div>
+
+            {component.props.fields?.city && (
+                 <>
+                    <Separator />
+                    <div className="space-y-2">
+                         <div className="flex items-center gap-1.5">
+                            <Label htmlFor="form-cities">Lista de Cidades</Label>
+                            <Tooltip>
+                                <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                                <TooltipContent><p>Uma cidade por linha. Serão exibidas no dropdown.</p></TooltipContent>
+                            </Tooltip>
+                         </div>
+                        <Textarea
+                            id="form-cities"
+                            value={component.props.cities || ''}
+                            onChange={(e) => onPropChange('cities', e.target.value)}
+                            rows={6}
+                        />
+                    </div>
+                 </>
+            )}
             
             <Separator />
 

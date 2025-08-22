@@ -120,6 +120,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
           consentText: `Quero receber novidades e promoções da ${brand} e de outras empresas do Grupo Natura &Co...`,
           buttonText: 'Finalizar',
           buttonAlign: 'center',
+          cities: 'São Paulo\nRio de Janeiro\nBelo Horizonte\nSalvador\nFortaleza\nCuritiba\nManaus\nRecife\nPorto Alegre\nBrasília',
         } 
       },
       { 

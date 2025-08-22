@@ -24,11 +24,8 @@ const renderField = (
   `;
 }
 
-const renderCityDropdown = (required: boolean = false): string => {
-    const cities = [
-        'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Salvador', 'Fortaleza',
-        'Curitiba', 'Manaus', 'Recife', 'Porto Alegre', 'Brasília'
-    ];
+const renderCityDropdown = (citiesString: string = '', required: boolean = false): string => {
+    const cities = citiesString.split('\n').filter(city => city.trim() !== '');
     const options = cities.map(city => `<option value="${city}">${city}</option>`).join('');
     return `
         <div class="input-wrapper">
@@ -116,7 +113,7 @@ const renderComponent = (component: PageComponent): string => {
     case 'Button':
          return `<div style="text-align: ${component.props.align || 'center'}; margin: 20px 0;"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
     case 'Form':
-      const { fields = {}, placeholders = {}, consentText, buttonText } = component.props;
+      const { fields = {}, placeholders = {}, consentText, buttonText, cities } = component.props;
       const formHtml = `
         <div class="form-container">
             <form id="smartcapture-block-uttuiggngg" novalidate="novalidate" onsubmit="return validateForm()">
@@ -126,7 +123,7 @@ const renderComponent = (component: PageComponent): string => {
                   ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone') : ''}
                   ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF') : ''}
                   ${fields.birthdate ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', false) : ''}
-                  ${fields.city ? renderCityDropdown(false) : ''}
+                  ${fields.city ? renderCityDropdown(cities, false) : ''}
                 </div>
            
                 ${fields.optin ? `

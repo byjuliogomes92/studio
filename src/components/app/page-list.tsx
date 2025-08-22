@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Brand, Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -30,6 +30,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -41,7 +48,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { getProjectWithPages, deletePage, addPage, duplicatePage } from "@/lib/firestore";
+import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
@@ -141,6 +148,85 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
   }
 };
 
+interface MovePageDialogProps {
+  page: CloudPage;
+  onPageMoved: () => void;
+  currentProjectId: string;
+}
+
+function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen && user) {
+      const fetchProjects = async () => {
+        const { projects } = await getProjectsForUser(user.uid);
+        // Filter out the current project from the list of destinations
+        setProjects(projects.filter(p => p.id !== currentProjectId));
+      };
+      fetchProjects();
+    }
+  }, [isOpen, user, currentProjectId]);
+
+  const handleMovePage = async () => {
+    if (!selectedProject || !page) return;
+    setIsMoving(true);
+    try {
+      await movePageToProject(page.id, selectedProject);
+      toast({ title: "Página movida!", description: `A página "${page.name}" foi movida com sucesso.` });
+      onPageMoved();
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Failed to move page:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível mover a página." });
+    } finally {
+      setIsMoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+          <Move className="mr-2 h-4 w-4" />
+          Mover para...
+        </DropdownMenuItem>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Mover Página</DialogTitle>
+          <DialogDescription>Selecione a pasta de destino para a página "{page.name}".</DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <Select onValueChange={setSelectedProject}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma pasta..." />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map(p => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+          <Button onClick={handleMovePage} disabled={!selectedProject || isMoving}>
+            {isMoving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isMoving ? "Movendo..." : "Mover Página"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -158,32 +244,30 @@ export function PageList({ projectId }: PageListProps) {
   const [newPageName, setNewPageName] = useState("");
   const [selectedBrand, setSelectedBrand] = useState<Brand>("Natura");
 
+  const fetchProjectData = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const data = await getProjectWithPages(projectId, user.uid);
+      if (data) {
+        setProject(data.project);
+        setPages(data.pages);
+      } else {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Projeto não encontrado ou acesso negado.' });
+        router.push('/');
+      }
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar o projeto.' });
+      router.push('/');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return; 
-
-      setIsLoading(true);
-      try {
-        const data = await getProjectWithPages(projectId, user.uid);
-        if (data) {
-          setProject(data.project);
-          setPages(data.pages);
-        } else {
-          toast({ variant: 'destructive', title: 'Erro', description: 'Projeto não encontrado ou acesso negado.' });
-          router.push('/');
-        }
-      } catch (error) {
-        console.error(error);
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar o projeto.' });
-        router.push('/');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (!authLoading && user) {
-        fetchData();
+        fetchProjectData();
     } else if (!authLoading && !user) {
         router.push('/login');
     }
@@ -429,40 +513,49 @@ export function PageList({ projectId }: PageListProps) {
                   <div className="flex-grow cursor-pointer" onClick={() => navigateToEditor(page.id)}>
                       <div className="flex items-start justify-between">
                         <FileText className="h-10 w-10 text-primary" />
-                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={(e) => { e.stopPropagation(); handleDuplicatePage(page.id); }}
-                            >
-                                <Copy className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                            <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
-                            <AlertDialogTrigger asChild>
-                                <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={(e) => { e.stopPropagation(); setPageToDelete(page.id); }}
-                                >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                              >
+                                  <Plus className="h-4 w-4" />
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => handleDuplicatePage(page.id)}>
+                                  <Copy className="mr-2 h-4 w-4" />
+                                  Duplicar
+                              </DropdownMenuItem>
+                              <MovePageDialog page={page} onPageMoved={() => fetchProjectData()} currentProjectId={projectId} />
+                              <DropdownMenuSeparator />
+                              <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem 
+                                    className="text-destructive" 
+                                    onSelect={(e) => { e.preventDefault(); setPageToDelete(page.id); }}
+                                  >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Excluir
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                               </AlertDialog>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       <h3 className="mt-4 font-semibold">{page.name}</h3>
                       <p className="text-sm text-muted-foreground">

@@ -134,6 +134,14 @@ const duplicatePage = async (pageId: string): Promise<CloudPage> => {
     return newPage;
 };
 
+const movePageToProject = async (pageId: string, newProjectId: string): Promise<void> => {
+    const pageRef = doc(db, 'pages', pageId);
+    await updateDoc(pageRef, {
+        projectId: newProjectId,
+        updatedAt: serverTimestamp()
+    });
+};
+
 export {
     addProject,
     updateProject,
@@ -146,5 +154,8 @@ export {
     getPagesForProject,
     getProjectWithPages,
     deletePage,
-    duplicatePage
+    duplicatePage,
+    movePageToProject
 };
+
+    

@@ -245,33 +245,43 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
     <style>
         #cookie-banner {
             position: fixed;
-            bottom: -100%;
-            left: 0;
-            width: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
+            bottom: -200px;
+            left: 20px;
+            max-width: 380px;
+            background-color: rgba(0, 0, 0, 0.9);
             color: white;
             padding: 20px;
+            border-radius: 12px;
             box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
             z-index: 10000;
             transition: bottom 0.5s ease-in-out;
-            flex-wrap: wrap;
-            gap: 15px;
         }
         #cookie-banner p {
             margin: 0;
-            flex-grow: 1;
             font-size: 14px;
+            line-height: 1.5;
         }
         #cookie-banner button {
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            flex-shrink: 0;
+            align-self: flex-end;
+            font-weight: bold;
+        }
+         @media (max-width: 480px) {
+            #cookie-banner {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                bottom: -200px;
+            }
         }
     </style>
     <script>
@@ -279,16 +289,18 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
             const cookieBanner = document.getElementById('cookie-banner');
             const acceptButton = document.getElementById('accept-cookies');
 
-            if (!localStorage.getItem('cookiesAccepted')) {
+            if (cookieBanner && acceptButton && !localStorage.getItem('cookiesAccepted')) {
                 setTimeout(() => {
-                  cookieBanner.style.bottom = '0';
+                  cookieBanner.style.bottom = '20px';
                 }, 500);
             }
 
-            acceptButton.addEventListener('click', function() {
-                localStorage.setItem('cookiesAccepted', 'true');
-                cookieBanner.style.bottom = '-100%';
-            });
+            if(acceptButton) {
+                acceptButton.addEventListener('click', function() {
+                    localStorage.setItem('cookiesAccepted', 'true');
+                    cookieBanner.style.bottom = '-200px';
+                });
+            }
         });
     </script>
     `;

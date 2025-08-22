@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Brand, Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -106,7 +106,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
     },
     styles: isAvon ? avonTheme : naturaTheme,
     cookieBanner: {
-      enabled: false,
+      enabled: true,
       text: 'Utilizamos cookies para garantir que você tenha a melhor experiência em nosso site. Ao continuar, você concorda com o uso de cookies.',
       buttonText: 'Aceitar',
     },
@@ -150,6 +150,7 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [pageToDelete, setPageToDelete] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   
   // Create Page Dialog State
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -252,9 +253,12 @@ export function PageList({ projectId }: PageListProps) {
   }, [pages]);
 
   const filteredPages = useMemo(() => {
-    if (!activeTag) return pages;
-    return pages.filter(page => (page.tags || []).includes(activeTag));
-  }, [pages, activeTag]);
+    return pages.filter(page => {
+        const matchesTag = activeTag ? (page.tags || []).includes(activeTag) : true;
+        const matchesSearch = page.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesTag && matchesSearch;
+    });
+  }, [pages, activeTag, searchTerm]);
 
   if (isLoading || authLoading) {
     return (
@@ -357,26 +361,47 @@ export function PageList({ projectId }: PageListProps) {
         </header>
 
         <main className="p-6">
-          <div className="mb-6 flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium mr-2">Filtrar por tag:</span>
-              {allTags.map(tag => (
-                  <Badge 
-                      key={tag}
-                      onClick={() => setActiveTag(tag === activeTag ? null : tag)}
-                      className={cn(
-                          "cursor-pointer transition-all hover:brightness-110 border",
-                          activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
-                          getTagColor(tag)
-                      )}
-                  >
-                      {tag}
-                  </Badge>
-              ))}
-              {activeTag && (
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
-                      <X className="h-4 w-4" />
-                  </Button>
-              )}
+          <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+             <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar páginas..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setSearchTerm("")}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium mr-2">Filtrar por tag:</span>
+                {allTags.map(tag => (
+                    <Badge 
+                        key={tag}
+                        onClick={() => setActiveTag(tag === activeTag ? null : tag)}
+                        className={cn(
+                            "cursor-pointer transition-all hover:brightness-110 border",
+                            activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
+                            getTagColor(tag)
+                        )}
+                    >
+                        {tag}
+                    </Badge>
+                ))}
+                {activeTag && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
           </div>
 
 
@@ -385,11 +410,14 @@ export function PageList({ projectId }: PageListProps) {
               <FileText size={48} className="mx-auto text-muted-foreground" />
               <h2 className="mt-4 text-xl font-semibold">Nenhuma página encontrada</h2>
               <p className="mt-2 text-muted-foreground">
-                  {activeTag ? `Nenhuma página com a tag "${activeTag}".` : "Comece criando a primeira página para este projeto."}
+                  {searchTerm || activeTag ? "Ajuste seus filtros ou " : "Comece criando a primeira página para este projeto."}
+                  {searchTerm && !activeTag && <Button variant="link" onClick={() => setSearchTerm('')}>limpe a busca</Button>}
               </p>
-              <Button onClick={() => setCreateModalOpen(true)} className="mt-6">
-                  <Plus className="mr-2 h-4 w-4" /> Criar Página
-              </Button>
+               {!searchTerm && !activeTag && (
+                <Button onClick={() => setCreateModalOpen(true)} className="mt-6">
+                    <Plus className="mr-2 h-4 w-4" /> Criar Página
+                </Button>
+               )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -455,3 +483,5 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
+    

@@ -44,6 +44,11 @@ export interface CloudPage {
     dataExtensionKey: string;
     metaDescription: string;
     metaKeywords: string;
+    tracking?: {
+      ga4: { enabled: boolean; id?: string };
+      meta: { enabled: boolean; id?: string };
+      linkedin: { enabled: boolean; id?: string };
+    }
   };
   createdAt: any;
   updatedAt: any;

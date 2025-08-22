@@ -162,6 +162,78 @@ const renderComponent = (component: PageComponent): string => {
   }
 };
 
+const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): string => {
+    if (!trackingConfig) return '';
+
+    let scripts = '';
+
+    // Google Analytics 4
+    if (trackingConfig.ga4?.enabled && trackingConfig.ga4.id) {
+        const ga4Id = trackingConfig.ga4.id;
+        scripts += `
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${ga4Id}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', '${ga4Id}');
+</script>`;
+    }
+
+    // Meta Pixel
+    if (trackingConfig.meta?.enabled && trackingConfig.meta.id) {
+        const metaId = trackingConfig.meta.id;
+        scripts += `
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '${metaId}');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=${metaId}&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->`;
+    }
+
+    // LinkedIn Insight Tag
+    if (trackingConfig.linkedin?.enabled && trackingConfig.linkedin.id) {
+        const linkedinId = trackingConfig.linkedin.id;
+        scripts += `
+<!-- LinkedIn Insight Tag -->
+<script type="text/javascript">
+_linkedin_partner_id = "${linkedinId}";
+window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
+window._linkedin_data_partner_ids.push(_linkedin_partner_id);
+</script><script type="text/javascript">
+(function(l) {
+if (!l){window.lintrk = function(a,b){window.lintrk.q.push([a,b])};
+window.lintrk.q=[]}
+var s = document.getElementsByTagName("script")[0];
+var b = document.createElement("script");
+b.type = "text/javascript";b.async = true;
+b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
+s.parentNode.insertBefore(b, s);})(window.lintrk);
+</script>
+<noscript>
+<img height="1" width="1" style="display:none;" alt="" src="https://px.ads.linkedin.com/collect/?pid=${linkedinId}&fmt=gif" />
+</noscript>
+<!-- End LinkedIn Insight Tag -->`;
+    }
+
+    return scripts;
+};
+
+
 export const generateHtml = (pageState: CloudPage): string => {
   const { styles, components, meta } = pageState;
   
@@ -170,6 +242,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   const headerComponent = components.find(c => c.type === 'Header');
   const bannerComponent = components.find(c => c.type === 'Banner');
   const footerComponent = components.find(c => c.type === 'Footer');
+  const trackingScripts = getTrackingScripts(meta.tracking);
 
   const mainComponents = components
     .filter(c => !fullWidthTypes.includes(c.type))
@@ -241,6 +314,7 @@ export const generateHtml = (pageState: CloudPage): string => {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&amp;display=swap" rel="stylesheet">
+${trackingScripts}
 <style>
     body {
         background-color: ${styles.backgroundColor};

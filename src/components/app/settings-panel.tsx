@@ -31,6 +31,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Textarea } from "../ui/textarea";
+import { Switch } from "../ui/switch";
+import { Separator } from "../ui/separator";
 
 interface SettingsPanelProps {
   pageState: CloudPage;
@@ -83,6 +85,30 @@ export function SettingsPanel({
 
   const handleMetaChange = (prop: keyof CloudPage["meta"], value: string) => {
     setPageState((prev) => ({ ...prev, meta: { ...prev.meta, [prop]: value } }));
+  };
+
+  const handleTrackingChange = (
+    pixel: 'ga4' | 'meta' | 'linkedin',
+    prop: 'enabled' | 'id',
+    value: boolean | string
+  ) => {
+    setPageState(prev => ({
+        ...prev,
+        meta: {
+            ...prev.meta,
+            tracking: {
+                ...(prev.meta.tracking || { 
+                    ga4: { enabled: false },
+                    meta: { enabled: false },
+                    linkedin: { enabled: false }
+                }),
+                [pixel]: {
+                    ...(prev.meta.tracking?.[pixel] || { enabled: false }),
+                    [prop]: value
+                }
+            }
+        }
+    }));
   };
 
   const addComponent = (type: ComponentType) => {
@@ -170,6 +196,7 @@ export function SettingsPanel({
   };
 
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
+  const tracking = pageState.meta.tracking;
 
   return (
     <ScrollArea className="h-full">
@@ -256,13 +283,13 @@ export function SettingsPanel({
                 {isClient && (
                   <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="components">
-                      {(provided, snapshot) => (
+                      {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                           {pageState.components.map((c, index) => {
                             const Icon = componentIcons[c.type] || Text;
                             return (
                                 <Draggable key={c.id} draggableId={c.id} index={index}>
-                                {(provided) => (
+                                {(provided, snapshot) => (
                                     <div
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
@@ -336,7 +363,7 @@ export function SettingsPanel({
               </AccordionItem>
             )}
             <AccordionItem value="meta">
-              <AccordionTrigger>Configurações e SEO</AccordionTrigger>
+              <AccordionTrigger>Configurações, SEO & Pixels</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
@@ -407,6 +434,43 @@ export function SettingsPanel({
                   </div>
                   <Input value={pageState.meta.dataExtensionKey} onChange={(e) => handleMetaChange('dataExtensionKey', e.target.value)} />
                 </div>
+
+                <Separator />
+                
+                <div className="space-y-4">
+                  <h4 className="font-medium">Tracking & Pixels</h4>
+                  {/* GA4 */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="ga4-enabled">Google Analytics 4</Label>
+                      <Switch id="ga4-enabled" checked={tracking?.ga4?.enabled} onCheckedChange={(checked) => handleTrackingChange('ga4', 'enabled', checked)} />
+                    </div>
+                    {tracking?.ga4?.enabled && (
+                      <Input placeholder="ID de métricas (G-XXXXXXXXXX)" value={tracking?.ga4?.id || ''} onChange={(e) => handleTrackingChange('ga4', 'id', e.target.value)} />
+                    )}
+                  </div>
+                  {/* Meta Pixel */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="meta-enabled">Meta Pixel</Label>
+                      <Switch id="meta-enabled" checked={tracking?.meta?.enabled} onCheckedChange={(checked) => handleTrackingChange('meta', 'enabled', checked)} />
+                    </div>
+                    {tracking?.meta?.enabled && (
+                      <Input placeholder="ID do Pixel" value={tracking?.meta?.id || ''} onChange={(e) => handleTrackingChange('meta', 'id', e.target.value)} />
+                    )}
+                  </div>
+                  {/* LinkedIn Pixel */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="linkedin-enabled">LinkedIn Insight Tag</Label>
+                      <Switch id="linkedin-enabled" checked={tracking?.linkedin?.enabled} onCheckedChange={(checked) => handleTrackingChange('linkedin', 'enabled', checked)} />
+                    </div>
+                    {tracking?.linkedin?.enabled && (
+                      <Input placeholder="ID de parceiro" value={tracking?.linkedin?.id || ''} onChange={(e) => handleTrackingChange('linkedin', 'id', e.target.value)} />
+                    )}
+                  </div>
+                </div>
+
               </AccordionContent>
             </AccordionItem>
           </Accordion>

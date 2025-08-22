@@ -98,6 +98,11 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
       dataExtensionKey: 'CHANGE-ME',
       metaDescription: `Página de campanha para ${brand}.`,
       metaKeywords: `${brand.toLowerCase()}, campanha, beleza`,
+      tracking: {
+        ga4: { enabled: false, id: '' },
+        meta: { enabled: false, id: '' },
+        linkedin: { enabled: false, id: '' }
+      }
     },
     styles: isAvon ? avonTheme : naturaTheme,
     components: [

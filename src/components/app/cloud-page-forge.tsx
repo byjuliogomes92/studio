@@ -133,7 +133,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if(!authLoading && user) {
         fetchPage();
     }
-  }, [pageId, router, user, toast, authLoading, searchParams]);
+  }, [pageId, router, user, toast, authLoading, searchParams, resetState]);
   
   useEffect(() => {
     if(pageState) {
@@ -296,7 +296,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         <aside className="w-[380px] border-r flex-shrink-0 bg-card/20">
           <SettingsPanel
             pageState={pageState}
-            setPageState={setPageState as any}
+            setPageState={setPageState}
             selectedComponentId={selectedComponentId}
             setSelectedComponentId={setSelectedComponentId}
             pageName={pageName}
@@ -307,6 +307,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           <MainPanel 
             htmlCode={htmlCode} 
             pageState={pageState} 
+            setPageState={setPageState}
             onDataExtensionKeyChange={handleDataExtensionKeyChange}
            />
         </main>

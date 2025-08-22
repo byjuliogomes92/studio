@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent } from './types';
 
 const renderField = (
@@ -48,6 +47,8 @@ const renderCityDropdown = (citiesString: string = '', required: boolean = false
 const renderComponent = (component: PageComponent, pageState: CloudPage): string => {
   const styles = component.props.styles || {};
   const styleString = Object.entries(styles).map(([key, value]) => `${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}: ${value}`).join('; ');
+  const editableAttrs = (propName: string) => `contenteditable="true" data-component-id="${component.id}" data-prop-name="${propName}"`;
+
 
   switch (component.type) {
     case 'Header':
@@ -61,12 +62,11 @@ const renderComponent = (component: PageComponent, pageState: CloudPage): string
             <img src="${component.props.imageUrl || 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png'}" alt="Banner">
         </div>`;
     case 'Title':
-        return `<h1 style="${styleString}">${component.props.text || 'Título Principal'}</h1>`;
+        return `<h1 style="${styleString}" ${editableAttrs('text')}>${component.props.text || 'Título Principal'}</h1>`;
     case 'Subtitle':
-        return `<h2 style="${styleString}">${component.props.text || 'Subtítulo'}</h2>`;
+        return `<h2 style="${styleString}" ${editableAttrs('text')}>${component.props.text || 'Subtítulo'}</h2>`;
     case 'Paragraph':
-        // Allow basic HTML tags by not escaping them
-        return `<div style="white-space: pre-wrap; ${styleString}">${component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.'}</div>`;
+        return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs('text')}>${component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.'}</div>`;
     case 'Divider':
         return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0;" />`;
     case 'Image':
@@ -701,6 +701,11 @@ ${trackingScripts}
     .content-wrapper h1, .content-wrapper h2, .content-wrapper p, .content-wrapper div {
         text-align: left;
         margin: 1em 0;
+    }
+
+    [contenteditable="true"]:focus {
+      outline: 2px solid ${styles.themeColor};
+      box-shadow: 0 0 5px ${styles.themeColor};
     }
     
     .content-wrapper h1, .content-wrapper h2 {

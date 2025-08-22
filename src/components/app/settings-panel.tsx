@@ -3,8 +3,8 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import type { CloudPage, ComponentType, PageComponent } from "@/lib/types";
-import React, { useEffect, useState } from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import React from 'react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -32,7 +32,7 @@ import { AddComponentDialog } from './add-component-dialog';
 
 interface SettingsPanelProps {
   pageState: CloudPage;
-  setPageState: Dispatch<SetStateAction<CloudPage>>;
+  setPageState: Dispatch<SetStateAction<CloudPage | null>>;
   selectedComponentId: string | null;
   setSelectedComponentId: Dispatch<SetStateAction<string | null>>;
   pageName: string;
@@ -124,25 +124,28 @@ export function SettingsPanel({
   
   const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
-    setPageState(prev => ({ ...prev, tags }));
+    setPageState(prev => prev ? ({ ...prev, tags }) : null);
   };
 
   const handleStyleChange = (prop: keyof CloudPage["styles"], value: string) => {
-    setPageState((prev) => ({ ...prev, styles: { ...prev.styles, [prop]: value } }));
+    setPageState((prev) => prev ? ({ ...prev, styles: { ...prev.styles, [prop]: value } }) : null);
   };
 
   const handleMetaChange = (prop: keyof CloudPage["meta"], value: string) => {
-    setPageState((prev) => ({ ...prev, meta: { ...prev.meta, [prop]: value } }));
+    setPageState((prev) => prev ? ({ ...prev, meta: { ...prev.meta, [prop]: value } }) : null);
   };
   
   const handleCookieBannerChange = (prop: keyof NonNullable<CloudPage['cookieBanner']>, value: any) => {
-     setPageState(prev => ({
-      ...prev,
-      cookieBanner: {
-        ...(prev.cookieBanner || { enabled: false, text: '', buttonText: '' }),
-        [prop]: value,
-      },
-    }));
+     setPageState(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        cookieBanner: {
+          ...(prev.cookieBanner || { enabled: false, text: '', buttonText: '' }),
+          [prop]: value,
+        },
+      }
+    });
   }
 
   const handleTrackingChange = (
@@ -150,23 +153,26 @@ export function SettingsPanel({
     prop: 'enabled' | 'id',
     value: boolean | string
   ) => {
-    setPageState(prev => ({
-        ...prev,
-        meta: {
-            ...prev.meta,
-            tracking: {
-                ...(prev.meta.tracking || { 
-                    ga4: { enabled: false },
-                    meta: { enabled: false },
-                    linkedin: { enabled: false }
-                }),
-                [pixel]: {
-                    ...(prev.meta.tracking?.[pixel] || { enabled: false }),
-                    [prop]: value
+    setPageState(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            meta: {
+                ...prev.meta,
+                tracking: {
+                    ...(prev.meta.tracking || { 
+                        ga4: { enabled: false, id: '' },
+                        meta: { enabled: false, id: '' },
+                        linkedin: { enabled: false, id: '' }
+                    }),
+                    [pixel]: {
+                        ...(prev.meta.tracking?.[pixel] || { enabled: false, id: '' }),
+                        [prop]: value
+                    }
                 }
             }
         }
-    }));
+    });
   };
 
   const addComponent = (type: ComponentType) => {
@@ -240,30 +246,36 @@ export function SettingsPanel({
 
     const newComponent: PageComponent = { ...baseProps, props, };
 
-    setPageState((prev) => ({
-      ...prev,
-      components: [...prev.components, newComponent],
-    }));
+    setPageState((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        components: [...prev.components, newComponent],
+      }
+    });
     setSelectedComponentId(newComponent.id);
   };
 
   const removeComponent = (id: string) => {
-    setPageState((prev) => ({
+    setPageState((prev) => {
+      if (!prev) return null;
+      return {
       ...prev,
       components: prev.components.filter((c) => c.id !== id),
-    }));
+    }});
     if (selectedComponentId === id) {
       setSelectedComponentId(null);
     }
   };
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
 
-    if (active.id !== over.id) {
+    if (active.id !== over?.id) {
       setPageState((page) => {
+        if (!page) return null;
         const oldIndex = page.components.findIndex((c) => c.id === active.id);
-        const newIndex = page.components.findIndex((c) => c.id === over.id);
+        const newIndex = page.components.findIndex((c) => c.id === over?.id);
         return {
           ...page,
           components: arrayMove(page.components, oldIndex, newIndex),
@@ -273,16 +285,20 @@ export function SettingsPanel({
   };
 
   const handlePropChange = (id: string, prop: string, value: any) => {
-    setPageState((prev) => ({
+    setPageState((prev) => {
+      if (!prev) return null;
+      return {
       ...prev,
       components: prev.components.map((c) =>
         c.id === id ? { ...c, props: { ...c.props, [prop]: value } } : c
       ),
-    }));
+    }});
   };
 
   const handleSubPropChange = (id: string, prop: string, subProp: string, value: any) => {
-    setPageState((prev) => ({
+    setPageState((prev) => {
+      if (!prev) return null;
+      return {
       ...prev,
       components: prev.components.map((c) =>
         c.id === id
@@ -298,7 +314,7 @@ export function SettingsPanel({
           }
           : c
       ),
-    }));
+    }});
   };
 
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);

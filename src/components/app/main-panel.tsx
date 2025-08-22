@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,15 +23,79 @@ import type { CloudPage } from "@/lib/types";
 interface MainPanelProps {
   htmlCode: string;
   pageState: CloudPage;
+  setPageState: Dispatch<SetStateAction<CloudPage | null>>;
   onDataExtensionKeyChange: (newKey: string) => void;
 }
 
-export function MainPanel({ htmlCode, pageState, onDataExtensionKeyChange }: MainPanelProps) {
+export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKeyChange }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleInlineEdit = useCallback((componentId: string, propName: string, newContent: string) => {
+    setPageState(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        components: prev.components.map(c => 
+          c.id === componentId 
+            ? { ...c, props: { ...c.props, [propName]: newContent } } 
+            : c
+        ),
+      };
+    });
+  }, [setPageState]);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const handleIframeLoad = () => {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) return;
+      
+      const editableElements = iframeDoc.querySelectorAll<HTMLElement>('[contenteditable="true"]');
+
+      editableElements.forEach(el => {
+          const handleBlur = () => {
+              const componentId = el.dataset.componentId;
+              const propName = el.dataset.propName;
+              if(componentId && propName) {
+                  handleInlineEdit(componentId, propName, el.innerHTML);
+              }
+          };
+
+          const handleKeyDown = (e: KeyboardEvent) => {
+              // Prevent new lines on Enter, and save on Enter
+              if (e.key === 'Enter') {
+                  e.preventDefault();
+                  el.blur();
+              }
+          };
+          
+          el.addEventListener('blur', handleBlur);
+          el.addEventListener('keydown', handleKeyDown);
+      });
+    };
+
+    iframe.addEventListener('load', handleIframeLoad);
+
+    // Cleanup
+    return () => {
+      iframe.removeEventListener('load', handleIframeLoad);
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if(iframeDoc) {
+        const editableElements = iframeDoc.querySelectorAll<HTMLElement>('[contenteditable="true"]');
+         editableElements.forEach(el => {
+             // You can't easily remove anonymous functions, so this part is tricky
+             // For this app, since the iframe reloads, it's not a huge memory leak issue.
+         });
+      }
+    };
+  }, [htmlCode, handleInlineEdit]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(htmlCode);
@@ -129,6 +194,7 @@ export function MainPanel({ htmlCode, pageState, onDataExtensionKeyChange }: Mai
           <TabsContent value="preview" className="w-full h-full m-0">
             <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
               <iframe
+                  ref={iframeRef}
                   srcDoc={htmlCode}
                   title="Preview da Cloud Page"
                   className={cn(

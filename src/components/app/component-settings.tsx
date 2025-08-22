@@ -232,14 +232,18 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
         );
       case 'Countdown':
         return (
-          <div className="space-y-2">
-            <Label htmlFor="countdown-date">Data e Hora do Fim</Label>
-            <Input
-              id="countdown-date"
-              type="datetime-local"
-              value={component.props.targetDate || ''}
-              onChange={(e) => onPropChange('targetDate', e.target.value)}
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="countdown-date">Data e Hora do Fim</Label>
+              <Input
+                id="countdown-date"
+                type="datetime-local"
+                value={component.props.targetDate || ''}
+                onChange={(e) => onPropChange('targetDate', e.target.value)}
+              />
+            </div>
+            <Separator />
+            <TextStyleSettings component={component} onPropChange={onPropChange} />
           </div>
         );
       case 'Divider':

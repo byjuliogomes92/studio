@@ -808,7 +808,6 @@ ${trackingScripts}
             emailInput.addEventListener('input', function() { validateEmail(this); });
             emailInput.addEventListener('blur', function() { validateEmail(this); });
 
-            // Your fix is applied here!
             if (!emailInput.parentElement.classList.contains('input-wrapper')) {
               const emailWrapper = document.createElement('div');
               emailWrapper.className = 'input-wrapper';

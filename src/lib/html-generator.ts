@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent } from './types';
 
 const renderField = (
@@ -112,6 +113,49 @@ const renderComponent = (component: PageComponent): string => {
         return `<div style="height: ${component.props.height || 20}px;"></div>`;
     case 'Button':
          return `<div style="text-align: ${component.props.align || 'center'}; margin: 20px 0;"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
+    case 'Accordion': {
+        const items = component.props.items || [];
+        const itemsHtml = items
+          .map(
+            (item: { id: string; title: string; content: string }) => `
+          <div class="accordion-item">
+            <button class="accordion-header" aria-expanded="false" aria-controls="content-${item.id}">
+              ${item.title}
+              <span class="accordion-icon"></span>
+            </button>
+            <div id="content-${item.id}" class="accordion-content">
+              ${item.content}
+            </div>
+          </div>`
+          )
+          .join('');
+        return `<div class="accordion-container">${itemsHtml}</div>`;
+    }
+    case 'Tabs': {
+        const items = component.props.items || [];
+        const tabsId = `tabs-${component.id}`;
+        const triggersHtml = items
+          .map(
+            (item: { id: string; title: string }, index: number) => `
+          <button class="tab-trigger" data-tab="${item.id}" role="tab" aria-controls="panel-${item.id}" aria-selected="${index === 0 ? 'true' : 'false'}">
+            ${item.title}
+          </button>`
+          )
+          .join('');
+        const panelsHtml = items
+          .map(
+            (item: { id: string; content: string }, index: number) => `
+          <div id="panel-${item.id}" class="tab-panel" role="tabpanel" ${index !== 0 ? 'hidden' : ''}>
+            ${item.content}
+          </div>`
+          )
+          .join('');
+        return `
+          <div class="tabs-container" id="${tabsId}">
+            <div class="tab-list" role="tablist">${triggersHtml}</div>
+            ${panelsHtml}
+          </div>`;
+    }
     case 'Form':
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
       const formHtml = `
@@ -430,19 +474,19 @@ ${trackingScripts}
         filter: brightness(0) invert(1);
     }
 
-  @keyframes pulse {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.1);
-        opacity: 0.8;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
     }
   
   
@@ -690,8 +734,133 @@ ${trackingScripts}
         align-items: center;
         gap: 10px;
     }
+
+    /* Accordion Styles */
+    .accordion-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 20px 0;
+    }
+    .accordion-item {
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .accordion-item:last-child {
+        border-bottom: none;
+    }
+    .accordion-header {
+        background-color: #f9f9f9;
+        color: #333;
+        cursor: pointer;
+        padding: 15px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .accordion-header:hover, .accordion-header[aria-expanded="true"] {
+        background-color: #f1f1f1;
+    }
+    .accordion-icon {
+        width: 10px;
+        height: 10px;
+        border-right: 2px solid #333;
+        border-bottom: 2px solid #333;
+        transform: rotate(45deg);
+        transition: transform 0.3s ease;
+    }
+    .accordion-header[aria-expanded="true"] .accordion-icon {
+        transform: rotate(225deg);
+    }
+    .accordion-content {
+        padding: 0 15px;
+        background-color: white;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+        text-align: left;
+    }
+    .accordion-content.active {
+        padding: 15px;
+    }
+
+    /* Tabs Styles */
+    .tabs-container { margin: 20px 0; }
+    .tab-list {
+        display: flex;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .tab-trigger {
+        padding: 10px 20px;
+        cursor: pointer;
+        border: none;
+        background-color: transparent;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+        font-size: 16px;
+    }
+    .tab-trigger:hover {
+        background-color: #f9f9f9;
+    }
+    .tab-trigger[aria-selected="true"] {
+        border-bottom-color: ${styles.themeColor};
+        color: ${styles.themeColor};
+        font-weight: bold;
+    }
+    .tab-panel {
+        padding: 20px;
+        text-align: left;
+    }
 </style>
 <script>
+    function setupAccordions() {
+        document.querySelectorAll('.accordion-container').forEach(container => {
+            container.addEventListener('click', function(event) {
+                if (!event.target.classList.contains('accordion-header')) return;
+                const header = event.target;
+                const content = header.nextElementSibling;
+                const isExpanded = header.getAttribute('aria-expanded') === 'true';
+
+                header.setAttribute('aria-expanded', !isExpanded);
+                if (!isExpanded) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    content.style.padding = '15px';
+                } else {
+                    content.style.maxHeight = '0';
+                    content.style.padding = '0 15px';
+                }
+            });
+        });
+    }
+    
+    function setupTabs() {
+        document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+            const tabList = tabsContainer.querySelector('.tab-list');
+            const triggers = tabList.querySelectorAll('.tab-trigger');
+            const panels = tabsContainer.querySelectorAll('.tab-panel');
+
+            tabList.addEventListener('click', e => {
+                if (e.target.matches('.tab-trigger')) {
+                    triggers.forEach(t => t.setAttribute('aria-selected', 'false'));
+                    e.target.setAttribute('aria-selected', 'true');
+                    const tabId = e.target.dataset.tab;
+                    panels.forEach(p => {
+                        if ('panel-' + tabId === p.id) {
+                            p.hidden = false;
+                        } else {
+                            p.hidden = true;
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     function formatPhoneNumber(input) {
         let numbers = input.value.replace(/\\D/g, '');
         numbers = numbers.substring(0, 11);
@@ -805,15 +974,14 @@ ${trackingScripts}
         
         const emailInput = document.getElementById('EMAIL');
         if(emailInput) {
-            emailInput.addEventListener('input', function() { validateEmail(this); });
-            emailInput.addEventListener('blur', function() { validateEmail(this); });
-
             if (!emailInput.parentElement.classList.contains('input-wrapper')) {
               const emailWrapper = document.createElement('div');
               emailWrapper.className = 'input-wrapper';
               emailInput.parentNode.insertBefore(emailWrapper, emailInput);
               emailWrapper.appendChild(emailInput);
             }
+            emailInput.addEventListener('input', function() { validateEmail(this); });
+            emailInput.addEventListener('blur', function() { validateEmail(this); });
         }
             
         const submitButton = document.querySelector('.form-container button');
@@ -831,6 +999,9 @@ ${trackingScripts}
             submitButton.appendChild(buttonText);
             submitButton.appendChild(buttonLoader);
         }
+        
+        setupAccordions();
+        setupTabs();
     }
 </script>
 </head>

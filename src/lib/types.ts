@@ -1,4 +1,5 @@
 
+
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -12,7 +13,9 @@ export type ComponentType =
   | 'Countdown'
   | 'Video'
   | 'Button'
-  | 'Spacer';
+  | 'Spacer'
+  | 'Accordion'
+  | 'Tabs';
   
 export type Brand = 'Natura' | 'Avon';
 

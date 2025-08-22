@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import type { PageComponent } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -98,6 +99,74 @@ function TextStyleSettings({ component, onPropChange }: { component: PageCompone
   );
 }
 
+function ListManager({
+    items,
+    onPropChange,
+  }: {
+    items: { id: string; title: string; content: string }[];
+    onPropChange: (prop: string, value: any) => void;
+  }) {
+    const handleItemChange = (itemId: string, field: 'title' | 'content', value: string) => {
+      const newItems = items.map((item) =>
+        item.id === itemId ? { ...item, [field]: value } : item
+      );
+      onPropChange('items', newItems);
+    };
+  
+    const addItem = () => {
+      const newItem = {
+        id: `item-${Date.now()}`,
+        title: 'Novo Item',
+        content: 'Conteúdo do novo item.',
+      };
+      onPropChange('items', [...items, newItem]);
+    };
+  
+    const removeItem = (itemId: string) => {
+      onPropChange(
+        'items',
+        items.filter((item) => item.id !== itemId)
+      );
+    };
+  
+    return (
+      <div className="space-y-4">
+        {items.map((item, index) => (
+          <div key={item.id} className="p-3 border rounded-md space-y-3 relative">
+             <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1 right-1 h-6 w-6 text-destructive/80 hover:text-destructive"
+                onClick={() => removeItem(item.id)}
+            >
+                <Trash2 className="h-4 w-4" />
+            </Button>
+
+            <div className="space-y-2">
+              <Label htmlFor={`item-title-${item.id}`}>Título {index + 1}</Label>
+              <Input
+                id={`item-title-${item.id}`}
+                value={item.title}
+                onChange={(e) => handleItemChange(item.id, 'title', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`item-content-${item.id}`}>Conteúdo {index + 1}</Label>
+              <Textarea
+                id={`item-content-${item.id}`}
+                value={item.content}
+                onChange={(e) => handleItemChange(item.id, 'content', e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+        ))}
+        <Button variant="outline" className="w-full" onClick={addItem}>
+          <Plus className="h-4 w-4 mr-2" /> Adicionar Item
+        </Button>
+      </div>
+    );
+  }
 
 export function ComponentSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
   const renderSettings = () => {
@@ -255,7 +324,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                 id="divider-thickness"
                 type="number"
                 value={component.props.thickness || 1}
-                onChange={(e) => onPropChange('thickness', e.target.value)}
+                onChange={(e) => onPropChange('thickness', parseInt(e.target.value, 10) || 1)}
               />
             </div>
             <div className="space-y-2">
@@ -287,7 +356,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                 id="divider-margin"
                 type="number"
                 value={component.props.margin || 20}
-                onChange={(e) => onPropChange('margin', e.target.value)}
+                onChange={(e) => onPropChange('margin', parseInt(e.target.value, 10) || 0)}
               />
             </div>
           </div>
@@ -455,6 +524,9 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
             </div>
           </div>
         );
+      case 'Accordion':
+      case 'Tabs':
+        return <ListManager items={component.props.items || []} onPropChange={onPropChange} />;
       case "Footer":
         return (
           <div className="space-y-4">

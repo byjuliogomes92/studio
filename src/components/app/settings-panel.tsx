@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
@@ -22,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -57,6 +58,8 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Countdown: Timer,
     Button: MousePointerClick,
     Spacer: StretchHorizontal,
+    Accordion: Layers,
+    Tabs: PanelTop,
 };
 
 
@@ -145,6 +148,15 @@ export function SettingsPanel({
             break;
         case 'Button':
             props = { text: 'Clique Aqui', href: '#', align: 'center' };
+            break;
+        case 'Accordion':
+        case 'Tabs':
+            props = {
+                items: [
+                    { id: 'item-1', title: 'Item 1', content: 'Conteúdo do item 1.' },
+                    { id: 'item-2', title: 'Item 2', content: 'Conteúdo do item 2.' },
+                ]
+            };
             break;
         // Other components get empty props by default
     }
@@ -352,6 +364,9 @@ export function SettingsPanel({
                     <DropdownMenuItem onClick={() => addComponent("Paragraph")}>Parágrafo</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Image")}>Imagem</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Video")}>Vídeo</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => addComponent("Accordion")}>Accordion</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Tabs")}>Tabs</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => addComponent("Countdown")}>Contador Regressivo</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Button")}>Botão</DropdownMenuItem>

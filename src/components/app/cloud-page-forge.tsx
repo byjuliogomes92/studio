@@ -192,7 +192,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         return needsUpdate ? newState : prev;
     });
 
-  }, [pageState?.brand, setPageState]);
+  }, [pageState?.brand]);
   
   // Keyboard shortcut for Undo
   useEffect(() => {

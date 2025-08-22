@@ -1,5 +1,4 @@
 
-
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -27,6 +26,8 @@ export interface PageComponent {
   id: string;
   type: ComponentType;
   props: any;
+  abTestEnabled?: boolean;
+  abTestVariants?: any[];
 }
 
 export interface CloudPage {

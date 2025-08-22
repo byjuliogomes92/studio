@@ -45,6 +45,50 @@ const renderCityDropdown = (citiesString: string = '', required: boolean = false
 
 
 const renderComponent = (component: PageComponent, pageState: CloudPage): string => {
+  if (component.abTestEnabled) {
+    const variantB = (component.abTestVariants && component.abTestVariants[0]) || {};
+    const propsA = component.props;
+    const propsB = { ...propsA, ...variantB }; // Variant B props override Variant A
+
+    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState);
+    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState);
+
+    const randomVar = `v(@Random_${component.id.slice(-5)})`;
+    const hiddenInput = `<input type="hidden" name="VARIANTE_${component.id.toUpperCase()}" data-field-type="Text" value="%%=v(@VARIANTE_${component.id.toUpperCase()})=%%">`;
+    
+    return `%%[
+      SET ${randomVar} = Mod(Random(1,100), 2)
+      IF ${randomVar} == 0 THEN
+        SET @VARIANTE_${component.id.toUpperCase()} = "A"
+    ]%%
+      <div class="ab-variant-a">${componentA}</div>
+    %%[ ELSE
+        SET @VARIANTE_${component.id.toUpperCase()} = "B"
+    ]%%
+      <div class="ab-variant-b">${componentB}</div>
+    %%[ ENDIF ]%%
+    ${hiddenInput}
+    <script>
+      (function() {
+        var variant = "%%=v(@VARIANTE_${component.id.toUpperCase()})=%%";
+        document.querySelectorAll('.ab-variant-a, .ab-variant-b').forEach(function(el) {
+          var parent = el.closest('[id^="ab-test-wrapper-${component.id}"]');
+          if (parent) {
+            if (variant === 'A' && el.classList.contains('ab-variant-b')) {
+              el.style.display = 'none';
+            } else if (variant === 'B' && el.classList.contains('ab-variant-a')) {
+              el.style.display = 'none';
+            }
+          }
+        });
+      })();
+    </script>
+    `;
+  }
+  return renderSingleComponent(component, pageState);
+};
+
+const renderSingleComponent = (component: PageComponent, pageState: CloudPage): string => {
   const styles = component.props.styles || {};
   const styleString = Object.entries(styles).map(([key, value]) => `${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}: ${value}`).join('; ');
   const editableAttrs = (propName: string) => `contenteditable="true" data-component-id="${component.id}" data-prop-name="${propName}"`;
@@ -535,7 +579,7 @@ export const generateHtml = (pageState: CloudPage): string => {
 
   const mainComponents = components
     .filter(c => !fullWidthTypes.includes(c.type))
-    .map(c => renderComponent(c, pageState))
+    .map(c => `<div id="ab-test-wrapper-${c.id}">${renderComponent(c, pageState)}</div>`)
     .join('\n');
 
   const smartCaptureScript = `

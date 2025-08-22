@@ -91,8 +91,11 @@ function SortableItem({ component, selectedComponentId, setSelectedComponentId, 
           className="flex-grow justify-start"
           onClick={() => setSelectedComponentId(component.id)}
       >
-          <Icon className="h-4 w-4 mr-2"/>
-          {component.type}
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4"/>
+            <span>{component.type}</span>
+            {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
+          </div>
       </Button>
       <Button
           variant="ghost"
@@ -244,7 +247,7 @@ export function SettingsPanel({
         // Other components get empty props by default
     }
 
-    const newComponent: PageComponent = { ...baseProps, props, };
+    const newComponent: PageComponent = { ...baseProps, props, abTestEnabled: false, abTestVariants: [] };
 
     setPageState((prev) => {
       if (!prev) return null;
@@ -315,6 +318,27 @@ export function SettingsPanel({
           : c
       ),
     }});
+  };
+
+  const handleVariantPropChange = (id: string, variantIndex: number, prop: string, value: any) => {
+    setPageState((prev) => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            components: prev.components.map((c) => {
+                if (c.id === id) {
+                    const newVariants = [...(c.abTestVariants || [])];
+                    const currentVariantProps = newVariants[variantIndex] || {};
+                    newVariants[variantIndex] = {
+                        ...currentVariantProps,
+                        [prop]: value
+                    };
+                    return { ...c, abTestVariants: newVariants };
+                }
+                return c;
+            }),
+        };
+    });
   };
 
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
@@ -436,6 +460,7 @@ export function SettingsPanel({
                     component={selectedComponent}
                     onPropChange={(prop, value) => handlePropChange(selectedComponent.id, prop, value)}
                     onSubPropChange={(prop, subProp, value) => handleSubPropChange(selectedComponent.id, prop, subProp, value)}
+                    onVariantPropChange={(variantIndex, prop, value) => handleVariantPropChange(selectedComponent.id, variantIndex, prop, value)}
                   />
                 </AccordionContent>
               </AccordionItem>

@@ -2,11 +2,11 @@
 
 "use client";
 
-import type { PageComponent } from "@/lib/types";
+import type { PageComponent, ComponentType } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -23,6 +23,7 @@ interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
+  onVariantPropChange: (variantIndex: number, prop: string, value: any) => void;
 }
 
 const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] = [
@@ -34,8 +35,8 @@ const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] 
     { id: 'birthdate', label: 'Data de Nascimento' },
 ];
 
-function TextStyleSettings({ component, onPropChange }: { component: PageComponent, onPropChange: (prop: string, value: any) => void }) {
-  const styles = component.props.styles || {};
+function TextStyleSettings({ props, onPropChange }: { props: any, onPropChange: (prop: string, value: any) => void }) {
+  const styles = props.styles || {};
   
   const handleStyleChange = (prop: string, value: any) => {
     onPropChange('styles', { ...styles, [prop]: value });
@@ -221,9 +222,8 @@ function VotingOptionsManager({
     );
 }
 
-export function ComponentSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
-  const renderSettings = () => {
-    switch (component.type) {
+const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
+    switch (type) {
       case "Header":
         return (
           <div className="space-y-2">
@@ -236,7 +236,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
             </div>
             <Input
               id="logo-url"
-              value={component.props.logoUrl || ""}
+              value={props.logoUrl || ""}
               onChange={(e) => onPropChange("logoUrl", e.target.value)}
             />
           </div>
@@ -253,7 +253,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
             </div>
             <Input
               id="image-url"
-              value={component.props.imageUrl || ""}
+              value={props.imageUrl || ""}
               onChange={(e) => onPropChange("imageUrl", e.target.value)}
             />
           </div>
@@ -266,13 +266,13 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
               <Label htmlFor="text-content">Texto</Label>
               <Textarea
                 id="text-content"
-                value={component.props.text || ""}
+                value={props.text || ""}
                 onChange={(e) => onPropChange("text", e.target.value)}
                 rows={4}
               />
             </div>
             <Separator />
-            <TextStyleSettings component={component} onPropChange={onPropChange} />
+            <TextStyleSettings props={props} onPropChange={onPropChange} />
           </div>
         );
       case "Paragraph":
@@ -296,13 +296,13 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                 </div>
                 <Textarea
                 id="text-content"
-                value={component.props.text || ""}
+                value={props.text || ""}
                 onChange={(e) => onPropChange("text", e.target.value)}
                 rows={8}
                 />
             </div>
             <Separator />
-            <TextStyleSettings component={component} onPropChange={onPropChange} />
+            <TextStyleSettings props={props} onPropChange={onPropChange} />
           </div>
         );
       case "Image":
@@ -318,7 +318,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                 </div>
                 <Input
                     id="image-src"
-                    value={component.props.src || ""}
+                    value={props.src || ""}
                     onChange={(e) => onPropChange("src", e.target.value)}
                     placeholder="https://placehold.co/800x200.png"
                 />
@@ -333,7 +333,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                   </div>
                   <Input
                       id="image-alt"
-                      value={component.props.alt || ""}
+                      value={props.alt || ""}
                       onChange={(e) => onPropChange("alt", e.target.value)}
                       placeholder="Texto descritivo para a imagem"
                   />
@@ -346,7 +346,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
             <Label htmlFor="video-url">URL do Vídeo (YouTube)</Label>
             <Input
               id="video-url"
-              value={component.props.url || ''}
+              value={props.url || ''}
               onChange={(e) => onPropChange('url', e.target.value)}
               placeholder="https://www.youtube.com/watch?v=..."
             />
@@ -360,12 +360,12 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
               <Input
                 id="countdown-date"
                 type="datetime-local"
-                value={component.props.targetDate || ''}
+                value={props.targetDate || ''}
                 onChange={(e) => onPropChange('targetDate', e.target.value)}
               />
             </div>
             <Separator />
-            <TextStyleSettings component={component} onPropChange={onPropChange} />
+            <TextStyleSettings props={props} onPropChange={onPropChange} />
           </div>
         );
       case 'Divider':
@@ -376,13 +376,13 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
               <Input
                 id="divider-thickness"
                 type="number"
-                value={component.props.thickness || 1}
+                value={props.thickness || 1}
                 onChange={(e) => onPropChange('thickness', parseInt(e.target.value, 10) || 1)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="divider-style">Estilo</Label>
-              <Select value={component.props.style || 'solid'} onValueChange={(value) => onPropChange('style', value)}>
+              <Select value={props.style || 'solid'} onValueChange={(value) => onPropChange('style', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o estilo" />
                 </SelectTrigger>
@@ -398,7 +398,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
               <Input
                 id="divider-color"
                 type="color"
-                value={component.props.color || '#cccccc'}
+                value={props.color || '#cccccc'}
                 onChange={(e) => onPropChange('color', e.target.value)}
                 className="p-1 h-10"
               />
@@ -408,7 +408,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
               <Input
                 id="divider-margin"
                 type="number"
-                value={component.props.margin || 20}
+                value={props.margin || 20}
                 onChange={(e) => onPropChange('margin', parseInt(e.target.value, 10) || 0)}
               />
             </div>
@@ -421,7 +421,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                 <Input
                 id="spacer-height"
                 type="number"
-                value={component.props.height || 20}
+                value={props.height || 20}
                 onChange={(e) => onPropChange('height', parseInt(e.target.value, 10))}
                 />
             </div>
@@ -433,7 +433,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     <Label htmlFor="button-text">Texto do Botão</Label>
                     <Input
                         id="button-text"
-                        value={component.props.text || ''}
+                        value={props.text || ''}
                         onChange={(e) => onPropChange('text', e.target.value)}
                         placeholder="Clique Aqui"
                     />
@@ -442,14 +442,14 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     <Label htmlFor="button-href">URL do Link</Label>
                     <Input
                         id="button-href"
-                        value={component.props.href || ''}
+                        value={props.href || ''}
                         onChange={(e) => onPropChange('href', e.target.value)}
                         placeholder="https://exemplo.com"
                     />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="button-align">Alinhamento</Label>
-                     <Select value={component.props.align || 'center'} onValueChange={(value) => onPropChange('align', value)}>
+                     <Select value={props.align || 'center'} onValueChange={(value) => onPropChange('align', value)}>
                         <SelectTrigger>
                         <SelectValue placeholder="Selecione o alinhamento" />
                         </SelectTrigger>
@@ -473,7 +473,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                             <Label htmlFor={`field-${field.id}`}>{field.label}</Label>
                             <Switch
                                 id={`field-${field.id}`}
-                                checked={component.props.fields?.[field.id] || false}
+                                checked={props.fields?.[field.id] || false}
                                 onCheckedChange={(checked) => onSubPropChange('fields', field.id, checked)}
                             />
                         </div>
@@ -486,12 +486,12 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
             <div>
                 <Label className="font-semibold">Placeholders dos Campos</Label>
                 <div className="space-y-3 mt-2">
-                    {formFields.filter(f => component.props.fields?.[f.id] && f.id !== 'city').map((field) => (
+                    {formFields.filter(f => props.fields?.[f.id] && f.id !== 'city').map((field) => (
                          <div className="space-y-2" key={`placeholder-${field.id}`}>
                             <Label htmlFor={`placeholder-${field.id}`}>{field.label}</Label>
                             <Input
                                 id={`placeholder-${field.id}`}
-                                value={component.props.placeholders?.[field.id] || ''}
+                                value={props.placeholders?.[field.id] || ''}
                                 onChange={(e) => onSubPropChange('placeholders', field.id, e.target.value)}
                              />
                         </div>
@@ -499,7 +499,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                 </div>
             </div>
 
-            {component.props.fields?.city && (
+            {props.fields?.city && (
                  <>
                     <Separator />
                     <div className="space-y-2">
@@ -512,7 +512,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                          </div>
                         <Textarea
                             id="form-cities"
-                            value={component.props.cities || ''}
+                            value={props.cities || ''}
                             onChange={(e) => onPropChange('cities', e.target.value)}
                             rows={6}
                         />
@@ -527,11 +527,11 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                 <Label htmlFor="field-optin" className="font-semibold">Opt-in de Consentimento</Label>
                 <Switch
                     id="field-optin"
-                    checked={component.props.fields?.optin || false}
+                    checked={props.fields?.optin || false}
                     onCheckedChange={(checked) => onSubPropChange('fields', 'optin', checked)}
                 />
               </div>
-              {component.props.fields?.optin && (
+              {props.fields?.optin && (
                 <div className="space-y-2 pt-2">
                   <div className="flex items-center gap-1.5">
                     <Label htmlFor="form-consent-text">Texto de Consentimento</Label>
@@ -542,7 +542,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                   </div>
                   <Textarea
                     id="form-consent-text"
-                    value={component.props.consentText || ""}
+                    value={props.consentText || ""}
                     onChange={(e) => onPropChange("consentText", e.target.value)}
                     rows={10}
                   />
@@ -557,13 +557,13 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     <Label htmlFor="form-button-text">Texto do Botão de Envio</Label>
                     <Input
                         id="form-button-text"
-                        value={component.props.buttonText || ""}
+                        value={props.buttonText || ""}
                         onChange={(e) => onPropChange("buttonText", e.target.value)}
                     />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="form-button-align">Alinhamento do Botão</Label>
-                     <Select value={component.props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
+                     <Select value={props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
                         <SelectTrigger>
                         <SelectValue placeholder="Selecione o alinhamento" />
                         </SelectTrigger>
@@ -579,7 +579,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
         );
       case 'Accordion':
       case 'Tabs':
-        return <ListManager items={component.props.items || []} onPropChange={onPropChange} />;
+        return <ListManager items={props.items || []} onPropChange={onPropChange} />;
       case 'Voting':
             return (
                 <div className="space-y-4">
@@ -587,7 +587,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                         <Label htmlFor="voting-question">Pergunta da Votação</Label>
                         <Input
                             id="voting-question"
-                            value={component.props.question || ''}
+                            value={props.question || ''}
                             onChange={(e) => onPropChange('question', e.target.value)}
                             placeholder="Qual sua pergunta?"
                         />
@@ -596,7 +596,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     <div className="space-y-2">
                         <Label>Opções de Voto</Label>
                         <VotingOptionsManager
-                            options={component.props.options || []}
+                            options={props.options || []}
                             onPropChange={onPropChange}
                         />
                     </div>
@@ -609,7 +609,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                         <Label htmlFor="stripe-text">Texto da Tarja</Label>
                         <Textarea
                             id="stripe-text"
-                            value={component.props.text || ''}
+                            value={props.text || ''}
                             onChange={(e) => onPropChange('text', e.target.value)}
                             rows={3}
                         />
@@ -618,7 +618,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                         <Label htmlFor="stripe-link">URL do Link (Opcional)</Label>
                         <Input
                             id="stripe-link"
-                            value={component.props.linkUrl || ''}
+                            value={props.linkUrl || ''}
                             onChange={(e) => onPropChange('linkUrl', e.target.value)}
                             placeholder="https://exemplo.com"
                         />
@@ -629,7 +629,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                             <Input
                                 id="stripe-bg-color"
                                 type="color"
-                                value={component.props.backgroundColor || '#000000'}
+                                value={props.backgroundColor || '#000000'}
                                 onChange={(e) => onPropChange('backgroundColor', e.target.value)}
                                 className="p-1 h-10"
                             />
@@ -639,7 +639,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                             <Input
                                 id="stripe-text-color"
                                 type="color"
-                                value={component.props.textColor || '#FFFFFF'}
+                                value={props.textColor || '#FFFFFF'}
                                 onChange={(e) => onPropChange('textColor', e.target.value)}
                                 className="p-1 h-10"
                             />
@@ -649,7 +649,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                         <Label htmlFor="stripe-closable">Permitir Fechar</Label>
                         <Switch
                             id="stripe-closable"
-                            checked={component.props.isClosable}
+                            checked={props.isClosable}
                             onCheckedChange={(checked) => onPropChange('isClosable', checked)}
                         />
                     </div>
@@ -662,14 +662,14 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                         <Label htmlFor="nps-question">Pergunta Principal</Label>
                         <Textarea
                             id="nps-question"
-                            value={component.props.question || ''}
+                            value={props.question || ''}
                             onChange={(e) => onPropChange('question', e.target.value)}
                             rows={3}
                         />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="nps-type">Tipo de Escala</Label>
-                        <Select value={component.props.type || 'numeric'} onValueChange={(value) => onPropChange('type', value)}>
+                        <Select value={props.type || 'numeric'} onValueChange={(value) => onPropChange('type', value)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione o tipo" />
                             </SelectTrigger>
@@ -683,7 +683,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                         <Label htmlFor="nps-low-label">Rótulo Inferior</Label>
                         <Input
                             id="nps-low-label"
-                            value={component.props.lowLabel || ''}
+                            value={props.lowLabel || ''}
                             onChange={(e) => onPropChange('lowLabel', e.target.value)}
                             placeholder="Ex: Pouco provável"
                         />
@@ -692,7 +692,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                         <Label htmlFor="nps-high-label">Rótulo Superior</Label>
                         <Input
                             id="nps-high-label"
-                            value={component.props.highLabel || ''}
+                            value={props.highLabel || ''}
                             onChange={(e) => onPropChange('highLabel', e.target.value)}
                             placeholder="Ex: Muito provável"
                         />
@@ -701,7 +701,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                         <Label htmlFor="nps-thanks">Mensagem de Agradecimento</Label>
                         <Textarea
                             id="nps-thanks"
-                            value={component.props.thankYouMessage || ''}
+                            value={props.thankYouMessage || ''}
                             onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
                             rows={3}
                         />
@@ -724,7 +724,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                 </div>
                 <Textarea
                     id="map-embed-url"
-                    value={component.props.embedUrl || ""}
+                    value={props.embedUrl || ""}
                     onChange={(e) => onPropChange("embedUrl", e.target.value)}
                     rows={5}
                     placeholder='Cole aqui a URL do atributo "src" do iframe de incorporação do Google Maps'
@@ -742,7 +742,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     <TooltipContent><p>Primeira linha de texto no rodapé (ex: copyright).</p></TooltipContent>
                   </Tooltip>
                 </div>
-                <Textarea id="footer-text-1" value={component.props.footerText1 || ""} onChange={(e) => onPropChange("footerText1", e.target.value)} rows={3}/>
+                <Textarea id="footer-text-1" value={props.footerText1 || ""} onChange={(e) => onPropChange("footerText1", e.target.value)} rows={3}/>
             </div>
             <div className="space-y-2">
                  <div className="flex items-center gap-1.5">
@@ -752,7 +752,7 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     <TooltipContent><p>Segunda linha de texto no rodapé (ex: informações da empresa).</p></TooltipContent>
                   </Tooltip>
                 </div>
-                <Textarea id="footer-text-2" value={component.props.footerText2 || ""} onChange={(e) => onPropChange("footerText2", e.target.value)} rows={6} />
+                <Textarea id="footer-text-2" value={props.footerText2 || ""} onChange={(e) => onPropChange("footerText2", e.target.value)} rows={6} />
             </div>
             <div className="space-y-2">
                  <div className="flex items-center gap-1.5">
@@ -762,18 +762,58 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     <TooltipContent><p>Terceira linha de texto no rodapé (ex: aviso legal).</p></TooltipContent>
                   </Tooltip>
                 </div>
-                <Textarea id="footer-text-3" value={component.props.footerText3 || ""} onChange={(e) => onPropChange("footerText3", e.target.value)} rows={4}/>
+                <Textarea id="footer-text-3" value={props.footerText3 || ""} onChange={(e) => onPropChange("footerText3", e.target.value)} rows={4}/>
             </div>
           </div>
         );
       default:
         return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;
     }
-  };
+}
+
+export function ComponentSettings({ component, onPropChange, onSubPropChange, onVariantPropChange }: ComponentSettingsProps) {
+
+  const abTestEnabled = component.abTestEnabled || false;
+  const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
+
+  const handleAbTestToggle = (checked: boolean) => {
+    onPropChange('abTestEnabled', checked);
+    if(checked && !component.abTestVariants) {
+        onPropChange('abTestVariants', [{}]); // Initialize with one empty variant object
+    }
+  }
+
+  const handleVariantChange = (prop: string, value: any) => {
+    onVariantPropChange(0, prop, value);
+  }
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">{renderSettings()}</div>
+      <div className="space-y-4">
+        {renderComponentSettings(component.type, component.props, onPropChange, onSubPropChange)}
+        
+        {/* A/B Test Settings */}
+        <Separator />
+        <div className="space-y-4">
+             <div className="flex items-center justify-between">
+                <Label htmlFor="ab-test-enabled" className="flex items-center gap-2 font-semibold">
+                    <Star className="h-4 w-4 text-yellow-500"/>
+                    Teste A/B
+                </Label>
+                <Switch
+                    id="ab-test-enabled"
+                    checked={abTestEnabled}
+                    onCheckedChange={handleAbTestToggle}
+                />
+            </div>
+            {abTestEnabled && (
+                <div className="p-3 border rounded-md space-y-4 bg-muted/20">
+                     <h4 className="font-medium text-sm text-muted-foreground">Configurações da Variante B</h4>
+                     {renderComponentSettings(component.type, variantProps, handleVariantChange, (prop, subProp, value) => { /* Sub-prop for variants might need a more complex handler if needed */ })}
+                </div>
+            )}
+        </div>
+      </div>
     </TooltipProvider>
   )
 }

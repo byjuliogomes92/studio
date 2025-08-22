@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CloudPage, PageComponent } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
@@ -9,7 +9,7 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,12 +18,52 @@ interface CloudPageForgeProps {
   pageId: string;
 }
 
+// Custom hook for state history
+const useHistoryState = <T>(initialState: T) => {
+    const [history, setHistory] = useState<T[]>([initialState]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    const setState = (newState: T | ((prevState: T) => T)) => {
+        const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(history[currentIndex]) : newState;
+
+        // Prevent pushing duplicate states
+        if (JSON.stringify(resolvedState) === JSON.stringify(history[currentIndex])) {
+            return;
+        }
+
+        const newHistory = history.slice(0, currentIndex + 1);
+        newHistory.push(resolvedState);
+        setHistory(newHistory);
+        setCurrentIndex(newHistory.length - 1);
+    };
+
+    const undo = useCallback(() => {
+        if (currentIndex > 0) {
+            setCurrentIndex(prevIndex => prevIndex - 1);
+        }
+    }, [currentIndex]);
+
+    const canUndo = currentIndex > 0;
+    const currentState = history[currentIndex];
+
+    // Function to initialize or reset the state and history
+    const resetState = (newState: T) => {
+        setHistory([newState]);
+        setCurrentIndex(0);
+    }
+
+    return { state: currentState, setState, undo, canUndo, resetState };
+};
+
 export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [pageState, setPageState] = useState<CloudPage | null>(null);
+
+  const [initialPageState, setInitialPageState] = useState<CloudPage | null>(null);
+  const { state: pageState, setState: setPageState, undo, canUndo, resetState } = useHistoryState<CloudPage | null>(initialPageState);
+
   const [htmlCode, setHtmlCode] = useState("");
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [pageName, setPageName] = useState("");
@@ -69,7 +109,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             if (needsUpdate) {
               pageData.components = updatedComponents;
             }
-            setPageState(pageData);
+            setInitialPageState(pageData);
+            resetState(pageData); // Initialize history
             setPageName(pageData.name);
           } else {
             toast({ variant: "destructive", title: "Erro", description: "Página não encontrada ou acesso negado." });
@@ -151,7 +192,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         return needsUpdate ? newState : prev;
     });
 
-  }, [pageState?.brand]);
+  }, [pageState?.brand, setPageState]);
 
   const handleSave = async () => {
     if (!pageState || !user) return;
@@ -164,6 +205,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           userId: user.uid,
       };
       await updatePage(pageId, finalPageState);
+      // After saving, the new state is the baseline. Reset history.
+      resetState(finalPageState);
       toast({ title: "Página atualizada!", description: `A página "${pageName}" foi salva com sucesso.` });
     } catch(error) {
          toast({ variant: "destructive", title: "Erro ao salvar", description: "Não foi possível salvar a página." });
@@ -207,10 +250,16 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             <h1>Cloud Page Forge</h1>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            {isSaving ? 'Salvando...' : 'Salvar Página'}
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={undo} disabled={!canUndo}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Desfazer
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {isSaving ? 'Salvando...' : 'Salvar Página'}
+            </Button>
+        </div>
       </header>
       <div className="flex flex-grow overflow-hidden">
         <aside className="w-[380px] border-r flex-shrink-0 bg-card/20">
@@ -231,3 +280,5 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     </>
   );
 }
+
+    

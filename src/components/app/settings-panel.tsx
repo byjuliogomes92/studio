@@ -256,7 +256,7 @@ export function SettingsPanel({
                 {isClient && (
                   <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="components">
-                      {(provided) => (
+                      {(provided, snapshot) => (
                         <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                           {pageState.components.map((c, index) => {
                             const Icon = componentIcons[c.type] || Text;

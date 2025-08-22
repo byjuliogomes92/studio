@@ -248,8 +248,8 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
             bottom: -200px;
             left: 20px;
             max-width: 380px;
-            background-color: rgba(0, 0, 0, 0.9);
-            color: white;
+            background-color: rgba(255, 255, 255, 0.95);
+            color: black;
             padding: 20px;
             border-radius: 12px;
             box-sizing: border-box;
@@ -260,6 +260,7 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
             gap: 15px;
             z-index: 10000;
             transition: bottom 0.5s ease-in-out;
+            border: 1px solid #e0e0e0;
         }
         #cookie-banner p {
             margin: 0;

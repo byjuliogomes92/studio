@@ -335,7 +335,7 @@ export function SettingsPanel({
               <AccordionContent className="space-y-4 pt-2">
                 {isClient && (
                   <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="components" isDropDisabled={false}>
+                    <Droppable droppableId="components" isDropDisabled={false} isCombineEnabled={false}>
                       {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                           {pageState.components.map((c, index) => {

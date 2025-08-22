@@ -16,7 +16,8 @@ export type ComponentType =
   | 'Spacer'
   | 'Accordion'
   | 'Tabs'
-  | 'Voting';
+  | 'Voting'
+  | 'Stripe';
   
 export type Brand = 'Natura' | 'Avon';
 

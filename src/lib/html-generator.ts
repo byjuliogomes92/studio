@@ -238,6 +238,41 @@ const renderComponent = (component: PageComponent, pageState: CloudPage): string
             </script>
         `;
     }
+    case 'Stripe': {
+        const { text, isClosable, backgroundColor, textColor, linkUrl } = component.props;
+        const stripeId = `stripe-${component.id}`;
+
+        const closeButton = isClosable ? `<button id="close-${stripeId}" class="stripe-close-btn">&times;</button>` : '';
+        const content = linkUrl ? `<a href="${linkUrl}" target="_blank" style="color: inherit; text-decoration: none;">${text}</a>` : text;
+
+        return `
+            <div id="${stripeId}" class="stripe-container" style="background-color: ${backgroundColor}; color: ${textColor};">
+                <p>${content}</p>
+                ${closeButton}
+            </div>
+            <script>
+                (function() {
+                    const stripe = document.getElementById('${stripeId}');
+                    if (!stripe) return;
+                    const closeBtn = document.getElementById('close-${stripeId}');
+                    const storageKey = 'stripe_closed_${stripeId}';
+
+                    if (localStorage.getItem(storageKey) === 'true') {
+                        stripe.style.display = 'none';
+                    } else {
+                        stripe.style.display = 'flex';
+                    }
+
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', function() {
+                            stripe.style.display = 'none';
+                            localStorage.setItem(storageKey, 'true');
+                        });
+                    }
+                })();
+            </script>
+        `;
+    }
     case 'Form':
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
       const formHtml = `
@@ -436,8 +471,9 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 export const generateHtml = (pageState: CloudPage): string => {
   const { styles, components, meta, cookieBanner } = pageState;
   
-  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer'];
+  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
 
+  const stripeComponents = components.filter(c => c.type === 'Stripe').map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header');
   const bannerComponent = components.find(c => c.type === 'Banner');
   const footerComponent = components.find(c => c.type === 'Footer');
@@ -965,6 +1001,32 @@ ${trackingScripts}
         font-weight: bold;
         width: 50px;
     }
+    /* Stripe Styles */
+    .stripe-container {
+        width: 100%;
+        padding: 10px 20px;
+        box-sizing: border-box;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        text-align: center;
+    }
+    .stripe-container p {
+        margin: 0;
+        flex-grow: 1;
+    }
+    .stripe-close-btn {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 10px;
+        position: absolute;
+        right: 10px;
+    }
 </style>
 <script>
     function setupAccordions() {
@@ -1158,6 +1220,7 @@ ${trackingScripts}
   <div id="loader">
     <img src="${meta.loaderImageUrl}" alt="Loader">
   </div>
+  ${stripeComponents}
   <div class="container" style="display: block;">
     ${headerComponent ? renderComponent(headerComponent, pageState) : ''}
     ${bannerComponent ? renderComponent(bannerComponent, pageState) : ''}

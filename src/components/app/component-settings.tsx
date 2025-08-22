@@ -602,6 +602,59 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     </div>
                 </div>
             );
+        case 'Stripe':
+            return (
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="stripe-text">Texto da Tarja</Label>
+                        <Textarea
+                            id="stripe-text"
+                            value={component.props.text || ''}
+                            onChange={(e) => onPropChange('text', e.target.value)}
+                            rows={3}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="stripe-link">URL do Link (Opcional)</Label>
+                        <Input
+                            id="stripe-link"
+                            value={component.props.linkUrl || ''}
+                            onChange={(e) => onPropChange('linkUrl', e.target.value)}
+                            placeholder="https://exemplo.com"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="stripe-bg-color">Cor de Fundo</Label>
+                            <Input
+                                id="stripe-bg-color"
+                                type="color"
+                                value={component.props.backgroundColor || '#000000'}
+                                onChange={(e) => onPropChange('backgroundColor', e.target.value)}
+                                className="p-1 h-10"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="stripe-text-color">Cor do Texto</Label>
+                            <Input
+                                id="stripe-text-color"
+                                type="color"
+                                value={component.props.textColor || '#FFFFFF'}
+                                onChange={(e) => onPropChange('textColor', e.target.value)}
+                                className="p-1 h-10"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="stripe-closable">Permitir Fechar</Label>
+                        <Switch
+                            id="stripe-closable"
+                            checked={component.props.isClosable}
+                            onCheckedChange={(checked) => onPropChange('isClosable', checked)}
+                        />
+                    </div>
+                </div>
+            );
       case "Footer":
         return (
           <div className="space-y-4">

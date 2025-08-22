@@ -61,6 +61,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Accordion: Layers,
     Tabs: PanelTop,
     Voting: Vote,
+    Stripe: PanelTop,
 };
 
 
@@ -166,6 +167,15 @@ export function SettingsPanel({
                     { id: 'opt1', text: 'Azul' },
                     { id: 'opt2', text: 'Verde' },
                 ]
+            };
+            break;
+        case 'Stripe':
+            props = {
+                text: 'Anúncio ou aviso importante aqui!',
+                isClosable: true,
+                backgroundColor: '#000000',
+                textColor: '#FFFFFF',
+                linkUrl: ''
             };
             break;
         // Other components get empty props by default
@@ -378,6 +388,7 @@ export function SettingsPanel({
                     <DropdownMenuItem onClick={() => addComponent("Accordion")}>Accordion</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Tabs")}>Tabs</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Voting")}>Votação</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Stripe")}>Tarja</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => addComponent("Countdown")}>Contador Regressivo</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Button")}>Botão</DropdownMenuItem>

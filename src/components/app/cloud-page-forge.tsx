@@ -193,7 +193,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         return needsUpdate ? newState : prev;
     });
 
-  }, [pageState?.brand]);
+  }, [pageState?.brand, setPageState]);
   
   // Keyboard shortcut for Undo
   useEffect(() => {
@@ -261,6 +261,18 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     }
   };
 
+  const handleComponentChange = (componentId: string, newProps: Partial<PageComponent>) => {
+    setPageState(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            components: prev.components.map(c => 
+                c.id === componentId ? { ...c, ...newProps } : c
+            )
+        };
+    });
+  };
+
   if (isLoading || authLoading || !pageState) {
     return (
        <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -302,6 +314,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             setSelectedComponentId={setSelectedComponentId}
             pageName={pageName}
             setPageName={setPageName}
+            onComponentChange={handleComponentChange}
           />
         </aside>
         <main className="flex-grow h-full">

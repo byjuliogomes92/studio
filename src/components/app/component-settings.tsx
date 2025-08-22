@@ -18,12 +18,11 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
+import { produce } from 'immer';
 
 interface ComponentSettingsProps {
   component: PageComponent;
-  onPropChange: (prop: string, value: any) => void;
-  onSubPropChange: (prop: string, subProp: string, value: any) => void;
-  onVariantPropChange: (variantIndex: number, prop: string, value: any) => void;
+  onComponentChange: (id: string, newProps: Partial<PageComponent>) => void;
 }
 
 const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] = [
@@ -771,26 +770,65 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
     }
 }
 
-export function ComponentSettings({ component, onPropChange, onSubPropChange, onVariantPropChange }: ComponentSettingsProps) {
+export function ComponentSettings({ component, onComponentChange }: ComponentSettingsProps) {
 
   const abTestEnabled = component.abTestEnabled || false;
   const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
 
-  const handleAbTestToggle = (checked: boolean) => {
-    onPropChange('abTestEnabled', checked);
-    if(checked && !component.abTestVariants) {
-        onPropChange('abTestVariants', [{}]); // Initialize with one empty variant object
-    }
-  }
+  const handlePropChange = (prop: string, value: any) => {
+    onComponentChange(component.id, {
+      ...component,
+      props: {
+        ...component.props,
+        [prop]: value,
+      },
+    });
+  };
 
-  const handleVariantChange = (prop: string, value: any) => {
-    onVariantPropChange(0, prop, value);
-  }
+  const handleSubPropChange = (prop: string, subProp: string, value: any) => {
+    onComponentChange(component.id, {
+      ...component,
+      props: {
+        ...component.props,
+        [prop]: {
+          ...component.props[prop],
+          [subProp]: value,
+        },
+      },
+    });
+  };
+
+  const handleAbTestToggle = (checked: boolean) => {
+    const updatedComponent = produce(component, draft => {
+      draft.abTestEnabled = checked;
+      if (checked && (!draft.abTestVariants || draft.abTestVariants.length === 0)) {
+        draft.abTestVariants = [{}];
+      }
+    });
+    onComponentChange(component.id, updatedComponent);
+  };
+  
+
+  const handleVariantPropChange = (variantIndex: number, prop: string, value: any) => {
+    const updatedComponent = produce(component, draft => {
+      if (!draft.abTestVariants) {
+        draft.abTestVariants = [];
+      }
+      while (draft.abTestVariants.length <= variantIndex) {
+        draft.abTestVariants.push({});
+      }
+      draft.abTestVariants[variantIndex] = {
+        ...draft.abTestVariants[variantIndex],
+        [prop]: value,
+      };
+    });
+    onComponentChange(component.id, updatedComponent);
+  };
 
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        {renderComponentSettings(component.type, component.props, onPropChange, onSubPropChange)}
+        {renderComponentSettings(component.type, component.props, handlePropChange, handleSubPropChange)}
         
         {/* A/B Test Settings */}
         <Separator />
@@ -809,7 +847,12 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange, on
             {abTestEnabled && (
                 <div className="p-3 border rounded-md space-y-4 bg-muted/20">
                      <h4 className="font-medium text-sm text-muted-foreground">Configurações da Variante B</h4>
-                     {renderComponentSettings(component.type, variantProps, handleVariantChange, (prop, subProp, value) => { /* Sub-prop for variants might need a more complex handler if needed */ })}
+                     {renderComponentSettings(
+                         component.type, 
+                         variantProps, 
+                         (prop, value) => handleVariantPropChange(0, prop, value), 
+                         (prop, subProp, value) => { /* Sub-prop for variants might need a more complex handler if needed */ }
+                      )}
                 </div>
             )}
         </div>

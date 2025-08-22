@@ -37,6 +37,7 @@ interface SettingsPanelProps {
   setSelectedComponentId: Dispatch<SetStateAction<string | null>>;
   pageName: string;
   setPageName: Dispatch<SetStateAction<string>>;
+  onComponentChange: (id: string, newProps: Partial<PageComponent>) => void;
 }
 
 const componentIcons: Record<ComponentType, React.ElementType> = {
@@ -116,6 +117,7 @@ export function SettingsPanel({
   setSelectedComponentId,
   pageName,
   setPageName,
+  onComponentChange,
 }: SettingsPanelProps) {
 
   const sensors = useSensors(
@@ -287,60 +289,6 @@ export function SettingsPanel({
     }
   };
 
-  const handlePropChange = (id: string, prop: string, value: any) => {
-    setPageState((prev) => {
-      if (!prev) return null;
-      return {
-      ...prev,
-      components: prev.components.map((c) =>
-        c.id === id ? { ...c, props: { ...c.props, [prop]: value } } : c
-      ),
-    }});
-  };
-
-  const handleSubPropChange = (id: string, prop: string, subProp: string, value: any) => {
-    setPageState((prev) => {
-      if (!prev) return null;
-      return {
-      ...prev,
-      components: prev.components.map((c) =>
-        c.id === id
-          ? {
-            ...c,
-            props: {
-              ...c.props,
-              [prop]: {
-                ...c.props[prop],
-                [subProp]: value,
-              },
-            },
-          }
-          : c
-      ),
-    }});
-  };
-
-  const handleVariantPropChange = (id: string, variantIndex: number, prop: string, value: any) => {
-    setPageState((prev) => {
-        if (!prev) return null;
-        return {
-            ...prev,
-            components: prev.components.map((c) => {
-                if (c.id === id) {
-                    const newVariants = [...(c.abTestVariants || [])];
-                    const currentVariantProps = newVariants[variantIndex] || {};
-                    newVariants[variantIndex] = {
-                        ...currentVariantProps,
-                        [prop]: value
-                    };
-                    return { ...c, abTestVariants: newVariants };
-                }
-                return c;
-            }),
-        };
-    });
-  };
-
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
@@ -458,9 +406,7 @@ export function SettingsPanel({
                 <AccordionContent className="pt-2">
                   <ComponentSettings
                     component={selectedComponent}
-                    onPropChange={(prop, value) => handlePropChange(selectedComponent.id, prop, value)}
-                    onSubPropChange={(prop, subProp, value) => handleSubPropChange(selectedComponent.id, prop, subProp, value)}
-                    onVariantPropChange={(variantIndex, prop, value) => handleVariantPropChange(selectedComponent.id, variantIndex, prop, value)}
+                    onComponentChange={onComponentChange}
                   />
                 </AccordionContent>
               </AccordionItem>

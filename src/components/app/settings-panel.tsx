@@ -18,12 +18,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignVerticalTop, AlignVerticalBottom, Star } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -45,8 +46,8 @@ interface SettingsPanelProps {
 }
 
 const componentIcons: Record<ComponentType, React.ElementType> = {
-    Header: Heading1,
-    Footer: Heading1,
+    Header: AlignVerticalTop,
+    Footer: AlignVerticalBottom,
     Banner: Image,
     Form: Text,
     Title: Heading1,
@@ -389,29 +390,37 @@ export function SettingsPanel({
                       <Plus className="mr-2 h-4 w-4" /> Adicionar Componente
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                     <DropdownMenuItem onClick={() => addComponent("Header")}>Header</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Banner")}>Banner</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Form")}>Formulário</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Footer")}>Rodapé</DropdownMenuItem>
+                  <DropdownMenuContent className="w-56">
+                    <DropdownMenuLabel>Estrutura</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => addComponent("Header")}><AlignVerticalTop className="mr-2 h-4 w-4"/>Header</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Banner")}><Image className="mr-2 h-4 w-4"/>Banner</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Stripe")}><PanelTop className="mr-2 h-4 w-4"/>Tarja</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Footer")}><AlignVerticalBottom className="mr-2 h-4 w-4"/>Rodapé</DropdownMenuItem>
+                    
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => addComponent("Title")}>Título</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Subtitle")}>Subtítulo</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Paragraph")}>Parágrafo</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Image")}>Imagem</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Video")}>Vídeo</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Map")}>Mapa</DropdownMenuItem>
+                    <DropdownMenuLabel>Conteúdo</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => addComponent("Title")}><Heading1 className="mr-2 h-4 w-4"/>Título</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Subtitle")}><Heading2 className="mr-2 h-4 w-4"/>Subtítulo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Paragraph")}><Text className="mr-2 h-4 w-4"/>Parágrafo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Image")}><Image className="mr-2 h-4 w-4"/>Imagem</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Video")}><Film className="mr-2 h-4 w-4"/>Vídeo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Map")}><MapPin className="mr-2 h-4 w-4"/>Mapa</DropdownMenuItem>
+                    
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => addComponent("Accordion")}>Accordion</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Tabs")}>Tabs</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Voting")}>Votação</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("NPS")}>NPS</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Stripe")}>Tarja</DropdownMenuItem>
+                     <DropdownMenuLabel>Layout</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => addComponent("Button")}><MousePointerClick className="mr-2 h-4 w-4"/>Botão</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Countdown")}><Timer className="mr-2 h-4 w-4"/>Contador</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Divider")}><Minus className="mr-2 h-4 w-4"/>Divisor</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Spacer")}><StretchHorizontal className="mr-2 h-4 w-4"/>Espaçador</DropdownMenuItem>
+
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => addComponent("Countdown")}>Contador Regressivo</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Button")}>Botão</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Divider")}>Divisor</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Spacer")}>Espaçador</DropdownMenuItem>
+                    <DropdownMenuLabel>Interativos</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => addComponent("Form")}><Text className="mr-2 h-4 w-4"/>Formulário</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Accordion")}><Layers className="mr-2 h-4 w-4"/>Accordion</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Tabs")}><PanelTop className="mr-2 h-4 w-4"/>Tabs</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Voting")}><Vote className="mr-2 h-4 w-4"/>Votação</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("NPS")}><Smile className="mr-2 h-4 w-4"/>NPS</DropdownMenuItem>
+
                   </DropdownMenuContent>
                 </DropdownMenu>
               </AccordionContent>

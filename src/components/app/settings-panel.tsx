@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignVerticalTop, AlignVerticalBottom, Star } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -46,8 +46,8 @@ interface SettingsPanelProps {
 }
 
 const componentIcons: Record<ComponentType, React.ElementType> = {
-    Header: AlignVerticalTop,
-    Footer: AlignVerticalBottom,
+    Header: AlignStartVertical,
+    Footer: AlignEndVertical,
     Banner: Image,
     Form: Text,
     Title: Heading1,
@@ -392,10 +392,10 @@ export function SettingsPanel({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
                     <DropdownMenuLabel>Estrutura</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => addComponent("Header")}><AlignVerticalTop className="mr-2 h-4 w-4"/>Header</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Header")}><AlignStartVertical className="mr-2 h-4 w-4"/>Header</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Banner")}><Image className="mr-2 h-4 w-4"/>Banner</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Stripe")}><PanelTop className="mr-2 h-4 w-4"/>Tarja</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Footer")}><AlignVerticalBottom className="mr-2 h-4 w-4"/>Rodapé</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Footer")}><AlignEndVertical className="mr-2 h-4 w-4"/>Rodapé</DropdownMenuItem>
                     
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel>Conteúdo</DropdownMenuLabel>

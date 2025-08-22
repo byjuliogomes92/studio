@@ -16,16 +16,20 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { HowToUseDialog } from "./how-to-use-dialog";
+import type { CloudPage } from "@/lib/types";
 
 interface MainPanelProps {
   htmlCode: string;
+  pageState: CloudPage;
 }
 
-export function MainPanel({ htmlCode }: MainPanelProps) {
+export function MainPanel({ htmlCode, pageState }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(htmlCode);
@@ -87,88 +91,97 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
   };
 
   return (
-    <Tabs defaultValue="preview" className="w-full h-full flex flex-col bg-muted/20">
-      <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
-        <div className="flex">
-          <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 max-w-sm rounded-none">
-            <TabsTrigger value="preview" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Preview</TabsTrigger>
-            <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Código</TabsTrigger>
-          </TabsList>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
-                  Acessibilidade
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Em breve</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+    <>
+      <Tabs defaultValue="preview" className="w-full h-full flex flex-col bg-muted/20">
+        <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
+          <div className="flex">
+            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 max-w-sm rounded-none">
+              <TabsTrigger value="preview" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Preview</TabsTrigger>
+              <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Código</TabsTrigger>
+            </TabsList>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
+                    Acessibilidade
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Em breve</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={handleOpenInNewTab} aria-label="Abrir em nova aba">
+                  <ExternalLink className="h-5 w-5"/>
+              </Button>
+              <Button variant={previewMode === 'desktop' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')} aria-label="Visualização Desktop">
+                  <Monitor className="h-5 w-5"/>
+              </Button>
+              <Button variant={previewMode === 'mobile' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('mobile')} aria-label="Visualização Mobile">
+                  <Smartphone className="h-5 w-5"/>
+              </Button>
+          </div>
         </div>
-         <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={handleOpenInNewTab} aria-label="Abrir em nova aba">
-                <ExternalLink className="h-5 w-5"/>
-            </Button>
-            <Button variant={previewMode === 'desktop' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')} aria-label="Visualização Desktop">
-                <Monitor className="h-5 w-5"/>
-            </Button>
-            <Button variant={previewMode === 'mobile' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('mobile')} aria-label="Visualização Mobile">
-                <Smartphone className="h-5 w-5"/>
-            </Button>
-        </div>
-      </div>
-      <div className="flex-grow overflow-auto">
-        <TabsContent value="preview" className="w-full h-full m-0">
-           <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
-             <iframe
-                srcDoc={htmlCode}
-                title="Preview da Cloud Page"
-                className={cn(
-                    "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
-                    previewMode === 'desktop' ? 'w-full h-full' : 'w-[375px] h-[667px]'
+        <div className="flex-grow overflow-auto">
+          <TabsContent value="preview" className="w-full h-full m-0">
+            <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
+              <iframe
+                  srcDoc={htmlCode}
+                  title="Preview da Cloud Page"
+                  className={cn(
+                      "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
+                      previewMode === 'desktop' ? 'w-full h-full' : 'w-[375px] h-[667px]'
+                  )}
+              />
+            </div>
+          </TabsContent>
+          <TabsContent value="code" className="w-full h-full m-0 p-4 flex flex-col gap-4">
+            <div className="flex-shrink-0 flex items-center gap-2">
+              <Button onClick={() => setIsHowToUseOpen(true)} variant="outline">
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar Código & Ver Instruções
+              </Button>
+              <Button onClick={() => setIsHowToUseOpen(true)} variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Download & Ver Instruções
+              </Button>
+            </div>
+            <div className="w-full flex-grow text-xs font-mono bg-card rounded-md overflow-hidden">
+              <SyntaxHighlighter language="html" style={vscDarkPlus} showLineNumbers customStyle={{ margin: 0, height: '100%', width: '100%', fontSize: '14px' }}>
+                  {htmlCode}
+              </SyntaxHighlighter>
+            </div>
+          </TabsContent>
+          <TabsContent value="accessibility" className="w-full h-full m-0 p-6">
+            <div className="flex flex-col items-start gap-4">
+              <Button onClick={handleAccessibilityCheck} disabled={checking}>
+                {checking ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
                 )}
-             />
-           </div>
-        </TabsContent>
-        <TabsContent value="code" className="w-full h-full m-0 p-4 flex flex-col gap-4">
-          <div className="flex-shrink-0 flex items-center gap-2">
-            <Button onClick={handleCopy} variant="outline">
-              <Copy className="mr-2 h-4 w-4" />
-              Copiar Código
-            </Button>
-             <Button onClick={handleDownload} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Download
-            </Button>
-          </div>
-           <div className="w-full flex-grow text-xs font-mono bg-card rounded-md overflow-hidden">
-             <SyntaxHighlighter language="html" style={vscDarkPlus} showLineNumbers customStyle={{ margin: 0, height: '100%', width: '100%', fontSize: '14px' }}>
-                {htmlCode}
-             </SyntaxHighlighter>
-           </div>
-        </TabsContent>
-        <TabsContent value="accessibility" className="w-full h-full m-0 p-6">
-          <div className="flex flex-col items-start gap-4">
-            <Button onClick={handleAccessibilityCheck} disabled={checking}>
-              {checking ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
+                Verificar Problemas de Acessibilidade
+              </Button>
+              {checking && <p>Analisando seu código...</p>}
+              {accessibilityIssues && (
+                <div className="prose prose-sm dark:prose-invert mt-4 p-4 border rounded-md bg-card w-full max-w-none">
+                  <h3 className="font-semibold">Sugestões de Acessibilidade</h3>
+                  <pre className="whitespace-pre-wrap font-sans text-sm">{accessibilityIssues}</pre>
+                </div>
               )}
-              Verificar Problemas de Acessibilidade
-            </Button>
-            {checking && <p>Analisando seu código...</p>}
-            {accessibilityIssues && (
-              <div className="prose prose-sm dark:prose-invert mt-4 p-4 border rounded-md bg-card w-full max-w-none">
-                <h3 className="font-semibold">Sugestões de Acessibilidade</h3>
-                <pre className="whitespace-pre-wrap font-sans text-sm">{accessibilityIssues}</pre>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-      </div>
-    </Tabs>
+            </div>
+          </TabsContent>
+        </div>
+      </Tabs>
+      <HowToUseDialog 
+        isOpen={isHowToUseOpen}
+        onOpenChange={setIsHowToUseOpen}
+        pageState={pageState}
+        onCopy={handleCopy}
+        onDownload={handleDownload}
+      />
+    </>
   );
 }

@@ -273,12 +273,10 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           />
         </aside>
         <main className="flex-grow h-full">
-          <MainPanel htmlCode={htmlCode} />
+          <MainPanel htmlCode={htmlCode} pageState={pageState} />
         </main>
       </div>
     </div>
     </>
   );
 }
-
-    

@@ -3,12 +3,24 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Project, CloudPage } from "@/lib/types";
+import type { Brand, Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FileText, Plus, Trash2, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { getProjectWithPages, deletePage } from "@/lib/firestore";
+import { getProjectWithPages, deletePage, addPage } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 
 interface PageListProps {
@@ -46,6 +58,65 @@ const getTagColor = (tag: string) => {
     return tagColors[Math.abs(hash) % tagColors.length];
 };
 
+const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
+  const isAvon = brand === 'Avon';
+
+  const naturaTheme = {
+    backgroundColor: '#FFFFFF',
+    backgroundImage: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-bg.png',
+    themeColor: '#F4AB01',
+    themeColorHover: '#e9a000',
+  };
+
+  const avonTheme = {
+    backgroundColor: '#E4004B',
+    backgroundImage: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-bg.png',
+    themeColor: '#000000',
+    themeColorHover: '#333333',
+  }
+  
+  return {
+    name: name,
+    projectId,
+    userId,
+    brand,
+    tags: ["Brasil"],
+    meta: {
+      title: `${brand} - ${name}`,
+      faviconUrl: '', // Will be set by useEffect in CloudPageForge
+      loaderImageUrl: '', // Will be set by useEffect in CloudPageForge
+      redirectUrl: isAvon ? 'https://cloud.hello.avon.com/cadastroavonagradecimento' : 'https://www.natura.com.br/',
+      dataExtensionKey: 'CHANGE-ME',
+      metaDescription: `Página de campanha para ${brand}.`,
+      metaKeywords: `${brand.toLowerCase()}, campanha, beleza`,
+    },
+    styles: isAvon ? avonTheme : naturaTheme,
+    components: [
+      { id: '1', type: 'Header', props: { logoUrl: '' } }, // Will be set by useEffect
+      { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },
+      { 
+        id: '3', 
+        type: 'Form', 
+        props: {
+          fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
+          placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', birthdate: 'Data de Nascimento' },
+          consentText: `Quero receber novidades e promoções da ${brand} e de outras empresas do Grupo Natura &Co...`,
+          buttonText: 'Finalizar',
+        } 
+      },
+      { 
+        id: '4', 
+        type: 'Footer', 
+        props: { 
+          footerText1: ``, // Will be set by useEffect
+          footerText2: `...`,
+          footerText3: `...`,
+        }
+      },
+    ],
+  }
+};
+
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -55,6 +126,13 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [pageToDelete, setPageToDelete] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  // Create Page Dialog State
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newPageName, setNewPageName] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState<Brand>("Natura");
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,9 +164,31 @@ export function PageList({ projectId }: PageListProps) {
     }
   }, [projectId, user, authLoading, toast, router]);
 
-  const handleCreatePage = () => {
-    router.push(`/editor/new?projectId=${projectId}`);
+  const handleConfirmCreatePage = async () => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado." });
+        return;
+    }
+    if (!newPageName.trim()) {
+        toast({ variant: "destructive", title: "Erro", description: "O nome da página não pode ser vazio." });
+        return;
+    }
+    setIsCreating(true);
+    try {
+        const newPageData = getInitialPage(newPageName, projectId, user.uid, selectedBrand);
+        const newPageId = await addPage(newPageData);
+        toast({ title: "Página criada!", description: `A página "${newPageName}" foi criada com sucesso.` });
+        setCreateModalOpen(false);
+        setNewPageName("");
+        router.push(`/editor/${newPageId}`);
+    } catch(error) {
+        console.error("Failed to create page:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível criar a página." });
+    } finally {
+        setIsCreating(false);
+    }
   };
+
 
   const handleDeletePage = async () => {
      if (!pageToDelete) return;
@@ -149,9 +249,50 @@ export function PageList({ projectId }: PageListProps) {
             <h1>{project.name}</h1>
           </div>
         </div>
-        <Button onClick={handleCreatePage}>
-          <Plus className="mr-2 h-4 w-4" /> Criar Página
-        </Button>
+        <Dialog open={isCreateModalOpen} onOpenChange={setCreateModalOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                    <Plus className="mr-2 h-4 w-4" /> Criar Página
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Criar Nova Página</DialogTitle>
+                    <DialogDescription>Escolha um nome e uma marca para sua nova CloudPage.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="page-name">Nome da Página</Label>
+                        <Input 
+                            id="page-name" 
+                            value={newPageName} 
+                            onChange={(e) => setNewPageName(e.target.value)} 
+                            placeholder="Ex: Campanha Dia das Mães"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                         <Label>Marca</Label>
+                         <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
+                            <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                <RadioGroupItem value="Natura" id="brand-natura" />
+                                Natura
+                            </Label>
+                             <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                <RadioGroupItem value="Avon" id="brand-avon" />
+                                Avon
+                            </Label>
+                         </RadioGroup>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setCreateModalOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleConfirmCreatePage} disabled={isCreating}>
+                        {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isCreating ? "Criando..." : "Criar Página"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
       </header>
 
       <main className="p-6">
@@ -185,8 +326,8 @@ export function PageList({ projectId }: PageListProps) {
             <p className="mt-2 text-muted-foreground">
                 {activeTag ? `Nenhuma página com a tag "${activeTag}".` : "Comece criando a primeira página para este projeto."}
             </p>
-            <Button onClick={handleCreatePage} className="mt-6">
-              <Plus className="mr-2 h-4 w-4" /> Criar Página
+             <Button onClick={() => setCreateModalOpen(true)} className="mt-6">
+                <Plus className="mr-2 h-4 w-4" /> Criar Página
             </Button>
           </div>
         ) : (

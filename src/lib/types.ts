@@ -1,5 +1,6 @@
 
 export type ComponentType = 'Header' | 'Banner' | 'Form' | 'Footer' | 'TextBlock' | 'Image';
+export type Brand = 'Natura' | 'Avon';
 
 export interface PageComponent {
   id: string;
@@ -12,6 +13,7 @@ export interface CloudPage {
   name: string;
   projectId: string;
   userId: string;
+  brand: Brand;
   tags?: string[];
   styles: {
     backgroundColor: string;

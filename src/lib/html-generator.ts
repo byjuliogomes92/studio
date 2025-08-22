@@ -494,7 +494,7 @@ export const generateHtml = (pageState: CloudPage): string => {
         font-size: 18px;
     }
     
-    .email-wrapper, .input-wrapper {
+    .input-wrapper {
         position: relative;
         width: 100%;
     }
@@ -655,9 +655,10 @@ export const generateHtml = (pageState: CloudPage): string => {
             emailInput.addEventListener('input', function() { validateEmail(this); });
             emailInput.addEventListener('blur', function() { validateEmail(this); });
 
-            if (!emailInput.parentElement.classList.contains('email-wrapper')) {
+            // Your fix is applied here!
+            if (!emailInput.parentElement.classList.contains('input-wrapper')) {
               const emailWrapper = document.createElement('div');
-              emailWrapper.className = 'email-wrapper';
+              emailWrapper.className = 'input-wrapper';
               emailInput.parentNode.insertBefore(emailWrapper, emailInput);
               emailWrapper.appendChild(emailInput);
             }
@@ -697,6 +698,3 @@ export const generateHtml = (pageState: CloudPage): string => {
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}
 </body>
 </html>`.trim();
-
-    
-

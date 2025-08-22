@@ -113,18 +113,22 @@ const renderComponent = (component: PageComponent): string => {
     case 'Button':
          return `<div style="text-align: ${component.props.align || 'center'}; margin: 20px 0;"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
     case 'Form':
-      const { fields = {}, placeholders = {}, consentText, buttonText, cities } = component.props;
+      const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
       const formHtml = `
         <div class="form-container">
             <form id="smartcapture-block-uttuiggngg" novalidate="novalidate" onsubmit="return validateForm()">
-                <div class="form-grid">
+                 <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
                   ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email') : ''}
+                 </div>
+                 <div class="row">
                   ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone') : ''}
                   ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF') : ''}
+                 </div>
+                 <div class="row">
                   ${fields.birthdate ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', false) : ''}
                   ${fields.city ? renderCityDropdown(cities, false) : ''}
-                </div>
+                 </div>
            
                 ${fields.optin ? `
                 <div class="consent">
@@ -136,7 +140,7 @@ const renderComponent = (component: PageComponent): string => {
                 </div>
                 ` : ''}
                 <div data-type="slot" data-key="qaiwdlu6h29"></div>
-                <div style="text-align: ${component.props.buttonAlign || 'center'};">
+                <div style="text-align: ${buttonAlign || 'center'};">
                     <button type="submit">${buttonText || 'Finalizar'}</button>
                 </div>
             </form>
@@ -316,16 +320,19 @@ ${trackingScripts}
     body {
         background-color: ${styles.backgroundColor};
         background-image: url(${styles.backgroundImage});
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
         font-family: "Roboto", sans-serif;
         font-weight: 500;
         font-style: normal;
         margin: 0;
-        padding: 0;
+        padding: 20px 0;
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
         min-height: 100vh;
+        box-sizing: border-box;
     }
 
     #loader {
@@ -455,11 +462,18 @@ ${trackingScripts}
         padding: 20px;
     }
     
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px 20px;
+    .form-container .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 10px;
     }
+
+    .form-container .input-wrapper {
+        flex: 1 1 calc(50% - 10px);
+        min-width: 200px;
+    }
+    
 
     .form-container input,
     .form-container select,
@@ -570,12 +584,6 @@ ${trackingScripts}
         width: 100%;
     }
 
-    @media (min-width: 768px) {
-        .form-grid {
-          grid-template-columns: 1fr 1fr;
-        }
-    }
-
     footer {
         -webkit-font-smoothing: antialiased;
         color: rgba(0, 0, 0, 0.87);
@@ -587,6 +595,7 @@ ${trackingScripts}
         user-select: text !important;
         box-sizing: inherit;
         width: 100%;
+        margin-top: auto;
     }
 
     .natds602 {

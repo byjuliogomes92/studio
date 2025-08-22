@@ -163,8 +163,17 @@ const renderComponent = (component: PageComponent): string => {
 
 export const generateHtml = (pageState: CloudPage): string => {
   const { styles, components, meta } = pageState;
-  const componentsHtml = components.map(renderComponent).join('\\n');
-  const mainContainerComponents = componentsHtml;
+  
+  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer'];
+
+  const headerComponent = components.find(c => c.type === 'Header');
+  const bannerComponent = components.find(c => c.type === 'Banner');
+  const footerComponent = components.find(c => c.type === 'Footer');
+
+  const mainComponents = components
+    .filter(c => !fullWidthTypes.includes(c.type))
+    .map(renderComponent)
+    .join('\\n');
 
   const smartCaptureScript = `
 <script id="smartcapture-script-uttuiggngg">
@@ -294,6 +303,7 @@ export const generateHtml = (pageState: CloudPage): string => {
     .logo {
         margin-top: 10px;
         margin-bottom: 20px;
+        text-align: center;
     }
 
     .logo img {
@@ -692,9 +702,12 @@ export const generateHtml = (pageState: CloudPage): string => {
     <img src="${meta.loaderImageUrl}" alt="Loader">
   </div>
   <div class="container" style="display: block;">
+    ${headerComponent ? renderComponent(headerComponent) : ''}
+    ${bannerComponent ? renderComponent(bannerComponent) : ''}
     <div class="content-wrapper">
-      ${mainContainerComponents}
+      ${mainComponents}
     </div>
+    ${footerComponent ? renderComponent(footerComponent) : ''}
   </div>
 
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}

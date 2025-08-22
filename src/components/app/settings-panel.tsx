@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -63,6 +63,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Voting: Vote,
     Stripe: PanelTop,
     NPS: Smile,
+    Map: MapPin,
 };
 
 
@@ -186,6 +187,11 @@ export function SettingsPanel({
                 lowLabel: 'Pouco provável',
                 highLabel: 'Muito provável',
                 thankYouMessage: 'Obrigado pelo seu feedback!'
+            };
+            break;
+        case 'Map':
+            props = {
+                embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
             };
             break;
         // Other components get empty props by default
@@ -394,6 +400,7 @@ export function SettingsPanel({
                     <DropdownMenuItem onClick={() => addComponent("Paragraph")}>Parágrafo</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Image")}>Imagem</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Video")}>Vídeo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Map")}>Mapa</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => addComponent("Accordion")}>Accordion</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Tabs")}>Tabs</DropdownMenuItem>

@@ -307,6 +307,25 @@ const renderComponent = (component: PageComponent, pageState: CloudPage): string
             </script>
         `;
     }
+    case 'Map': {
+        const { embedUrl } = component.props;
+        if (!embedUrl) {
+            return '<p>URL de incorporação do mapa não fornecida.</p>';
+        }
+        return `
+            <div class="map-container">
+                <iframe
+                    src="${embedUrl}"
+                    width="100%"
+                    height="450"
+                    style="border:0;"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        `;
+    }
     case 'Form':
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
       const formHtml = `
@@ -1119,6 +1138,13 @@ ${trackingScripts}
         font-size: 1.2em;
         font-weight: bold;
         color: ${styles.themeColor};
+    }
+    /* Map Component Styles */
+    .map-container {
+        margin: 20px 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e0e0e0;
     }
 </style>
 <script>

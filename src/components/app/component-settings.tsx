@@ -708,6 +708,29 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     </div>
                 </div>
             );
+      case "Map":
+        return (
+            <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                    <Label htmlFor="map-embed-url">URL de Incorporação do Google Maps</Label>
+                    <Tooltip>
+                        <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                        <TooltipContent>
+                            <p className="max-w-xs">
+                                No Google Maps, encontre um local, clique em "Compartilhar", depois em "Incorporar um mapa" e copie a URL que está dentro do atributo `src` do iframe.
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
+                <Textarea
+                    id="map-embed-url"
+                    value={component.props.embedUrl || ""}
+                    onChange={(e) => onPropChange("embedUrl", e.target.value)}
+                    rows={5}
+                    placeholder='Cole aqui a URL do atributo "src" do iframe de incorporação do Google Maps'
+                />
+            </div>
+        );
       case "Footer":
         return (
           <div className="space-y-4">

@@ -18,7 +18,8 @@ export type ComponentType =
   | 'Tabs'
   | 'Voting'
   | 'Stripe'
-  | 'NPS';
+  | 'NPS'
+  | 'Map';
   
 export type Brand = 'Natura' | 'Avon';
 

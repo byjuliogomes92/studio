@@ -133,7 +133,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if(!authLoading && user) {
         fetchPage();
     }
-  }, [pageId, router, user, toast, authLoading, searchParams, resetState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageId, router, user, toast, authLoading, searchParams]);
   
   useEffect(() => {
     if(pageState) {

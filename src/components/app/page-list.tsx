@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Brand, Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -35,6 +35,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { getProjectWithPages, deletePage, addPage } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 interface PageListProps {
   projectId: string;
@@ -128,8 +129,7 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [pageToDelete, setPageToDelete] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
-
+  
   // Create Page Dialog State
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -207,8 +207,7 @@ export function PageList({ projectId }: PageListProps) {
   }
   
   const navigateToEditor = (pageId: string) => {
-    setIsNavigating(true);
-    router.push(`/editor/${pageId}`);
+    router.push(`/editor/${pageId}?projectId=${projectId}`);
   }
 
   const allTags = useMemo(() => {
@@ -247,12 +246,7 @@ export function PageList({ projectId }: PageListProps) {
 
   return (
     <>
-      {isNavigating && (
-        <div className="page-loader">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
-      )}
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-muted/40">
         <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" onClick={() => router.push('/')}>

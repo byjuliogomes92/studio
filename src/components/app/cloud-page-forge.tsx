@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { CloudPage, PageComponent } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
@@ -20,6 +20,7 @@ interface CloudPageForgeProps {
 
 export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [pageState, setPageState] = useState<CloudPage | null>(null);
@@ -28,7 +29,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [pageName, setPageName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     if (authLoading) {
@@ -76,9 +76,9 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             router.push('/');
           }
         } else {
-          toast({ variant: "destructive", title: "Erro", description: "Página inválida. Retornando ao projeto." });
-          const projectId = new URLSearchParams(window.location.search).get('projectId');
-          router.push(projectId ? `/project/${projectId}` : '/');
+           toast({ variant: "destructive", title: "Erro", description: "Página inválida. Retornando ao projeto." });
+           const projectId = searchParams.get('projectId');
+           router.push(projectId ? `/project/${projectId}` : '/');
         }
       } catch (error) {
         console.error("Failed to fetch page:", error);
@@ -92,7 +92,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if(!authLoading && user) {
         fetchPage();
     }
-  }, [pageId, router, user, toast, authLoading]);
+  }, [pageId, router, user, toast, authLoading, searchParams]);
   
   useEffect(() => {
     if(pageState) {
@@ -122,6 +122,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         const newFavicon = isAvon ? avonFavicon : naturaFavicon;
         const newLoader = isAvon ? avonLoader : naturaLoader;
 
+        // Use a deep copy to avoid direct state mutation
         const newState = JSON.parse(JSON.stringify(prev));
 
         if (newState.meta.faviconUrl !== newFavicon || newState.meta.loaderImageUrl !== newLoader) {
@@ -146,6 +147,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             }
         }
         
+        // Only update state if there are actual changes
         return needsUpdate ? newState : prev;
     });
 
@@ -173,16 +175,20 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
   const handleBackNavigation = () => {
     if (pageState?.projectId) {
-      setIsNavigating(true);
       router.push(`/project/${pageState.projectId}`);
     } else {
-      router.push('/');
+       const projectId = searchParams.get('projectId');
+       if (projectId) {
+         router.push(`/project/${projectId}`);
+       } else {
+         router.push('/');
+       }
     }
   };
 
   if (isLoading || authLoading || !pageState) {
     return (
-       <div className="flex h-screen w-full items-center justify-center">
+       <div className="flex h-screen w-full items-center justify-center bg-background">
             <Logo className="h-10 w-10 animate-spin text-primary" />
        </div>
     );
@@ -190,13 +196,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
   return (
     <>
-    {isNavigating && (
-      <div className="page-loader">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    )}
-    <div className="flex flex-col h-screen">
-      <header className="flex items-center justify-between h-14 px-4 border-b flex-shrink-0">
+    <div className="flex flex-col h-screen bg-muted/40">
+      <header className="flex items-center justify-between h-14 px-4 border-b flex-shrink-0 bg-card">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={handleBackNavigation}>
             <ArrowLeft className="h-4 w-4" />

@@ -1,11 +1,12 @@
 
-
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
 import type { CloudPage, ComponentType, PageComponent } from "@/lib/types";
 import React, { useEffect, useState } from 'react';
-import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   Accordion,
   AccordionContent,
@@ -60,6 +61,50 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Map: MapPin,
 };
 
+function SortableItem({ component, selectedComponentId, setSelectedComponentId, removeComponent }: {
+  component: PageComponent;
+  selectedComponentId: string | null;
+  setSelectedComponentId: Dispatch<SetStateAction<string | null>>;
+  removeComponent: (id: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({id: component.id});
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+  
+  const Icon = componentIcons[component.type] || Text;
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
+      <Button variant="ghost" size="icon" {...attributes} {...listeners} className="cursor-grab h-8 w-8">
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
+      </Button>
+      <Button
+          variant={selectedComponentId === component.id ? "secondary" : "ghost"}
+          className="flex-grow justify-start"
+          onClick={() => setSelectedComponentId(component.id)}
+      >
+          <Icon className="h-4 w-4 mr-2"/>
+          {component.type}
+      </Button>
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive/80 hover:text-destructive"
+          onClick={() => removeComponent(component.id)}
+      >
+          <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  )
+}
 
 export function SettingsPanel({
   pageState,
@@ -69,11 +114,13 @@ export function SettingsPanel({
   pageName,
   setPageName,
 }: SettingsPanelProps) {
-  const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   
   const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
@@ -210,12 +257,19 @@ export function SettingsPanel({
     }
   };
 
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    const items = Array.from(pageState.components);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    setPageState(prev => ({ ...prev, components: items }));
+  const handleDragEnd = (event: any) => {
+    const {active, over} = event;
+
+    if (active.id !== over.id) {
+      setPageState((page) => {
+        const oldIndex = page.components.findIndex((c) => c.id === active.id);
+        const newIndex = page.components.findIndex((c) => c.id === over.id);
+        return {
+          ...page,
+          components: arrayMove(page.components, oldIndex, newIndex),
+        };
+      });
+    }
   };
 
   const handlePropChange = (id: string, prop: string, value: any) => {
@@ -333,50 +387,28 @@ export function SettingsPanel({
             <AccordionItem value="components">
               <AccordionTrigger>Componentes</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
-                {isClient && (
-                  <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="components" isDropDisabled={false} isCombineEnabled={false}>
-                      {(provided) => (
-                        <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                          {pageState.components.map((c, index) => {
-                            const Icon = componentIcons[c.type] || Text;
-                            return (
-                                <Draggable key={c.id} draggableId={c.id} index={index}>
-                                {(provided, snapshot) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      className="flex items-center gap-2 group"
-                                    >
-                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                    <Button
-                                        variant={selectedComponentId === c.id ? "secondary" : "ghost"}
-                                        className="flex-grow justify-start"
-                                        onClick={() => setSelectedComponentId(c.id)}
-                                    >
-                                        <Icon className="h-4 w-4 mr-2"/>
-                                        {c.type}
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-destructive/80 hover:text-destructive"
-                                        onClick={() => removeComponent(c.id)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                    </div>
-                                )}
-                                </Draggable>
-                            )
-                          })}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
-                )}
+                <DndContext 
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext 
+                    items={pageState.components}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2">
+                    {pageState.components.map((c) => (
+                      <SortableItem 
+                        key={c.id} 
+                        component={c}
+                        selectedComponentId={selectedComponentId}
+                        setSelectedComponentId={setSelectedComponentId}
+                        removeComponent={removeComponent}
+                      />
+                    ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
                 <AddComponentDialog onAddComponent={addComponent} />
               </AccordionContent>
             </AccordionItem>

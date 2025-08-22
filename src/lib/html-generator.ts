@@ -67,9 +67,10 @@ const renderComponent = (component: PageComponent): string => {
     case 'Subtitle':
         return `<h2 style="${styleString}">${component.props.text || 'Subtítulo'}</h2>`;
     case 'Paragraph':
-        return `<p style="white-space: pre-wrap; ${styleString}">${component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.'}</p>`;
+        // Allow basic HTML tags by not escaping them
+        return `<div style="white-space: pre-wrap; ${styleString}">${component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.'}</div>`;
     case 'Divider':
-        return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0; ${styleString}" />`;
+        return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0;" />`;
     case 'Image':
         return `
             <div style="padding: 20px 40px; text-align: center;">
@@ -109,7 +110,7 @@ const renderComponent = (component: PageComponent): string => {
               })();
             </script>`;
     case 'Spacer':
-        return `<div style="height: ${component.props.height || 20}px; ${styleString}"></div>`;
+        return `<div style="height: ${component.props.height || 20}px;"></div>`;
     case 'Button':
          return `<div style="text-align: ${component.props.align || 'center'}; margin: 20px 0;"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
     case 'Form':
@@ -331,10 +332,15 @@ export const generateHtml = (pageState: CloudPage): string => {
         color: #333;
     }
     
-    .content-wrapper h1, .content-wrapper h2, .content-wrapper p {
+    .content-wrapper h1, .content-wrapper h2, .content-wrapper p, .content-wrapper div {
         text-align: left;
         margin: 1em 0;
     }
+    
+    .content-wrapper h1, .content-wrapper h2 {
+        font-weight: bold;
+    }
+
 
     .video-container {
         position: relative;
@@ -713,3 +719,5 @@ export const generateHtml = (pageState: CloudPage): string => {
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}
 </body>
 </html>`.trim();
+
+    

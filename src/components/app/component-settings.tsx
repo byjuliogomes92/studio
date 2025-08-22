@@ -5,7 +5,7 @@ import type { PageComponent } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -15,6 +15,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -30,6 +32,72 @@ const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] 
     { id: 'city', label: 'Cidades' },
     { id: 'birthdate', label: 'Data de Nascimento' },
 ];
+
+function TextStyleSettings({ component, onPropChange }: { component: PageComponent, onPropChange: (prop: string, value: any) => void }) {
+  const styles = component.props.styles || {};
+  
+  const handleStyleChange = (prop: string, value: any) => {
+    onPropChange('styles', { ...styles, [prop]: value });
+  };
+
+  return (
+    <div className="space-y-4">
+        <div className="space-y-2">
+            <Label>Alinhamento</Label>
+            <ToggleGroup 
+                type="single" 
+                value={styles.textAlign || 'left'} 
+                onValueChange={(value) => handleStyleChange('textAlign', value)}
+                className="w-full"
+            >
+                <ToggleGroupItem value="left" aria-label="Alinhar à esquerda" className="flex-1">
+                    <AlignLeft className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="center" aria-label="Centralizar" className="flex-1">
+                    <AlignCenter className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="right" aria-label="Alinhar à direita" className="flex-1">
+                    <AlignRight className="h-4 w-4" />
+                </ToggleGroupItem>
+            </ToggleGroup>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Tamanho Fonte</Label>
+            <Input 
+              type="text"
+              value={styles.fontSize || ''} 
+              onChange={(e) => handleStyleChange('fontSize', e.target.value)}
+              placeholder="ex: 16px ou 1em"
+            />
+          </div>
+           <div className="space-y-2">
+            <Label>Cor</Label>
+            <Input 
+              type="color"
+              value={styles.color || '#000000'} 
+              onChange={(e) => handleStyleChange('color', e.target.value)}
+              className="p-1 h-10"
+            />
+          </div>
+        </div>
+         <div className="space-y-2">
+            <Label>Estilo</Label>
+             <ToggleGroup 
+                type="single" 
+                variant="outline"
+                value={styles.fontWeight} 
+                onValueChange={(value) => handleStyleChange('fontWeight', value)}
+            >
+                <ToggleGroupItem value="bold" aria-label="Negrito">
+                    <Bold className="h-4 w-4" />
+                </ToggleGroupItem>
+            </ToggleGroup>
+        </div>
+    </div>
+  );
+}
+
 
 export function ComponentSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
   const renderSettings = () => {
@@ -70,18 +138,49 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
         );
       case "Title":
       case "Subtitle":
+         return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="text-content">Texto</Label>
+              <Textarea
+                id="text-content"
+                value={component.props.text || ""}
+                onChange={(e) => onPropChange("text", e.target.value)}
+                rows={4}
+              />
+            </div>
+            <Separator />
+            <TextStyleSettings component={component} onPropChange={onPropChange} />
+          </div>
+        );
       case "Paragraph":
          return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Label htmlFor="text-content">Texto</Label>
+          <div className="space-y-4">
+            <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="text-content">Texto</Label>
+                   <Tooltip>
+                        <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                        <TooltipContent>
+                            <p>Você pode usar tags HTML básicas para formatar:</p>
+                            <ul className="list-disc pl-4 mt-2">
+                                <li>{'<b>Negrito</b>'}</li>
+                                <li>{'<i>Itálico</i>'}</li>
+                                <li>{'<u>Sublinhado</u>'}</li>
+                                <li>{'<a href="..." target="_blank">Link</a>'}</li>
+                            </ul>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
+                <Textarea
+                id="text-content"
+                value={component.props.text || ""}
+                onChange={(e) => onPropChange("text", e.target.value)}
+                rows={8}
+                />
             </div>
-            <Textarea
-              id="text-content"
-              value={component.props.text || ""}
-              onChange={(e) => onPropChange("text", e.target.value)}
-              rows={6}
-            />
+            <Separator />
+            <TextStyleSettings component={component} onPropChange={onPropChange} />
           </div>
         );
       case "Image":
@@ -368,3 +467,5 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
     </TooltipProvider>
   )
 }
+
+    

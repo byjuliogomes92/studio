@@ -99,7 +99,7 @@ const renderComponent = (component: PageComponent): string => {
                   var distance = target - now;
                   var days = Math.floor(distance / (1000 * 60 * 60 * 24));
                   var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                  var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                  var minutes = Math.floor((distance % (1000 * 60 * 60)) / 1000 / 60);
                   var seconds = Math.floor((distance % (1000 * 60)) / 1000);
                   document.getElementById("countdown-${component.id}").innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
                   if (distance < 0) {
@@ -174,7 +174,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   const mainComponents = components
     .filter(c => !fullWidthTypes.includes(c.type))
     .map(renderComponent)
-    .join('\\n');
+    .join('\n');
 
   const smartCaptureScript = `
 <script id="smartcapture-script-uttuiggngg">
@@ -492,31 +492,20 @@ export const generateHtml = (pageState: CloudPage): string => {
         .form-container .row {
             display: flex;
             justify-content: space-between;
-            gap: 4%;
+            gap: 20px; /* Adiciona espaço entre os inputs */
         }
 
         .row .input-wrapper,
         .row .email-wrapper {
-            width: 48%;
+            flex: 1; /* Faz com que os wrappers ocupem espaço igual */
+            min-width: 0; /* Permite que os itens encolham */
         }
-
+    
         .form-container button {
             font-size: large;
             width: 200px;
             padding: 15px 20px;
             border-radius: 30px;
-        }
-
-        .input-wrapper input, .input-wrapper select {
-            width: 100%;
-            padding: 15px;
-            margin: 0 0 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-            font-family: "Roboto", sans-serif;
-            font-weight: 500;
-            font-style: normal;
         }
 
         .input-helper-text {

@@ -14,9 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CloudPage } from "@/lib/types";
-import { Copy, Download, Pencil } from "lucide-react";
+import { Copy, Download, Pencil, TestTube2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface HowToUseDialogProps {
   isOpen: boolean;
@@ -77,6 +78,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDown
   const [deKey, setDeKey] = useState(pageState.meta.dataExtensionKey || 'CHANGE-ME');
 
   const requiredFields = getRequiredFields(pageState);
+  const hasAbTest = requiredFields.some(field => field.name.startsWith('VARIANTE_'));
 
   const handleDeKeySave = () => {
     onDataExtensionKeyChange(deKey);
@@ -145,6 +147,17 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDown
                   </TableBody>
                 </Table>
               </div>
+
+              {hasAbTest && (
+                <Alert>
+                  <TestTube2 className="h-4 w-4" />
+                  <AlertTitle>Você está usando Teste A/B!</AlertTitle>
+                  <AlertDescription>
+                      <p>Detectamos que você configurou um Teste A/B em um ou mais componentes. Os campos `VARIANTE_*` foram adicionados automaticamente à sua lista de campos.</p>
+                      <p className="mt-2"><b>Como funciona:</b> O sistema mostrará aleatoriamente a versão A (original) ou B (variante) do seu componente para cada visitante. Quando o formulário for enviado, o campo `VARIANTE_*` será preenchido com **'A'** ou **'B'**, indicando qual versão o usuário visualizou. Isso permitirá que você analise qual variante gerou mais conversões.</p>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             <div className="space-y-4">

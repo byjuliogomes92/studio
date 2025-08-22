@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Copy, Loader2, Sparkles, Download, Monitor, Smartphone } from "lucide-react";
+import { Copy, Loader2, Sparkles, Download, Monitor, Smartphone, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -51,6 +51,23 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
     });
   }
 
+  const handleOpenInNewTab = () => {
+    try {
+        const blob = new Blob([htmlCode], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        // Revogar a URL do objeto após um tempo para permitir que a nova aba a carregue
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+        console.error("Failed to open in new tab:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro",
+            description: "Não foi possível abrir o preview em uma nova aba.",
+        });
+    }
+  };
+
   const handleAccessibilityCheck = async () => {
     setChecking(true);
     setAccessibilityIssues(null);
@@ -91,6 +108,9 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
           </TooltipProvider>
         </div>
          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={handleOpenInNewTab} aria-label="Abrir em nova aba">
+                <ExternalLink className="h-5 w-5"/>
+            </Button>
             <Button variant={previewMode === 'desktop' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')} aria-label="Visualização Desktop">
                 <Monitor className="h-5 w-5"/>
             </Button>

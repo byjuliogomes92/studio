@@ -215,6 +215,19 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         setIsSaving(false);
     }
   };
+  
+  const handleDataExtensionKeyChange = (newKey: string) => {
+    setPageState((prev) => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            meta: {
+                ...prev.meta,
+                dataExtensionKey: newKey,
+            },
+        };
+    });
+  };
 
   const handleBackNavigation = () => {
     if (pageState?.projectId) {
@@ -273,7 +286,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           />
         </aside>
         <main className="flex-grow h-full">
-          <MainPanel htmlCode={htmlCode} pageState={pageState} />
+          <MainPanel 
+            htmlCode={htmlCode} 
+            pageState={pageState} 
+            onDataExtensionKeyChange={handleDataExtensionKeyChange}
+           />
         </main>
       </div>
     </div>

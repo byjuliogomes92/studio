@@ -22,9 +22,10 @@ import type { CloudPage } from "@/lib/types";
 interface MainPanelProps {
   htmlCode: string;
   pageState: CloudPage;
+  onDataExtensionKeyChange: (newKey: string) => void;
 }
 
-export function MainPanel({ htmlCode, pageState }: MainPanelProps) {
+export function MainPanel({ htmlCode, pageState, onDataExtensionKeyChange }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
@@ -181,6 +182,7 @@ export function MainPanel({ htmlCode, pageState }: MainPanelProps) {
         pageState={pageState}
         onCopy={handleCopy}
         onDownload={handleDownload}
+        onDataExtensionKeyChange={onDataExtensionKeyChange}
       />
     </>
   );

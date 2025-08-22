@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,9 +11,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CloudPage, PageComponent } from "@/lib/types";
-import { Copy, Download } from "lucide-react";
+import { CloudPage } from "@/lib/types";
+import { Copy, Download, Pencil } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
@@ -22,6 +24,7 @@ interface HowToUseDialogProps {
   pageState: CloudPage;
   onCopy: () => void;
   onDownload: () => void;
+  onDataExtensionKeyChange: (newKey: string) => void;
 }
 
 type DeField = {
@@ -57,9 +60,23 @@ const getRequiredFields = (pageState: CloudPage): DeField[] => {
   return fields;
 };
 
-export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDownload }: HowToUseDialogProps) {
+export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDownload, onDataExtensionKeyChange }: HowToUseDialogProps) {
+
+  const [isEditingDeKey, setIsEditingDeKey] = useState(false);
+  const [deKey, setDeKey] = useState(pageState.meta.dataExtensionKey || 'CHANGE-ME');
 
   const requiredFields = getRequiredFields(pageState);
+
+  const handleDeKeySave = () => {
+    onDataExtensionKeyChange(deKey);
+    setIsEditingDeKey(false);
+  };
+  
+  const handleDeKeyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleDeKeySave();
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -74,8 +91,25 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDown
           <div className="space-y-6 py-4">
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">1. Configurando a Data Extension</h3>
+              <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                <span>Crie uma nova Data Extension com a Chave Externa:</span>
+                {isEditingDeKey ? (
+                  <Input
+                    value={deKey}
+                    onChange={(e) => setDeKey(e.target.value)}
+                    onBlur={handleDeKeySave}
+                    onKeyDown={handleDeKeyKeyDown}
+                    autoFocus
+                    className="h-8 max-w-sm"
+                  />
+                ) : (
+                  <Badge variant="outline" className="cursor-pointer" onClick={() => setIsEditingDeKey(true)}>
+                    {pageState.meta.dataExtensionKey || 'CHANGE-ME'}
+                    <Pencil className="h-3 w-3 ml-2" />
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
-                Crie uma nova Data Extension no Marketing Cloud com a chave externa (External Key) que você definiu nas configurações da página: <Badge variant="outline">{pageState.meta.dataExtensionKey || 'SUA_CHAVE_AQUI'}</Badge>.
                 Ela deve ser "Sendable" e "Testable", e o campo de envio deve ser o que corresponde ao `EMAIL`.
               </p>
               <div className="rounded-md border">

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Brand, Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -33,7 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { getProjectWithPages, deletePage, addPage } from "@/lib/firestore";
+import { getProjectWithPages, deletePage, addPage, duplicatePage } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
@@ -97,6 +97,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
       { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },
       { id: 'c1', type: 'Title', props: { text: 'Título da Sua Campanha Aqui', styles: { textAlign: 'center' } } },
       { id: 'c2', type: 'Paragraph', props: { text: 'Este é um ótimo lugar para descrever sua campanha. Fale sobre os benefícios, os produtos em destaque e o que os clientes podem esperar.' } },
+      { id: 'c-button', type: 'Button', props: { text: 'Clique Aqui', href: '#', align: 'center' } },
       { 
         id: '3', 
         type: 'Form', 
@@ -204,6 +205,18 @@ export function PageList({ projectId }: PageListProps) {
       toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a página." });
     } finally {
       setPageToDelete(null);
+    }
+  }
+
+  const handleDuplicatePage = async (pageId: string) => {
+    toast({ title: "Copiando página...", description: "Por favor, aguarde." });
+    try {
+      const newPage = await duplicatePage(pageId);
+      setPages(prev => [newPage, ...prev]);
+      toast({ title: "Página duplicada!", description: `A página "${newPage.name}" foi criada com sucesso.` });
+    } catch(error) {
+       console.error("Failed to duplicate page:", error);
+       toast({ variant: "destructive", title: "Erro", description: "Não foi possível duplicar a página." });
     }
   }
   
@@ -349,30 +362,40 @@ export function PageList({ projectId }: PageListProps) {
                   <div className="flex-grow cursor-pointer" onClick={() => navigateToEditor(page.id)}>
                       <div className="flex items-start justify-between">
                         <FileText className="h-10 w-10 text-primary" />
-                        <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
-                          <AlertDialogTrigger asChild>
+                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => { e.stopPropagation(); setPageToDelete(page.id); }}
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => { e.stopPropagation(); handleDuplicatePage(page.id); }}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                                <Copy className="h-4 w-4 text-muted-foreground" />
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                            <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => { e.stopPropagation(); setPageToDelete(page.id); }}
+                                >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                       </div>
                       <h3 className="mt-4 font-semibold">{page.name}</h3>
                       <p className="text-sm text-muted-foreground">

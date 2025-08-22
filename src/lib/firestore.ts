@@ -112,6 +112,28 @@ const deletePage = async (pageId: string): Promise<void> => {
     await deleteDoc(doc(db, "pages", pageId));
 };
 
+const duplicatePage = async (pageId: string): Promise<CloudPage> => {
+    const originalPage = await getPage(pageId);
+    if (!originalPage) {
+        throw new Error("Página original não encontrada.");
+    }
+    
+    // Create a copy, removing the old ID and timestamps
+    const { id, createdAt, updatedAt, ...pageDataToCopy } = originalPage;
+
+    // Create a new name for the duplicated page
+    pageDataToCopy.name = `Cópia de ${originalPage.name}`;
+    
+    const newPageId = await addPage(pageDataToCopy);
+    
+    const newPage = await getPage(newPageId);
+    if (!newPage) {
+        throw new Error("Falha ao criar a duplicata da página.");
+    }
+
+    return newPage;
+};
+
 export {
     addProject,
     updateProject,
@@ -123,5 +145,6 @@ export {
     getPage,
     getPagesForProject,
     getProjectWithPages,
-    deletePage
+    deletePage,
+    duplicatePage
 };

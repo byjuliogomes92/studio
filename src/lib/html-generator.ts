@@ -273,6 +273,40 @@ const renderComponent = (component: PageComponent, pageState: CloudPage): string
             </script>
         `;
     }
+    case 'NPS': {
+        const { question, type = 'numeric', lowLabel, highLabel, thankYouMessage } = component.props;
+        const npsId = `nps-${component.id}`;
+
+        let optionsHtml = '';
+        if (type === 'numeric') {
+            for (let i = 0; i <= 10; i++) {
+                optionsHtml += `<button class="nps-option nps-numeric" data-score="${i}">${i}</button>`;
+            }
+        } else { // faces
+            const faces = ['😡', '😠', '😑', '😐', '🙂', '😄', '😁'];
+            optionsHtml = faces.map((face, i) => `<button class="nps-option nps-face" data-score="${i}">${face}</button>`).join('');
+        }
+
+        return `
+            <div id="${npsId}" class="nps-container">
+                <div class="nps-content">
+                    <p class="nps-question">${question}</p>
+                    <div class="nps-options-wrapper">${optionsHtml}</div>
+                    <div class="nps-labels">
+                        <span>${lowLabel}</span>
+                        <span>${highLabel}</span>
+                    </div>
+                </div>
+                <div class="nps-thanks" style="display: none;">
+                    <p>${thankYouMessage}</p>
+                </div>
+            </div>
+            <script defer src="https://storage.googleapis.com/cloud-page-forge-scripts/nps-handler.js" 
+                    data-nps-id="${npsId}"
+                    data-de-key="${pageState.meta.dataExtensionKey || ''}">
+            </script>
+        `;
+    }
     case 'Form':
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
       const formHtml = `
@@ -1026,6 +1060,65 @@ ${trackingScripts}
         padding: 0 10px;
         position: absolute;
         right: 10px;
+    }
+    /* NPS Component Styles */
+    .nps-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 25px;
+        margin: 20px 0;
+        text-align: center;
+    }
+    .nps-question {
+        font-size: 1.1em;
+        margin-bottom: 20px;
+    }
+    .nps-options-wrapper {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+    .nps-option {
+        border: 1px solid #ccc;
+        border-radius: 50%;
+        background-color: #f9f9f9;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .nps-option:hover {
+        background-color: ${styles.themeColor};
+        color: white;
+        border-color: ${styles.themeColor};
+    }
+    .nps-option.selected {
+        background-color: ${styles.themeColor};
+        color: white;
+        font-weight: bold;
+        transform: scale(1.1);
+    }
+    .nps-numeric {
+        width: 40px;
+        height: 40px;
+        font-size: 1em;
+    }
+    .nps-face {
+        width: 45px;
+        height: 45px;
+        font-size: 1.5em;
+        line-height: 45px;
+    }
+    .nps-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85em;
+        color: #666;
+        padding: 0 5px;
+    }
+    .nps-thanks {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: ${styles.themeColor};
     }
 </style>
 <script>

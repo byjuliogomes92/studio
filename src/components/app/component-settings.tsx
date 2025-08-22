@@ -655,6 +655,59 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                     </div>
                 </div>
             );
+        case 'NPS':
+            return (
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="nps-question">Pergunta Principal</Label>
+                        <Textarea
+                            id="nps-question"
+                            value={component.props.question || ''}
+                            onChange={(e) => onPropChange('question', e.target.value)}
+                            rows={3}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="nps-type">Tipo de Escala</Label>
+                        <Select value={component.props.type || 'numeric'} onValueChange={(value) => onPropChange('type', value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="numeric">Numérica (0-10)</SelectItem>
+                                <SelectItem value="faces">Carinhas (Emojis)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="nps-low-label">Rótulo Inferior</Label>
+                        <Input
+                            id="nps-low-label"
+                            value={component.props.lowLabel || ''}
+                            onChange={(e) => onPropChange('lowLabel', e.target.value)}
+                            placeholder="Ex: Pouco provável"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="nps-high-label">Rótulo Superior</Label>
+                        <Input
+                            id="nps-high-label"
+                            value={component.props.highLabel || ''}
+                            onChange={(e) => onPropChange('highLabel', e.target.value)}
+                            placeholder="Ex: Muito provável"
+                        />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="nps-thanks">Mensagem de Agradecimento</Label>
+                        <Textarea
+                            id="nps-thanks"
+                            value={component.props.thankYouMessage || ''}
+                            onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
+                            rows={3}
+                        />
+                    </div>
+                </div>
+            );
       case "Footer":
         return (
           <div className="space-y-4">

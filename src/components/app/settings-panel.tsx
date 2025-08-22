@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -62,6 +62,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Tabs: PanelTop,
     Voting: Vote,
     Stripe: PanelTop,
+    NPS: Smile,
 };
 
 
@@ -176,6 +177,15 @@ export function SettingsPanel({
                 backgroundColor: '#000000',
                 textColor: '#FFFFFF',
                 linkUrl: ''
+            };
+            break;
+        case 'NPS':
+            props = {
+                question: 'Em uma escala de 0 a 10, o quão provável você é de recomendar nosso produto/serviço a um amigo ou colega?',
+                type: 'numeric',
+                lowLabel: 'Pouco provável',
+                highLabel: 'Muito provável',
+                thankYouMessage: 'Obrigado pelo seu feedback!'
             };
             break;
         // Other components get empty props by default
@@ -388,6 +398,7 @@ export function SettingsPanel({
                     <DropdownMenuItem onClick={() => addComponent("Accordion")}>Accordion</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Tabs")}>Tabs</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Voting")}>Votação</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("NPS")}>NPS</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Stripe")}>Tarja</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => addComponent("Countdown")}>Contador Regressivo</DropdownMenuItem>

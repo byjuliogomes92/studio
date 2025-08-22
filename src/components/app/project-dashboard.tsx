@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -235,12 +235,25 @@ export function ProjectDashboard() {
 
       <main className="p-6">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <Input 
-                placeholder="Buscar projetos..."
-                className="max-w-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar projetos..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setSearchTerm("")}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline">
@@ -365,3 +378,5 @@ export function ProjectDashboard() {
     </div>
   );
 }
+
+    

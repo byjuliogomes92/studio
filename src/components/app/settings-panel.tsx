@@ -13,14 +13,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
@@ -35,6 +27,7 @@ import {
 import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
+import { AddComponentDialog } from './add-component-dialog';
 
 interface SettingsPanelProps {
   pageState: CloudPage;
@@ -384,45 +377,7 @@ export function SettingsPanel({
                     </Droppable>
                   </DragDropContext>
                 )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <Plus className="mr-2 h-4 w-4" /> Adicionar Componente
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Estrutura</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => addComponent("Header")}><AlignStartVertical className="mr-2 h-4 w-4"/>Header</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Banner")}><Image className="mr-2 h-4 w-4"/>Banner</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Stripe")}><PanelTop className="mr-2 h-4 w-4"/>Tarja</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Footer")}><AlignEndVertical className="mr-2 h-4 w-4"/>Rodapé</DropdownMenuItem>
-                    
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Conteúdo</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => addComponent("Title")}><Heading1 className="mr-2 h-4 w-4"/>Título</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Subtitle")}><Heading2 className="mr-2 h-4 w-4"/>Subtítulo</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Paragraph")}><Text className="mr-2 h-4 w-4"/>Parágrafo</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Image")}><Image className="mr-2 h-4 w-4"/>Imagem</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Video")}><Film className="mr-2 h-4 w-4"/>Vídeo</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Map")}><MapPin className="mr-2 h-4 w-4"/>Mapa</DropdownMenuItem>
-                    
-                    <DropdownMenuSeparator />
-                     <DropdownMenuLabel>Layout</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => addComponent("Button")}><MousePointerClick className="mr-2 h-4 w-4"/>Botão</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Countdown")}><Timer className="mr-2 h-4 w-4"/>Contador</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Divider")}><Minus className="mr-2 h-4 w-4"/>Divisor</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Spacer")}><StretchHorizontal className="mr-2 h-4 w-4"/>Espaçador</DropdownMenuItem>
-
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Interativos</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => addComponent("Form")}><Text className="mr-2 h-4 w-4"/>Formulário</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Accordion")}><Layers className="mr-2 h-4 w-4"/>Accordion</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Tabs")}><PanelTop className="mr-2 h-4 w-4"/>Tabs</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Voting")}><Vote className="mr-2 h-4 w-4"/>Votação</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("NPS")}><Smile className="mr-2 h-4 w-4"/>NPS</DropdownMenuItem>
-
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <AddComponentDialog onAddComponent={addComponent} />
               </AccordionContent>
             </AccordionItem>
             {selectedComponent && (

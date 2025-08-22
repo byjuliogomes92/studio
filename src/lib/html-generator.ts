@@ -234,9 +234,68 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
     return scripts;
 };
 
+const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeColor: string): string => {
+    if (!cookieBannerConfig || !cookieBannerConfig.enabled) return '';
+
+    return `
+    <div id="cookie-banner">
+        <p>${cookieBannerConfig.text}</p>
+        <button id="accept-cookies" style="background-color: ${themeColor};">${cookieBannerConfig.buttonText}</button>
+    </div>
+    <style>
+        #cookie-banner {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10000;
+            transition: bottom 0.5s ease-in-out;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        #cookie-banner p {
+            margin: 0;
+            flex-grow: 1;
+            font-size: 14px;
+        }
+        #cookie-banner button {
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cookieBanner = document.getElementById('cookie-banner');
+            const acceptButton = document.getElementById('accept-cookies');
+
+            if (!localStorage.getItem('cookiesAccepted')) {
+                setTimeout(() => {
+                  cookieBanner.style.bottom = '0';
+                }, 500);
+            }
+
+            acceptButton.addEventListener('click', function() {
+                localStorage.setItem('cookiesAccepted', 'true');
+                cookieBanner.style.bottom = '-100%';
+            });
+        });
+    </script>
+    `;
+}
 
 export const generateHtml = (pageState: CloudPage): string => {
-  const { styles, components, meta } = pageState;
+  const { styles, components, meta, cookieBanner } = pageState;
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer'];
 
@@ -244,6 +303,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   const bannerComponent = components.find(c => c.type === 'Banner');
   const footerComponent = components.find(c => c.type === 'Footer');
   const trackingScripts = getTrackingScripts(meta.tracking);
+  const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
 
   const mainComponents = components
     .filter(c => !fullWidthTypes.includes(c.type))
@@ -775,6 +835,7 @@ ${trackingScripts}
     ${footerComponent ? renderComponent(footerComponent) : ''}
   </div>
 
+  ${cookieBannerHtml}
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}
 </body>
 </html>`.trim();

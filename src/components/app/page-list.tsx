@@ -105,6 +105,11 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
       }
     },
     styles: isAvon ? avonTheme : naturaTheme,
+    cookieBanner: {
+      enabled: false,
+      text: 'Utilizamos cookies para garantir que você tenha a melhor experiência em nosso site. Ao continuar, você concorda com o uso de cookies.',
+      buttonText: 'Aceitar',
+    },
     components: [
       { id: '1', type: 'Header', props: { logoUrl: '' } }, // Will be set by useEffect
       { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },

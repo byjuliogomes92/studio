@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -86,6 +86,16 @@ export function SettingsPanel({
   const handleMetaChange = (prop: keyof CloudPage["meta"], value: string) => {
     setPageState((prev) => ({ ...prev, meta: { ...prev.meta, [prop]: value } }));
   };
+  
+  const handleCookieBannerChange = (prop: keyof NonNullable<CloudPage['cookieBanner']>, value: any) => {
+     setPageState(prev => ({
+      ...prev,
+      cookieBanner: {
+        ...(prev.cookieBanner || { enabled: false, text: '', buttonText: '' }),
+        [prop]: value,
+      },
+    }));
+  }
 
   const handleTrackingChange = (
     pixel: 'ga4' | 'meta' | 'linkedin',
@@ -197,6 +207,7 @@ export function SettingsPanel({
 
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
   const tracking = pageState.meta.tracking;
+  const cookieBanner = pageState.cookieBanner;
 
   return (
     <ScrollArea className="h-full">
@@ -428,7 +439,7 @@ export function SettingsPanel({
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label>Chave da Data Extension</Label>                 <Tooltip>
-                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
                       <TooltipContent><p>A Chave Externa da Data Extension do Salesforce Marketing Cloud.</p></TooltipContent>
                     </Tooltip>
                   </div>
@@ -470,8 +481,44 @@ export function SettingsPanel({
                     )}
                   </div>
                 </div>
-
               </AccordionContent>
+            </AccordionItem>
+             <AccordionItem value="cookie-banner">
+                <AccordionTrigger>Banner de Cookies</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="cookie-enabled" className="flex items-center gap-2">
+                            <Cookie className="h-4 w-4"/>
+                            Ativar Banner de Cookies
+                        </Label>
+                        <Switch
+                            id="cookie-enabled"
+                            checked={cookieBanner?.enabled || false}
+                            onCheckedChange={(checked) => handleCookieBannerChange('enabled', checked)}
+                        />
+                    </div>
+                    {cookieBanner?.enabled && (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="cookie-text">Texto do Banner</Label>
+                                <Textarea
+                                    id="cookie-text"
+                                    value={cookieBanner.text}
+                                    onChange={(e) => handleCookieBannerChange('text', e.target.value)}
+                                    rows={5}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cookie-button-text">Texto do Botão</Label>
+                                <Input
+                                    id="cookie-button-text"
+                                    value={cookieBanner.buttonText}
+                                    onChange={(e) => handleCookieBannerChange('buttonText', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>

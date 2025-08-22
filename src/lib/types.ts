@@ -50,6 +50,11 @@ export interface CloudPage {
       linkedin: { enabled: boolean; id?: string };
     }
   };
+  cookieBanner?: {
+    enabled: boolean;
+    text: string;
+    buttonText: string;
+  };
   createdAt: any;
   updatedAt: any;
 }

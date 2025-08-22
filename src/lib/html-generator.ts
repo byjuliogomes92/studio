@@ -45,7 +45,7 @@ const renderCityDropdown = (citiesString: string = '', required: boolean = false
 };
 
 
-const renderComponent = (component: PageComponent): string => {
+const renderComponent = (component: PageComponent, pageState: CloudPage): string => {
   const styles = component.props.styles || {};
   const styleString = Object.entries(styles).map(([key, value]) => `${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}: ${value}`).join('; ');
 
@@ -155,6 +155,88 @@ const renderComponent = (component: PageComponent): string => {
             <div class="tab-list" role="tablist">${triggersHtml}</div>
             ${panelsHtml}
           </div>`;
+    }
+    case 'Voting': {
+        const { question, options = [] } = component.props;
+        const votingId = `voting-${component.id}`;
+
+        const optionsHtml = options.map((opt: { id: string; text: string; }) => `
+            <button class="voting-option" data-option-id="${opt.id}">${opt.text}</button>
+        `).join('');
+
+        const resultsHtml = options.map((opt: { id: string; text: string; }) => `
+            <div class="voting-result">
+                <div class="result-label">${opt.text}</div>
+                <div class="result-bar-container">
+                    <div class="result-bar" id="result-bar-${opt.id}" style="width: 0%;"></div>
+                </div>
+                <div class="result-percentage" id="result-percentage-${opt.id}">0%</div>
+            </div>
+        `).join('');
+
+        return `
+            <div id="${votingId}" class="voting-container">
+                <h3 class="voting-question">${question || 'Sua pergunta aqui'}</h3>
+                <div class="voting-options">${optionsHtml}</div>
+                <div class="voting-results" style="display: none;">${resultsHtml}</div>
+            </div>
+            <script>
+                (function() {
+                    const votingContainer = document.getElementById('${votingId}');
+                    if (!votingContainer) return;
+
+                    const optionsContainer = votingContainer.querySelector('.voting-options');
+                    const resultsContainer = votingContainer.querySelector('.voting-results');
+                    const storageKey = 'voting_data_${votingId}';
+                    const hasVotedKey = 'has_voted_${votingId}';
+
+                    let votes = JSON.parse(localStorage.getItem(storageKey)) || {};
+                    const hasVoted = localStorage.getItem(hasVotedKey) === 'true';
+
+                    function updateResults() {
+                        const totalVotes = Object.values(votes).reduce((sum, count) => sum + count, 0);
+                        if (totalVotes === 0) return;
+
+                        Object.keys(votes).forEach(optionId => {
+                            const voteCount = votes[optionId] || 0;
+                            const percentage = ((voteCount / totalVotes) * 100).toFixed(1);
+                            const bar = resultsContainer.querySelector(\`#result-bar-\${optionId}\`);
+                            const percentageEl = resultsContainer.querySelector(\`#result-percentage-\${optionId}\`);
+
+                            if (bar) bar.style.width = \`\${percentage}%\`;
+                            if (percentageEl) percentageEl.textContent = \`\${percentage}%\`;
+                        });
+                    }
+
+                    function showResults() {
+                        optionsContainer.style.display = 'none';
+                        resultsContainer.style.display = 'block';
+                        updateResults();
+                    }
+
+                    if (hasVoted) {
+                        showResults();
+                    }
+
+                    optionsContainer.addEventListener('click', function(event) {
+                        if (event.target.classList.contains('voting-option')) {
+                            if (localStorage.getItem(hasVotedKey) === 'true') {
+                                alert('Você já votou.');
+                                return;
+                            }
+                            
+                            const optionId = event.target.dataset.optionId;
+                            votes[optionId] = (votes[optionId] || 0) + 1;
+                            
+                            localStorage.setItem(storageKey, JSON.stringify(votes));
+                            localStorage.setItem(hasVotedKey, 'true');
+                            
+                            showResults();
+                        }
+                    });
+                })();
+            </script>
+        `;
     }
     case 'Form':
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
@@ -364,7 +446,7 @@ export const generateHtml = (pageState: CloudPage): string => {
 
   const mainComponents = components
     .filter(c => !fullWidthTypes.includes(c.type))
-    .map(renderComponent)
+    .map(c => renderComponent(c, pageState))
     .join('\n');
 
   const smartCaptureScript = `
@@ -816,6 +898,73 @@ ${trackingScripts}
         padding: 20px;
         text-align: left;
     }
+
+    /* Voting Component Styles */
+    .voting-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .voting-question {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .voting-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .voting-option {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid ${styles.themeColor};
+        color: ${styles.themeColor};
+        background-color: transparent;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1em;
+    }
+    .voting-option:hover {
+        background-color: ${styles.themeColor};
+        color: white;
+    }
+    .voting-results {
+        margin-top: 20px;
+    }
+    .voting-result {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .result-label {
+        flex-shrink: 0;
+        width: 100px;
+        text-align: right;
+        font-size: 0.9em;
+    }
+    .result-bar-container {
+        flex-grow: 1;
+        background-color: #f0f0f0;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    .result-bar {
+        height: 20px;
+        background-color: ${styles.themeColor};
+        width: 0%;
+        border-radius: 5px;
+        transition: width 0.5s ease;
+    }
+    .result-percentage {
+        font-size: 0.9em;
+        font-weight: bold;
+        width: 50px;
+    }
 </style>
 <script>
     function setupAccordions() {
@@ -1010,12 +1159,12 @@ ${trackingScripts}
     <img src="${meta.loaderImageUrl}" alt="Loader">
   </div>
   <div class="container" style="display: block;">
-    ${headerComponent ? renderComponent(headerComponent) : ''}
-    ${bannerComponent ? renderComponent(bannerComponent) : ''}
+    ${headerComponent ? renderComponent(headerComponent, pageState) : ''}
+    ${bannerComponent ? renderComponent(bannerComponent, pageState) : ''}
     <div class="content-wrapper">
       ${mainComponents}
     </div>
-    ${footerComponent ? renderComponent(footerComponent) : ''}
+    ${footerComponent ? renderComponent(footerComponent, pageState) : ''}
   </div>
 
   ${cookieBannerHtml}

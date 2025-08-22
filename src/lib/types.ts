@@ -15,7 +15,8 @@ export type ComponentType =
   | 'Button'
   | 'Spacer'
   | 'Accordion'
-  | 'Tabs';
+  | 'Tabs'
+  | 'Voting';
   
 export type Brand = 'Natura' | 'Avon';
 

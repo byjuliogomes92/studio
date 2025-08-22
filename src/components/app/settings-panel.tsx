@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -60,6 +60,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Spacer: StretchHorizontal,
     Accordion: Layers,
     Tabs: PanelTop,
+    Voting: Vote,
 };
 
 
@@ -155,6 +156,15 @@ export function SettingsPanel({
                 items: [
                     { id: 'item-1', title: 'Item 1', content: 'Conteúdo do item 1.' },
                     { id: 'item-2', title: 'Item 2', content: 'Conteúdo do item 2.' },
+                ]
+            };
+            break;
+        case 'Voting':
+            props = {
+                question: 'Qual sua cor favorita?',
+                options: [
+                    { id: 'opt1', text: 'Azul' },
+                    { id: 'opt2', text: 'Verde' },
                 ]
             };
             break;
@@ -367,6 +377,7 @@ export function SettingsPanel({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => addComponent("Accordion")}>Accordion</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Tabs")}>Tabs</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Voting")}>Votação</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => addComponent("Countdown")}>Contador Regressivo</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Button")}>Botão</DropdownMenuItem>

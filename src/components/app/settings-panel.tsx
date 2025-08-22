@@ -17,11 +17,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Plus, Trash2, HelpCircle } from "lucide-react";
+import { GripVertical, Plus, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -39,6 +40,23 @@ interface SettingsPanelProps {
   pageName: string;
   setPageName: Dispatch<SetStateAction<string>>;
 }
+
+const componentIcons: Record<ComponentType, React.ElementType> = {
+    Header: Heading1,
+    Footer: Heading1,
+    Banner: Image,
+    Form: Text,
+    Title: Heading1,
+    Subtitle: Heading2,
+    Paragraph: Text,
+    Divider: Minus,
+    Image: Image,
+    Video: Film,
+    Countdown: Timer,
+    Button: MousePointerClick,
+    Spacer: StretchHorizontal,
+};
+
 
 export function SettingsPanel({
   pageState,
@@ -69,26 +87,34 @@ export function SettingsPanel({
 
   const addComponent = (type: ComponentType) => {
     let props: PageComponent['props'] = {};
-    if (type === 'Form') {
-      props = {
-        fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
-        placeholders: {
-          name: 'Nome',
-          email: 'Email',
-          phone: 'Telefone - Ex:(11) 9 9999-9999',
-          cpf: 'CPF',
-          city: 'Cidade',
-          birthdate: 'Data de Nascimento'
-        },
-        consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co, por meio do fornecimento dos meus dados para contato via telefone e/ou e-mail, inclusive por parte de Consultoras Natura. Sei que posso revogar meu consentimento e solicitar outros direitos como titular de dados neste <a target="_blank" href="https://privacyportal-br.onetrust.com/webform/00181faa-85e7-4785-848b-f12d02b3f614/6f7e1250-be9f-4b2c-8610-98afc44fb2c0">link</a>. Ao entrar no espaço, estou ciente que o ambiente está sendo filmado e, desde já, AUTORIZO a Natura Cosméticos S/A e todas as empresas do Grupo Natura, ou terceiro à sua ordem, a utilizar meus direitos de personalidade, tais como minha imagem, nome, depoimento e voz, nos materiais de comunicação utilizados pela NATURA&CO para veiculação e divulgação de conteúdo da Ativação TODODIA Cereja na mídia em geral, em todas as formas, e transmissão por qualquer meio de comunicação, pelo prazo de 10 (dez) anos. Entendo que o uso da minha imagem é uma condição para acessar o ambiente e as experiências imersivas nos espaços da Natura na Ativação TODODIA Cereja.`,
-        buttonText: 'Finalizar'
-      };
+    const baseProps = { id: Date.now().toString(), type };
+
+    switch(type) {
+        case 'Form':
+            props = {
+                fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
+                placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
+                consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
+                buttonText: 'Finalizar'
+            };
+            break;
+        case 'Countdown':
+            props = { targetDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16) }; // Default to 10 days from now
+            break;
+        case 'Spacer':
+            props = { height: 20 };
+            break;
+        case 'Divider':
+            props = { thickness: 1, style: 'solid', color: '#cccccc', margin: 20 };
+            break;
+        case 'Button':
+            props = { text: 'Clique Aqui', href: '#', align: 'center' };
+            break;
+        // Other components get empty props by default
     }
-    const newComponent: PageComponent = {
-      id: Date.now().toString(),
-      type,
-      props,
-    };
+
+    const newComponent: PageComponent = { ...baseProps, props, };
+
     setPageState((prev) => ({
       ...prev,
       components: [...prev.components, newComponent],
@@ -232,36 +258,40 @@ export function SettingsPanel({
                     <Droppable droppableId="components" isDropDisabled={!isClient}>
                       {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                          {pageState.components.map((c, index) => (
-                            <Draggable key={c.id} draggableId={c.id} index={index}>
-                              {(provided) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className="flex items-center gap-2 group"
-                                >
-                                  <div {...provided.dragHandleProps}>
-                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                  </div>
-                                  <Button
-                                    variant={selectedComponentId === c.id ? "secondary" : "ghost"}
-                                    className="flex-grow justify-start"
-                                    onClick={() => setSelectedComponentId(c.id)}
-                                  >
-                                    {c.type}
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive/80 hover:text-destructive"
-                                    onClick={() => removeComponent(c.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
+                          {pageState.components.map((c, index) => {
+                            const Icon = componentIcons[c.type] || Text;
+                            return (
+                                <Draggable key={c.id} draggableId={c.id} index={index}>
+                                {(provided) => (
+                                    <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    className="flex items-center gap-2 group"
+                                    >
+                                    <div {...provided.dragHandleProps}>
+                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                    <Button
+                                        variant={selectedComponentId === c.id ? "secondary" : "ghost"}
+                                        className="flex-grow justify-start"
+                                        onClick={() => setSelectedComponentId(c.id)}
+                                    >
+                                        <Icon className="h-4 w-4 mr-2"/>
+                                        {c.type}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive/80 hover:text-destructive"
+                                        onClick={() => removeComponent(c.id)}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                    </div>
+                                )}
+                                </Draggable>
+                            )
+                          })}
                           {provided.placeholder}
                         </div>
                       )}
@@ -275,12 +305,21 @@ export function SettingsPanel({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => addComponent("Header")}>Header</DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => addComponent("Header")}>Header</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Banner")}>Banner</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("TextBlock")}>Bloco de Texto</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addComponent("Image")}>Imagem</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Form")}>Formulário</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => addComponent("Footer")}>Rodapé</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => addComponent("Title")}>Título</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Subtitle")}>Subtítulo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Paragraph")}>Parágrafo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Image")}>Imagem</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Video")}>Vídeo</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => addComponent("Countdown")}>Contador Regressivo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Button")}>Botão</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Divider")}>Divisor</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addComponent("Spacer")}>Espaçador</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </AccordionContent>

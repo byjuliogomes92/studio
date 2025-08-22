@@ -1,5 +1,19 @@
 
-export type ComponentType = 'Header' | 'Banner' | 'Form' | 'Footer' | 'TextBlock' | 'Image';
+export type ComponentType =
+  | 'Header'
+  | 'Banner'
+  | 'Form'
+  | 'Footer'
+  | 'Paragraph'
+  | 'Image'
+  | 'Title'
+  | 'Subtitle'
+  | 'Divider'
+  | 'Countdown'
+  | 'Video'
+  | 'Button'
+  | 'Spacer';
+  
 export type Brand = 'Natura' | 'Avon';
 
 export interface PageComponent {

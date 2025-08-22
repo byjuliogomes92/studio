@@ -48,6 +48,9 @@ const renderCityDropdown = (required: boolean = false): string => {
 
 
 const renderComponent = (component: PageComponent): string => {
+  const styles = component.props.styles || {};
+  const styleString = Object.entries(styles).map(([key, value]) => `${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}: ${value}`).join('; ');
+
   switch (component.type) {
     case 'Header':
       return `
@@ -59,6 +62,56 @@ const renderComponent = (component: PageComponent): string => {
         <div class="banner">
             <img src="${component.props.imageUrl || 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png'}" alt="Banner">
         </div>`;
+    case 'Title':
+        return `<h1 style="${styleString}">${component.props.text || 'Título Principal'}</h1>`;
+    case 'Subtitle':
+        return `<h2 style="${styleString}">${component.props.text || 'Subtítulo'}</h2>`;
+    case 'Paragraph':
+        return `<p style="white-space: pre-wrap; ${styleString}">${component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.'}</p>`;
+    case 'Divider':
+        return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0; ${styleString}" />`;
+    case 'Image':
+        return `
+            <div style="padding: 20px 40px; text-align: center;">
+                <img src="${component.props.src || 'https://placehold.co/800x200.png'}" alt="${component.props.alt || 'Placeholder image'}" style="max-width: 100%; height: auto; border-radius: 8px;" data-ai-hint="website abstract">
+            </div>`;
+    case 'Video':
+        const videoUrl = component.props.url || '';
+        let embedUrl = '';
+        if (videoUrl.includes('youtube.com/watch?v=')) {
+            const videoId = videoUrl.split('v=')[1].split('&')[0];
+            embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        } else if (videoUrl.includes('youtu.be/')) {
+            const videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
+            embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        }
+        return embedUrl ? `<div class="video-container" style="${styleString}"><iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '<p>URL do vídeo inválida.</p>';
+    case 'Countdown':
+        const targetDate = component.props.targetDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+        return `
+            <div id="countdown-${component.id}" class="countdown" style="${styleString}"></div>
+            <script>
+              (function() {
+                var target = new Date("${targetDate}").getTime();
+                var x = setInterval(function() {
+                  var now = new Date().getTime();
+                  var distance = target - now;
+                  var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                  var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                  var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                  document.getElementById("countdown-${component.id}").innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
+                  if (distance < 0) {
+                    clearInterval(x);
+                    document.getElementById("countdown-${component.id}").innerHTML = "EXPIRADO";
+                  }
+                }, 1000);
+              })();
+            </script>`;
+    case 'Spacer':
+        return `<div style="height: ${component.props.height || 20}px; ${styleString}"></div>`;
+    case 'Button':
+         return `<div style="text-align: ${component.props.align || 'center'}; margin: 20px 0;"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
     case 'Form':
       const { fields = {}, placeholders = {}, consentText, buttonText } = component.props;
       const formHtml = `
@@ -101,25 +154,16 @@ const renderComponent = (component: PageComponent): string => {
             <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText3 || 'Todos os preços e condições...'}</span></div>
         </div>
       </footer>`;
-    case 'TextBlock':
-        return `
-          <div style="padding: 20px 40px; max-width: 800px; margin: 20px auto; color: #000;">
-            <p style="line-height: 1.6; font-size: 16px;">${component.props.text?.replace(/\n/g, '<br>') || 'This is a text block. You can edit this content in the sidebar.'}</p>
-          </div>`;
-    case 'Image':
-        return `
-            <div style="padding: 20px 40px; text-align: center;">
-                <img src="${component.props.src || 'https://placehold.co/800x200.png'}" alt="${component.props.alt || 'Placeholder image'}" style="max-width: 100%; height: auto; border-radius: 8px;" data-ai-hint="website abstract">
-            </div>`;
     default:
-      const exhaustiveCheck: never = component;
-      return `<!-- Unknown component type -->`;
+      // This will cause a compile-time error if a new component type is added and not handled here.
+      const exhaustiveCheck: never = component.type;
+      return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
   }
 };
 
 export const generateHtml = (pageState: CloudPage): string => {
   const { styles, components, meta } = pageState;
-  const componentsHtml = components.map(renderComponent).join('\n');
+  const componentsHtml = components.map(renderComponent).join('\\n');
   const mainContainerComponents = componentsHtml;
 
   const smartCaptureScript = `
@@ -270,6 +314,54 @@ export const generateHtml = (pageState: CloudPage): string => {
         width: 100%;
         height: 100%;
         object-fit: cover;
+    }
+    
+    .content-wrapper {
+        padding: 20px 40px;
+        color: #333;
+    }
+    
+    .content-wrapper h1, .content-wrapper h2, .content-wrapper p {
+        text-align: left;
+        margin: 1em 0;
+    }
+
+    .video-container {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        margin: 20px 0;
+    }
+
+    .video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .countdown {
+        font-size: 2em;
+        font-weight: bold;
+        color: ${styles.themeColor};
+        text-align: center;
+        margin: 20px 0;
+    }
+    
+    .custom-button {
+      background-color: ${styles.themeColor};
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 5px;
+      display: inline-block;
+      transition: background-color 0.3s ease;
+    }
+    
+    .custom-button:hover {
+      background-color: ${styles.themeColorHover};
     }
 
     .form-container {
@@ -600,7 +692,9 @@ export const generateHtml = (pageState: CloudPage): string => {
     <img src="${meta.loaderImageUrl}" alt="Loader">
   </div>
   <div class="container" style="display: block;">
-    ${mainContainerComponents}
+    <div class="content-wrapper">
+      ${mainContainerComponents}
+    </div>
   </div>
 
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}

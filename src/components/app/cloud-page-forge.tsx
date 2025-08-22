@@ -11,7 +11,7 @@ import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { addPage, getPage, updatePage } from "@/lib/firestore";
+import { updatePage, getPage } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 
 interface CloudPageForgeProps {
@@ -28,6 +28,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [pageName, setPageName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     if (authLoading) {
@@ -45,8 +46,13 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         if (pageId !== "new") {
           const pageData = await getPage(pageId);
           if (pageData && pageData.userId === user.uid) {
-            let needsUpdate = false;
+             let needsUpdate = false;
             const updatedComponents = pageData.components.map((component: PageComponent) => {
+              // Migration from TextBlock to Paragraph
+              if ((component.type as any) === 'TextBlock') {
+                  needsUpdate = true;
+                  return { ...component, type: 'Paragraph' };
+              }
               if (component.type === 'Form' && (!component.props.placeholders || !component.props.fields)) {
                 needsUpdate = true;
                 const newProps = { ...component.props };
@@ -70,7 +76,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             router.push('/');
           }
         } else {
-          // This case should ideally not be hit anymore since creation is handled in a modal.
           toast({ variant: "destructive", title: "Erro", description: "Página inválida. Retornando ao projeto." });
           const projectId = new URLSearchParams(window.location.search).get('projectId');
           router.push(projectId ? `/project/${projectId}` : '/');
@@ -96,22 +101,21 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   }, [pageState]);
 
   useEffect(() => {
-     if (!pageState) return;
-
+    if (!pageState) return;
+  
     const brand = pageState.brand;
     const isAvon = brand === 'Avon';
-
+  
     const naturaLogo = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png';
     const naturaFavicon = 'https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.natura.com.br/&size=64';
     const naturaLoader = 'https://arcgis.natura.com.br/portal/sharing/rest/content/items/32111ed7537b474db26ed253c721117a/data';
-
+  
     const avonLogo = 'https://gkpb.com.br/wp-content/uploads/2021/01/novo-logo-avon-png.png';
     const avonFavicon = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
     const avonLoader = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
-
+  
     setPageState(prev => {
         if (!prev) return null;
-        const headerIndex = prev.components.findIndex(c => c.type === 'Header');
         let needsUpdate = false;
         
         const newLogo = isAvon ? avonLogo : naturaLogo;
@@ -120,12 +124,13 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
         const newState = JSON.parse(JSON.stringify(prev));
 
-        if (prev.meta.faviconUrl !== newFavicon || prev.meta.loaderImageUrl !== newLoader) {
+        if (newState.meta.faviconUrl !== newFavicon || newState.meta.loaderImageUrl !== newLoader) {
             needsUpdate = true;
             newState.meta.faviconUrl = newFavicon;
             newState.meta.loaderImageUrl = newLoader;
         }
         
+        const headerIndex = newState.components.findIndex((c: PageComponent) => c.type === 'Header');
         if (headerIndex !== -1 && newState.components[headerIndex].props.logoUrl !== newLogo) {
             needsUpdate = true;
             newState.components[headerIndex].props.logoUrl = newLogo;
@@ -166,6 +171,15 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     }
   };
 
+  const handleBackNavigation = () => {
+    if (pageState?.projectId) {
+      setIsNavigating(true);
+      router.push(`/project/${pageState.projectId}`);
+    } else {
+      router.push('/');
+    }
+  };
+
   if (isLoading || authLoading || !pageState) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
@@ -175,10 +189,16 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   }
 
   return (
+    <>
+    {isNavigating && (
+      <div className="page-loader">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    )}
     <div className="flex flex-col h-screen">
       <header className="flex items-center justify-between h-14 px-4 border-b flex-shrink-0">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.push(`/project/${pageState.projectId}`)}>
+          <Button variant="outline" size="icon" onClick={handleBackNavigation}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2 font-semibold">
@@ -207,5 +227,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         </main>
       </div>
     </div>
+    </>
   );
 }

@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { HelpCircle } from "lucide-react";
 import {
   Tooltip,
+  TooltipProvider,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -66,18 +68,16 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
             />
           </div>
         );
-      case "TextBlock":
-        return (
+      case "Title":
+      case "Subtitle":
+      case "Paragraph":
+         return (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label htmlFor="text-block-content">Texto</Label>
-              <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>Conteúdo para o bloco de texto. Suporta HTML básico.</p></TooltipContent>
-              </Tooltip>
+              <Label htmlFor="text-content">Texto</Label>
             </div>
             <Textarea
-              id="text-block-content"
+              id="text-content"
               value={component.props.text || ""}
               onChange={(e) => onPropChange("text", e.target.value)}
               rows={6}
@@ -118,6 +118,124 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
                   />
               </div>
           </div>
+        );
+    case 'Video':
+        return (
+          <div className="space-y-2">
+            <Label htmlFor="video-url">URL do Vídeo (YouTube)</Label>
+            <Input
+              id="video-url"
+              value={component.props.url || ''}
+              onChange={(e) => onPropChange('url', e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+            />
+          </div>
+        );
+      case 'Countdown':
+        return (
+          <div className="space-y-2">
+            <Label htmlFor="countdown-date">Data e Hora do Fim</Label>
+            <Input
+              id="countdown-date"
+              type="datetime-local"
+              value={component.props.targetDate || ''}
+              onChange={(e) => onPropChange('targetDate', e.target.value)}
+            />
+          </div>
+        );
+      case 'Divider':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="divider-thickness">Espessura (px)</Label>
+              <Input
+                id="divider-thickness"
+                type="number"
+                value={component.props.thickness || 1}
+                onChange={(e) => onPropChange('thickness', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="divider-style">Estilo</Label>
+              <Select value={component.props.style || 'solid'} onValueChange={(value) => onPropChange('style', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o estilo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="solid">Sólido</SelectItem>
+                  <SelectItem value="dotted">Pontilhado</SelectItem>
+                  <SelectItem value="dashed">Tracejado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="divider-color">Cor</Label>
+              <Input
+                id="divider-color"
+                type="color"
+                value={component.props.color || '#cccccc'}
+                onChange={(e) => onPropChange('color', e.target.value)}
+                className="p-1 h-10"
+              />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="divider-margin">Margem Vertical (px)</Label>
+              <Input
+                id="divider-margin"
+                type="number"
+                value={component.props.margin || 20}
+                onChange={(e) => onPropChange('margin', e.target.value)}
+              />
+            </div>
+          </div>
+        );
+      case 'Spacer':
+        return (
+            <div className="space-y-2">
+                <Label htmlFor="spacer-height">Altura (px)</Label>
+                <Input
+                id="spacer-height"
+                type="number"
+                value={component.props.height || 20}
+                onChange={(e) => onPropChange('height', parseInt(e.target.value, 10))}
+                />
+            </div>
+        );
+    case 'Button':
+        return (
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="button-text">Texto do Botão</Label>
+                    <Input
+                        id="button-text"
+                        value={component.props.text || ''}
+                        onChange={(e) => onPropChange('text', e.target.value)}
+                        placeholder="Clique Aqui"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="button-href">URL do Link</Label>
+                    <Input
+                        id="button-href"
+                        value={component.props.href || ''}
+                        onChange={(e) => onPropChange('href', e.target.value)}
+                        placeholder="https://exemplo.com"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="button-align">Alinhamento</Label>
+                     <Select value={component.props.align || 'center'} onValueChange={(value) => onPropChange('align', value)}>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Selecione o alinhamento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="left">Esquerda</SelectItem>
+                        <SelectItem value="center">Centro</SelectItem>
+                        <SelectItem value="right">Direita</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
         );
       case "Form":
         return (
@@ -244,5 +362,9 @@ export function ComponentSettings({ component, onPropChange, onSubPropChange }: 
     }
   };
 
-  return <div className="space-y-4">{renderSettings()}</div>;
+  return (
+    <TooltipProvider>
+      <div className="space-y-4">{renderSettings()}</div>
+    </TooltipProvider>
+  )
 }

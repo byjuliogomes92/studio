@@ -94,6 +94,8 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
     components: [
       { id: '1', type: 'Header', props: { logoUrl: '' } }, // Will be set by useEffect
       { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },
+       { id: 'c1', type: 'Title', props: { text: 'Título da Sua Campanha Aqui' } },
+      { id: 'c2', type: 'Paragraph', props: { text: 'Este é um ótimo lugar para descrever sua campanha. Fale sobre os benefícios, os produtos em destaque e o que os clientes podem esperar.' } },
       { 
         id: '3', 
         type: 'Form', 
@@ -126,6 +128,7 @@ export function PageList({ projectId }: PageListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [pageToDelete, setPageToDelete] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Create Page Dialog State
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -180,7 +183,7 @@ export function PageList({ projectId }: PageListProps) {
         toast({ title: "Página criada!", description: `A página "${newPageName}" foi criada com sucesso.` });
         setCreateModalOpen(false);
         setNewPageName("");
-        router.push(`/editor/${newPageId}`);
+        navigateToEditor(newPageId);
     } catch(error) {
         console.error("Failed to create page:", error);
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível criar a página." });
@@ -201,6 +204,11 @@ export function PageList({ projectId }: PageListProps) {
     } finally {
       setPageToDelete(null);
     }
+  }
+  
+  const navigateToEditor = (pageId: string) => {
+    setIsNavigating(true);
+    router.push(`/editor/${pageId}`);
   }
 
   const allTags = useMemo(() => {
@@ -238,148 +246,155 @@ export function PageList({ projectId }: PageListProps) {
 
 
   return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.push('/')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-2 font-semibold text-lg">
-            <h1 className="text-muted-foreground">Projetos /</h1>
-            <h1>{project.name}</h1>
-          </div>
+    <>
+      {isNavigating && (
+        <div className="page-loader">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
-        <Dialog open={isCreateModalOpen} onOpenChange={setCreateModalOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Criar Página
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Criar Nova Página</DialogTitle>
-                    <DialogDescription>Escolha um nome e uma marca para sua nova CloudPage.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="page-name">Nome da Página</Label>
-                        <Input 
-                            id="page-name" 
-                            value={newPageName} 
-                            onChange={(e) => setNewPageName(e.target.value)} 
-                            placeholder="Ex: Campanha Dia das Mães"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                         <Label>Marca</Label>
-                         <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
-                            <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                <RadioGroupItem value="Natura" id="brand-natura" />
-                                Natura
-                            </Label>
-                             <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                <RadioGroupItem value="Avon" id="brand-avon" />
-                                Avon
-                            </Label>
-                         </RadioGroup>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setCreateModalOpen(false)}>Cancelar</Button>
-                    <Button onClick={handleConfirmCreatePage} disabled={isCreating}>
-                        {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isCreating ? "Criando..." : "Criar Página"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-      </header>
-
-      <main className="p-6">
-        <div className="mb-6 flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium mr-2">Filtrar por tag:</span>
-            {allTags.map(tag => (
-                <Badge 
-                    key={tag}
-                    onClick={() => setActiveTag(tag === activeTag ? null : tag)}
-                    className={cn(
-                        "cursor-pointer transition-all hover:brightness-110 border",
-                        activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
-                        getTagColor(tag)
-                    )}
-                >
-                    {tag}
-                </Badge>
-            ))}
-             {activeTag && (
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
-                    <X className="h-4 w-4" />
-                </Button>
-            )}
-        </div>
-
-
-        {filteredPages.length === 0 ? (
-          <div className="text-center py-16">
-            <FileText size={48} className="mx-auto text-muted-foreground" />
-            <h2 className="mt-4 text-xl font-semibold">Nenhuma página encontrada</h2>
-            <p className="mt-2 text-muted-foreground">
-                {activeTag ? `Nenhuma página com a tag "${activeTag}".` : "Comece criando a primeira página para este projeto."}
-            </p>
-             <Button onClick={() => setCreateModalOpen(true)} className="mt-6">
-                <Plus className="mr-2 h-4 w-4" /> Criar Página
+      )}
+      <div className="min-h-screen">
+        <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => router.push('/')}>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
+            <div className="flex items-center gap-2 font-semibold text-lg">
+              <h1 className="text-muted-foreground">Projetos /</h1>
+              <h1>{project.name}</h1>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredPages.map((page) => (
-              <div
-                key={page.id}
-                className="group relative flex flex-col bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
-              >
-                 <div className="flex-grow cursor-pointer" onClick={() => router.push(`/editor/${page.id}`)}>
-                    <div className="flex items-start justify-between">
-                      <FileText className="h-10 w-10 text-primary" />
-                      <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => { e.stopPropagation(); setPageToDelete(page.id); }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                    <h3 className="mt-4 font-semibold">{page.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {page.updatedAt?.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : 'Recém-criado'}
-                    </p>
-                 </div>
-                 <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
-                    {(page.tags || []).map(tag => (
-                       <Badge key={tag} className={cn('border', getTagColor(tag))}>{tag}</Badge>
-                    ))}
+          <Dialog open={isCreateModalOpen} onOpenChange={setCreateModalOpen}>
+              <DialogTrigger asChild>
+                  <Button>
+                      <Plus className="mr-2 h-4 w-4" /> Criar Página
+                  </Button>
+              </DialogTrigger>
+              <DialogContent>
+                  <DialogHeader>
+                      <DialogTitle>Criar Nova Página</DialogTitle>
+                      <DialogDescription>Escolha um nome e uma marca para sua nova CloudPage.</DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="page-name">Nome da Página</Label>
+                          <Input 
+                              id="page-name" 
+                              value={newPageName} 
+                              onChange={(e) => setNewPageName(e.target.value)} 
+                              placeholder="Ex: Campanha Dia das Mães"
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Marca</Label>
+                          <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
+                              <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                  <RadioGroupItem value="Natura" id="brand-natura" />
+                                  Natura
+                              </Label>
+                              <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                  <RadioGroupItem value="Avon" id="brand-avon" />
+                                  Avon
+                              </Label>
+                          </RadioGroup>
+                      </div>
+                  </div>
+                  <DialogFooter>
+                      <Button variant="outline" onClick={() => setCreateModalOpen(false)}>Cancelar</Button>
+                      <Button onClick={handleConfirmCreatePage} disabled={isCreating}>
+                          {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {isCreating ? "Criando..." : "Criar Página"}
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+        </header>
+
+        <main className="p-6">
+          <div className="mb-6 flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium mr-2">Filtrar por tag:</span>
+              {allTags.map(tag => (
+                  <Badge 
+                      key={tag}
+                      onClick={() => setActiveTag(tag === activeTag ? null : tag)}
+                      className={cn(
+                          "cursor-pointer transition-all hover:brightness-110 border",
+                          activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
+                          getTagColor(tag)
+                      )}
+                  >
+                      {tag}
+                  </Badge>
+              ))}
+              {activeTag && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
+                      <X className="h-4 w-4" />
+                  </Button>
+              )}
+          </div>
+
+
+          {filteredPages.length === 0 ? (
+            <div className="text-center py-16">
+              <FileText size={48} className="mx-auto text-muted-foreground" />
+              <h2 className="mt-4 text-xl font-semibold">Nenhuma página encontrada</h2>
+              <p className="mt-2 text-muted-foreground">
+                  {activeTag ? `Nenhuma página com a tag "${activeTag}".` : "Comece criando a primeira página para este projeto."}
+              </p>
+              <Button onClick={() => setCreateModalOpen(true)} className="mt-6">
+                  <Plus className="mr-2 h-4 w-4" /> Criar Página
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {filteredPages.map((page) => (
+                <div
+                  key={page.id}
+                  className="group relative flex flex-col bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex-grow cursor-pointer" onClick={() => navigateToEditor(page.id)}>
+                      <div className="flex items-start justify-between">
+                        <FileText className="h-10 w-10 text-primary" />
+                        <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => { e.stopPropagation(); setPageToDelete(page.id); }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                      <h3 className="mt-4 font-semibold">{page.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {page.updatedAt?.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : 'Recém-criado'}
+                      </p>
+                  </div>
+                  <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
+                      {(page.tags || []).map(tag => (
+                        <Badge key={tag} className={cn('border', getTagColor(tag))}>{tag}</Badge>
+                      ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 }

@@ -55,7 +55,18 @@ const getRequiredFields = (pageState: CloudPage): DeField[] => {
     fields.push({ name: 'NPS_DATE', type: 'Date', required: true });
   }
   
-  // You can add more logic for other components like 'Voting' here
+  // Logic for A/B Test fields
+  pageState.components.forEach(component => {
+    if (component.props.abTestEnabled) {
+      fields.push({
+        name: `VARIANTE_${component.id.toUpperCase()}`,
+        type: 'Text',
+        maxLength: 1, // 'A', 'B', etc.
+        required: true
+      });
+    }
+  });
+
 
   return fields;
 };
@@ -110,7 +121,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDown
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                Ela deve ser "Sendable" e "Testable", e o campo de envio deve ser o que corresponde ao `EMAIL`.
+                Ela deve ser "Sendable" e "Testable", e o campo de envio deve ser o que corresponde ao `EMAIL`. Os campos abaixo são baseados nos componentes que você adicionou à sua página.
               </p>
               <div className="rounded-md border">
                 <Table>

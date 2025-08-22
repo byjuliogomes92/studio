@@ -193,6 +193,24 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     });
 
   }, [pageState?.brand, setPageState]);
+  
+  // Keyboard shortcut for Undo
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+        event.preventDefault();
+        if(canUndo) {
+          undo();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [undo, canUndo]);
+
 
   const handleSave = async () => {
     if (!pageState || !user) return;

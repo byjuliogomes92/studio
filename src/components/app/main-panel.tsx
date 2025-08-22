@@ -10,6 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
 import { Copy, Loader2, Sparkles, Download, Monitor, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MainPanelProps {
   htmlCode: string;
@@ -66,11 +72,24 @@ export function MainPanel({ htmlCode }: MainPanelProps) {
   return (
     <Tabs defaultValue="preview" className="w-full h-full flex flex-col bg-muted/20">
       <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
-        <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 max-w-sm">
-          <TabsTrigger value="preview" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Preview</TabsTrigger>
-          <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Código</TabsTrigger>
-          <TabsTrigger value="accessibility" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Acessibilidade</TabsTrigger>
-        </TabsList>
+        <div className="flex">
+          <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 max-w-sm rounded-none">
+            <TabsTrigger value="preview" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Preview</TabsTrigger>
+            <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Código</TabsTrigger>
+          </TabsList>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
+                  Acessibilidade
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Em breve</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
          <div className="flex items-center gap-2">
             <Button variant={previewMode === 'desktop' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')} aria-label="Visualização Desktop">
                 <Monitor className="h-5 w-5"/>

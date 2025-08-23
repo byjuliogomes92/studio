@@ -407,7 +407,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
                 </a>
             `).join('');
 
-        return `<div class="social-icons-container" style="text-align: ${align}; ${styleString}">${iconsHtml}</div>`;
+        return `<div class="social-icons-container" style="text-align: ${align}; ${styleString}" data-icon-size="${iconSize}">${iconsHtml}</div>`;
     }
     case 'Columns':
         // This case is handled by the recursive renderComponents function
@@ -656,13 +656,13 @@ export const generateHtml = (pageState: CloudPage): string => {
   }
  };
 </script>
-<script id="smartcapture-script-${formComponent.id}" src="https://mc.s12.qa1.exacttarget.com/CloudPages/lib/smartcapture-formjs.js" 
+<script id="smartcapture-script-${formComponent.id}" src="https://cloud.pages.exacttarget.com/lib/smartcapture-formjs.js" 
   data-form-id="smartcapture-form-${formComponent.id}"
   data-source-key="${meta.dataExtensionKey || ''}"
   data-redirect-url="${meta.redirectUrl}"
   data-callback="scForm_cb">
 </script>
-  ` : '';
+` : '';
   
   return `
 <!DOCTYPE html>
@@ -1368,13 +1368,8 @@ ${trackingScripts}
     }
     
     function setSocialIconStyles() {
-        const socialContainers = document.querySelectorAll('.social-icons-container');
-        socialContainers.forEach(container => {
-            const componentId = container.closest('.component-wrapper')?.querySelector('[data-component-id]')?.dataset.componentId;
-            if (!componentId) return;
-            
+        document.querySelectorAll('.social-icons-container').forEach(container => {
             const iconSize = container.dataset.iconSize || '24px';
-            
             container.querySelectorAll('.social-icon svg').forEach(svg => {
                 svg.style.width = iconSize;
                 svg.style.height = iconSize;
@@ -1503,6 +1498,7 @@ ${trackingScripts}
   ${cookieBannerHtml}
   ${smartCaptureScript}
 </body>
-</html>
-`;
-};
+</html>`;
+
+
+    

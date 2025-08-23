@@ -28,13 +28,13 @@ const renderField = (
   placeholder: string,
   required: boolean = true
   ): string => {
+  // Use the name for the id as well, as it's what we send to the DE
   return `
     <div class="input-wrapper">
       <input 
         type="${type}" 
-        id="${name.toUpperCase()}" 
-        name="${name.toUpperCase()}" 
-        data-field-type="${dataType}" 
+        id="${name}" 
+        name="${name}" 
         placeholder="${placeholder}" 
         ${required ? 'required="required"' : ''}
       >
@@ -51,7 +51,6 @@ const renderCityDropdown = (citiesString: string = '', required: boolean = false
             <select
                 id="CIDADE"
                 name="CIDADE"
-                data-field-type="Text"
                 ${required ? 'required="required"' : ''}
             >
                 <option value="" disabled selected>Selecione sua cidade</option>
@@ -83,7 +82,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage): string
     const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState);
 
     const randomVar = `v(@Random_${component.id.slice(-5)})`;
-    const hiddenInput = `<input type="hidden" name="VARIANTE_${component.id.toUpperCase()}" data-field-type="Text" value="%%=v(@VARIANTE_${component.id.toUpperCase()})=%%">`;
+    const hiddenInput = `<input type="hidden" name="VARIANTE_${component.id.toUpperCase()}" value="%%=v(@VARIANTE_${component.id.toUpperCase()})=%%">`;
     
     return `%%[
       SET ${randomVar} = Mod(Random(1,100), 2)
@@ -412,11 +411,11 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
     case 'Columns':
         // This case is handled by the recursive renderComponents function
         return '';
-    case 'Form':
-      const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
+    case 'Form': {
+      const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
       const formHtml = `
         <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-            <form id="smartcapture-form-${component.id}" novalidate="novalidate">
+            <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                  <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
                   ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email') : ''}
@@ -432,7 +431,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
            
                 ${fields.optin ? `
                 <div class="consent">
-                    <input type="checkbox" id="OPTIN" name="OPTIN" data-field-type="Boolean" required="required" data-validation-message="Por favor preencha este campo.">
+                    <input type="checkbox" id="OPTIN" name="OPTIN" required="required">
                     <label for="OPTIN">
                         ${consentText || 'Quero receber novidades e promoções...'}
                     </label>
@@ -444,10 +443,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
                     <button type="submit">${buttonText || 'Finalizar'}</button>
                 </div>
             </form>
-             <div id="thank-you-message-${component.id}" class="thank-you-message" style="display: none;"></div>
         </div>
       `;
       return formHtml;
+    }
     case 'Footer':
       return `
       <footer style="${styleString}">
@@ -606,13 +605,88 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
         });
     </script>
     `;
-}
+};
+
+
+const generateSSJSScript = (pageState: CloudPage): string => {
+    const formComponent = pageState.components.find(c => c.type === 'Form');
+    if (!formComponent) return '';
+
+    const deKey = pageState.meta.dataExtensionKey;
+    if (!deKey || deKey === 'CHANGE-ME') {
+        return '<!-- SSJS Error: Data Extension Key not set in page metadata. -->';
+    }
+
+    const redirectUrl = pageState.meta.redirectUrl;
+    if (!redirectUrl) {
+        return '<!-- SSJS Error: Redirect URL not set in page metadata. -->';
+    }
+    
+    const formProps = formComponent.props;
+    const formFields = formProps.fields || {};
+
+    const deFields: string[] = [];
+    const ssjsVars: string[] = [];
+    
+    if (formFields.name) { deFields.push("NOME"); ssjsVars.push(`var NOME = Request.GetFormField("NOME");`); }
+    if (formFields.email) { deFields.push("EMAIL"); ssjsVars.push(`var EMAIL = Request.GetFormField("EMAIL");`); }
+    if (formFields.phone) { deFields.push("TELEFONE"); ssjsVars.push(`var TELEFONE = Request.GetFormField("TELEFONE");`); }
+    if (formFields.cpf) { deFields.push("CPF"); ssjsVars.push(`var CPF = Request.GetFormField("CPF");`); }
+    if (formFields.birthdate) { deFields.push("DATANASCIMENTO"); ssjsVars.push(`var DATANASCIMENTO = Request.GetFormField("DATANASCIMENTO");`); }
+    if (formFields.city) { deFields.push("CIDADE"); ssjsVars.push(`var CIDADE = Request.GetFormField("CIDADE");`); }
+    if (formFields.optin) { deFields.push("OPTIN"); ssjsVars.push(`var OPTIN = Request.GetFormField("OPTIN") == "on" ? "True" : "False";`); }
+    
+    // Add A/B test fields
+    pageState.components.forEach(c => {
+        if (c.abTestEnabled) {
+            const fieldName = `VARIANTE_${c.id.toUpperCase()}`;
+            deFields.push(fieldName);
+            ssjsVars.push(`var ${fieldName} = Request.GetFormField("${fieldName}");`);
+        }
+    });
+
+    if (deFields.length === 0) {
+        return '<!-- SSJS Error: No fields configured for the form. -->';
+    }
+
+    const deFieldsString = `[${deFields.join(",")}]`;
+    const valuesString = `[${deFields.join(",")}]`;
+    const ssjsVarsString = ssjsVars.join('\n    ');
+
+    return `
+<script runat="server">
+    Platform.Load("Core", "1");
+    if (Request.Method == "POST") {
+        try {
+            ${ssjsVarsString}
+
+            if (EMAIL != null && EMAIL != "") {
+                var result = Platform.Function.UpsertData(
+                    "${deKey}",
+                    ["EMAIL"], 
+                    [EMAIL],
+                    ${deFieldsString},
+                    ${valuesString}
+                );
+                
+                Platform.Response.Redirect("${redirectUrl}");
+            }
+        } catch(e) {
+            Write("<p style='color:red; text-align: center;'><strong>Ocorreu um erro ao processar sua solicitação. Tente novamente.</strong></p>");
+            // For debugging: Write(Stringify(e));
+        }
+    }
+</script>
+    `;
+};
+
 
 export const generateHtml = (pageState: CloudPage): string => {
   const { styles, components, meta, cookieBanner } = pageState;
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
 
+  const ssjsScript = generateSSJSScript(pageState);
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
   const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
@@ -620,83 +694,8 @@ export const generateHtml = (pageState: CloudPage): string => {
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
-
-  const formComponent = components.find(c => c.type === 'Form');
-  const formThankYouMessage = formComponent?.props.thankYouMessage || "<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>";
-
-  const mainComponents = renderComponents(components.filter(c => c.parentId === null && !fullWidthTypes.includes(c.type)), components, pageState);
-
-  const smartCaptureScript = formComponent ? `
-<script>
- window.scForm_cb = function (data) {
-  if (data.status === "success") {
-    var formWrapper = document.getElementById('form-wrapper-${formComponent.id}');
-    var thankYouDiv = document.getElementById('thank-you-message-${formComponent.id}');
-    
-    if(formWrapper && thankYouDiv) {
-        var thankYouTemplate = \`${formThankYouMessage.replace(/`/g, '\\`')}\`;
-        
-        var formData = {};
-        var formElements = formWrapper.querySelector('form').elements;
-        for (var i = 0; i < formElements.length; i++) {
-            var element = formElements[i];
-            if (element.name) {
-                formData[element.name] = element.value;
-            }
-        }
-        
-        var renderedHtml = thankYouTemplate.replace(/\\{\\{\\s*(\\w+)\\s*\\}\\}/g, function(match, key) {
-            return formData[key] || '';
-        });
-
-        thankYouDiv.innerHTML = renderedHtml;
-        formWrapper.querySelector('form').style.display = 'none';
-        thankYouDiv.style.display = 'block';
-    }
-  }
- };
-
-  window.formSubmit = function(form) {
-      let valid = true;
-      const requiredInputs = form.querySelectorAll('input[required], select[required]');
-
-      requiredInputs.forEach(input => {
-          const errorId = 'error-' + (input.name || input.id).toLowerCase();
-          const error = form.parentElement.querySelector('#' + errorId);
-          let isInvalid = false;
-          
-          if(input.type === 'checkbox') {
-              isInvalid = !input.checked;
-          } else {
-              isInvalid = input.value.trim() === '';
-          }
-
-          if (isInvalid && error) {
-              error.style.display = 'block';
-              valid = false;
-          } else if (error) {
-              error.style.display = 'none';
-          }
-      });
-      return valid;
-  }
-</script>
-<script>
-    (function(d) {
-        var scAppDomain = 'cloudpages.mc-content.com';
-        var scAppBasePath = '/CloudPages';
-        var el = d.createElement('script');
-        el.id = 'smartcapture-script-${formComponent.id}';
-        el.src = '//' + scAppDomain + scAppBasePath + '/lib/smartcapture-formjs.js';
-        el.setAttribute('data-form-id', 'smartcapture-form-${formComponent.id}');
-        el.setAttribute('data-source-key', '${meta.dataExtensionKey || ''}');
-        el.setAttribute('data-redirect-url', '${meta.redirectUrl}');
-        el.setAttribute('data-callback', 'scForm_cb');
-        var s = d.getElementsByTagName('script')[0];
-        s.parentNode.insertBefore(el, s);
-    })(document);
-</script>
-` : '';
+  
+  const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState);
   
   return `
 <!DOCTYPE html>
@@ -1423,6 +1422,31 @@ ${trackingScripts}
             input.classList.remove('email-invalid');
         }
     }
+    
+    function validateForm(form) {
+      let valid = true;
+      const requiredInputs = form.querySelectorAll('input[required], select[required]');
+
+      requiredInputs.forEach(input => {
+          const errorId = 'error-' + (input.name || input.id).toLowerCase();
+          const error = form.querySelector('#' + errorId);
+          let isInvalid = false;
+          
+          if(input.type === 'checkbox') {
+              isInvalid = !input.checked;
+          } else {
+              isInvalid = input.value.trim() === '';
+          }
+
+          if (isInvalid && error) {
+              error.style.display = 'block';
+              valid = false;
+          } else if (error) {
+              error.style.display = 'none';
+          }
+      });
+      return valid;
+    }
 
     function setupSubmitButton() {
         document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
@@ -1441,6 +1465,18 @@ ${trackingScripts}
                 submitButton.appendChild(buttonText);
                 submitButton.appendChild(buttonLoader);
             }
+            
+            form.addEventListener('submit', function(e) {
+                if (!validateForm(form)) {
+                    e.preventDefault();
+                } else {
+                   if (submitButton) {
+                     submitButton.disabled = true;
+                     submitButton.querySelector('.button-text').style.opacity = '0';
+                     submitButton.querySelector('.button-loader').style.display = 'block';
+                   }
+                }
+            });
         });
     }
 
@@ -1475,6 +1511,7 @@ ${trackingScripts}
 </script>
 </head>
 <body>
+  ${ssjsScript}
   <div id="loader">
     <img src="${meta.loaderImageUrl}" alt="Loader">
   </div>
@@ -1489,7 +1526,7 @@ ${trackingScripts}
   </div>
 
   ${cookieBannerHtml}
-  ${smartCaptureScript}
 </body>
 </html>
 `;
+

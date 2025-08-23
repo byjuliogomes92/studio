@@ -650,7 +650,7 @@ ${trackingScripts}
         font-weight: 500;
         font-style: normal;
         margin: 0;
-        padding: 20px 0;
+        padding: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -720,6 +720,8 @@ ${trackingScripts}
         width: 90%;
         max-width: 800px;
         text-align: center;
+        margin-top: 20px;
+        margin-bottom: 20px;
     }
 
     .banner img {
@@ -1104,11 +1106,12 @@ ${trackingScripts}
         width: 100%;
         padding: 10px 20px;
         box-sizing: border-box;
-        display: none;
+        display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
-        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
     }
     .stripe-container p {
         margin: 0;
@@ -1411,4 +1414,3 @@ ${trackingScripts}
 </body>
 </html>
 `;
-};

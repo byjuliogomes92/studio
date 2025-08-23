@@ -271,6 +271,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   };
 
   const handleBackNavigation = () => {
+    if (hasUnsavedChanges) {
+      if (!window.confirm("Você tem alterações não salvas. Deseja sair mesmo assim?")) {
+        return; // User canceled the navigation
+      }
+    }
+
     if (pageState?.projectId) {
       router.push(`/project/${pageState.projectId}`);
     } else {
@@ -321,7 +327,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
               <RotateCcw className="mr-2 h-4 w-4" />
               Desfazer
             </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges}>
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 {isSaving ? 'Salvando...' : 'Salvar Página'}
             </Button>

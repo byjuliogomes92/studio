@@ -27,18 +27,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    const authInstance = getAuth(app);
-    setAuth(authInstance);
+    if (typeof window !== 'undefined') {
+      const authInstance = getAuth(app);
+      setAuth(authInstance);
 
-    const unsubscribe = onAuthStateChanged(authInstance, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+      const unsubscribe = onAuthStateChanged(authInstance, (user) => {
+        setUser(user);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    } else {
+        setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (!loading && !user && !publicRoutes.includes(pathname)) {
+    // This effect should only run on the client side
+    if (typeof window !== 'undefined' && !loading && !user && !publicRoutes.includes(pathname)) {
       router.push('/login');
     }
   }, [loading, user, router, pathname]);

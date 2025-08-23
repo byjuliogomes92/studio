@@ -1504,3 +1504,5 @@ ${trackingScripts}
   ${smartCaptureScript}
 </body>
 </html>
+`;
+};

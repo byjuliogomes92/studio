@@ -107,7 +107,12 @@ function SortableItem({ component, children }: { component: PageComponent; child
 
   return (
     <div ref={setNodeRef} style={style}>
-      {childWithDndProps}
+      {React.isValidElement(children) ? React.cloneElement(children, {
+          // Pass dnd props only if the child is the ComponentItem for a Column container
+          // or if it's a regular ComponentItem
+          dndAttributes: attributes,
+          dndListeners: listeners,
+        }) : children}
     </div>
   );
 }
@@ -245,25 +250,25 @@ export function SettingsPanel({
     });
   };
 
-  const addComponent = (type: ComponentType) => {
+  const addComponent = (type: ComponentType, parentId: string | null = null, column: number = 0) => {
     setPageState(prev => {
       if (!prev) return null;
-
+  
       return produce(prev, draft => {
-        const parentId = null; 
-        const siblings = draft.components.filter(c => c.parentId === parentId);
-        
+        const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
+  
         const newComponent: PageComponent = {
           id: Date.now().toString(),
           type,
           props: {},
           parentId,
           order: siblings.length,
-          column: 0,
-          abTestEnabled: false, 
-          abTestVariants: []
+          column,
+          abTestEnabled: false,
+          abTestVariants: [],
         };
-
+  
+        // Default props for new components
         switch(type) {
             case 'Columns':
                 newComponent.props = { columnCount: 2 };
@@ -410,8 +415,9 @@ export function SettingsPanel({
         let overIndex: number;
 
         if (overIsColumn) {
-            newParentId = overId.split('-')[0];
-            newColumnIndex = parseInt(overId.split('-')[1], 10);
+            const overIdString = over.id.toString();
+            newParentId = overIdString.split('-')[0];
+            newColumnIndex = parseInt(overIdString.split('-')[1], 10);
             
             // Find the last component in that column to place the new one after
             const siblingsInNewColumn = draft.components
@@ -476,11 +482,10 @@ export function SettingsPanel({
     const componentsToRender = pageState.components
       .filter(c => c.parentId === parentId)
       .sort((a, b) => a.order - b.order);
-
+  
     return componentsToRender.map(component => {
       if (component.type === 'Columns') {
         const columnCount = component.props.columnCount || 2;
-        const gridColsClass = `grid-cols-${columnCount}`; // Basic support for 2 or 3
         return (
           <SortableItem key={component.id} component={component}>
             <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
@@ -489,6 +494,7 @@ export function SettingsPanel({
                 selectedComponentId={selectedComponentId}
                 setSelectedComponentId={setSelectedComponentId}
                 removeComponent={removeComponent}
+                // dnd props passed by SortableItem's cloneElement
               />
               <div className={`grid grid-cols-${columnCount} gap-2`}>
                 {Array.from({ length: columnCount }, (_, i) => (
@@ -503,12 +509,13 @@ export function SettingsPanel({
       }
       return (
         <SortableItem key={component.id} component={component}>
-            <ComponentItem
-              component={component}
-              selectedComponentId={selectedComponentId}
-              setSelectedComponentId={setSelectedComponentId}
-              removeComponent={removeComponent}
-            />
+          <ComponentItem
+            component={component}
+            selectedComponentId={selectedComponentId}
+            setSelectedComponentId={setSelectedComponentId}
+            removeComponent={removeComponent}
+             // dnd props passed by SortableItem's cloneElement
+          />
         </SortableItem>
       );
     });
@@ -658,7 +665,7 @@ export function SettingsPanel({
                       </div>
                     </SortableContext>
                 </DndContext>
-                <AddComponentDialog onAddComponent={addComponent} />
+                <AddComponentDialog onAddComponent={(type) => addComponent(type)} />
               </AccordionContent>
             </AccordionItem>
             {selectedComponent && (

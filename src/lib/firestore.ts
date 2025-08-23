@@ -1,11 +1,21 @@
 
-import { db } from "./firebase";
-import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { getDb } from "./firebase";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore } from "firebase/firestore";
 import type { Project, CloudPage } from "./types";
+
+const getDbInstance = (): Firestore => {
+    const db = getDb();
+    if (!db) {
+        throw new Error("Firestore is not initialized. This function should only be called on the client-side.");
+    }
+    return db;
+};
+
 
 // Projects
 
 const addProject = async (name: string, userId: string): Promise<Project> => {
+    const db = getDbInstance();
     const projectRef = await addDoc(collection(db, "projects"), {
         name,
         userId,
@@ -16,10 +26,12 @@ const addProject = async (name: string, userId: string): Promise<Project> => {
 };
 
 const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {
+    const db = getDbInstance();
     await updateDoc(doc(db, "projects", projectId), data);
 }
 
 const getProjectsForUser = async (userId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
+    const db = getDbInstance();
     const projectsQuery = query(collection(db, "projects"), where("userId", "==", userId));
     const pagesQuery = query(collection(db, "pages"), where("userId", "==", userId));
 
@@ -33,6 +45,7 @@ const getProjectsForUser = async (userId: string): Promise<{ projects: Project[]
 };
 
 const getProject = async (projectId: string): Promise<Project | null> => {
+    const db = getDbInstance();
     const docRef = doc(db, "projects", projectId);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Project : null;
@@ -40,6 +53,7 @@ const getProject = async (projectId: string): Promise<Project | null> => {
 
 
 const deleteProject = async (projectId: string): Promise<void> => {
+    const db = getDbInstance();
     const projectDocRef = doc(db, "projects", projectId);
     // You might want to delete all pages within the project first
     const pagesQuery = query(collection(db, "pages"), where("projectId", "==", projectId));
@@ -55,6 +69,7 @@ const deleteProject = async (projectId: string): Promise<void> => {
 // Pages
 
 const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+    const db = getDbInstance();
     const pageWithTimestamps = {
       ...pageData,
       createdAt: serverTimestamp(),
@@ -65,6 +80,7 @@ const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt
 };
 
 const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
+    const db = getDbInstance();
     await updateDoc(doc(db, "pages", pageId), {
         ...pageData,
         updatedAt: serverTimestamp(),
@@ -72,6 +88,7 @@ const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise
 };
 
 const getPage = async (pageId: string): Promise<CloudPage | null> => {
+    const db = getDbInstance();
     const docRef = doc(db, "pages", pageId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return null;
@@ -87,12 +104,14 @@ const getPage = async (pageId: string): Promise<CloudPage | null> => {
 };
 
 const getPagesForProject = async (projectId: string): Promise<CloudPage[]> => {
+    const db = getDbInstance();
     const q = query(collection(db, "pages"), where("projectId", "==", projectId), orderBy("updatedAt", "desc"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
 };
 
 const getProjectWithPages = async (projectId: string, userId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
+    const db = getDbInstance();
     const projectRef = doc(db, 'projects', projectId);
     const projectDoc = await getDoc(projectRef);
 
@@ -117,6 +136,7 @@ const getProjectWithPages = async (projectId: string, userId: string): Promise<{
 
 
 const deletePage = async (pageId: string): Promise<void> => {
+    const db = getDbInstance();
     await deleteDoc(doc(db, "pages", pageId));
 };
 
@@ -143,6 +163,7 @@ const duplicatePage = async (pageId: string): Promise<CloudPage> => {
 };
 
 const movePageToProject = async (pageId: string, newProjectId: string): Promise<void> => {
+    const db = getDbInstance();
     const pageRef = doc(db, 'pages', pageId);
     await updateDoc(pageRef, {
         projectId: newProjectId,
@@ -165,5 +186,3 @@ export {
     duplicatePage,
     movePageToProject
 };
-
-    

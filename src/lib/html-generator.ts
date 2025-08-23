@@ -656,11 +656,20 @@ export const generateHtml = (pageState: CloudPage): string => {
   }
  };
 </script>
-<script id="smartcapture-script-${formComponent.id}" src="https://cloud.pages.exacttarget.com/lib/smartcapture-formjs.js" 
-  data-form-id="smartcapture-form-${formComponent.id}"
-  data-source-key="${meta.dataExtensionKey || ''}"
-  data-redirect-url="${meta.redirectUrl}"
-  data-callback="scForm_cb">
+<script>
+    (function(d) {
+        var scAppDomain = 'cloud.pages.exacttarget.com';
+        var scAppBasePath = '/lib/smartcapture-formjs.js';
+        var el = d.createElement('script');
+        el.id = 'smartcapture-script-${formComponent.id}';
+        el.src = '//' + scAppDomain + scAppBasePath;
+        el.setAttribute('data-form-id', 'smartcapture-form-${formComponent.id}');
+        el.setAttribute('data-source-key', '${meta.dataExtensionKey || ''}');
+        el.setAttribute('data-redirect-url', '${meta.redirectUrl}');
+        el.setAttribute('data-callback', 'scForm_cb');
+        var s = d.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(el, s);
+    })(document);
 </script>
 ` : '';
   
@@ -1498,7 +1507,6 @@ ${trackingScripts}
   ${cookieBannerHtml}
   ${smartCaptureScript}
 </body>
-</html>`;
-
-
-    
+</html>
+`;
+};

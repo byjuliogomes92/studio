@@ -454,94 +454,52 @@ export function SettingsPanel({
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
 
-  const renderComponents = (parentId: string | null) => {
-    const components = pageState.components
-        .filter(c => c.parentId === parentId)
-        .sort((a, b) => a.order - b.order);
+  const renderComponents = (parentId: string | null, column?: number) => {
+    const componentsToRender = pageState.components
+      .filter(c => c.parentId === parentId && (column === undefined || c.column === column))
+      .sort((a, b) => a.order - b.order);
 
-    return components.map(component => {
-        if (component.type === 'Columns') {
-            const columnCount = component.props.columnCount || 2;
-            return (
-                <SortableItem key={component.id} component={component}>
-                    <div className="flex flex-col gap-2 bg-card p-2 rounded-lg border">
-                        <div className="flex items-center text-sm font-medium">
-                            <Button variant="ghost" size="icon" className="cursor-grab h-8 w-8" {...({ ...dndAttributes, ...dndListeners } as any)}>
-                                <GripVertical className="h-5 w-5 text-muted-foreground" />
-                            </Button>
-                            <span>Colunas</span>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto" onClick={() => removeComponent(component.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                           {Array.from({ length: columnCount }, (_, i) => (
-                               <ColumnDropzone key={i} id={`${component.id}-${i}`}>
-                                   {renderComponents(component.id, i)}
-                               </ColumnDropzone>
-                           ))}
-                        </div>
-                    </div>
-                </SortableItem>
-            )
-        }
-        return (
-            <SortableItem key={component.id} component={component}>
-                 <ComponentItem
-                    component={component}
-                    selectedComponentId={selectedComponentId}
-                    setSelectedComponentId={setSelectedComponentId}
-                    removeComponent={removeComponent}
-                />
-            </SortableItem>
-        );
-    }, 
-    { dndAttributes, dndListeners }: { dndAttributes?: any, dndListeners?: any } = {}) => {
-    
-    const renderComponents = (parentId: string | null, column?: number) => {
-      const componentsToRender = pageState.components
-        .filter(c => c.parentId === parentId && (column === undefined || c.column === column))
-        .sort((a, b) => a.order - b.order);
-
-      return (
-        <SortableContext items={componentsToRender.map(c => c.id)} strategy={verticalListSortingStrategy}>
-            {componentsToRender.map(component => {
-                 if (component.type === 'Columns') {
-                    const columnCount = component.props.columnCount || 2;
-                    return (
-                        <SortableItem key={component.id} component={component}>
-                           <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
-                                <div className="flex items-center text-sm font-medium">
-                                    <ComponentItem
-                                        component={component}
-                                        selectedComponentId={selectedComponentId}
-                                        setSelectedComponentId={setSelectedComponentId}
-                                        removeComponent={removeComponent}
-                                    />
-                                </div>
-                                <div className={`grid grid-cols-${columnCount} gap-2`}>
-                                   {Array.from({ length: columnCount }, (_, i) => (
-                                       <ColumnDropzone key={i} id={`${component.id}-${i}`}>
-                                           {renderComponents(component.id, i)}
-                                       </ColumnDropzone>
-                                   ))}
-                                </div>
-                            </div>
-                        </SortableItem>
-                    );
-                }
-                return (
-                    <SortableItem key={component.id} component={component}>
-                         <ComponentItem
-                            component={component}
-                            selectedComponentId={selectedComponentId}
-                            setSelectedComponentId={setSelectedComponentId}
-                            removeComponent={removeComponent}
-                        />
-                    </SortableItem>
-                );
-            })}
-        </SortableContext>
-      )
-    }
+    return (
+      <SortableContext items={componentsToRender.map(c => c.id)} strategy={verticalListSortingStrategy}>
+          {componentsToRender.map(component => {
+               if (component.type === 'Columns') {
+                  const columnCount = component.props.columnCount || 2;
+                  return (
+                      <SortableItem key={component.id} component={component}>
+                         <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
+                              <div className="flex items-center text-sm font-medium">
+                                  <ComponentItem
+                                      component={component}
+                                      selectedComponentId={selectedComponentId}
+                                      setSelectedComponentId={setSelectedComponentId}
+                                      removeComponent={removeComponent}
+                                  />
+                              </div>
+                              <div className={`grid grid-cols-${columnCount} gap-2`}>
+                                 {Array.from({ length: columnCount }, (_, i) => (
+                                     <ColumnDropzone key={i} id={`${component.id}-${i}`}>
+                                         {renderComponents(component.id, i)}
+                                     </ColumnDropzone>
+                                 ))}
+                              </div>
+                          </div>
+                      </SortableItem>
+                  );
+              }
+              return (
+                  <SortableItem key={component.id} component={component}>
+                       <ComponentItem
+                          component={component}
+                          selectedComponentId={selectedComponentId}
+                          setSelectedComponentId={setSelectedComponentId}
+                          removeComponent={removeComponent}
+                      />
+                  </SortableItem>
+              );
+          })}
+      </SortableContext>
+    )
+  }
 
     return (
     <ScrollArea className="h-full">

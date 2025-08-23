@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { PageComponent, ComponentType } from "@/lib/types";
@@ -617,7 +616,8 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     <TooltipContent>
                         <div className="max-w-xs">
                           <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
-                          <p className="mt-2">Ex: `&lt;h2&gt;Obrigado, {'{{NOME}}'}!&lt;/h2&gt;`.</p>
+                          <p className="mt-2">Ex. de variável: `<h2>Obrigado, {'{{NOME}}'}!</h2>`.</p>
+                          <p className="mt-1">Ex. de botão: `&lt;a href="https://..." class="custom-button"&gt;Clique Aqui&lt;/a&gt;`.</p>
                           <p className="mt-1">Variáveis disponíveis: `{'{{NOME}}'}`, `{'{{EMAIL}}'}`, etc.</p>
                         </div>
                     </TooltipContent>
@@ -946,3 +946,5 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
+
+    

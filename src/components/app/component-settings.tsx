@@ -6,7 +6,7 @@ import type { PageComponent, ComponentType } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Spacing } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -33,6 +33,38 @@ const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] 
     { id: 'city', label: 'Cidades' },
     { id: 'birthdate', label: 'Data de Nascimento' },
 ];
+
+function SpacingSettings({ props, onPropChange }: { props: any, onPropChange: (prop: string, value: any) => void }) {
+    const styles = props.styles || {};
+    const handleStyleChange = (prop: string, value: any) => {
+      onPropChange('styles', { ...styles, [prop]: value });
+    };
+  
+    return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label>Margem</Label>
+                <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Topo" value={styles.marginTop || ''} onChange={e => handleStyleChange('marginTop', e.target.value)} />
+                    <Input placeholder="Direita" value={styles.marginRight || ''} onChange={e => handleStyleChange('marginRight', e.target.value)} />
+                    <Input placeholder="Baixo" value={styles.marginBottom || ''} onChange={e => handleStyleChange('marginBottom', e.target.value)} />
+                    <Input placeholder="Esquerda" value={styles.marginLeft || ''} onChange={e => handleStyleChange('marginLeft', e.target.value)} />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label>Padding</Label>
+                <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Topo" value={styles.paddingTop || ''} onChange={e => handleStyleChange('paddingTop', e.target.value)} />
+                    <Input placeholder="Direita" value={styles.paddingRight || ''} onChange={e => handleStyleChange('paddingRight', e.target.value)} />
+                    <Input placeholder="Baixo" value={styles.paddingBottom || ''} onChange={e => handleStyleChange('paddingBottom', e.target.value)} />
+                    <Input placeholder="Esquerda" value={styles.paddingLeft || ''} onChange={e => handleStyleChange('paddingLeft', e.target.value)} />
+                </div>
+            </div>
+        </div>
+        </div>
+    )
+  }
 
 function TextStyleSettings({ props, onPropChange }: { props: any, onPropChange: (prop: string, value: any) => void }) {
   const styles = props.styles || {};
@@ -776,26 +808,20 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
   const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
 
   const handlePropChange = (prop: string, value: any) => {
-    onComponentChange(component.id, {
-      ...component,
-      props: {
-        ...component.props,
-        [prop]: value,
-      },
+    const updatedComponent = produce(component, draft => {
+      draft.props[prop] = value;
     });
+    onComponentChange(component.id, updatedComponent);
   };
 
   const handleSubPropChange = (prop: string, subProp: string, value: any) => {
-    onComponentChange(component.id, {
-      ...component,
-      props: {
-        ...component.props,
-        [prop]: {
-          ...component.props[prop],
-          [subProp]: value,
-        },
-      },
+    const updatedComponent = produce(component, draft => {
+        if (!draft.props[prop]) {
+            draft.props[prop] = {};
+        }
+        draft.props[prop][subProp] = value;
     });
+    onComponentChange(component.id, updatedComponent);
   };
 
   const handleAbTestToggle = (checked: boolean) => {
@@ -824,14 +850,41 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     });
     onComponentChange(component.id, updatedComponent);
   };
+  
+  const handleVariantSubPropChange = (variantIndex: number, prop: string, subProp: string, value: any) => {
+    const updatedComponent = produce(component, draft => {
+        if (!draft.abTestVariants) {
+            draft.abTestVariants = [{}];
+        }
+        if (!draft.abTestVariants[variantIndex]) {
+            draft.abTestVariants[variantIndex] = {};
+        }
+        if (!draft.abTestVariants[variantIndex][prop]) {
+            draft.abTestVariants[variantIndex][prop] = {};
+        }
+        draft.abTestVariants[variantIndex][prop][subProp] = value;
+    });
+    onComponentChange(component.id, updatedComponent);
+  };
+
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
-        {renderComponentSettings(component.type, component.props, handlePropChange, handleSubPropChange)}
+      <div className="space-y-6">
+        <div>
+            <h3 className="text-sm font-medium mb-4">Configurações Gerais</h3>
+            {renderComponentSettings(component.type, component.props, handlePropChange, handleSubPropChange)}
+        </div>
         
-        {/* A/B Test Settings */}
         <Separator />
+        
+        <div>
+            <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Spacing className="h-4 w-4" /> Espaçamento</h3>
+            <SpacingSettings props={component.props} onPropChange={handlePropChange} />
+        </div>
+
+        <Separator />
+        
         <div className="space-y-4">
              <div className="flex items-center justify-between">
                 <Label htmlFor="ab-test-enabled" className="flex items-center gap-2 font-semibold">
@@ -845,14 +898,22 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
                 />
             </div>
             {abTestEnabled && (
-                <div className="p-3 border rounded-md space-y-4 bg-muted/20">
+                <div className="p-4 border rounded-md space-y-6 bg-muted/30">
                      <h4 className="font-medium text-sm text-muted-foreground">Configurações da Variante B</h4>
-                     {renderComponentSettings(
-                         component.type, 
-                         variantProps, 
-                         (prop, value) => handleVariantPropChange(0, prop, value), 
-                         (prop, subProp, value) => { /* Sub-prop for variants might need a more complex handler if needed */ }
-                      )}
+                     <div>
+                        <h3 className="text-sm font-medium mb-4">Configurações Gerais (Variante)</h3>
+                         {renderComponentSettings(
+                             component.type, 
+                             variantProps, 
+                             (prop, value) => handleVariantPropChange(0, prop, value), 
+                             (prop, subProp, value) => handleVariantSubPropChange(0, prop, subProp, value)
+                          )}
+                     </div>
+                     <Separator/>
+                     <div>
+                        <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Spacing className="h-4 w-4" /> Espaçamento (Variante)</h3>
+                        <SpacingSettings props={variantProps} onPropChange={(prop, value) => handleVariantPropChange(0, prop, value)} />
+                     </div>
                 </div>
             )}
         </div>

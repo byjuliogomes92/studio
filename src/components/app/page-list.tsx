@@ -83,6 +83,8 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
     backgroundImage: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-bg.png',
     themeColor: '#F4AB01',
     themeColorHover: '#e9a000',
+    fontFamily: 'Roboto',
+    customCss: '',
   };
 
   const avonTheme = {
@@ -90,6 +92,8 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
     backgroundImage: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-bg.png',
     themeColor: '#000000',
     themeColorHover: '#333333',
+    fontFamily: 'Roboto',
+    customCss: '',
   }
   
   return {
@@ -541,7 +545,7 @@ export function PageList({ projectId }: PageListProps) {
                                   className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                                   onClick={(e) => e.stopPropagation()}
                               >
-                                  <Plus className="h-4 w-4" />
+                                  <MoreVertical className="h-4 w-4" />
                               </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
@@ -612,5 +616,3 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
-
-    

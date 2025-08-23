@@ -42,6 +42,8 @@ export interface CloudPage {
     backgroundImage: string;
     themeColor: string;
     themeColorHover: string;
+    fontFamily: string;
+    customCss: string;
   };
   components: PageComponent[];
   meta: {

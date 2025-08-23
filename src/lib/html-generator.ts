@@ -38,9 +38,19 @@ const renderCityDropdown = (citiesString: string = '', required: boolean = false
                 <option value="" disabled selected>Selecione sua cidade</option>
                 ${options}
             </select>
-            <div class="error-message" id="error-cidade">Por favor, selecione uma cidade.</div>
+            <div class="error-message" id="error-cidade">Por favor, seleciona uma cidade.</div>
         </div>
     `;
+};
+
+const getStyleString = (styles: any = {}): string => {
+    return Object.entries(styles)
+      .map(([key, value]) => {
+        if (!value) return '';
+        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+        return `${cssKey}: ${value};`;
+      })
+      .join(' ');
 };
 
 
@@ -68,21 +78,6 @@ const renderComponent = (component: PageComponent, pageState: CloudPage): string
       <div class="ab-variant-b">${componentB}</div>
     %%[ ENDIF ]%%
     ${hiddenInput}
-    <script>
-      (function() {
-        var variant = "%%=v(@VARIANTE_${component.id.toUpperCase()})=%%";
-        document.querySelectorAll('.ab-variant-a, .ab-variant-b').forEach(function(el) {
-          var parent = el.closest('[id^="ab-test-wrapper-${component.id}"]');
-          if (parent) {
-            if (variant === 'A' && el.classList.contains('ab-variant-b')) {
-              el.style.display = 'none';
-            } else if (variant === 'B' && el.classList.contains('ab-variant-a')) {
-              el.style.display = 'none';
-            }
-          }
-        });
-      })();
-    </script>
     `;
   }
   return renderSingleComponent(component, pageState);
@@ -90,19 +85,19 @@ const renderComponent = (component: PageComponent, pageState: CloudPage): string
 
 const renderSingleComponent = (component: PageComponent, pageState: CloudPage): string => {
   const styles = component.props.styles || {};
-  const styleString = Object.entries(styles).map(([key, value]) => `${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}: ${value}`).join('; ');
+  const styleString = getStyleString(styles);
   const editableAttrs = (propName: string) => `contenteditable="true" data-component-id="${component.id}" data-prop-name="${propName}"`;
 
 
   switch (component.type) {
     case 'Header':
       return `
-        <div class="logo">
+        <div class="logo" style="${styleString}">
           <img src="${component.props.logoUrl || 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png'}" alt="Logo">
         </div>`;
     case 'Banner':
         return `
-        <div class="banner">
+        <div class="banner" style="${styleString}">
             <img src="${component.props.imageUrl || 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png'}" alt="Banner">
         </div>`;
     case 'Title':
@@ -112,10 +107,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
     case 'Paragraph':
         return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs('text')}>${component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.'}</div>`;
     case 'Divider':
-        return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0;" />`;
+        return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0; ${styleString}" />`;
     case 'Image':
         return `
-            <div style="padding: 20px 40px; text-align: center;">
+            <div style="text-align: center; ${styleString}">
                 <img src="${component.props.src || 'https://placehold.co/800x200.png'}" alt="${component.props.alt || 'Placeholder image'}" style="max-width: 100%; height: auto; border-radius: 8px;" data-ai-hint="website abstract">
             </div>`;
     case 'Video':
@@ -154,9 +149,9 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
               })();
             </script>`;
     case 'Spacer':
-        return `<div style="height: ${component.props.height || 20}px;"></div>`;
+        return `<div style="height: ${component.props.height || 20}px; ${styleString}"></div>`;
     case 'Button':
-         return `<div style="text-align: ${component.props.align || 'center'}; margin: 20px 0;"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
+         return `<div style="text-align: ${component.props.align || 'center'}; ${styleString}"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
     case 'Accordion': {
         const items = component.props.items || [];
         const itemsHtml = items
@@ -173,7 +168,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
           </div>`
           )
           .join('');
-        return `<div class="accordion-container">${itemsHtml}</div>`;
+        return `<div class="accordion-container" style="${styleString}">${itemsHtml}</div>`;
     }
     case 'Tabs': {
         const items = component.props.items || [];
@@ -195,7 +190,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
           )
           .join('');
         return `
-          <div class="tabs-container" id="${tabsId}">
+          <div class="tabs-container" id="${tabsId}" style="${styleString}">
             <div class="tab-list" role="tablist">${triggersHtml}</div>
             ${panelsHtml}
           </div>`;
@@ -219,7 +214,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
         `).join('');
 
         return `
-            <div id="${votingId}" class="voting-container">
+            <div id="${votingId}" class="voting-container" style="${styleString}">
                 <h3 class="voting-question">${question || 'Sua pergunta aqui'}</h3>
                 <div class="voting-options">${optionsHtml}</div>
                 <div class="voting-results" style="display: none;">${resultsHtml}</div>
@@ -290,7 +285,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
         const content = linkUrl ? `<a href="${linkUrl}" target="_blank" style="color: inherit; text-decoration: none;">${text}</a>` : text;
 
         return `
-            <div id="${stripeId}" class="stripe-container" style="background-color: ${backgroundColor}; color: ${textColor};">
+            <div id="${stripeId}" class="stripe-container" style="background-color: ${backgroundColor}; color: ${textColor}; ${styleString}">
                 <p>${content}</p>
                 ${closeButton}
             </div>
@@ -332,7 +327,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
         }
 
         return `
-            <div id="${npsId}" class="nps-container">
+            <div id="${npsId}" class="nps-container" style="${styleString}">
                 <div class="nps-content">
                     <p class="nps-question">${question}</p>
                     <div class="nps-options-wrapper">${optionsHtml}</div>
@@ -357,7 +352,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
             return '<p>URL de incorporação do mapa não fornecida.</p>';
         }
         return `
-            <div class="map-container">
+            <div class="map-container" style="${styleString}">
                 <iframe
                     src="${embedUrl}"
                     width="100%"
@@ -373,7 +368,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
     case 'Form':
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
       const formHtml = `
-        <div class="form-container">
+        <div class="form-container" style="${styleString}">
             <form id="smartcapture-block-uttuiggngg" novalidate="novalidate" onsubmit="return validateForm()">
                  <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
@@ -407,7 +402,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
       return formHtml;
     case 'Footer':
       return `
-      <footer>
+      <footer style="${styleString}">
         <div class="MuiGrid-root natds602 MuiGrid-container">
             <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText1 || `© ${new Date().getFullYear()} Natura. Todos os direitos reservados.`}</span></div>
             <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText2 || 'NATURA COSMÉTICOS S/A...'}</span></div>
@@ -576,10 +571,11 @@ export const generateHtml = (pageState: CloudPage): string => {
   const footerComponent = components.find(c => c.type === 'Footer');
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
+  const googleFont = styles.fontFamily || 'Roboto';
 
   const mainComponents = components
     .filter(c => !fullWidthTypes.includes(c.type))
-    .map(c => `<div id="ab-test-wrapper-${c.id}">${renderComponent(c, pageState)}</div>`)
+    .map(c => `<div class="component-wrapper">${renderComponent(c, pageState)}</div>`)
     .join('\n');
 
   const smartCaptureScript = `
@@ -646,7 +642,7 @@ export const generateHtml = (pageState: CloudPage): string => {
 <meta name="theme-color" content="${styles.themeColor}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 ${trackingScripts}
 <style>
     body {
@@ -655,7 +651,7 @@ ${trackingScripts}
         background-size: cover;
         background-repeat: no-repeat;
         background-attachment: fixed;
-        font-family: "Roboto", sans-serif;
+        font-family: "${googleFont}", sans-serif;
         font-weight: 500;
         font-style: normal;
         margin: 0;
@@ -742,9 +738,10 @@ ${trackingScripts}
         color: #333;
     }
     
-    .content-wrapper h1, .content-wrapper h2, .content-wrapper p, .content-wrapper div {
+    .content-wrapper .component-wrapper > * {
         text-align: left;
-        margin: 1em 0;
+        margin-top: 1em;
+        margin-bottom: 1em;
     }
 
     [contenteditable="true"]:focus {
@@ -752,7 +749,7 @@ ${trackingScripts}
       box-shadow: 0 0 5px ${styles.themeColor};
     }
     
-    .content-wrapper h1, .content-wrapper h2 {
+    h1, h2 {
         font-weight: bold;
     }
 
@@ -762,7 +759,6 @@ ${trackingScripts}
         overflow: hidden;
         width: 100%;
         padding-top: 56.25%; /* 16:9 Aspect Ratio */
-        margin: 20px 0;
     }
 
     .video-container iframe {
@@ -778,7 +774,6 @@ ${trackingScripts}
         font-weight: bold;
         color: ${styles.themeColor};
         text-align: center;
-        margin: 20px 0;
     }
     
     .custom-button {
@@ -796,7 +791,7 @@ ${trackingScripts}
     }
 
     .form-container {
-        padding: 20px;
+        padding: 20px 0;
     }
     
     .form-container .row {
@@ -821,7 +816,7 @@ ${trackingScripts}
         border: 1px solid #ccc;
         border-radius: 5px;
         box-sizing: border-box;
-        font-family: "Roboto", sans-serif;
+        font-family: "${googleFont}", sans-serif;
         font-weight: 700;
         font-style: normal;
     }
@@ -887,7 +882,7 @@ ${trackingScripts}
         color: rgb(196, 11, 11);
         display: none;
         margin-bottom: 10px;
-        font-family: "Roboto", sans-serif;
+        font-family: "${googleFont}", sans-serif;
         font-weight: 700;
         font-style: normal;
         font-size: small;
@@ -960,7 +955,6 @@ ${trackingScripts}
         border: 1px solid #e0e0e0;
         border-radius: 8px;
         overflow: hidden;
-        margin: 20px 0;
     }
     .accordion-item {
         border-bottom: 1px solid #e0e0e0;
@@ -1010,7 +1004,7 @@ ${trackingScripts}
     }
 
     /* Tabs Styles */
-    .tabs-container { margin: 20px 0; }
+    .tabs-container { }
     .tab-list {
         display: flex;
         border-bottom: 1px solid #e0e0e0;
@@ -1042,7 +1036,6 @@ ${trackingScripts}
         border: 1px solid #e0e0e0;
         border-radius: 8px;
         padding: 20px;
-        margin: 20px 0;
     }
     .voting-question {
         font-size: 1.2em;
@@ -1134,7 +1127,6 @@ ${trackingScripts}
         border: 1px solid #e0e0e0;
         border-radius: 8px;
         padding: 25px;
-        margin: 20px 0;
         text-align: center;
     }
     .nps-question {
@@ -1190,11 +1182,13 @@ ${trackingScripts}
     }
     /* Map Component Styles */
     .map-container {
-        margin: 20px 0;
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid #e0e0e0;
     }
+
+    /* Custom CSS */
+    ${styles.customCss || ''}
 </style>
 <script>
     function setupAccordions() {

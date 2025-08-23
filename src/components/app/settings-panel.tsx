@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -29,6 +29,7 @@ import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
 import { AddComponentDialog } from './add-component-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 interface SettingsPanelProps {
   pageState: CloudPage;
@@ -61,6 +62,20 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     NPS: Smile,
     Map: MapPin,
 };
+
+const googleFonts = [
+    "Roboto",
+    "Open Sans",
+    "Lato",
+    "Montserrat",
+    "Oswald",
+    "Source Sans Pro",
+    "Raleway",
+    "Poppins",
+    "Nunito",
+    "Merriweather",
+];
+
 
 function SortableItem({ component, selectedComponentId, setSelectedComponentId, removeComponent }: {
   component: PageComponent;
@@ -370,6 +385,36 @@ export function SettingsPanel({
                   </div>
                   <Input type="color" value={pageState.styles.themeColorHover} onChange={(e) => handleStyleChange('themeColorHover', e.target.value)} className="p-1" />
                 </div>
+                 <div className="space-y-2">
+                    <Label>Fonte Principal</Label>
+                    <Select value={pageState.styles.fontFamily} onValueChange={(value) => handleStyleChange('fontFamily', value)}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma fonte" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {googleFonts.map(font => (
+                                <SelectItem key={font} value={font}>{font}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                        <Label htmlFor="custom-css">CSS Personalizado</Label>
+                        <Tooltip>
+                            <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                            <TooltipContent><p>Adicione seu próprio CSS aqui. Use com cuidado.</p></TooltipContent>
+                        </Tooltip>
+                    </div>
+                    <Textarea 
+                        id="custom-css"
+                        value={pageState.styles.customCss}
+                        onChange={(e) => handleStyleChange('customCss', e.target.value)}
+                        placeholder="Ex: .meu-componente { color: red; }"
+                        rows={8}
+                        className="font-mono text-xs"
+                    />
+                </div>
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="components">
@@ -402,7 +447,10 @@ export function SettingsPanel({
             </AccordionItem>
             {selectedComponent && (
               <AccordionItem value="component-settings">
-                <AccordionTrigger>Configurações de {selectedComponent.type}</AccordionTrigger>
+                <AccordionTrigger className="flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    <span>Configurações de {selectedComponent.type}</span>
+                 </AccordionTrigger>
                 <AccordionContent className="pt-2">
                   <ComponentSettings
                     component={selectedComponent}

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getAuth, onAuthStateChanged, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, Auth } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
@@ -10,8 +10,8 @@ import { Logo } from '@/components/icons';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: typeof signInWithEmailAndPassword;
-  signup: typeof createUserWithEmailAndPassword;
+  login: (email: string, password: string) => Promise<any>;
+  signup: (email: string, password: string) => Promise<any>;
   logout: () => void;
 }
 
@@ -22,17 +22,20 @@ const publicRoutes = ['/login', '/signup'];
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const auth = getAuth(app);
+  const [auth, setAuth] = useState<Auth | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const authInstance = getAuth(app);
+    setAuth(authInstance);
+
+    const unsubscribe = onAuthStateChanged(authInstance, (user) => {
       setUser(user);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [auth]);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user && !publicRoutes.includes(pathname)) {
@@ -40,7 +43,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [loading, user, router, pathname]);
 
+  const login = (email: string, password: string) => {
+    if (!auth) return Promise.reject(new Error("Firebase Auth not initialized"));
+    return signInWithEmailAndPassword(auth, email, password);
+  }
+
+  const signup = (email: string, password: string) => {
+    if (!auth) return Promise.reject(new Error("Firebase Auth not initialized"));
+    return createUserWithEmailAndPassword(auth, email, password);
+  }
+
   const logout = async () => {
+    if (!auth) return;
     await signOut(auth);
     router.push('/login');
   };
@@ -48,8 +62,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     loading,
-    login: (email, password) => signInWithEmailAndPassword(auth, email, password),
-    signup: (email, password) => createUserWithEmailAndPassword(auth, email, password),
+    login,
+    signup,
     logout,
   };
 

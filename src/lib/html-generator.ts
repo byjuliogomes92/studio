@@ -1396,3 +1396,5 @@ ${trackingScripts}
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}
 </body>
 </html>
+`;
+};

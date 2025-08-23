@@ -628,7 +628,7 @@ export const generateHtml = (pageState: CloudPage): string => {
 
   const smartCaptureScript = formComponent ? `
 <script>
- var scForm_cb = function (data) {
+ window.scForm_cb = function (data) {
   if (data.status === "success") {
     var formWrapper = document.getElementById('form-wrapper-${formComponent.id}');
     var thankYouDiv = document.getElementById('thank-you-message-${formComponent.id}');
@@ -1270,6 +1270,10 @@ ${trackingScripts}
         .columns-container {
             flex-direction: column;
         }
+        .form-container .row {
+            flex-direction: column;
+            gap: 10px;
+        }
     }
 
 
@@ -1277,11 +1281,53 @@ ${trackingScripts}
     ${styles.customCss || ''}
 </style>
 <script>
+    window.formSubmit = function(form) {
+        let valid = true;
+        const requiredInputs = form.querySelectorAll('input[required], select[required]');
+
+        requiredInputs.forEach(input => {
+            const errorId = 'error-' + (input.name || input.id).toLowerCase();
+            const error = form.parentElement.querySelector('#' + errorId);
+            let isInvalid = false;
+            
+            if(input.type === 'checkbox') {
+                isInvalid = !input.checked;
+            } else {
+                isInvalid = input.value.trim() === '';
+            }
+
+            if (isInvalid && error) {
+                error.style.display = 'block';
+                valid = false;
+            } else if (error) {
+                error.style.display = 'none';
+            }
+        });
+
+        const button = form.querySelector('button[type="submit"]');
+        if (button) {
+            const loader = button.querySelector('.button-loader');
+            const buttonText = button.querySelector('.button-text');
+            if (valid) {
+                 button.disabled = true;
+                if(loader) loader.style.display = 'block';
+                if(buttonText) buttonText.style.opacity = '0';
+            } else {
+                 button.disabled = false;
+                if(loader) loader.style.display = 'none';
+                if(buttonText) buttonText.style.opacity = '1';
+            }
+        }
+        
+        return valid;
+    }
+
     function setupAccordions() {
         document.querySelectorAll('.accordion-container').forEach(container => {
             container.addEventListener('click', function(event) {
-                if (!event.target.classList.contains('accordion-header')) return;
-                const header = event.target;
+                const header = event.target.closest('.accordion-header');
+                if (!header) return;
+                
                 const content = header.nextElementSibling;
                 const isExpanded = header.getAttribute('aria-expanded') === 'true';
 
@@ -1304,10 +1350,11 @@ ${trackingScripts}
             const panels = tabsContainer.querySelectorAll('.tab-panel');
 
             tabList.addEventListener('click', e => {
-                if (e.target.matches('.tab-trigger')) {
+                const trigger = e.target.closest('.tab-trigger');
+                if (trigger) {
                     triggers.forEach(t => t.setAttribute('aria-selected', 'false'));
-                    e.target.setAttribute('aria-selected', 'true');
-                    const tabId = e.target.dataset.tab;
+                    trigger.setAttribute('aria-selected', 'true');
+                    const tabId = trigger.dataset.tab;
                     panels.forEach(p => {
                         if ('panel-' + tabId === p.id) {
                             p.hidden = false;
@@ -1326,9 +1373,6 @@ ${trackingScripts}
             const componentId = container.closest('.component-wrapper')?.querySelector('[data-component-id]')?.dataset.componentId;
             if (!componentId) return;
             
-            // This is a simplified way to get component props. In a real scenario, you'd pass this from the server.
-            // For this prototype, we find the component in the pageState and apply styles.
-            // This part of the script is more illustrative of the final goal.
             const iconSize = container.dataset.iconSize || '24px';
             
             container.querySelectorAll('.social-icon svg').forEach(svg => {
@@ -1392,79 +1436,27 @@ ${trackingScripts}
         }
     }
 
-    function toggleButtonLoader(form, show) {
-        const button = form.querySelector('button[type="submit"]');
-        if (!button) return;
-        const loader = button.querySelector('.button-loader');
-        const buttonText = button.querySelector('.button-text');
-        
-        if (show) {
-            button.disabled = true;
-            if(loader) loader.style.display = 'block';
-            if(buttonText) buttonText.style.opacity = '0';
-        } else {
-            button.disabled = false;
-            if(loader) loader.style.display = 'none';
-            if(buttonText) buttonText.style.opacity = '1';
-        }
-    }
+    function setupSubmitButton() {
+        document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton && !submitButton.querySelector('.button-loader')) {
+                const buttonTextContent = submitButton.textContent;
+                submitButton.innerHTML = '';
+                
+                const buttonText = document.createElement('span');
+                buttonText.className = 'button-text';
+                buttonText.textContent = buttonTextContent;
+                
+                const buttonLoader = document.createElement('div');
+                buttonLoader.className = 'button-loader';
 
-    function validateForm(form) {
-        let valid = true;
-        const requiredInputs = form.querySelectorAll('input[required], select[required]');
-
-        requiredInputs.forEach(input => {
-            const error = form.parentElement.querySelector('#error-' + input.name.toLowerCase());
-            let isInvalid = false;
-            
-            if(input.type === 'checkbox') {
-                isInvalid = !input.checked;
-            } else {
-                isInvalid = input.value.trim() === '';
-            }
-
-            if (isInvalid && error) {
-                error.style.display = 'block';
-                valid = false;
-            } else if (error) {
-                error.style.display = 'none';
+                submitButton.appendChild(buttonText);
+                submitButton.appendChild(buttonLoader);
             }
         });
-
-        if (!valid) return false;
-        toggleButtonLoader(form, true);
-        return true;
-    }
-    
-    function setupForms() {
-      document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
-        form.addEventListener('submit', function(e) {
-          e.preventDefault();
-          if (validateForm(this)) {
-            // Manually trigger SmartCapture submit
-            window.ScForm.submit(this);
-          }
-        });
-
-        const submitButton = form.querySelector('button[type="submit"]');
-        if (submitButton && !submitButton.querySelector('.button-loader')) {
-            const buttonTextContent = submitButton.textContent;
-            submitButton.innerHTML = '';
-            
-            const buttonText = document.createElement('span');
-            buttonText.className = 'button-text';
-            buttonText.textContent = buttonTextContent;
-            
-            const buttonLoader = document.createElement('div');
-            buttonLoader.className = 'button-loader';
-
-            submitButton.appendChild(buttonText);
-            submitButton.appendChild(buttonLoader);
-        }
-      });
     }
 
-    window.onload = function () {
+    document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
         if (loader) {
             setTimeout(function () {
@@ -1487,11 +1479,11 @@ ${trackingScripts}
             emailInput.addEventListener('blur', function() { validateEmail(this); });
         }
         
-        setupForms();
+        setupSubmitButton();
         setupAccordions();
         setupTabs();
         setSocialIconStyles();
-    }
+    });
 </script>
 </head>
 <body>
@@ -1512,4 +1504,3 @@ ${trackingScripts}
   ${smartCaptureScript}
 </body>
 </html>
-`;

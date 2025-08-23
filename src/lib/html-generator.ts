@@ -1401,5 +1401,4 @@ ${trackingScripts}
   ${cookieBannerHtml}
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}
 </body>
-</html>`.trim();
-};
+</html>

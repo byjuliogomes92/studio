@@ -1,5 +1,5 @@
 
-import type { CloudPage, PageComponent } from './types';
+import type { CloudPage, PageComponent, ComponentType } from './types';
 
 const renderField = (
   id: string, 
@@ -1402,3 +1402,4 @@ ${trackingScripts}
   ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}
 </body>
 </html>`.trim();
+};

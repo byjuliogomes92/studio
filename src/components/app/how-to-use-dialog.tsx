@@ -163,7 +163,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDown
             <div className="space-y-4">
                 <h3 className="font-semibold text-lg">2. Cole o Código no Content Builder</h3>
                 <p className="text-sm text-muted-foreground">
-                    No Content Builder, crie um novo "Bloco de Conteúdo" do tipo "HTML". Cole o código que você copiou desta ferramenta no editor de HTML do Marketing Cloud.
+                    No Content Builder, crie um novo "Bloco de Conteúdo" do tipo "HTML". O código gerado já inclui a lógica de envio do formulário (SSJS) que se comunica com a sua Data Extension. Cole o código HTML copiado no editor.
                 </p>
                 <img src="https://i.postimg.cc/J0bW8Gz2/step2.png" alt="Cole o código no Content Builder" className="rounded-md border" />
             </div>
@@ -171,7 +171,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDown
              <div className="space-y-4">
                 <h3 className="font-semibold text-lg">3. Crie e Publique a CloudPage</h3>
                 <p className="text-sm text-muted-foreground">
-                    Crie uma nova CloudPage, selecione o layout em branco e arraste seu bloco de conteúdo HTML para a página. Salve e publique. Sua página está pronta!
+                    Crie uma nova CloudPage, selecione o layout em branco e arraste seu bloco de conteúdo HTML para a página. Salve, publique e sua página estará pronta para receber envios!
                 </p>
                  <img src="https://i.postimg.cc/q7yZ26Y1/step3.png" alt="Crie e publique a CloudPage" className="rounded-md border" />
             </div>

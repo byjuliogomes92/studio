@@ -1,12 +1,14 @@
 
+
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
 import type { CloudPage, ComponentType, PageComponent } from "@/lib/types";
 import React from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type Active, type Over } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { produce } from 'immer';
 import {
   Accordion,
   AccordionContent,
@@ -17,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2 } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -30,6 +32,8 @@ import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
 import { AddComponentDialog } from './add-component-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { cn } from "@/lib/utils";
+
 
 interface SettingsPanelProps {
   pageState: CloudPage;
@@ -62,6 +66,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     NPS: Smile,
     Map: MapPin,
     SocialIcons: Share2,
+    Columns: Columns,
 };
 
 const googleFonts = [
@@ -77,54 +82,95 @@ const googleFonts = [
     "Merriweather",
 ];
 
-
-function SortableItem({ component, selectedComponentId, setSelectedComponentId, removeComponent }: {
-  component: PageComponent;
-  selectedComponentId: string | null;
-  setSelectedComponentId: Dispatch<SetStateAction<string | null>>;
-  removeComponent: (id: string) => void;
-}) {
+function SortableItem({ component, children }: { component: PageComponent; children: React.ReactNode }) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-  } = useSortable({id: component.id});
+    isDragging,
+  } = useSortable({ id: component.id, data: { type: 'component', component } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto',
   };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {React.cloneElement(children as React.ReactElement, {
+        dndAttributes: attributes,
+        dndListeners: listeners,
+      })}
+    </div>
+  );
+}
+
+function ColumnDropzone({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) {
+  const { setNodeRef, isOver } = useSortable({ id, data: { type: 'column' } });
   
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "p-2 bg-muted/40 rounded-lg min-h-[80px] flex flex-col gap-2 transition-colors",
+        isOver ? 'bg-primary/20 ring-2 ring-primary' : '',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+
+function ComponentItem({
+  component,
+  selectedComponentId,
+  setSelectedComponentId,
+  removeComponent,
+  dndAttributes,
+  dndListeners,
+}: {
+  component: PageComponent;
+  selectedComponentId: string | null;
+  setSelectedComponentId: (id: string) => void;
+  removeComponent: (id: string) => void;
+  dndAttributes?: any;
+  dndListeners?: any;
+}) {
   const Icon = componentIcons[component.type] || Text;
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
-      <Button variant="ghost" size="icon" {...attributes} {...listeners} className="cursor-grab h-8 w-8">
+    <div className="flex items-center gap-1 group bg-card p-1 rounded-md border">
+      <Button variant="ghost" size="icon" {...dndAttributes} {...dndListeners} className="cursor-grab h-8 w-8">
         <GripVertical className="h-5 w-5 text-muted-foreground" />
       </Button>
       <Button
-          variant={selectedComponentId === component.id ? "secondary" : "ghost"}
-          className="flex-grow justify-start"
-          onClick={() => setSelectedComponentId(component.id)}
+        variant={selectedComponentId === component.id ? "secondary" : "ghost"}
+        className="flex-grow justify-start"
+        onClick={() => setSelectedComponentId(component.id)}
       >
-          <div className="flex items-center gap-2">
-            <Icon className="h-4 w-4"/>
-            <span>{component.type}</span>
-            {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
-          </div>
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4" />
+          <span>{component.type}</span>
+          {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
+        </div>
       </Button>
       <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-destructive/80 hover:text-destructive"
-          onClick={() => removeComponent(component.id)}
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-destructive/80 hover:text-destructive opacity-0 group-hover:opacity-100"
+        onClick={() => removeComponent(component.id)}
       >
-          <Trash2 className="h-4 w-4" />
+        <Trash2 className="h-4 w-4" />
       </Button>
     </div>
-  )
+  );
 }
+
 
 export function SettingsPanel({
   pageState,
@@ -197,137 +243,307 @@ export function SettingsPanel({
   };
 
   const addComponent = (type: ComponentType) => {
-    let props: PageComponent['props'] = {};
-    const baseProps = { id: Date.now().toString(), type };
-
-    switch(type) {
-        case 'Form':
-            props = {
-                fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
-                placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
-                consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
-                buttonText: 'Finalizar'
-            };
-            break;
-        case 'Countdown':
-            props = { targetDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16) }; // Default to 10 days from now
-            break;
-        case 'Spacer':
-            props = { height: 20 };
-            break;
-        case 'Divider':
-            props = { thickness: 1, style: 'solid', color: '#cccccc', margin: 20 };
-            break;
-        case 'Button':
-            props = { text: 'Clique Aqui', href: '#', align: 'center' };
-            break;
-        case 'Accordion':
-        case 'Tabs':
-            props = {
-                items: [
-                    { id: 'item-1', title: 'Item 1', content: 'Conteúdo do item 1.' },
-                    { id: 'item-2', title: 'Item 2', content: 'Conteúdo do item 2.' },
-                ]
-            };
-            break;
-        case 'Voting':
-            props = {
-                question: 'Qual sua cor favorita?',
-                options: [
-                    { id: 'opt1', text: 'Azul' },
-                    { id: 'opt2', text: 'Verde' },
-                ]
-            };
-            break;
-        case 'Stripe':
-            props = {
-                text: 'Anúncio ou aviso importante aqui!',
-                isClosable: true,
-                backgroundColor: '#000000',
-                textColor: '#FFFFFF',
-                linkUrl: ''
-            };
-            break;
-        case 'NPS':
-            props = {
-                question: 'Em uma escala de 0 a 10, o quão provável você é de recomendar nosso produto/serviço a um amigo ou colega?',
-                type: 'numeric',
-                lowLabel: 'Pouco provável',
-                highLabel: 'Muito provável',
-                thankYouMessage: 'Obrigado pelo seu feedback!'
-            };
-            break;
-        case 'Map':
-            props = {
-                embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
-            };
-            break;
-        case 'SocialIcons':
-            props = {
-                links: {
-                    facebook: '',
-                    instagram: '',
-                    twitter: '',
-                    linkedin: '',
-                    youtube: '',
-                    tiktok: '',
-                    pinterest: '',
-                    snapchat: '',
-                },
-                styles: {
-                    align: 'center',
-                    iconSize: '24px',
-                }
-            };
-            break;
-        // Other components get empty props by default
-    }
-
-    const newComponent: PageComponent = { ...baseProps, props, abTestEnabled: false, abTestVariants: [] };
-
-    setPageState((prev) => {
+    setPageState(prev => {
       if (!prev) return null;
-      return {
-        ...prev,
-        components: [...prev.components, newComponent],
-      }
+
+      return produce(prev, draft => {
+        const parentId = null; 
+        const siblings = draft.components.filter(c => c.parentId === parentId);
+        
+        const newComponent: PageComponent = {
+          id: Date.now().toString(),
+          type,
+          props: {},
+          parentId,
+          order: siblings.length,
+          column: 0,
+          abTestEnabled: false, 
+          abTestVariants: []
+        };
+
+        switch(type) {
+            case 'Columns':
+                newComponent.props = { columnCount: 2 };
+                break;
+            case 'Form':
+                newComponent.props = {
+                    fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
+                    placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
+                    consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
+                    buttonText: 'Finalizar'
+                };
+                break;
+            case 'Countdown':
+                newComponent.props = { targetDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16) };
+                break;
+            case 'Spacer':
+                newComponent.props = { height: 20 };
+                break;
+            case 'Divider':
+                newComponent.props = { thickness: 1, style: 'solid', color: '#cccccc', margin: 20 };
+                break;
+            case 'Button':
+                newComponent.props = { text: 'Clique Aqui', href: '#', align: 'center' };
+                break;
+            case 'Accordion':
+            case 'Tabs':
+                newComponent.props = {
+                    items: [
+                        { id: 'item-1', title: 'Item 1', content: 'Conteúdo do item 1.' },
+                        { id: 'item-2', title: 'Item 2', content: 'Conteúdo do item 2.' },
+                    ]
+                };
+                break;
+            case 'Voting':
+                newComponent.props = {
+                    question: 'Qual sua cor favorita?',
+                    options: [
+                        { id: 'opt1', text: 'Azul' },
+                        { id: 'opt2', text: 'Verde' },
+                    ]
+                };
+                break;
+            case 'Stripe':
+                newComponent.props = {
+                    text: 'Anúncio ou aviso importante aqui!',
+                    isClosable: true,
+                    backgroundColor: '#000000',
+                    textColor: '#FFFFFF',
+                    linkUrl: ''
+                };
+                break;
+            case 'NPS':
+                newComponent.props = {
+                    question: 'Em uma escala de 0 a 10, o quão provável você é de recomendar nosso produto/serviço a um amigo ou colega?',
+                    type: 'numeric',
+                    lowLabel: 'Pouco provável',
+                    highLabel: 'Muito provável',
+                    thankYouMessage: 'Obrigado pelo seu feedback!'
+                };
+                break;
+            case 'Map':
+                newComponent.props = {
+                    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
+                };
+                break;
+            case 'SocialIcons':
+                newComponent.props = {
+                    links: {
+                        facebook: '',
+                        instagram: '',
+                        twitter: '',
+                        linkedin: '',
+                        youtube: '',
+                        tiktok: '',
+                        pinterest: '',
+                        snapchat: '',
+                    },
+                    styles: {
+                        align: 'center',
+                        iconSize: '24px',
+                    }
+                };
+                break;
+        }
+
+        draft.components.push(newComponent);
+        setSelectedComponentId(newComponent.id);
+      });
     });
-    setSelectedComponentId(newComponent.id);
   };
 
   const removeComponent = (id: string) => {
-    setPageState((prev) => {
+    setPageState(prev => {
       if (!prev) return null;
+      // Also remove children of the component being removed
+      const idsToRemove = new Set([id]);
+      let children = prev.components.filter(c => c.parentId === id);
+      while(children.length > 0) {
+        const nextGenChildren: PageComponent[] = [];
+        children.forEach(child => {
+          idsToRemove.add(child.id);
+          const grandChildren = prev.components.filter(c => c.parentId === child.id);
+          nextGenChildren.push(...grandChildren);
+        });
+        children = nextGenChildren;
+      }
+      
       return {
-      ...prev,
-      components: prev.components.filter((c) => c.id !== id),
-    }});
+        ...prev,
+        components: prev.components.filter(c => !idsToRemove.has(c.id)),
+      };
+    });
     if (selectedComponentId === id) {
       setSelectedComponentId(null);
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const {active, over} = event;
+    const { active, over } = event;
 
-    if (active.id !== over?.id) {
-      setPageState((page) => {
-        if (!page) return null;
-        const oldIndex = page.components.findIndex((c) => c.id === active.id);
-        const newIndex = page.components.findIndex((c) => c.id === over?.id);
-        return {
-          ...page,
-          components: arrayMove(page.components, oldIndex, newIndex),
-        };
-      });
+    if (!over || active.id === over.id) {
+        return;
     }
+    
+    setPageState(prev => {
+      if (!prev) return null;
+
+      const activeComponent = prev.components.find(c => c.id === active.id);
+      if (!activeComponent) return prev;
+
+      return produce(prev, draft => {
+        const overIsColumn = over.data.current?.type === 'column';
+        const newParentId = overIsColumn ? over.data.current.id.split('-')[0] : null;
+        const newColumn = overIsColumn ? parseInt(over.data.current.id.split('-')[1], 10) : 0;
+        
+        const oldIndex = draft.components.findIndex(c => c.id === active.id);
+        const activeComp = draft.components[oldIndex];
+        
+        // Remove from old position
+        draft.components.splice(oldIndex, 1);
+
+        // Find new position
+        const overComponent = overIsColumn ? null : draft.components.find(c => c.id === over.id);
+        let newIndex;
+        
+        if (overComponent) {
+            newIndex = draft.components.findIndex(c => c.id === over.id);
+        } else {
+            // Dropping into a column
+            const siblings = draft.components.filter(c => c.parentId === newParentId && c.column === newColumn);
+            newIndex = oldIndex < draft.components.length ? oldIndex : draft.components.length; // Approximate
+        }
+
+        // Insert into new position
+        activeComp.parentId = newParentId;
+        activeComp.column = newColumn;
+        draft.components.splice(newIndex, 0, activeComp);
+        
+        // Re-order everything
+        const reorder = (parentId: string | null) => {
+            const children = draft.components.filter(c => c.parentId === parentId);
+            
+            if (parentId && draft.components.find(c => c.id === parentId)?.type === 'Columns') {
+                const columnContainer = draft.components.find(c => c.id === parentId)!;
+                const columnCount = columnContainer.props.columnCount || 2;
+                for(let i=0; i < columnCount; i++) {
+                    const columnChildren = children.filter(c => c.column === i);
+                    columnChildren.forEach((child, index) => {
+                        const originalIndex = draft.components.findIndex(c => c.id === child.id);
+                        draft.components[originalIndex].order = index;
+                    });
+                }
+            } else {
+                 children.forEach((child, index) => {
+                    const originalIndex = draft.components.findIndex(c => c.id === child.id);
+                    draft.components[originalIndex].order = index;
+                    draft.components[originalIndex].column = 0;
+                    if(child.type === 'Columns') {
+                        reorder(child.id);
+                    }
+                });
+            }
+        };
+
+        reorder(null);
+      });
+    });
   };
 
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
 
-  return (
+  const renderComponents = (parentId: string | null) => {
+    const components = pageState.components
+        .filter(c => c.parentId === parentId)
+        .sort((a, b) => a.order - b.order);
+
+    return components.map(component => {
+        if (component.type === 'Columns') {
+            const columnCount = component.props.columnCount || 2;
+            return (
+                <SortableItem key={component.id} component={component}>
+                    <div className="flex flex-col gap-2 bg-card p-2 rounded-lg border">
+                        <div className="flex items-center text-sm font-medium">
+                            <Button variant="ghost" size="icon" className="cursor-grab h-8 w-8" {...({ ...dndAttributes, ...dndListeners } as any)}>
+                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                            <span>Colunas</span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto" onClick={() => removeComponent(component.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                           {Array.from({ length: columnCount }, (_, i) => (
+                               <ColumnDropzone key={i} id={`${component.id}-${i}`}>
+                                   {renderComponents(component.id, i)}
+                               </ColumnDropzone>
+                           ))}
+                        </div>
+                    </div>
+                </SortableItem>
+            )
+        }
+        return (
+            <SortableItem key={component.id} component={component}>
+                 <ComponentItem
+                    component={component}
+                    selectedComponentId={selectedComponentId}
+                    setSelectedComponentId={setSelectedComponentId}
+                    removeComponent={removeComponent}
+                />
+            </SortableItem>
+        );
+    }, 
+    { dndAttributes, dndListeners }: { dndAttributes?: any, dndListeners?: any } = {}) => {
+    
+    const renderComponents = (parentId: string | null, column?: number) => {
+      const componentsToRender = pageState.components
+        .filter(c => c.parentId === parentId && (column === undefined || c.column === column))
+        .sort((a, b) => a.order - b.order);
+
+      return (
+        <SortableContext items={componentsToRender.map(c => c.id)} strategy={verticalListSortingStrategy}>
+            {componentsToRender.map(component => {
+                 if (component.type === 'Columns') {
+                    const columnCount = component.props.columnCount || 2;
+                    return (
+                        <SortableItem key={component.id} component={component}>
+                           <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
+                                <div className="flex items-center text-sm font-medium">
+                                    <ComponentItem
+                                        component={component}
+                                        selectedComponentId={selectedComponentId}
+                                        setSelectedComponentId={setSelectedComponentId}
+                                        removeComponent={removeComponent}
+                                    />
+                                </div>
+                                <div className={`grid grid-cols-${columnCount} gap-2`}>
+                                   {Array.from({ length: columnCount }, (_, i) => (
+                                       <ColumnDropzone key={i} id={`${component.id}-${i}`}>
+                                           {renderComponents(component.id, i)}
+                                       </ColumnDropzone>
+                                   ))}
+                                </div>
+                            </div>
+                        </SortableItem>
+                    );
+                }
+                return (
+                    <SortableItem key={component.id} component={component}>
+                         <ComponentItem
+                            component={component}
+                            selectedComponentId={selectedComponentId}
+                            setSelectedComponentId={setSelectedComponentId}
+                            removeComponent={removeComponent}
+                        />
+                    </SortableItem>
+                );
+            })}
+        </SortableContext>
+      )
+    }
+
+    return (
     <ScrollArea className="h-full">
       <TooltipProvider>
         <div className="p-4 space-y-6">
@@ -444,22 +660,9 @@ export function SettingsPanel({
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                  <SortableContext 
-                    items={pageState.components}
-                    strategy={verticalListSortingStrategy}
-                  >
                     <div className="space-y-2">
-                    {pageState.components.map((c) => (
-                      <SortableItem 
-                        key={c.id} 
-                        component={c}
-                        selectedComponentId={selectedComponentId}
-                        setSelectedComponentId={setSelectedComponentId}
-                        removeComponent={removeComponent}
-                      />
-                    ))}
+                        {renderComponents(null)}
                     </div>
-                  </SortableContext>
                 </DndContext>
                 <AddComponentDialog onAddComponent={addComponent} />
               </AccordionContent>

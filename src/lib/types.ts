@@ -1,4 +1,5 @@
 
+
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -19,7 +20,8 @@ export type ComponentType =
   | 'Stripe'
   | 'NPS'
   | 'Map'
-  | 'SocialIcons';
+  | 'SocialIcons'
+  | 'Columns';
   
 export type Brand = 'Natura' | 'Avon';
 
@@ -27,6 +29,9 @@ export interface PageComponent {
   id: string;
   type: ComponentType;
   props: any;
+  parentId?: string | null; // ID of the parent component (e.g., a Columns component)
+  column?: number;        // Index of the column if inside a Columns component
+  order: number;          // Order within its container (root or a column)
   abTestEnabled?: boolean;
   abTestVariants?: any[];
 }

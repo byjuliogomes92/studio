@@ -1,5 +1,24 @@
 
+
 import type { CloudPage, PageComponent, ComponentType } from './types';
+
+function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage): string {
+    return components
+        .sort((a, b) => a.order - b.order)
+        .map(component => {
+            if (component.type === 'Columns') {
+                const columnCount = component.props.columnCount || 2;
+                let columnsHtml = '';
+                for (let i = 0; i < columnCount; i++) {
+                    const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
+                    columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState)}</div>`;
+                }
+                return `<div class="columns-container" style="--column-count: ${columnCount}">${columnsHtml}</div>`;
+            }
+            return `<div class="component-wrapper">${renderSingleComponent(component, pageState)}</div>`;
+        })
+        .join('\n');
+}
 
 const renderField = (
   id: string, 
@@ -390,6 +409,9 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
 
         return `<div class="social-icons-container" style="text-align: ${align}; ${styleString}">${iconsHtml}</div>`;
     }
+    case 'Columns':
+        // This case is handled by the recursive renderComponents function
+        return '';
     case 'Form':
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
       const formHtml = `
@@ -591,10 +613,10 @@ export const generateHtml = (pageState: CloudPage): string => {
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
 
-  const stripeComponents = components.filter(c => c.type === 'Stripe').map(c => renderComponent(c, pageState)).join('\n');
-  const headerComponent = components.find(c => c.type === 'Header');
-  const bannerComponent = components.find(c => c.type === 'Banner');
-  const footerComponent = components.find(c => c.type === 'Footer');
+  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
+  const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
+  const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
+  const footerComponent = components.find(c => c.type === 'Footer' && c.parentId === null);
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
@@ -602,10 +624,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   const formComponent = components.find(c => c.type === 'Form');
   const formThankYouMessage = formComponent?.props.thankYouMessage || "<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>";
 
-  const mainComponents = components
-    .filter(c => !fullWidthTypes.includes(c.type))
-    .map(c => `<div class="component-wrapper">${renderComponent(c, pageState)}</div>`)
-    .join('\n');
+  const mainComponents = renderComponents(components.filter(c => c.parentId === null && !fullWidthTypes.includes(c.type)), components, pageState);
 
   const smartCaptureScript = formComponent ? `
 <script>
@@ -1235,6 +1254,18 @@ ${trackingScripts}
         width: 24px; /* Default size */
         height: 24px;
     }
+
+    /* Columns Styles */
+    .columns-container {
+        display: flex;
+        gap: 20px;
+        width: 100%;
+    }
+    .column {
+        flex: 1;
+        min-width: 0;
+    }
+
 
     /* Custom CSS */
     ${styles.customCss || ''}

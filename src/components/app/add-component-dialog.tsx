@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -30,6 +31,7 @@ import {
   Smile,
   Share2,
   type LucideIcon,
+  Columns,
 } from "lucide-react";
 import type { ComponentType } from "@/lib/types";
 import { useState } from "react";
@@ -61,6 +63,7 @@ const componentList: {
   {
     category: "Layout",
     components: [
+      { name: "Columns", icon: Columns },
       { name: "Button", icon: MousePointerClick },
       { name: "Countdown", icon: Timer },
       { name: "Divider", icon: Minus },

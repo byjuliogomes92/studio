@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -13,6 +14,7 @@ import { ArrowLeft, Save, Loader2, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
+import { produce } from "immer";
 
 interface CloudPageForgeProps {
   pageId: string;
@@ -87,31 +89,43 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       setIsLoading(true);
       try {
         if (pageId !== "new") {
-          const pageData = await getPage(pageId);
+          let pageData = await getPage(pageId);
           if (pageData && pageData.userId === user.uid) {
-             let needsUpdate = false;
-            const updatedComponents = pageData.components.map((component: PageComponent) => {
-              // Migration from TextBlock to Paragraph
-              if ((component.type as any) === 'TextBlock') {
-                  needsUpdate = true;
-                  return { ...component, type: 'Paragraph' };
-              }
-              if (component.type === 'Form' && (!component.props.placeholders || !component.props.fields)) {
-                needsUpdate = true;
-                const newProps = { ...component.props };
-                if (!newProps.fields) {
-                  newProps.fields = { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true };
+            pageData = produce(pageData, draft => {
+              let maxOrder = -1;
+              draft.components.forEach(c => {
+                // Initialize parentId to null if it's undefined
+                if (c.parentId === undefined) {
+                  c.parentId = null;
                 }
-                if (!newProps.placeholders) {
-                  newProps.placeholders = { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', birthdate: 'Data de Nascimento' };
+                 // Initialize order if it's undefined
+                if (c.parentId === null) {
+                  if (typeof c.order !== 'number') {
+                    maxOrder++;
+                    c.order = maxOrder;
+                  } else if (c.order > maxOrder) {
+                    maxOrder = c.order;
+                  }
                 }
-                return { ...component, props: newProps };
-              }
-              return component;
+              });
+
+              // Handle children ordering
+              const parents = draft.components.filter(c => c.type === 'Columns');
+              parents.forEach(p => {
+                let maxChildOrder = -1;
+                draft.components.forEach(c => {
+                  if (c.parentId === p.id) {
+                    if (typeof c.order !== 'number') {
+                      maxChildOrder++;
+                      c.order = maxChildOrder;
+                    } else if (c.order > maxChildOrder) {
+                      maxChildOrder = c.order;
+                    }
+                  }
+                });
+              });
             });
-            if (needsUpdate) {
-              pageData.components = updatedComponents;
-            }
+
             const cleanPageState = { ...pageData, name: pageData.name };
             setInitialPageState(cleanPageState);
             setSavedPageState(cleanPageState); // Set the initial saved state
@@ -358,5 +372,3 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     </>
   );
 }
-
-    

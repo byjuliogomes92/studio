@@ -669,8 +669,8 @@ const generateSSJSScript = (pageState: CloudPage): string => {
                     if (fieldName == 'OPTIN') {
                         fieldValue = fieldValue == "on" ? "True" : "False";
                     }
-                    Array.Push(deFields, fieldName);
-                    Array.Push(deValues, fieldValue);
+                    deFields.push(fieldName);
+                    deValues.push(fieldValue);
                 }
             }
             

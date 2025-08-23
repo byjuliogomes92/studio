@@ -98,19 +98,22 @@ function SortableItem({ component, children }: { component: PageComponent; child
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 'auto',
   };
+  
+  // Clone the child and pass the dnd props to it
+  const childWithDndProps = React.cloneElement(children as React.ReactElement, {
+    dndAttributes: attributes,
+    dndListeners: listeners,
+  });
 
   return (
     <div ref={setNodeRef} style={style}>
-      {React.cloneElement(children as React.ReactElement, {
-        dndAttributes: attributes,
-        dndListeners: listeners,
-      })}
+      {childWithDndProps}
     </div>
   );
 }
 
 function ColumnDropzone({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) {
-  const { setNodeRef, isOver } = useSortable({ id, data: { type: 'column' } });
+  const { setNodeRef, isOver } = useSortable({ id, data: { type: 'column', isColumn: true } });
   
   return (
     <div
@@ -139,14 +142,14 @@ function ComponentItem({
   selectedComponentId: string | null;
   setSelectedComponentId: (id: string) => void;
   removeComponent: (id: string) => void;
-  dndAttributes?: any;
-  dndListeners?: any;
+  dndAttributes?: any; // These are passed from SortableItem
+  dndListeners?: any; // These are passed from SortableItem
 }) {
   const Icon = componentIcons[component.type] || Text;
   return (
     <div className="flex items-center gap-1 group bg-card p-1 rounded-md border">
-      <Button variant="ghost" size="icon" {...dndAttributes} {...dndListeners} className="cursor-grab h-8 w-8">
-        <GripVertical className="h-5 w-5 text-muted-foreground" />
+      <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8">
+        <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
       </Button>
       <Button
         variant={selectedComponentId === component.id ? "secondary" : "ghost"}
@@ -380,72 +383,87 @@ export function SettingsPanel({
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
-    if (!over || active.id === over.id) {
-        return;
-    }
     
-    setPageState(prev => {
-      if (!prev) return null;
+    if (!over) return;
 
-      const activeComponent = prev.components.find(c => c.id === active.id);
-      if (!activeComponent) return prev;
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
 
-      return produce(prev, draft => {
-        const overIsColumn = over.data.current?.type === 'column';
-        const newParentId = overIsColumn ? over.data.current.id.split('-')[0] : null;
-        const newColumn = overIsColumn ? parseInt(over.data.current.id.split('-')[1], 10) : 0;
-        
-        const oldIndex = draft.components.findIndex(c => c.id === active.id);
-        const activeComp = draft.components[oldIndex];
-        
-        // Remove from old position
-        draft.components.splice(oldIndex, 1);
+    if (activeId === overId) {
+      return;
+    }
 
-        // Find new position
-        const overComponent = overIsColumn ? null : draft.components.find(c => c.id === over.id);
-        let newIndex;
+    setPageState(currentState => {
+      if (!currentState) return null;
+
+      return produce(currentState, draft => {
+        const findComponent = (id: string) => draft.components.find(c => c.id === id);
+        const findComponentIndex = (id: string) => draft.components.findIndex(c => c.id === id);
+
+        const activeComponent = findComponent(activeId);
+        if (!activeComponent) return;
+
+        const overIsColumn = over.data.current?.isColumn;
         
-        if (overComponent) {
-            newIndex = draft.components.findIndex(c => c.id === over.id);
+        let newParentId: string | null = null;
+        let newColumnIndex: number = 0;
+        let overIndex: number;
+
+        if (overIsColumn) {
+            newParentId = overId.split('-')[0];
+            newColumnIndex = parseInt(overId.split('-')[1], 10);
+            
+            // Find the last component in that column to place the new one after
+            const siblingsInNewColumn = draft.components
+                .filter(c => c.parentId === newParentId && c.column === newColumnIndex)
+                .sort((a,b) => a.order - b.order);
+            
+            if (siblingsInNewColumn.length > 0) {
+                overIndex = findComponentIndex(siblingsInNewColumn[siblingsInNewColumn.length - 1].id);
+            } else {
+                 // If column is empty, find the parent column container and place it there
+                 overIndex = findComponentIndex(newParentId)
+            }
         } else {
-            // Dropping into a column
-            const siblings = draft.components.filter(c => c.parentId === newParentId && c.column === newColumn);
-            newIndex = oldIndex < draft.components.length ? oldIndex : draft.components.length; // Approximate
+            const overComponent = findComponent(overId);
+            if (!overComponent) return;
+            newParentId = overComponent.parentId;
+            newColumnIndex = overComponent.column || 0;
+            overIndex = findComponentIndex(overId);
         }
 
-        // Insert into new position
-        activeComp.parentId = newParentId;
-        activeComp.column = newColumn;
-        draft.components.splice(newIndex, 0, activeComp);
+        const activeIndex = findComponentIndex(activeId);
         
-        // Re-order everything
-        const reorder = (parentId: string | null) => {
-            const children = draft.components.filter(c => c.parentId === parentId);
-            
-            if (parentId && draft.components.find(c => c.id === parentId)?.type === 'Columns') {
-                const columnContainer = draft.components.find(c => c.id === parentId)!;
-                const columnCount = columnContainer.props.columnCount || 2;
-                for(let i=0; i < columnCount; i++) {
-                    const columnChildren = children.filter(c => c.column === i);
-                    columnChildren.forEach((child, index) => {
-                        const originalIndex = draft.components.findIndex(c => c.id === child.id);
-                        draft.components[originalIndex].order = index;
+        // Update component's parent and column
+        draft.components[activeIndex].parentId = newParentId;
+        draft.components[activeIndex].column = newColumnIndex;
+        
+        // Move the component in the array
+        const [movedComponent] = draft.components.splice(activeIndex, 1);
+        const correctedOverIndex = findComponentIndex(overId); // Recalculate index after splice
+        draft.components.splice(correctedOverIndex, 0, movedComponent);
+
+        // Re-order all components to ensure data integrity
+        const allParentIds = [null, ...draft.components.filter(c => c.type === 'Columns').map(c => c.id)];
+        allParentIds.forEach(pId => {
+            const parentComponent = findComponent(pId as string);
+            const columnCount = parentComponent?.props.columnCount || 1;
+
+            for (let i = 0; i < columnCount; i++) {
+                const childrenInColumn = draft.components
+                    .filter(c => c.parentId === pId && (c.column || 0) === i)
+                    .sort((a, b) => {
+                        const posA = draft.components.findIndex(d => d.id === a.id);
+                        const posB = draft.components.findIndex(d => d.id === b.id);
+                        return posA - posB;
                     });
-                }
-            } else {
-                 children.forEach((child, index) => {
-                    const originalIndex = draft.components.findIndex(c => c.id === child.id);
-                    draft.components[originalIndex].order = index;
-                    draft.components[originalIndex].column = 0;
-                    if(child.type === 'Columns') {
-                        reorder(child.id);
-                    }
+                
+                childrenInColumn.forEach((child, index) => {
+                    const childInDraft = findComponent(child.id)!;
+                    childInDraft.order = index;
                 });
             }
-        };
-
-        reorder(null);
+        });
       });
     });
   };
@@ -454,52 +472,68 @@ export function SettingsPanel({
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
 
-  const renderComponents = (parentId: string | null, column?: number) => {
+  const renderComponents = (parentId: string | null) => {
     const componentsToRender = pageState.components
-      .filter(c => c.parentId === parentId && (column === undefined || c.column === column))
+      .filter(c => c.parentId === parentId)
       .sort((a, b) => a.order - b.order);
 
+    return componentsToRender.map(component => {
+      if (component.type === 'Columns') {
+        const columnCount = component.props.columnCount || 2;
+        const gridColsClass = `grid-cols-${columnCount}`; // Basic support for 2 or 3
+        return (
+          <SortableItem key={component.id} component={component}>
+            <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
+              <ComponentItem
+                component={component}
+                selectedComponentId={selectedComponentId}
+                setSelectedComponentId={setSelectedComponentId}
+                removeComponent={removeComponent}
+              />
+              <div className={`grid grid-cols-${columnCount} gap-2`}>
+                {Array.from({ length: columnCount }, (_, i) => (
+                  <ColumnDropzone key={i} id={`${component.id}-${i}`}>
+                    {renderColumnContent(component.id, i)}
+                  </ColumnDropzone>
+                ))}
+              </div>
+            </div>
+          </SortableItem>
+        );
+      }
+      return (
+        <SortableItem key={component.id} component={component}>
+            <ComponentItem
+              component={component}
+              selectedComponentId={selectedComponentId}
+              setSelectedComponentId={setSelectedComponentId}
+              removeComponent={removeComponent}
+            />
+        </SortableItem>
+      );
+    });
+  };
+
+  const renderColumnContent = (parentId: string, columnIndex: number) => {
+    const columnComponents = pageState.components
+        .filter(c => c.parentId === parentId && c.column === columnIndex)
+        .sort((a, b) => a.order - b.order);
+
     return (
-      <SortableContext items={componentsToRender.map(c => c.id)} strategy={verticalListSortingStrategy}>
-          {componentsToRender.map(component => {
-               if (component.type === 'Columns') {
-                  const columnCount = component.props.columnCount || 2;
-                  return (
-                      <SortableItem key={component.id} component={component}>
-                         <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
-                              <div className="flex items-center text-sm font-medium">
-                                  <ComponentItem
-                                      component={component}
-                                      selectedComponentId={selectedComponentId}
-                                      setSelectedComponentId={setSelectedComponentId}
-                                      removeComponent={removeComponent}
-                                  />
-                              </div>
-                              <div className={`grid grid-cols-${columnCount} gap-2`}>
-                                 {Array.from({ length: columnCount }, (_, i) => (
-                                     <ColumnDropzone key={i} id={`${component.id}-${i}`}>
-                                         {renderComponents(component.id, i)}
-                                     </ColumnDropzone>
-                                 ))}
-                              </div>
-                          </div>
-                      </SortableItem>
-                  );
-              }
-              return (
-                  <SortableItem key={component.id} component={component}>
-                       <ComponentItem
-                          component={component}
-                          selectedComponentId={selectedComponentId}
-                          setSelectedComponentId={setSelectedComponentId}
-                          removeComponent={removeComponent}
-                      />
-                  </SortableItem>
-              );
-          })}
-      </SortableContext>
-    )
-  }
+        <SortableContext items={columnComponents.map(c => c.id)} strategy={verticalListSortingStrategy}>
+            {columnComponents.map(component => (
+                 <SortableItem key={component.id} component={component}>
+                    <ComponentItem
+                        component={component}
+                        selectedComponentId={selectedComponentId}
+                        setSelectedComponentId={setSelectedComponentId}
+                        removeComponent={removeComponent}
+                    />
+                </SortableItem>
+            ))}
+        </SortableContext>
+    );
+  };
 
     return (
     <ScrollArea className="h-full">
@@ -618,9 +652,11 @@ export function SettingsPanel({
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                    <div className="space-y-2">
-                        {renderComponents(null)}
-                    </div>
+                    <SortableContext items={pageState.components.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-2">
+                          {renderComponents(null)}
+                      </div>
+                    </SortableContext>
                 </DndContext>
                 <AddComponentDialog onAddComponent={addComponent} />
               </AccordionContent>

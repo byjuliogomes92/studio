@@ -148,6 +148,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
           consentText: `Quero receber novidades e promoções da ${brand} e de outras empresas do Grupo Natura &Co...`,
           buttonText: 'Finalizar',
           buttonAlign: 'center',
+          thankYouMessage: `<h2>Obrigado, {{NOME}}!</h2><p>Recebemos suas informações com sucesso.</p>`,
           cities: 'São Paulo\nRio de Janeiro\nBelo Horizonte\nSalvador\nFortaleza\nCuritiba\nManaus\nRecife\nPorto Alegre\nBrasília',
         } 
       },
@@ -629,28 +630,45 @@ export function PageList({ projectId }: PageListProps) {
                )}
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {filteredAndSortedPages.map((page) => (
                 <div
                   key={page.id}
-                  className="group relative flex flex-col bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+                  className="group relative flex flex-col bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+                  onClick={() => handlePageClick(page.id)}
                 >
-                  <div className="flex-grow cursor-pointer" onClick={() => handlePageClick(page.id)}>
-                      <div className="flex items-start justify-between">
-                        <FileText className="h-10 w-10 text-primary" />
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            {pageActions(page)}
+                    <div className="aspect-[4/3] w-full bg-muted/50 rounded-t-lg flex flex-col items-center justify-center p-4 overflow-hidden cursor-pointer">
+                        <div className="w-full h-full border-2 border-dashed rounded-md flex flex-col p-2 gap-1.5 bg-background">
+                            <div className="h-4 w-1/3 bg-muted rounded"></div>
+                            <div className="h-2 w-full bg-muted rounded"></div>
+                            <div className="h-2 w-full bg-muted rounded"></div>
+                            <div className="h-2 w-2/3 bg-muted rounded"></div>
                         </div>
-                      </div>
-                      <h3 className="mt-4 font-semibold">{page.name}</h3>
-                      <p className="text-sm text-muted-foreground">
+                    </div>
+                  <div className="p-4 flex-grow flex flex-col justify-between">
+                    <div>
+                        <div className="flex justify-between items-start">
+                            <h3 className="font-semibold text-base leading-tight truncate pr-2" title={page.name}>
+                                {page.name}
+                            </h3>
+                            <Badge variant={page.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
+                                {page.brand}
+                            </Badge>
+                        </div>
+                      <p className="text-sm text-muted-foreground mt-1">
                         {page.updatedAt?.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : 'Recém-criado'}
                       </p>
-                  </div>
-                  <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
-                      {(page.tags || []).map(tag => (
-                        <Badge key={tag} className={cn('border', getTagColor(tag))}>{tag}</Badge>
-                      ))}
+                    </div>
+                    <div className="mt-4 pt-4 border-t flex flex-wrap gap-2 items-center justify-between">
+                         <div className="flex flex-wrap gap-1">
+                            {(page.tags || []).map(tag => (
+                                <Badge key={tag} className={cn('border text-xs', getTagColor(tag))}>{tag}</Badge>
+                            ))}
+                        </div>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2">
+                           {pageActions(page)}
+                       </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -718,5 +736,3 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
-
-    

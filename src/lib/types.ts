@@ -18,7 +18,8 @@ export type ComponentType =
   | 'Voting'
   | 'Stripe'
   | 'NPS'
-  | 'Map';
+  | 'Map'
+  | 'SocialIcons';
   
 export type Brand = 'Natura' | 'Avon';
 

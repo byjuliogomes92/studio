@@ -28,6 +28,7 @@ import {
   Layers,
   Vote,
   Smile,
+  Share2,
   type LucideIcon,
 } from "lucide-react";
 import type { ComponentType } from "@/lib/types";
@@ -64,6 +65,7 @@ const componentList: {
       { name: "Countdown", icon: Timer },
       { name: "Divider", icon: Minus },
       { name: "Spacer", icon: StretchHorizontal },
+      { name: "SocialIcons", icon: Share2 },
     ],
   },
   {

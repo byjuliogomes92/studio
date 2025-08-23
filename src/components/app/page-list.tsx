@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Brand, Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -47,15 +47,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { format } from 'date-fns';
 
 interface PageListProps {
   projectId: string;
 }
+
+type SortOption = "updatedAt-desc" | "updatedAt-asc" | "name-asc" | "name-desc";
 
 const tagColors = [
   'bg-blue-100 text-blue-800 border-blue-400',
@@ -241,6 +252,10 @@ export function PageList({ projectId }: PageListProps) {
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageToDelete, setPageToDelete] = useState<string | null>(null);
+  
+  // View, filter and sort state
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -281,6 +296,7 @@ export function PageList({ projectId }: PageListProps) {
     } else if (!authLoading && !user) {
         router.push('/login');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, user, authLoading, toast, router]);
 
   const handleConfirmCreatePage = async () => {
@@ -357,16 +373,46 @@ export function PageList({ projectId }: PageListProps) {
     pages.forEach(page => {
         (page.tags || []).forEach(tag => tagsSet.add(tag));
     });
-    return Array.from(tagsSet);
+    return Array.from(tagsSet).sort();
   }, [pages]);
 
-  const filteredPages = useMemo(() => {
-    return pages.filter(page => {
-        const matchesTag = activeTag ? (page.tags || []).includes(activeTag) : true;
-        const matchesSearch = page.name.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesTag && matchesSearch;
-    });
-  }, [pages, activeTag, searchTerm]);
+  const filteredAndSortedPages = useMemo(() => {
+    return pages
+      .filter(page => {
+          const matchesTag = activeTag ? (page.tags || []).includes(activeTag) : true;
+          const matchesSearch = page.name.toLowerCase().includes(searchTerm.toLowerCase());
+          return matchesTag && matchesSearch;
+      })
+      .sort((a, b) => {
+        switch (sortOption) {
+          case 'name-asc':
+            return a.name.localeCompare(b.name);
+          case 'name-desc':
+            return b.name.localeCompare(a.name);
+          case 'updatedAt-asc':
+             return (a.updatedAt?.toDate() || 0) > (b.updatedAt?.toDate() || 0) ? 1 : -1;
+          case 'updatedAt-desc':
+          default:
+             return (a.updatedAt?.toDate() || 0) < (b.updatedAt?.toDate() || 0) ? 1 : -1;
+        }
+      });
+  }, [pages, activeTag, searchTerm, sortOption]);
+
+  const getSortDirection = (column: 'name' | 'updatedAt') => {
+    if (sortOption.startsWith(column)) {
+      return sortOption.endsWith('-desc') ? 'desc' : 'asc';
+    }
+    return 'none';
+  };
+
+  const handleSort = (column: 'name' | 'updatedAt') => {
+    const currentDirection = getSortDirection(column);
+    if (currentDirection === 'desc') {
+      setSortOption(`${column}-asc`);
+    } else {
+      setSortOption(`${column}-desc`);
+    }
+  };
 
   if (isLoading || authLoading) {
     return (
@@ -387,6 +433,53 @@ export function PageList({ projectId }: PageListProps) {
       </div>
     );
   }
+
+  const pageActions = (page: CloudPage) => (
+    <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 data-[state=open]:bg-muted"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Abrir menu</span>
+            </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
+            <DropdownMenuItem onClick={() => handleDuplicatePage(page.id)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Duplicar
+            </DropdownMenuItem>
+            <MovePageDialog page={page} onPageMoved={() => fetchProjectData()} currentProjectId={projectId} />
+            <DropdownMenuSeparator />
+            <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
+            <AlertDialogTrigger asChild>
+                <DropdownMenuItem 
+                className="text-destructive" 
+                onSelect={(e) => { e.preventDefault(); setPageToDelete(page.id); }}
+                >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Excluir
+                </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+            </AlertDialog>
+        </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
 
   return (
@@ -490,7 +583,15 @@ export function PageList({ projectId }: PageListProps) {
                 )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium mr-2">Filtrar por tag:</span>
+                <span className="text-sm font-medium mr-2 hidden md:inline">Filtrar:</span>
+                 <div className="flex items-center gap-1 rounded-md border bg-background p-1">
+                    <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
+                        <LayoutGrid className="h-4 w-4"/>
+                    </Button>
+                    <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
+                        <List className="h-4 w-4"/>
+                    </Button>
+                </div>
                 {allTags.map(tag => (
                     <Badge 
                         key={tag}
@@ -513,7 +614,7 @@ export function PageList({ projectId }: PageListProps) {
           </div>
 
 
-          {filteredPages.length === 0 ? (
+          {filteredAndSortedPages.length === 0 ? (
             <div className="text-center py-16">
               <FileText size={48} className="mx-auto text-muted-foreground" />
               <h2 className="mt-4 text-xl font-semibold">Nenhuma página encontrada</h2>
@@ -527,9 +628,9 @@ export function PageList({ projectId }: PageListProps) {
                 </Button>
                )}
             </div>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredPages.map((page) => (
+              {filteredAndSortedPages.map((page) => (
                 <div
                   key={page.id}
                   className="group relative flex flex-col bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
@@ -537,49 +638,9 @@ export function PageList({ projectId }: PageListProps) {
                   <div className="flex-grow cursor-pointer" onClick={() => handlePageClick(page.id)}>
                       <div className="flex items-start justify-between">
                         <FileText className="h-10 w-10 text-primary" />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                              <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => e.stopPropagation()}
-                              >
-                                  <MoreVertical className="h-4 w-4" />
-                              </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenuItem onClick={() => handleDuplicatePage(page.id)}>
-                                  <Copy className="mr-2 h-4 w-4" />
-                                  Duplicar
-                              </DropdownMenuItem>
-                              <MovePageDialog page={page} onPageMoved={() => fetchProjectData()} currentProjectId={projectId} />
-                              <DropdownMenuSeparator />
-                              <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem 
-                                    className="text-destructive" 
-                                    onSelect={(e) => { e.preventDefault(); setPageToDelete(page.id); }}
-                                  >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Excluir
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                               </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            {pageActions(page)}
+                        </div>
                       </div>
                       <h3 className="mt-4 font-semibold">{page.name}</h3>
                       <p className="text-sm text-muted-foreground">
@@ -593,6 +654,47 @@ export function PageList({ projectId }: PageListProps) {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="border rounded-lg bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50%]" onClick={() => handleSort('name')}>
+                      <div className="flex items-center gap-2 cursor-pointer">
+                        Nome da Página
+                        {getSortDirection('name') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
+                      </div>
+                    </TableHead>
+                    <TableHead>Tags</TableHead>
+                    <TableHead onClick={() => handleSort('updatedAt')}>
+                      <div className="flex items-center gap-2 cursor-pointer">
+                        Última Modificação
+                        {getSortDirection('updatedAt') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedPages.map((page) => (
+                    <TableRow key={page.id} className="cursor-pointer" onClick={() => handlePageClick(page.id)}>
+                      <TableCell className="font-medium">{page.name}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {(page.tags || []).map(tag => (
+                            <Badge key={tag} className={cn('border', getTagColor(tag))}>{tag}</Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>{page.updatedAt?.toDate ? format(page.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
+                      <TableCell className="text-right">
+                        {pageActions(page)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </main>
@@ -616,3 +718,5 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
+    

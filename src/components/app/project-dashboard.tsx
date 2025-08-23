@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -39,8 +39,16 @@ import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { addProject, deleteProject, getProjectsForUser, updateProject } from "@/lib/firestore";
 import { format } from 'date-fns';
+import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
-type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc";
+type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
+type ViewMode = "grid" | "list";
+
+interface EnrichedProject extends Project {
+  pageCount: number;
+  updatedAt: Date;
+}
 
 export function ProjectDashboard() {
   const router = useRouter();
@@ -60,9 +68,10 @@ export function ProjectDashboard() {
   const [projectToRename, setProjectToRename] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
-  // State for search and sort
+  // State for search, sort, and view
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortOption, setSortOption] = useState<SortOption>("createdAt-desc");
+  const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
 
   useEffect(() => {
@@ -166,8 +175,21 @@ export function ProjectDashboard() {
     setIsDeleteModalOpen(true);
   }
 
-  const filteredAndSortedProjects = useMemo(() => {
+  const filteredAndSortedProjects = useMemo((): EnrichedProject[] => {
     return projects
+      .map(project => {
+          const projectPages = pages.filter(p => p.projectId === project.id);
+          const lastUpdated = projectPages.reduce((latest, page) => {
+              const pageDate = page.updatedAt?.toDate ? page.updatedAt.toDate() : new Date(0);
+              return pageDate > latest ? pageDate : latest;
+          }, project.createdAt?.toDate ? project.createdAt.toDate() : new Date(0));
+          
+          return {
+              ...project,
+              pageCount: projectPages.length,
+              updatedAt: lastUpdated,
+          }
+      })
       .filter(project => project.name.toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => {
         switch (sortOption) {
@@ -179,11 +201,15 @@ export function ProjectDashboard() {
             return (a.createdAt?.toDate() || 0) > (b.createdAt?.toDate() || 0) ? 1 : -1;
           case 'createdAt-desc':
             return (a.createdAt?.toDate() || 0) < (b.createdAt?.toDate() || 0) ? 1 : -1;
+          case 'updatedAt-asc':
+            return a.updatedAt > b.updatedAt ? 1 : -1;
+          case 'updatedAt-desc':
+            return a.updatedAt < b.updatedAt ? 1 : -1;
           default:
             return 0;
         }
       });
-  }, [projects, searchTerm, sortOption]);
+  }, [projects, pages, searchTerm, sortOption]);
 
 
   if (isLoading || authLoading) {
@@ -193,6 +219,23 @@ export function ProjectDashboard() {
       </div>
     );
   }
+
+  const getSortDirection = (column: 'name' | 'createdAt' | 'updatedAt') => {
+    if (sortOption.startsWith(column)) {
+      return sortOption.endsWith('-desc') ? 'desc' : 'asc';
+    }
+    return 'none';
+  };
+
+  const handleSort = (column: 'name' | 'createdAt' | 'updatedAt') => {
+    const currentDirection = getSortDirection(column);
+    if (currentDirection === 'desc') {
+      setSortOption(`${column}-asc`);
+    } else {
+      setSortOption(`${column}-desc`);
+    }
+  };
+
 
   return (
     <div className="min-h-screen">
@@ -254,20 +297,31 @@ export function ProjectDashboard() {
                     </Button>
                 )}
             </div>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                        <ArrowUpDown className="mr-2 h-4 w-4"/>
-                        Ordenar por
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setSortOption('createdAt-desc')}>Mais Recentes</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOption('createdAt-asc')}>Mais Antigos</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOption('name-asc')}>Nome (A-Z)</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOption('name-desc')}>Nome (Z-A)</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 rounded-md border bg-background p-1">
+                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
+                  <LayoutGrid className="h-4 w-4"/>
+                </Button>
+                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
+                  <List className="h-4 w-4"/>
+                </Button>
+              </div>
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                          <ArrowUpDown className="mr-2 h-4 w-4"/>
+                          Ordenar por
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setSortOption('updatedAt-desc')}>Última Modificação</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOption('name-asc')}>Nome (A-Z)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOption('name-desc')}>Nome (Z-A)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOption('createdAt-desc')}>Mais Recentes</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOption('createdAt-asc')}>Mais Antigos</DropdownMenuItem>
+                  </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
         </div>
 
         {filteredAndSortedProjects.length === 0 ? (
@@ -279,7 +333,7 @@ export function ProjectDashboard() {
               <Plus className="mr-2 h-4 w-4" /> Criar Projeto
             </Button>
           </div>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredAndSortedProjects.map((project) => (
               <div
@@ -290,14 +344,14 @@ export function ProjectDashboard() {
                     <Folder className="h-10 w-10 text-primary mb-4" />
                     <h3 className="font-semibold text-lg">{project.name}</h3>
                     <p className="text-sm text-muted-foreground mt-2">
-                        Criado em {project.createdAt?.toDate ? format(project.createdAt.toDate(), 'dd/MM/yyyy') : '...'}
+                        Modificado em {format(project.updatedAt, 'dd/MM/yyyy')}
                     </p>
                 </div>
 
                 <div className="flex justify-between items-center mt-4 pt-4 border-t">
                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <FileText className="h-4 w-4" />
-                        <span>{pages.filter(p => p.projectId === project.id).length} página(s)</span>
+                        <span>{project.pageCount} página(s)</span>
                     </div>
 
                     <DropdownMenu>
@@ -320,6 +374,57 @@ export function ProjectDashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50%]" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      Nome do Projeto
+                      {getSortDirection('name') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
+                    </div>
+                  </TableHead>
+                  <TableHead>Páginas</TableHead>
+                  <TableHead onClick={() => handleSort('updatedAt')}>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      Última Modificação
+                      {getSortDirection('updatedAt') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedProjects.map((project) => (
+                  <TableRow key={project.id} className="cursor-pointer" onClick={() => handleNavigateToProject(project.id)}>
+                    <TableCell className="font-medium">{project.name}</TableCell>
+                    <TableCell>{project.pageCount}</TableCell>
+                    <TableCell>{format(project.updatedAt, 'dd/MM/yyyy, HH:mm')}</TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => openRenameModal(project)}>
+                                  Renomear
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive" onClick={() => openDeleteModal(project)}>
+                                  <Trash2 className="mr-2 h-4 w-4"/>
+                                  Excluir
+                              </DropdownMenuItem>
+                          </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </main>
@@ -379,4 +484,3 @@ export function ProjectDashboard() {
   );
 }
 
-    

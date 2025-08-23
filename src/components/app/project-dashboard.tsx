@@ -264,7 +264,7 @@ export function ProjectDashboard() {
               <DropdownMenuSeparator />
               <DropdownMenuItem>Nova funcionalidade: Duplique páginas!</DropdownMenuItem>
               <DropdownMenuItem>Melhoria no alinhamento de formulários.</DropdownMenuItem>
-              <DropdownMenuItem>Bem-vindo ao Cloud Page Forge!</DropdownMenuItem>
+              <DropdownMenuItem>Bem-vindo ao CloudPage Studio!</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -483,4 +483,3 @@ export function ProjectDashboard() {
     </div>
   );
 }
-

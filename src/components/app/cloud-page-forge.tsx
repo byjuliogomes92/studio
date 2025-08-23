@@ -333,7 +333,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           </Button>
           <div className="flex items-center gap-2 font-semibold">
             <Logo className="h-6 w-6 text-primary" />
-            <h1>Cloud Page Forge</h1>
+            <h1>CloudPage Studio</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">

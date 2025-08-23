@@ -556,7 +556,7 @@ export function PageList({ projectId }: PageListProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Nova funcionalidade: Duplique páginas!</DropdownMenuItem>
                 <DropdownMenuItem>Melhoria no alinhamento de formulários.</DropdownMenuItem>
-                <DropdownMenuItem>Bem-vindo ao Cloud Page Forge!</DropdownMenuItem>
+                <DropdownMenuItem>Bem-vindo ao CloudPage Studio!</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -723,7 +723,7 @@ export function PageList({ projectId }: PageListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Atenção</AlertDialogTitle>
             <AlertDialogDescription>
-              A experiência de edição do Cloud Page Forge ainda não está totalmente otimizada para dispositivos móveis.
+              A experiência de edição do CloudPage Studio ainda não está totalmente otimizada para dispositivos móveis.
               Recomendamos o uso de um desktop para uma melhor experiência. Uma versão adaptada para mobile estará disponível em breve!
             </AlertDialogDescription>
           </AlertDialogHeader>

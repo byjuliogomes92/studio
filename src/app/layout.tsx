@@ -6,8 +6,8 @@ import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Cloud Page Forge',
-    template: '%s | Cloud Page Forge',
+    default: 'CloudPage Studio',
+    template: '%s | CloudPage Studio',
   },
   description: 'Gere páginas para Salesforce Marketing Cloud com facilidade, utilizando componentes pré-prontos e uma interface intuitiva.',
 };

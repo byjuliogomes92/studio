@@ -52,7 +52,7 @@ export default function SignupPage() {
           <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
           <CardTitle className="text-2xl">Crie sua Conta</CardTitle>
           <CardDescription>
-            É rápido e fácil. Comece a construir suas páginas agora mesmo.
+            É rápido e fácil. Comece a construir suas páginas agora mesmo no CloudPage Studio.
           </CardDescription>
         </CardHeader>
         <CardContent>

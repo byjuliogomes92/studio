@@ -416,6 +416,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
       const formHtml = `
         <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
             <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
+                 <input type="hidden" name="__de" value="${pageState.meta.dataExtensionKey}">
+                 <input type="hidden" name="__successUrl" value="${pageState.meta.redirectUrl}">
+                 <input type="hidden" name="__upsert" value="EMAIL">
+
                  <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
                   ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email') : ''}
@@ -438,7 +442,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
                   <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
                 </div>
                 ` : ''}
-                <div data-type="slot" data-key="qaiwdlu6h29"></div>
                 <div style="text-align: ${buttonAlign || 'center'};">
                     <button type="submit">${buttonText || 'Finalizar'}</button>
                 </div>
@@ -608,76 +611,53 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 };
 
 
-const generateSSJSScript = (pageState: CloudPage): string => {
-    const formComponent = pageState.components.find(c => c.type === 'Form');
-    if (!formComponent) return '';
-
-    const deKey = pageState.meta.dataExtensionKey;
-    if (!deKey || deKey === 'CHANGE-ME') {
-        return '<!-- SSJS Error: Data Extension Key not set in page metadata. -->';
-    }
-
-    const redirectUrl = pageState.meta.redirectUrl;
-    if (!redirectUrl) {
-        return '<!-- SSJS Error: Redirect URL not set in page metadata. -->';
-    }
-    
-    const formProps = formComponent.props;
-    const formFields = formProps.fields || {};
-
-    const deFields: string[] = [];
-    const ssjsVars: string[] = [];
-    
-    if (formFields.name) { deFields.push("NOME"); ssjsVars.push(`var NOME = Request.GetFormField("NOME");`); }
-    if (formFields.email) { deFields.push("EMAIL"); ssjsVars.push(`var EMAIL = Request.GetFormField("EMAIL");`); }
-    if (formFields.phone) { deFields.push("TELEFONE"); ssjsVars.push(`var TELEFONE = Request.GetFormField("TELEFONE");`); }
-    if (formFields.cpf) { deFields.push("CPF"); ssjsVars.push(`var CPF = Request.GetFormField("CPF");`); }
-    if (formFields.birthdate) { deFields.push("DATANASCIMENTO"); ssjsVars.push(`var DATANASCIMENTO = Request.GetFormField("DATANASCIMENTO");`); }
-    if (formFields.city) { deFields.push("CIDADE"); ssjsVars.push(`var CIDADE = Request.GetFormField("CIDADE");`); }
-    if (formFields.optin) { deFields.push("OPTIN"); ssjsVars.push(`var OPTIN = Request.GetFormField("OPTIN") == "on" ? "True" : "False";`); }
-    
-    // Add A/B test fields
-    pageState.components.forEach(c => {
-        if (c.abTestEnabled) {
-            const fieldName = `VARIANTE_${c.id.toUpperCase()}`;
-            deFields.push(fieldName);
-            ssjsVars.push(`var ${fieldName} = Request.GetFormField("${fieldName}");`);
-        }
-    });
-
-    if (deFields.length === 0) {
-        return '<!-- SSJS Error: No fields configured for the form. -->';
-    }
-
-    const deFieldsString = `[${deFields.join(",")}]`;
-    const valuesString = `[${deFields.join(",")}]`;
-    const ssjsVarsString = ssjsVars.join('\n    ');
-
+const generateSSJSScript = (): string => {
     return `
 <script runat="server">
-    Platform.Load("Core", "1");
+    Platform.Load("Core", "1.1.1");
     if (Request.Method == "POST") {
         try {
-            ${ssjsVarsString}
+            var de = Request.GetFormField("__de");
+            var successUrl = Request.GetFormField("__successUrl");
+            var upsertKey = Request.GetFormField("__upsert");
 
-            if (EMAIL != null && EMAIL != "") {
-                var result = Platform.Function.UpsertData(
-                    "${deKey}",
-                    ["EMAIL"], 
-                    [EMAIL],
-                    ${deFieldsString},
-                    ${valuesString}
-                );
-                
-                Platform.Response.Redirect("${redirectUrl}");
+            if (!de || !successUrl) {
+                Write("SSJS Error: Missing __de or __successUrl form fields.");
+                return;
             }
-        } catch(e) {
-            Write("<p style='color:red; text-align: center;'><strong>Ocorreu um erro ao processar sua solicitação. Tente novamente.</strong></p>");
-            // For debugging: Write(Stringify(e));
+            
+            var formFields = Request.GetFormFieldNames();
+            var deFields = [];
+            var deValues = [];
+            
+            for (var i = 0; i < formFields.length; i++) {
+                var fieldName = formFields[i];
+                if (fieldName.indexOf("__") != 0) { // Ignore config fields
+                    var fieldValue = Request.GetFormField(fieldName);
+                    if (fieldName == 'OPTIN') {
+                        fieldValue = fieldValue == "on" ? "True" : "False";
+                    }
+                    deFields.push(fieldName);
+                    deValues.push(fieldValue);
+                }
+            }
+            
+            if (deFields.length > 0) {
+                if (upsertKey) {
+                    var upsertValue = Request.GetFormField(upsertKey);
+                    Platform.Function.UpsertData(de, [upsertKey], [upsertValue], deFields, deValues);
+                } else {
+                    Platform.Function.InsertData(de, deFields, deValues);
+                }
+                Redirect(successUrl);
+            }
+
+        } catch (e) {
+            Write("SSJS Error: " + Stringify(e));
         }
     }
 </script>
-    `;
+`;
 };
 
 
@@ -686,7 +666,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
 
-  const ssjsScript = generateSSJSScript(pageState);
+  const ssjsScript = generateSSJSScript();
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
   const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
@@ -1529,4 +1509,3 @@ ${trackingScripts}
 </body>
 </html>
 `;
-

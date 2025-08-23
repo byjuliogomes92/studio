@@ -655,14 +655,39 @@ export const generateHtml = (pageState: CloudPage): string => {
     }
   }
  };
+
+  window.formSubmit = function(form) {
+      let valid = true;
+      const requiredInputs = form.querySelectorAll('input[required], select[required]');
+
+      requiredInputs.forEach(input => {
+          const errorId = 'error-' + (input.name || input.id).toLowerCase();
+          const error = form.parentElement.querySelector('#' + errorId);
+          let isInvalid = false;
+          
+          if(input.type === 'checkbox') {
+              isInvalid = !input.checked;
+          } else {
+              isInvalid = input.value.trim() === '';
+          }
+
+          if (isInvalid && error) {
+              error.style.display = 'block';
+              valid = false;
+          } else if (error) {
+              error.style.display = 'none';
+          }
+      });
+      return valid;
+  }
 </script>
 <script>
     (function(d) {
-        var scAppDomain = 'cloud.pages.exacttarget.com';
-        var scAppBasePath = '/lib/smartcapture-formjs.js';
+        var scAppDomain = 'cloudpages.mc-content.com';
+        var scAppBasePath = '/CloudPages';
         var el = d.createElement('script');
         el.id = 'smartcapture-script-${formComponent.id}';
-        el.src = '//' + scAppDomain + scAppBasePath;
+        el.src = '//' + scAppDomain + scAppBasePath + '/lib/smartcapture-formjs.js';
         el.setAttribute('data-form-id', 'smartcapture-form-${formComponent.id}');
         el.setAttribute('data-source-key', '${meta.dataExtensionKey || ''}');
         el.setAttribute('data-redirect-url', '${meta.redirectUrl}');
@@ -1290,47 +1315,6 @@ ${trackingScripts}
     ${styles.customCss || ''}
 </style>
 <script>
-    window.formSubmit = function(form) {
-        let valid = true;
-        const requiredInputs = form.querySelectorAll('input[required], select[required]');
-
-        requiredInputs.forEach(input => {
-            const errorId = 'error-' + (input.name || input.id).toLowerCase();
-            const error = form.parentElement.querySelector('#' + errorId);
-            let isInvalid = false;
-            
-            if(input.type === 'checkbox') {
-                isInvalid = !input.checked;
-            } else {
-                isInvalid = input.value.trim() === '';
-            }
-
-            if (isInvalid && error) {
-                error.style.display = 'block';
-                valid = false;
-            } else if (error) {
-                error.style.display = 'none';
-            }
-        });
-
-        const button = form.querySelector('button[type="submit"]');
-        if (button) {
-            const loader = button.querySelector('.button-loader');
-            const buttonText = button.querySelector('.button-text');
-            if (valid) {
-                 button.disabled = true;
-                if(loader) loader.style.display = 'block';
-                if(buttonText) buttonText.style.opacity = '0';
-            } else {
-                 button.disabled = false;
-                if(loader) loader.style.display = 'none';
-                if(buttonText) buttonText.style.opacity = '1';
-            }
-        }
-        
-        return valid;
-    }
-
     function setupAccordions() {
         document.querySelectorAll('.accordion-container').forEach(container => {
             container.addEventListener('click', function(event) {
@@ -1509,4 +1493,3 @@ ${trackingScripts}
 </body>
 </html>
 `;
-};

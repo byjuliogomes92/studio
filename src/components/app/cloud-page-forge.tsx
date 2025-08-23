@@ -62,6 +62,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const { toast } = useToast();
 
   const [initialPageState, setInitialPageState] = useState<CloudPage | null>(null);
+  const [savedPageState, setSavedPageState] = useState<CloudPage | null>(null);
   const { state: pageState, setState: setPageState, undo, canUndo, resetState } = useHistoryState<CloudPage | null>(initialPageState);
 
   const [htmlCode, setHtmlCode] = useState("");
@@ -69,6 +70,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [pageName, setPageName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState) || pageName !== savedPageState?.name;
 
   useEffect(() => {
     if (authLoading) {
@@ -109,9 +112,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             if (needsUpdate) {
               pageData.components = updatedComponents;
             }
-            setInitialPageState(pageData);
-            resetState(pageData); // Initialize history
-            setPageName(pageData.name);
+            const cleanPageState = { ...pageData, name: pageData.name };
+            setInitialPageState(cleanPageState);
+            setSavedPageState(cleanPageState); // Set the initial saved state
+            resetState(cleanPageState); // Initialize history
+            setPageName(cleanPageState.name);
           } else {
             toast({ variant: "destructive", title: "Erro", description: "Página não encontrada ou acesso negado." });
             router.push('/');
@@ -212,6 +217,22 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     };
   }, [undo, canUndo]);
 
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = ''; // Required for legacy browsers
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
 
   const handleSave = async () => {
     if (!pageState || !user) return;
@@ -224,7 +245,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           userId: user.uid,
       };
       await updatePage(pageId, finalPageState);
-      // After saving, the new state is the baseline. Reset history.
+      // After saving, update the saved state and reset history.
+      setSavedPageState(finalPageState);
       resetState(finalPageState);
       toast({ title: "Página atualizada!", description: `A página "${pageName}" foi salva com sucesso.` });
     } catch(error) {

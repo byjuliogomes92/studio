@@ -40,7 +40,15 @@ const getProject = async (projectId: string): Promise<Project | null> => {
 
 
 const deleteProject = async (projectId: string): Promise<void> => {
-    await deleteDoc(doc(db, "projects", projectId));
+    const projectDocRef = doc(db, "projects", projectId);
+    // You might want to delete all pages within the project first
+    const pagesQuery = query(collection(db, "pages"), where("projectId", "==", projectId));
+    const pagesSnapshot = await getDocs(pagesQuery);
+    const deletePromises = pagesSnapshot.docs.map(pageDoc => deleteDoc(pageDoc.ref));
+    await Promise.all(deletePromises);
+
+    // Now delete the project itself
+    await deleteDoc(projectDocRef);
 };
 
 

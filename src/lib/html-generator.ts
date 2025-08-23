@@ -611,7 +611,37 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 };
 
 
-const generateSSJSScript = (): string => {
+const generateSSJSScript = (pageState: CloudPage): string => {
+
+    const formComponent = pageState.components.find(c => c.type === 'Form');
+    const abTestComponents = pageState.components.filter(c => c.abTestEnabled);
+
+    let knownFieldNames: string[] = [];
+
+    if (formComponent) {
+        const { fields = {} } = formComponent.props;
+        if (fields.name) knownFieldNames.push("NOME");
+        if (fields.email) knownFieldNames.push("EMAIL");
+        if (fields.phone) knownFieldNames.push("TELEFONE");
+        if (fields.cpf) knownFieldNames.push("CPF");
+        if (fields.birthdate) knownFieldNames.push("DATANASCIMENTO");
+        if (fields.city) knownFieldNames.push("CIDADE");
+        if (fields.optin) knownFieldNames.push("OPTIN");
+    }
+
+    abTestComponents.forEach(c => {
+        knownFieldNames.push(`VARIANTE_${c.id.toUpperCase()}`);
+    });
+
+    const npsComponent = pageState.components.find(c => c.type === 'NPS');
+    if (npsComponent) {
+        knownFieldNames.push('NPS_SCORE', 'NPS_DATE');
+    }
+
+    // Create a string representation of the array for SSJS
+    const fieldArrayString = '["' + knownFieldNames.join('","') + '"]';
+
+
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
@@ -626,19 +656,21 @@ const generateSSJSScript = (): string => {
                 return;
             }
             
-            var formFields = Request.GetFormFieldNames();
+            var fieldNamesFromConfig = ${fieldArrayString};
             var deFields = [];
             var deValues = [];
             
-            for (var i = 0; i < formFields.length; i++) {
-                var fieldName = formFields[i];
-                if (fieldName.indexOf("__") != 0) { // Ignore config fields
-                    var fieldValue = Request.GetFormField(fieldName);
+            for (var i = 0; i < fieldNamesFromConfig.length; i++) {
+                var fieldName = fieldNamesFromConfig[i];
+                var fieldValue = Request.GetFormField(fieldName);
+
+                // Only add the field if it was actually submitted
+                if(fieldValue != null) {
                     if (fieldName == 'OPTIN') {
                         fieldValue = fieldValue == "on" ? "True" : "False";
                     }
-                    deFields.push(fieldName);
-                    deValues.push(fieldValue);
+                    Array.Push(deFields, fieldName);
+                    Array.Push(deValues, fieldValue);
                 }
             }
             
@@ -666,7 +698,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
 
-  const ssjsScript = generateSSJSScript();
+  const ssjsScript = generateSSJSScript(pageState);
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
   const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
@@ -1508,4 +1540,4 @@ ${trackingScripts}
   ${cookieBannerHtml}
 </body>
 </html>
-`;
+`

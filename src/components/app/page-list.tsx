@@ -51,6 +51,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PageListProps {
   projectId: string;
@@ -231,6 +232,7 @@ export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [project, setProject] = useState<Project | null>(null);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -238,6 +240,10 @@ export function PageList({ projectId }: PageListProps) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   
+  // Mobile Warning Dialog
+  const [isMobileWarningOpen, setIsMobileWarningOpen] = useState(false);
+  const [pageToNavigate, setPageToNavigate] = useState<string | null>(null);
+
   // Create Page Dialog State
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -289,7 +295,7 @@ export function PageList({ projectId }: PageListProps) {
         toast({ title: "Página criada!", description: `A página "${newPageName}" foi criada com sucesso.` });
         setCreateModalOpen(false);
         setNewPageName("");
-        navigateToEditor(newPageId);
+        handlePageClick(newPageId);
     } catch(error) {
         console.error("Failed to create page:", error);
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível criar a página." });
@@ -324,9 +330,23 @@ export function PageList({ projectId }: PageListProps) {
     }
   }
   
-  const navigateToEditor = (pageId: string) => {
-    router.push(`/editor/${pageId}?projectId=${projectId}`);
-  }
+  const handlePageClick = (pageId: string) => {
+    if (isMobile) {
+      setPageToNavigate(pageId);
+      setIsMobileWarningOpen(true);
+    } else {
+      router.push(`/editor/${pageId}?projectId=${projectId}`);
+    }
+  };
+  
+  const proceedToEditor = () => {
+    if (pageToNavigate) {
+      router.push(`/editor/${pageToNavigate}?projectId=${projectId}`);
+    }
+    setIsMobileWarningOpen(false);
+    setPageToNavigate(null);
+  };
+
 
   const allTags = useMemo(() => {
     const tagsSet = new Set<string>();
@@ -510,7 +530,7 @@ export function PageList({ projectId }: PageListProps) {
                   key={page.id}
                   className="group relative flex flex-col bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="flex-grow cursor-pointer" onClick={() => navigateToEditor(page.id)}>
+                  <div className="flex-grow cursor-pointer" onClick={() => handlePageClick(page.id)}>
                       <div className="flex items-start justify-between">
                         <FileText className="h-10 w-10 text-primary" />
                         <DropdownMenu>
@@ -573,6 +593,22 @@ export function PageList({ projectId }: PageListProps) {
           )}
         </main>
       </div>
+
+       <AlertDialog open={isMobileWarningOpen} onOpenChange={setIsMobileWarningOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Atenção</AlertDialogTitle>
+            <AlertDialogDescription>
+              A experiência de edição do Cloud Page Forge ainda não está totalmente otimizada para dispositivos móveis.
+              Recomendamos o uso de um desktop para uma melhor experiência. Uma versão adaptada para mobile estará disponível em breve!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPageToNavigate(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={proceedToEditor}>Continuar Mesmo Assim</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

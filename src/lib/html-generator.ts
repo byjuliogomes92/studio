@@ -15,7 +15,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                 }
                 return `<div class="columns-container" style="--column-count: ${columnCount}">${columnsHtml}</div>`;
             }
-            return `<div class="component-wrapper">${renderSingleComponent(component, pageState)}</div>`;
+            return `<div class="component-wrapper">${renderComponent(component, pageState)}</div>`;
         })
         .join('\n');
 }
@@ -1264,6 +1264,12 @@ ${trackingScripts}
     .column {
         flex: 1;
         min-width: 0;
+    }
+
+    @media (max-width: 768px) {
+        .columns-container {
+            flex-direction: column;
+        }
     }
 
 

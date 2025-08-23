@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Brand, Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {

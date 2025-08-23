@@ -6,7 +6,7 @@ import type { PageComponent, ComponentType } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Spacing } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -879,7 +879,7 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
         <Separator />
         
         <div>
-            <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Spacing className="h-4 w-4" /> Espaçamento</h3>
+            <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Scaling className="h-4 w-4" /> Espaçamento</h3>
             <SpacingSettings props={component.props} onPropChange={handlePropChange} />
         </div>
 
@@ -911,7 +911,7 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
                      </div>
                      <Separator/>
                      <div>
-                        <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Spacing className="h-4 w-4" /> Espaçamento (Variante)</h3>
+                        <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Scaling className="h-4 w-4" /> Espaçamento (Variante)</h3>
                         <SpacingSettings props={variantProps} onPropChange={(prop, value) => handleVariantPropChange(0, prop, value)} />
                      </div>
                 </div>

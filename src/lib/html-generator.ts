@@ -366,10 +366,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
         `;
     }
     case 'Form':
-      const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
+      const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
       const formHtml = `
-        <div class="form-container" style="${styleString}">
-            <form id="smartcapture-block-uttuiggngg" novalidate="novalidate" onsubmit="return validateForm()">
+        <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
+            <form id="smartcapture-form-${component.id}" novalidate="novalidate">
                  <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
                   ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email') : ''}
@@ -397,6 +397,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
                     <button type="submit">${buttonText || 'Finalizar'}</button>
                 </div>
             </form>
+             <div id="thank-you-message-${component.id}" class="thank-you-message" style="display: none;"></div>
         </div>
       `;
       return formHtml;
@@ -573,57 +574,51 @@ export const generateHtml = (pageState: CloudPage): string => {
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
 
+  const formComponent = components.find(c => c.type === 'Form');
+  const formThankYouMessage = formComponent?.props.thankYouMessage || "<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>";
+
   const mainComponents = components
     .filter(c => !fullWidthTypes.includes(c.type))
     .map(c => `<div class="component-wrapper">${renderComponent(c, pageState)}</div>`)
     .join('\n');
 
-  const smartCaptureScript = `
-<script id="smartcapture-script-uttuiggngg">
- var scFormLoaded = function () {
-  window.ScForm.init({"gearID":"uttuiggngg","smartCaptureFormID":0,"sourceKey":"${meta.dataExtensionKey || ''}","source":"dataExtension","triggeredSend":"","confirmationMessage":"Obrigada por participar!","buttonText":"Submit","formStyling":{"background-color":"transparent","margin-top":"0px","margin-right":"0px","margin-bottom":"0px","margin-left":"0px","padding-top":"0px","padding-right":"0px","padding-bottom":"0px","padding-left":"0px","text-align":"left"},"fieldStyling":{"width":"200px"},"buttonStyling":{"background-color":"#009DDC","border-color":"#009DDC","border-radius":"3px","border-style":"solid","-webkit-border-radius":"3px","-moz-border-radius":"3px","color":"#FFFFFF","font-family":"Arial, Helvetica, sans-serif","font-size":"16px","line-height":"normal","padding":"10px"},onSubmitShouldGotoUrl: true,
-        onSubmitGotoUrlType: 2,
-        onSubmitGotoUrl:  "${meta.redirectUrl}",});
+  const smartCaptureScript = formComponent ? `
+<script>
+ var scForm_cb = function (data) {
+  if (data.status === "success") {
+    var formWrapper = document.getElementById('form-wrapper-${formComponent.id}');
+    var thankYouDiv = document.getElementById('thank-you-message-${formComponent.id}');
+    
+    if(formWrapper && thankYouDiv) {
+        var thankYouTemplate = \`${formThankYouMessage.replace(/`/g, '\\`')}\`;
+        
+        var formData = {};
+        var formElements = formWrapper.querySelector('form').elements;
+        for (var i = 0; i < formElements.length; i++) {
+            var element = formElements[i];
+            if (element.name) {
+                formData[element.name] = element.value;
+            }
+        }
+        
+        var renderedHtml = thankYouTemplate.replace(/\\{\\{\\s*(\\w+)\\s*\\}\\}/g, function(match, key) {
+            return formData[key] || '';
+        });
+
+        thankYouDiv.innerHTML = renderedHtml;
+        formWrapper.querySelector('form').style.display = 'none';
+        thankYouDiv.style.display = 'block';
+    }
+  }
  };
- var scAppDomain = 'cloudpages.mc-content.com';
- var scAppBasePath = '/CloudPages';
- (function () {
-  var appDomain = '<ctrl:eval>Platform.Variable.GetValue("@appDomain")</ctrl:eval>';
-  if (appDomain.indexOf('qa') !== -1) {
-   scAppDomain = 'cloudpages-qa.mc-content.com';
-   scAppBasePath = '/CloudPages_V1';
-  }
- }());
- window.appDomain = window.appDomain || scAppDomain;
- window.contentDetail = window.contentDetail || <ctrl:eval>Platform.Variable.GetValue('@contentDetail')||{}</ctrl:eval>;
- if (!window.ScForm || !window.ScForm.init) {
-  var head = document.getElementsByTagName('head')[0];
-  var id = 'smartcapture-formjs-script';
-  var script = document.getElementById(id);
-  var domain = window.appDomain;
-  var el;
-  if (!script) {
-   if (domain) {
-    domain = '//' + domain;
-   }
-   el = document.createElement('script');
-   el.async = true;
-   el.id = id;
-   el.src = domain + scAppBasePath + '/lib/smartcapture-formjs.js';
-   el.onload = scFormLoaded;
-   head.appendChild(el);
-  } else {
-   if (script.addEventListener) {
-    script.addEventListener('load', scFormLoaded);
-   } else if (script.attachEvent) {
-    script.attachEvent('onload', scFormLoaded);
-   }
-  }
- } else {
-  scFormLoaded();
- }
 </script>
-  `;
+<script id="smartcapture-script-${formComponent.id}" src="https://mc.s12.qa1.exacttarget.com/CloudPages/lib/smartcapture-formjs.js" 
+  data-form-id="smartcapture-form-${formComponent.id}"
+  data-source-key="${meta.dataExtensionKey || ''}"
+  data-redirect-url="${meta.redirectUrl}"
+  data-callback="scForm_cb">
+</script>
+  ` : '';
   
   return `
 <!DOCTYPE html>
@@ -776,17 +771,19 @@ ${trackingScripts}
         text-align: center;
     }
     
-    .custom-button {
+    .custom-button, .thank-you-message a.custom-button {
       background-color: ${styles.themeColor};
-      color: white;
+      color: white !important;
       padding: 10px 20px;
       text-decoration: none;
       border-radius: 5px;
       display: inline-block;
       transition: background-color 0.3s ease;
+      border: none;
+      cursor: pointer;
     }
     
-    .custom-button:hover {
+    .custom-button:hover, .thank-you-message a.custom-button:hover {
       background-color: ${styles.themeColorHover};
     }
 
@@ -843,6 +840,12 @@ ${trackingScripts}
         background-color: #ccc;
         cursor: not-allowed;
     }
+    
+    .thank-you-message {
+      text-align: center;
+      padding: 20px;
+    }
+
 
     .button-loader {
         display: none;
@@ -1288,8 +1291,8 @@ ${trackingScripts}
         }
     }
 
-    function toggleButtonLoader(show) {
-        const button = document.querySelector('.form-container button');
+    function toggleButtonLoader(form, show) {
+        const button = form.querySelector('button[type="submit"]');
         if (!button) return;
         const loader = button.querySelector('.button-loader');
         const buttonText = button.querySelector('.button-text');
@@ -1305,13 +1308,12 @@ ${trackingScripts}
         }
     }
 
-    function validateForm() {
+    function validateForm(form) {
         let valid = true;
-        const form = document.getElementById('smartcapture-block-uttuiggngg');
         const requiredInputs = form.querySelectorAll('input[required], select[required]');
 
         requiredInputs.forEach(input => {
-            const error = document.getElementById('error-' + input.name.toLowerCase());
+            const error = form.parentElement.querySelector('#error-' + input.name.toLowerCase());
             let isInvalid = false;
             
             if(input.type === 'checkbox') {
@@ -1329,9 +1331,36 @@ ${trackingScripts}
         });
 
         if (!valid) return false;
-        toggleButtonLoader(true);
-        // setTimeout(() => toggleButtonLoader(false), 2000); // This is for testing, real submission handles this.
+        toggleButtonLoader(form, true);
         return true;
+    }
+    
+    function setupForms() {
+      document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          if (validateForm(this)) {
+            // Manually trigger SmartCapture submit
+            window.ScForm.submit(this);
+          }
+        });
+
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton && !submitButton.querySelector('.button-loader')) {
+            const buttonTextContent = submitButton.textContent;
+            submitButton.innerHTML = '';
+            
+            const buttonText = document.createElement('span');
+            buttonText.className = 'button-text';
+            buttonText.textContent = buttonTextContent;
+            
+            const buttonLoader = document.createElement('div');
+            buttonLoader.className = 'button-loader';
+
+            submitButton.appendChild(buttonText);
+            submitButton.appendChild(buttonLoader);
+        }
+      });
     }
 
     window.onload = function () {
@@ -1356,23 +1385,8 @@ ${trackingScripts}
             emailInput.addEventListener('input', function() { validateEmail(this); });
             emailInput.addEventListener('blur', function() { validateEmail(this); });
         }
-            
-        const submitButton = document.querySelector('.form-container button');
-        if (submitButton && !submitButton.querySelector('.button-loader')) {
-            const buttonTextContent = submitButton.textContent;
-            submitButton.innerHTML = '';
-            
-            const buttonText = document.createElement('span');
-            buttonText.className = 'button-text';
-            buttonText.textContent = buttonTextContent;
-            
-            const buttonLoader = document.createElement('div');
-            buttonLoader.className = 'button-loader';
-
-            submitButton.appendChild(buttonText);
-            submitButton.appendChild(buttonLoader);
-        }
         
+        setupForms();
         setupAccordions();
         setupTabs();
     }
@@ -1393,7 +1407,7 @@ ${trackingScripts}
   </div>
 
   ${cookieBannerHtml}
-  ${components.some(c => c.type === 'Form') ? smartCaptureScript : ''}
+  ${smartCaptureScript}
 </body>
 </html>
 `;

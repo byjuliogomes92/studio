@@ -606,6 +606,31 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     </Select>
                 </div>
             </div>
+
+            <Separator />
+
+             <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                    <TooltipContent>
+                        <div className="max-w-xs">
+                          <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
+                          <p className="mt-2">Ex: `&lt;h2&gt;Obrigado, {{NOME}}!&lt;/h2&gt;`.</p>
+                          <p className="mt-1">Variáveis disponíveis: `{{NOME}}`, `{{EMAIL}}`, etc.</p>
+                        </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Textarea
+                  id="form-thank-you"
+                  value={props.thankYouMessage || ''}
+                  onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
+                  rows={8}
+                  placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
+                />
+            </div>
           </div>
         );
       case 'Accordion':

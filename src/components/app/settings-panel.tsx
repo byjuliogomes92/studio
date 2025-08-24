@@ -206,7 +206,7 @@ export function SettingsPanel({
     setPageState((prev) => prev ? ({ ...prev, styles: { ...prev.styles, [prop]: value } }) : null);
   };
 
-  const handleMetaChange = (prop: keyof CloudPage["meta"], value: string) => {
+  const handleMetaChange = (prop: keyof CloudPage["meta"], value: string | ('key' | 'name')) => {
     setPageState((prev) => prev ? ({ ...prev, meta: { ...prev.meta, [prop]: value } }) : null);
   };
   
@@ -747,12 +747,31 @@ export function SettingsPanel({
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
-                    <Label>Chave da Data Extension</Label>                 <Tooltip>
+                    <Label>Identificador da Data Extension</Label>
+                    <Tooltip>
                       <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                      <TooltipContent><p>A Chave Externa da Data Extension do Salesforce Marketing Cloud.</p></TooltipContent>
+                      <TooltipContent><p>O Nome ou a Chave Externa da sua Data Extension.</p></TooltipContent>
                     </Tooltip>
                   </div>
-                  <Input value={pageState.meta.dataExtensionKey} onChange={(e) => handleMetaChange('dataExtensionKey', e.target.value)} />
+                  <div className="flex gap-2">
+                     <Select 
+                        value={pageState.meta.dataExtensionTargetMethod || 'key'} 
+                        onValueChange={(value: 'key' | 'name') => handleMetaChange('dataExtensionTargetMethod', value)}
+                     >
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="key">Chave Externa</SelectItem>
+                            <SelectItem value="name">Nome da DE</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Input 
+                      value={pageState.meta.dataExtensionKey} 
+                      onChange={(e) => handleMetaChange('dataExtensionKey', e.target.value)}
+                      placeholder="Insira o Nome ou Chave"
+                    />
+                  </div>
                 </div>
 
                 <Separator />

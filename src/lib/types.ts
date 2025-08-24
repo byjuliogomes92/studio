@@ -58,6 +58,7 @@ export interface CloudPage {
     loaderImageUrl: string;
     redirectUrl: string;
     dataExtensionKey: string;
+    dataExtensionTargetMethod?: 'key' | 'name'; // New field
     metaDescription: string;
     metaKeywords: string;
     tracking?: {

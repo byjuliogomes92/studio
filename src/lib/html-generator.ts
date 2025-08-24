@@ -413,12 +413,14 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
         return '';
     case 'Form': {
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
+      const { meta } = pageState;
       const formHtml = `
         <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
             <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
-                 <input type="hidden" name="__de" value="${pageState.meta.dataExtensionKey}">
-                 <input type="hidden" name="__successUrl" value="${pageState.meta.redirectUrl}">
+                 <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
+                 <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
                  <input type="hidden" name="__upsert" value="EMAIL">
+                 <input type="hidden" name="__targetMethod" value="${meta.dataExtensionTargetMethod || 'key'}">
 
                  <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
@@ -647,11 +649,12 @@ const generateSSJSScript = (pageState: CloudPage): string => {
     Platform.Load("Core", "1.1.1");
     if (Request.Method == "POST") {
         try {
-            var de = Request.GetFormField("__de");
+            var deIdentifier = Request.GetFormField("__de");
             var successUrl = Request.GetFormField("__successUrl");
             var upsertKey = Request.GetFormField("__upsert");
+            var targetMethod = Request.GetFormField("__targetMethod");
 
-            if (!de || !successUrl) {
+            if (!deIdentifier || !successUrl) {
                 Write("SSJS Error: Missing __de or __successUrl form fields.");
                 return;
             }
@@ -675,11 +678,13 @@ const generateSSJSScript = (pageState: CloudPage): string => {
             }
             
             if (deFields.length > 0) {
-                if (upsertKey) {
-                    var upsertValue = Request.GetFormField(upsertKey);
-                    Platform.Function.UpsertData(de, [upsertKey], [upsertValue], deFields, deValues);
+                var upsertValue = Request.GetFormField(upsertKey);
+                if (targetMethod == 'key') {
+                    // Use External Key
+                    Platform.Function.UpsertDE(deIdentifier, [upsertKey], [upsertValue], deFields, deValues);
                 } else {
-                    Platform.Function.InsertData(de, deFields, deValues);
+                    // Use DE Name
+                    Platform.Function.UpsertData(deIdentifier, [upsertKey], [upsertValue], deFields, deValues);
                 }
                 Redirect(successUrl);
             }

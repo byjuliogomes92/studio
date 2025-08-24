@@ -412,15 +412,15 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
         // This case is handled by the recursive renderComponents function
         return '';
     case 'Form': {
-      const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities } = component.props;
+      const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
       const { meta } = pageState;
+      const thankYouHtml = `<div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">${thankYouMessage}</div>`;
+      
       const formHtml = `
         <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
             <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                  <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                  <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
-                 <input type="hidden" name="__upsert" value="EMAIL">
-                 <input type="hidden" name="__targetMethod" value="${meta.dataExtensionTargetMethod || 'key'}">
 
                  <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
@@ -437,7 +437,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
            
                 ${fields.optin ? `
                 <div class="consent">
-                    <input type="checkbox" id="OPTIN" name="OPTIN" required="required">
+                    <input type="checkbox" id="OPTIN" name="OPTIN" value="on" required="required">
                     <label for="OPTIN">
                         ${consentText || 'Quero receber novidades e promoções...'}
                     </label>
@@ -448,6 +448,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
                     <button type="submit">${buttonText || 'Finalizar'}</button>
                 </div>
             </form>
+            ${thankYouHtml}
         </div>
       `;
       return formHtml;
@@ -614,88 +615,114 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 
 
 const generateSSJSScript = (pageState: CloudPage): string => {
+    const { components } = pageState;
+    const allFieldNames: string[] = [];
+    const updateObjectFields: string[] = []; // Fields to update, excluding the key
+    let upsertKey = "EMAIL"; // Default key
 
-    const formComponent = pageState.components.find(c => c.type === 'Form');
-    const abTestComponents = pageState.components.filter(c => c.abTestEnabled);
-
-    let knownFieldNames: string[] = [];
-
+    // Gather all possible fields from components
+    const formComponent = components.find(c => c.type === 'Form');
     if (formComponent) {
         const { fields = {} } = formComponent.props;
-        if (fields.name) knownFieldNames.push("NOME");
-        if (fields.email) knownFieldNames.push("EMAIL");
-        if (fields.phone) knownFieldNames.push("TELEFONE");
-        if (fields.cpf) knownFieldNames.push("CPF");
-        if (fields.birthdate) knownFieldNames.push("DATANASCIMENTO");
-        if (fields.city) knownFieldNames.push("CIDADE");
-        if (fields.optin) knownFieldNames.push("OPTIN");
+        if (fields.name) allFieldNames.push("NOME");
+        if (fields.email) allFieldNames.push("EMAIL");
+        if (fields.phone) allFieldNames.push("TELEFONE");
+        if (fields.cpf) allFieldNames.push("CPF");
+        if (fields.birthdate) allFieldNames.push("DATANASCIMENTO");
+        if (fields.city) allFieldNames.push("CIDADE");
+        if (fields.optin) allFieldNames.push("OPTIN");
     }
 
-    abTestComponents.forEach(c => {
-        knownFieldNames.push(`VARIANTE_${c.id.toUpperCase()}`);
+    components.filter(c => c.abTestEnabled).forEach(c => {
+        allFieldNames.push(`VARIANTE_${c.id.toUpperCase()}`);
     });
 
-    const npsComponent = pageState.components.find(c => c.type === 'NPS');
-    if (npsComponent) {
-        knownFieldNames.push('NPS_SCORE', 'NPS_DATE');
+    if (components.some(c => c.type === 'NPS')) {
+        allFieldNames.push('NPS_SCORE', 'NPS_DATE');
     }
 
-    // Create a string representation of the array for SSJS
-    const fieldArrayString = '["' + knownFieldNames.join('","') + '"]';
+    // Build field-getting script
+    const getFieldsScript = allFieldNames.map(name => `var ${name.toLowerCase()} = Request.GetFormField("${name}");`).join('\n        ');
 
+    // Build the Add object
+    const addObjFields = allFieldNames.map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                ');
+
+    // Build the Update object (excluding the key)
+    allFieldNames.forEach(name => {
+        if (name.toUpperCase() !== upsertKey.toUpperCase()) {
+            updateObjectFields.push(`"${name}": ${name.toLowerCase()}`);
+        }
+    });
+    const updateObjFields = updateObjectFields.join(',\n                    ');
 
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
-    if (Request.Method == "POST") {
-        try {
-            var deIdentifier = Request.GetFormField("__de");
-            var successUrl = Request.GetFormField("__successUrl");
-            var upsertKey = Request.GetFormField("__upsert");
-            var targetMethod = Request.GetFormField("__targetMethod");
+    var debug = false; 
 
-            if (!deIdentifier || !successUrl) {
-                Write("SSJS Error: Missing __de or __successUrl form fields.");
-                return;
-            }
-            
-            var fieldNamesFromConfig = ${fieldArrayString};
-            var deFields = [];
-            var deValues = [];
-            
-            for (var i = 0; i < fieldNamesFromConfig.length; i++) {
-                var fieldName = fieldNamesFromConfig[i];
-                var fieldValue = Request.GetFormField(fieldName);
+    try {
+        if (Request.Method == "POST") {
+            var deKey = Request.GetFormField("__de");
+            var redirectUrl = Request.GetFormField("__successUrl");
+            var showThanks = false;
 
-                // Only add the field if it was actually submitted
-                if(fieldValue != null) {
-                    if (fieldName == 'OPTIN') {
-                        fieldValue = fieldValue == "on" ? "True" : "False";
-                    }
-                    deFields.push(fieldName);
-                    deValues.push(fieldValue);
-                }
+            // --- Dynamically get all configured fields ---
+            ${getFieldsScript}
+
+            // --- Handle specific field types ---
+            if (optin == "" || optin == null) {
+                optin = "False";
+            } else if (optin == "on") {
+                optin = "True";
             }
-            
-            if (deFields.length > 0) {
-                var upsertValue = Request.GetFormField(upsertKey);
-                if (targetMethod == 'key') {
-                    // Use External Key
-                    Platform.Function.UpsertDE(deIdentifier, [upsertKey], [upsertValue], deFields, deValues);
+             if (nps_date == "" || nps_date == null) {
+                nps_date = Now();
+            }
+
+            if (debug) {
+                Write("<br><b>--- DEBUG ---</b><br>");
+                ${allFieldNames.map(name => `Write("${name}: " + ${name.toLowerCase()} + "<br>");`).join('\n                ')}
+            }
+
+            if (email != null && email != "" && deKey != null && deKey != "") {
+                var de = DataExtension.Init(deKey);
+                var existing = de.Rows.Lookup(["${upsertKey}"], [email]);
+
+                if (existing.length > 0) {
+                    // Update existing record
+                    de.Rows.Update(
+                        {
+                            ${updateObjFields}
+                        },
+                        ["${upsertKey}"], [email]
+                    );
+                     if (debug) { Write("<br><b>Status:</b> Registro atualizado."); }
                 } else {
-                    // Use DE Name
-                    Platform.Function.UpsertData(deIdentifier, [upsertKey], [upsertValue], deFields, deValues);
+                    // Add new record
+                    de.Rows.Add({
+                        ${addObjFields}
+                    });
+                     if (debug) { Write("<br><b>Status:</b> Novo registro inserido."); }
                 }
-                Redirect(successUrl);
+
+                showThanks = true;
             }
 
-        } catch (e) {
-            Write("SSJS Error: " + Stringify(e));
+            if (showThanks && redirectUrl && !debug) {
+                Platform.Response.Redirect(redirectUrl);
+            } else if (showThanks) {
+                Variable.SetValue("@showThanks", "true");
+            }
+        }
+    } catch (e) {
+        if (debug) {
+            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
         }
     }
 </script>
 `;
 };
+
 
 
 export const generateHtml = (pageState: CloudPage): string => {
@@ -713,6 +740,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   const googleFont = styles.fontFamily || 'Roboto';
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState);
+  const formComponent = components.find(c => c.type === 'Form');
   
   return `
 <!DOCTYPE html>
@@ -1504,6 +1532,14 @@ ${trackingScripts}
                 loader.style.display = 'none';
             }, 2000);
         }
+
+        if ("%%=v(@showThanks)=%%" == "true" && document.querySelector('.form-container')) {
+            var formId = document.querySelector('.form-container').id.replace('form-wrapper-', '');
+            var formWrapper = document.getElementById('form-wrapper-' + formId);
+            var thanksMessage = document.getElementById('thank-you-message-' + formId);
+            if(formWrapper) formWrapper.style.display = 'none';
+            if(thanksMessage) thanksMessage.style.display = 'block';
+        }
         
         const phoneInput = document.getElementById('TELEFONE');
         if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
@@ -1544,5 +1580,6 @@ ${trackingScripts}
 
   ${cookieBannerHtml}
 </body>
-</html>
-`
+</html>`;
+
+}

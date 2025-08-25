@@ -58,14 +58,15 @@ export interface CloudPage {
     loaderImageUrl: string;
     redirectUrl: string;
     dataExtensionKey: string;
-    dataExtensionTargetMethod?: 'key' | 'name'; // New field
+    dataExtensionTargetMethod?: 'key' | 'name';
     metaDescription: string;
     metaKeywords: string;
     tracking?: {
       ga4: { enabled: boolean; id?: string };
       meta: { enabled: boolean; id?: string };
       linkedin: { enabled: boolean; id?: string };
-    }
+    };
+    ssoProtection?: boolean;
   };
   cookieBanner?: {
     enabled: boolean;

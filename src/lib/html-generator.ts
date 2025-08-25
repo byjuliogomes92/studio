@@ -421,6 +421,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
             <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                  <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                  <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
+                 <input type="hidden" name="__targetMethod" value="${meta.dataExtensionTargetMethod || 'key'}">
 
                  <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
@@ -617,10 +618,8 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 const generateSSJSScript = (pageState: CloudPage): string => {
     const { components } = pageState;
     const allFieldNames: string[] = [];
-    const updateObjectFields: string[] = []; // Fields to update, excluding the key
-    let upsertKey = "EMAIL"; // Default key
-
-    // Gather all possible fields from components
+    
+    // --- Dynamically gather all field names from components ---
     const formComponent = components.find(c => c.type === 'Form');
     if (formComponent) {
         const { fields = {} } = formComponent.props;
@@ -641,19 +640,13 @@ const generateSSJSScript = (pageState: CloudPage): string => {
         allFieldNames.push('NPS_SCORE', 'NPS_DATE');
     }
 
-    // Build field-getting script
+    // Generate SSJS code for getting form fields
     const getFieldsScript = allFieldNames.map(name => `var ${name.toLowerCase()} = Request.GetFormField("${name}");`).join('\n        ');
-
-    // Build the Add object
+    
+    // Generate SSJS objects for Add and Update
     const addObjFields = allFieldNames.map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                ');
+    const updateObjFields = allFieldNames.filter(name => name.toUpperCase() !== "EMAIL").map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                    ');
 
-    // Build the Update object (excluding the key)
-    allFieldNames.forEach(name => {
-        if (name.toUpperCase() !== upsertKey.toUpperCase()) {
-            updateObjectFields.push(`"${name}": ${name.toLowerCase()}`);
-        }
-    });
-    const updateObjFields = updateObjectFields.join(',\n                    ');
 
     return `
 <script runat="server">
@@ -670,23 +663,25 @@ const generateSSJSScript = (pageState: CloudPage): string => {
             ${getFieldsScript}
 
             // --- Handle specific field types ---
-            if (optin == "" || optin == null) {
+            if (typeof optin !== 'undefined' && (optin == "" || optin == null)) {
                 optin = "False";
-            } else if (optin == "on") {
-                optin = "True";
+            } else if (typeof optin !== 'undefined' && optin == "on") {
+                 optin = "True";
             }
-             if (nps_date == "" || nps_date == null) {
+
+            if (typeof nps_date !== 'undefined' && (nps_date == "" || nps_date == null)) {
                 nps_date = Now();
             }
 
             if (debug) {
                 Write("<br><b>--- DEBUG ---</b><br>");
-                ${allFieldNames.map(name => `Write("${name}: " + ${name.toLowerCase()} + "<br>");`).join('\n                ')}
+                Write("DE Key: " + deKey + "<br>");
+                ${allFieldNames.map(name => `Write("${name}: " + (${name.toLowerCase()} || 'null') + "<br>");`).join('\n                ')}
             }
 
             if (email != null && email != "" && deKey != null && deKey != "") {
                 var de = DataExtension.Init(deKey);
-                var existing = de.Rows.Lookup(["${upsertKey}"], [email]);
+                var existing = de.Rows.Lookup(["EMAIL"], [email]);
 
                 if (existing.length > 0) {
                     // Update existing record
@@ -694,7 +689,7 @@ const generateSSJSScript = (pageState: CloudPage): string => {
                         {
                             ${updateObjFields}
                         },
-                        ["${upsertKey}"], [email]
+                        ["EMAIL"], [email]
                     );
                      if (debug) { Write("<br><b>Status:</b> Registro atualizado."); }
                 } else {
@@ -723,6 +718,17 @@ const generateSSJSScript = (pageState: CloudPage): string => {
 `;
 };
 
+const getSsoScript = (): string => {
+    return `%%[
+  VAR @IsAuthenticated, @RedirectURL
+  SET @RedirectURL = CloudPagesURL(PageID)
+  TRY 
+    SET @IsAuthenticated = Request.GetUserInfo()
+  CATCH(e) 
+    Redirect("https://mc.login.exacttarget.com/hub/auth?returnUrl=" + URLEncode(@RedirectURL), false)
+  ENDTRY
+]%%`;
+};
 
 
 export const generateHtml = (pageState: CloudPage): string => {
@@ -730,6 +736,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
 
+  const ssoScript = meta.ssoProtection ? getSsoScript() : '';
   const ssjsScript = generateSSJSScript(pageState);
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
@@ -742,7 +749,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState);
   const formComponent = components.find(c => c.type === 'Form');
   
-  return `
+  return `${ssoScript}
 <!DOCTYPE html>
 <html>
 <head>
@@ -1581,5 +1588,4 @@ ${trackingScripts}
   ${cookieBannerHtml}
 </body>
 </html>`;
-
 }

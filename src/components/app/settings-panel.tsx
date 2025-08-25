@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -206,7 +206,7 @@ export function SettingsPanel({
     setPageState((prev) => prev ? ({ ...prev, styles: { ...prev.styles, [prop]: value } }) : null);
   };
 
-  const handleMetaChange = (prop: keyof CloudPage["meta"], value: string | ('key' | 'name')) => {
+  const handleMetaChange = (prop: keyof CloudPage["meta"], value: string | boolean | ('key' | 'name')) => {
     setPageState((prev) => prev ? ({ ...prev, meta: { ...prev.meta, [prop]: value } }) : null);
   };
   
@@ -810,6 +810,25 @@ export function SettingsPanel({
                   </div>
                 </div>
               </AccordionContent>
+            </AccordionItem>
+             <AccordionItem value="security">
+                <AccordionTrigger>Segurança & Acesso</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="sso-enabled" className="flex items-center gap-2">
+                            <Lock className="h-4 w-4"/>
+                            Proteger com SSO do Marketing Cloud
+                        </Label>
+                        <Switch
+                            id="sso-enabled"
+                            checked={pageState.meta.ssoProtection || false}
+                            onCheckedChange={(checked) => handleMetaChange('ssoProtection', checked)}
+                        />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        Se ativado, os usuários serão redirecionados para a tela de login do Salesforce Marketing Cloud se não estiverem autenticados antes de poderem ver esta página.
+                    </p>
+                </AccordionContent>
             </AccordionItem>
              <AccordionItem value="cookie-banner">
                 <AccordionTrigger>Banner de Cookies</AccordionTrigger>

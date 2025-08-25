@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent, ComponentType } from './types';
 
 
@@ -462,49 +463,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText3 || 'Todos os preços e condições...'}</span></div>
         </div>
       </footer>`;
-    case 'Chart':
-        const chartData = component.props.data || '[]';
-        return `
-            <div id="chart-${component.id}" class="chart-container" style="${styleString}" data-chart-data='${chartData}'></div>
-            <script>
-              (function() {
-                var container = document.getElementById('chart-${component.id}');
-                if (!container || !window.Recharts) return;
-                
-                var dataStr = container.dataset.chartData;
-                var data;
-                try {
-                  // Attempt to replace AMPScript variables if any, for preview purposes.
-                  // This is a simple replacement and might not cover all cases.
-                  var previewDataStr = dataStr.replace(/%%=v\\(@(.*?)\\)=%%/g, (match, varName) => {
-                      // Provide some default dummy values for preview
-                      const dummyValues = { 'chartData': JSON.stringify([
-                          { name: 'Jan', value: 400 }, { name: 'Fev', value: 300 },
-                          { name: 'Mar', value: 600 }, { name: 'Abr', value: 800 }
-                      ])};
-                      return dummyValues[varName] || '""';
-                  });
-                  data = JSON.parse(previewDataStr);
-                } catch(e) {
-                   console.error("Error parsing chart data:", e, dataStr);
-                   data = [];
-                }
-
-                const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = window.Recharts;
-                const element = React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
-                  React.createElement(BarChart, { data: data },
-                    React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                    React.createElement(XAxis, { dataKey: 'name' }),
-                    React.createElement(YAxis),
-                    React.createElement(Tooltip),
-                    React.createElement(Legend),
-                    React.createElement(Bar, { dataKey: 'value', fill: '${pageState.styles.themeColor}' })
-                  )
-                );
-                ReactDOM.render(element, container);
-              })();
-            </script>
-        `;
     default:
       // This will cause a compile-time error if a new component type is added and not handled here.
       const exhaustiveCheck: never = component.type;
@@ -656,7 +614,6 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
     `;
 };
 
-
 const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
     const { meta, components } = pageState;
     const formComponent = components.find(c => c.type === 'Form');
@@ -669,25 +626,23 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
     
     // Dynamically build the list of fields to retrieve from the request
     let fieldRetrievalScript = '';
+    let rowDataPopulation = '';
+
     if (formComponent) {
-        Object.keys(formComponent.props.fields || {}).forEach(fieldName => {
-            if (formComponent.props.fields[fieldName]) {
-                 const deColumnName = fieldName === 'birthdate' ? 'DATANASCIMENTO' : fieldName.toUpperCase();
-                 fieldRetrievalScript += `var ${fieldName} = Request.GetFormField("${deColumnName}");\n            `;
-            }
-        });
-    }
-     if (npsComponent) {
-        fieldRetrievalScript += `var nps_score = Request.GetFormField("NPS_SCORE");\n            var nps_date = Now();\n            `;
+      const formFields = Object.keys(formComponent.props.fields || {}).filter(f => formComponent.props.fields[f]);
+      formFields.forEach(fieldName => {
+        const deColumnName = fieldName === 'birthdate' ? 'DATANASCIMENTO' : fieldName.toUpperCase();
+        fieldRetrievalScript += `var ${fieldName} = Request.GetFormField("${deColumnName}");\n            `;
+        rowDataPopulation += `if(typeof ${fieldName} !== 'undefined' && ${fieldName} !== null) rowData["${deColumnName}"] = ${fieldName};\n                        `;
+      });
     }
 
-    let fieldProcessingScript = `
-            if (optin == "" || optin == null) {
-                optin = "False";
-            } else if (optin == "on") {
-                optin = "True";
-            }
-    `;
+    if (npsComponent) {
+        fieldRetrievalScript += `var nps_score = Request.GetFormField("NPS_SCORE");\n            var nps_date = Now();\n            `;
+        rowDataPopulation += 'if(typeof nps_score !== "undefined" && nps_score !== null) rowData["NPS_SCORE"] = nps_score;\n                    ';
+        rowDataPopulation += 'if(typeof nps_date !== "undefined" && nps_date !== null) rowData["NPS_DATE"] = nps_date;\n                    ';
+    }
+
 
     // This script block will be generated to handle form submission.
     return `
@@ -699,11 +654,10 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
         if (Request.Method == "POST") {
             var deTarget = "${deIdentifier}";
             var deMethod = "${deMethod}";
-            var redirectUrl = "${meta.redirectUrl}";
+            var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
 
             ${fieldRetrievalScript}
-            ${npsComponent ? 'if (nps_date == "" || nps_date == null) { nps_date = Now(); }' : ''}
             
             if (deTarget) {
                 var de;
@@ -722,13 +676,12 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
                     var lookupValue = "";
 
                     // Populate rowData object dynamically
-                    ${formComponent ? Object.keys(formComponent.props.fields || {}).filter(f => formComponent.props.fields[f]).map(fieldName => `if(typeof ${fieldName} !== 'undefined') { var deColumnName = "${fieldName === 'birthdate' ? 'DATANASCIMENTO' : fieldName.toUpperCase()}"; rowData[deColumnName] = ${fieldName}; }`).join('\n                    ') : ''}
-                    ${npsComponent ? 'if(typeof nps_score !== "undefined") rowData["NPS_SCORE"] = nps_score;\n                    if(typeof nps_date !== "undefined") rowData["NPS_DATE"] = nps_date;' : ''}
+                    ${rowDataPopulation}
                     
                     // Handle Optin specifically
                     if (rowData["OPTIN"] == "on") {
                        rowData["OPTIN"] = "True";
-                    } else {
+                    } else if (rowData["OPTIN"] == "" || rowData["OPTIN"] == null) {
                        rowData["OPTIN"] = "False";
                     }
 
@@ -738,7 +691,7 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
                         lookupValue = rowData["EMAIL"];
                     }
                     
-                    if (lookupValue) {
+                    if (lookupColumn && lookupValue) {
                        var existingRows = de.Rows.Lookup([lookupColumn], [lookupValue]);
                        if (existingRows && existingRows.length > 0) {
                            de.Rows.Update(rowData, [lookupColumn], [lookupValue]);
@@ -746,6 +699,7 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
                            de.Rows.Add(rowData);
                        }
                     } else {
+                        // If no email to lookup, just add the row
                         de.Rows.Add(rowData);
                     }
 
@@ -824,6 +778,214 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
     return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
 }
 
+const getClientSideScripts = () => {
+    return `
+    <script>
+    function setupAccordions() {
+        document.querySelectorAll('.accordion-container').forEach(container => {
+            container.addEventListener('click', function(event) {
+                const header = event.target.closest('.accordion-header');
+                if (!header) return;
+                
+                const content = header.nextElementSibling;
+                const isExpanded = header.getAttribute('aria-expanded') === 'true';
+
+                header.setAttribute('aria-expanded', !isExpanded);
+                if (!isExpanded) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    content.style.padding = '15px';
+                } else {
+                    content.style.maxHeight = '0';
+                    content.style.padding = '0 15px';
+                }
+            });
+        });
+    }
+    
+    function setupTabs() {
+        document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+            const tabList = tabsContainer.querySelector('.tab-list');
+            const triggers = tabList.querySelectorAll('.tab-trigger');
+            const panels = tabsContainer.querySelectorAll('.tab-panel');
+
+            tabList.addEventListener('click', e => {
+                const trigger = e.target.closest('.tab-trigger');
+                if (trigger) {
+                    triggers.forEach(t => t.setAttribute('aria-selected', 'false'));
+                    trigger.setAttribute('aria-selected', 'true');
+                    const tabId = trigger.dataset.tab;
+                    panels.forEach(p => {
+                        if ('panel-' + tabId === p.id) {
+                            p.hidden = false;
+                        } else {
+                            p.hidden = true;
+                        }
+                    });
+                }
+            });
+        });
+    }
+    
+    function setSocialIconStyles() {
+        document.querySelectorAll('.social-icons-container').forEach(container => {
+            const iconSize = container.dataset.iconSize || '24px';
+            container.querySelectorAll('.social-icon svg').forEach(svg => {
+                svg.style.width = iconSize;
+                svg.style.height = iconSize;
+            });
+        });
+    }
+
+    function formatPhoneNumber(input) {
+        let numbers = input.value.replace(/\\D/g, '');
+        numbers = numbers.substring(0, 11);
+        let formatted = '';
+        if (numbers.length > 0) {
+            formatted = '(' + numbers.substring(0, 2);
+        }
+        if (numbers.length > 2) {
+            formatted += ') ' + numbers.substring(2, 3);
+        }
+        if (numbers.length > 3) {
+            formatted += ' ' + numbers.substring(3, 7);
+        }
+        if (numbers.length > 7) {
+            formatted += '-' + numbers.substring(7, 11);
+        }
+        input.value = formatted;
+        if (formatted.length > 0) {
+            input.classList.add('phone-formatted');
+        } else {
+            input.classList.remove('phone-formatted');
+        }
+    }
+    
+    function validateEmail(input) {
+        const email = input.value;
+        const emailWrapper = input.parentElement;
+        const existingIcon = emailWrapper.querySelector('.validation-icon');
+        if (existingIcon) {
+            emailWrapper.removeChild(existingIcon);
+        }
+        
+        if (email.includes('@') && email.length > 0) {
+            input.classList.remove('email-invalid');
+            input.classList.add('email-valid');
+            const validIcon = document.createElement('span');
+            validIcon.className = 'validation-icon';
+            validIcon.innerHTML = '✓';
+            validIcon.style.color = '#4CAF50';
+            emailWrapper.appendChild(validIcon);
+        } else if (email.length > 0) {
+            input.classList.remove('email-valid');
+            input.classList.add('email-invalid');
+            const invalidIcon = document.createElement('span');
+            invalidIcon.className = 'validation-icon';
+            invalidIcon.innerHTML = '✗';
+            invalidIcon.style.color = '#F44336';
+            emailWrapper.appendChild(invalidIcon);
+        } else {
+            input.classList.remove('email-valid');
+            input.classList.remove('email-invalid');
+        }
+    }
+    
+    function validateForm(form) {
+      let valid = true;
+      const requiredInputs = form.querySelectorAll('input[required], select[required]');
+
+      requiredInputs.forEach(input => {
+          const errorId = 'error-' + (input.name || input.id).toLowerCase();
+          const error = form.querySelector('#' + errorId);
+          let isInvalid = false;
+          
+          if(input.type === 'checkbox') {
+              isInvalid = !input.checked;
+          } else {
+              isInvalid = input.value.trim() === '';
+          }
+
+          if (isInvalid && error) {
+              error.style.display = 'block';
+              valid = false;
+          } else if (error) {
+              error.style.display = 'none';
+          }
+      });
+      return valid;
+    }
+
+    function setupSubmitButton() {
+        document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton && !submitButton.querySelector('.button-loader')) {
+                const buttonTextContent = submitButton.textContent;
+                submitButton.innerHTML = '';
+                
+                const buttonText = document.createElement('span');
+                buttonText.className = 'button-text';
+                buttonText.textContent = buttonTextContent;
+                
+                const buttonLoader = document.createElement('div');
+                buttonLoader.className = 'button-loader';
+
+                submitButton.appendChild(buttonText);
+                submitButton.appendChild(buttonLoader);
+            }
+            
+            form.addEventListener('submit', function(e) {
+                if (!validateForm(form)) {
+                    e.preventDefault();
+                } else {
+                   if (submitButton) {
+                     submitButton.disabled = true;
+                     submitButton.querySelector('.button-text').style.opacity = '0';
+                     submitButton.querySelector('.button-loader').style.display = 'block';
+                   }
+                }
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const loader = document.getElementById('loader');
+        if (loader) {
+            setTimeout(function () {
+                loader.style.display = 'none';
+            }, 2000);
+        }
+
+        if ("%%=v(@showThanks)=%%" == "true" && document.querySelector('.form-container')) {
+            var formId = document.querySelector('.form-container').id.replace('form-wrapper-', '');
+            var formWrapper = document.getElementById('form-wrapper-' + formId);
+            var thanksMessage = document.getElementById('thank-you-message-' + formId);
+            if(formWrapper) formWrapper.style.display = 'none';
+            if(thanksMessage) thanksMessage.style.display = 'block';
+        }
+        
+        const phoneInput = document.getElementById('TELEFONE');
+        if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
+        
+        const emailInput = document.getElementById('EMAIL');
+        if(emailInput) {
+            if (!emailInput.parentElement.classList.contains('input-wrapper')) {
+              const emailWrapper = document.createElement('div');
+              emailWrapper.className = 'input-wrapper';
+              emailInput.parentNode.insertBefore(emailWrapper, emailInput);
+              emailWrapper.appendChild(emailInput);
+            }
+            emailInput.addEventListener('input', function() { validateEmail(this); });
+            emailInput.addEventListener('blur', function() { validateEmail(this); });
+        }
+        
+        setupSubmitButton();
+        setupAccordions();
+        setupTabs();
+        setSocialIconStyles();
+    });
+</script>
+    `;
+}
 
 export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false): string => {
   const { styles, components, meta, cookieBanner } = pageState;
@@ -834,6 +996,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   
   // Only include the SSJS processing block if it's the final code, not for the preview.
   const ssjsBlock = isForPreview ? '' : getAmpscriptProcessingBlock(pageState);
+  const clientSideScripts = getClientSideScripts();
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
@@ -867,12 +1030,6 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-${isForPreview ? `
-<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
-` : ''
-}
 ${trackingScripts}
 <style>
     body {
@@ -1456,10 +1613,6 @@ ${trackingScripts}
         flex: 1;
         min-width: 0;
     }
-    .chart-container {
-        height: 300px;
-        width: 100%;
-    }
 
     /* Password Protection Styles */
     .password-protection-container {
@@ -1519,210 +1672,7 @@ ${trackingScripts}
     /* Custom CSS */
     ${styles.customCss || ''}
 </style>
-<script>
-    function setupAccordions() {
-        document.querySelectorAll('.accordion-container').forEach(container => {
-            container.addEventListener('click', function(event) {
-                const header = event.target.closest('.accordion-header');
-                if (!header) return;
-                
-                const content = header.nextElementSibling;
-                const isExpanded = header.getAttribute('aria-expanded') === 'true';
-
-                header.setAttribute('aria-expanded', !isExpanded);
-                if (!isExpanded) {
-                    content.style.maxHeight = content.scrollHeight + 'px';
-                    content.style.padding = '15px';
-                } else {
-                    content.style.maxHeight = '0';
-                    content.style.padding = '0 15px';
-                }
-            });
-        });
-    }
-    
-    function setupTabs() {
-        document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
-            const tabList = tabsContainer.querySelector('.tab-list');
-            const triggers = tabList.querySelectorAll('.tab-trigger');
-            const panels = tabsContainer.querySelectorAll('.tab-panel');
-
-            tabList.addEventListener('click', e => {
-                const trigger = e.target.closest('.tab-trigger');
-                if (trigger) {
-                    triggers.forEach(t => t.setAttribute('aria-selected', 'false'));
-                    trigger.setAttribute('aria-selected', 'true');
-                    const tabId = trigger.dataset.tab;
-                    panels.forEach(p => {
-                        if ('panel-' + tabId === p.id) {
-                            p.hidden = false;
-                        } else {
-                            p.hidden = true;
-                        }
-                    });
-                }
-            });
-        });
-    }
-    
-    function setSocialIconStyles() {
-        document.querySelectorAll('.social-icons-container').forEach(container => {
-            const iconSize = container.dataset.iconSize || '24px';
-            container.querySelectorAll('.social-icon svg').forEach(svg => {
-                svg.style.width = iconSize;
-                svg.style.height = iconSize;
-            });
-        });
-    }
-
-    function formatPhoneNumber(input) {
-        let numbers = input.value.replace(/\\D/g, '');
-        numbers = numbers.substring(0, 11);
-        let formatted = '';
-        if (numbers.length > 0) {
-            formatted = '(' + numbers.substring(0, 2);
-        }
-        if (numbers.length > 2) {
-            formatted += ') ' + numbers.substring(2, 3);
-        }
-        if (numbers.length > 3) {
-            formatted += ' ' + numbers.substring(3, 7);
-        }
-        if (numbers.length > 7) {
-            formatted += '-' + numbers.substring(7, 11);
-        }
-        input.value = formatted;
-        if (formatted.length > 0) {
-            input.classList.add('phone-formatted');
-        } else {
-            input.classList.remove('phone-formatted');
-        }
-    }
-    
-    function validateEmail(input) {
-        const email = input.value;
-        const emailWrapper = input.parentElement;
-        const existingIcon = emailWrapper.querySelector('.validation-icon');
-        if (existingIcon) {
-            emailWrapper.removeChild(existingIcon);
-        }
-        
-        if (email.includes('@') && email.length > 0) {
-            input.classList.remove('email-invalid');
-            input.classList.add('email-valid');
-            const validIcon = document.createElement('span');
-            validIcon.className = 'validation-icon';
-            validIcon.innerHTML = '✓';
-            validIcon.style.color = '#4CAF50';
-            emailWrapper.appendChild(validIcon);
-        } else if (email.length > 0) {
-            input.classList.remove('email-valid');
-            input.classList.add('email-invalid');
-            const invalidIcon = document.createElement('span');
-            invalidIcon.className = 'validation-icon';
-            invalidIcon.innerHTML = '✗';
-            invalidIcon.style.color = '#F44336';
-            emailWrapper.appendChild(invalidIcon);
-        } else {
-            input.classList.remove('email-valid');
-            input.classList.remove('email-invalid');
-        }
-    }
-    
-    function validateForm(form) {
-      let valid = true;
-      const requiredInputs = form.querySelectorAll('input[required], select[required]');
-
-      requiredInputs.forEach(input => {
-          const errorId = 'error-' + (input.name || input.id).toLowerCase();
-          const error = form.querySelector('#' + errorId);
-          let isInvalid = false;
-          
-          if(input.type === 'checkbox') {
-              isInvalid = !input.checked;
-          } else {
-              isInvalid = input.value.trim() === '';
-          }
-
-          if (isInvalid && error) {
-              error.style.display = 'block';
-              valid = false;
-          } else if (error) {
-              error.style.display = 'none';
-          }
-      });
-      return valid;
-    }
-
-    function setupSubmitButton() {
-        document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
-            const submitButton = form.querySelector('button[type="submit"]');
-            if (submitButton && !submitButton.querySelector('.button-loader')) {
-                const buttonTextContent = submitButton.textContent;
-                submitButton.innerHTML = '';
-                
-                const buttonText = document.createElement('span');
-                buttonText.className = 'button-text';
-                buttonText.textContent = buttonTextContent;
-                
-                const buttonLoader = document.createElement('div');
-                buttonLoader.className = 'button-loader';
-
-                submitButton.appendChild(buttonText);
-                submitButton.appendChild(buttonLoader);
-            }
-            
-            form.addEventListener('submit', function(e) {
-                if (!validateForm(form)) {
-                    e.preventDefault();
-                } else {
-                   if (submitButton) {
-                     submitButton.disabled = true;
-                     submitButton.querySelector('.button-text').style.opacity = '0';
-                     submitButton.querySelector('.button-loader').style.display = 'block';
-                   }
-                }
-            });
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const loader = document.getElementById('loader');
-        if (loader) {
-            setTimeout(function () {
-                loader.style.display = 'none';
-            }, 2000);
-        }
-
-        if ("%%=v(@showThanks)=%%" == "true" && document.querySelector('.form-container')) {
-            var formId = document.querySelector('.form-container').id.replace('form-wrapper-', '');
-            var formWrapper = document.getElementById('form-wrapper-' + formId);
-            var thanksMessage = document.getElementById('thank-you-message-' + formId);
-            if(formWrapper) formWrapper.style.display = 'none';
-            if(thanksMessage) thanksMessage.style.display = 'block';
-        }
-        
-        const phoneInput = document.getElementById('TELEFONE');
-        if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
-        
-        const emailInput = document.getElementById('EMAIL');
-        if(emailInput) {
-            if (!emailInput.parentElement.classList.contains('input-wrapper')) {
-              const emailWrapper = document.createElement('div');
-              emailWrapper.className = 'input-wrapper';
-              emailInput.parentNode.insertBefore(emailWrapper, emailInput);
-              emailWrapper.appendChild(emailInput);
-            }
-            emailInput.addEventListener('input', function() { validateEmail(this); });
-            emailInput.addEventListener('blur', function() { validateEmail(this); });
-        }
-        
-        setupSubmitButton();
-        setupAccordions();
-        setupTabs();
-        setSocialIconStyles();
-    });
-</script>
+${clientSideScripts}
 </head>
 <body>
   %%[ IF @isAuthenticated == true THEN ]%%
@@ -1746,4 +1696,6 @@ ${trackingScripts}
 </body>
 </html>
 `
+    
+
     

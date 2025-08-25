@@ -101,18 +101,10 @@ function SortableItem({ component, children }: { component: PageComponent; child
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 'auto',
   };
-  
-  // Clone the child and pass down the dnd props
-  const childWithDndProps = React.isValidElement(children)
-    ? React.cloneElement(children as React.ReactElement, {
-        dndAttributes: attributes,
-        dndListeners: listeners,
-      })
-    : children;
 
   return (
     <div ref={setNodeRef} style={style}>
-      {childWithDndProps}
+      {React.cloneElement(children as React.ReactElement, { dndAttributes: attributes, dndListeners: listeners })}
     </div>
   );
 }
@@ -142,42 +134,56 @@ function ComponentItem({
   removeComponent,
   dndAttributes,
   dndListeners,
+  children,
 }: {
   component: PageComponent;
   selectedComponentId: string | null;
   setSelectedComponentId: (id: string) => void;
   removeComponent: (id: string) => void;
-  dndAttributes?: any; // These are passed from SortableItem
-  dndListeners?: any; // These are passed from SortableItem
+  dndAttributes?: any;
+  dndListeners?: any;
+  children?: React.ReactNode;
 }) {
   const Icon = componentIcons[component.type] || Text;
-  return (
-    <div className="flex items-center gap-1 group bg-card p-1 rounded-md border">
-      <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8">
-        <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
-      </Button>
-      <Button
-        variant={selectedComponentId === component.id ? "secondary" : "ghost"}
-        className="flex-grow justify-start"
-        onClick={() => setSelectedComponentId(component.id)}
-      >
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4" />
-          <span>{component.type}</span>
-          {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
-        </div>
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 text-destructive/80 hover:text-destructive opacity-0 group-hover:opacity-100"
-        onClick={() => removeComponent(component.id)}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
+  const isContainer = component.type === 'Columns';
+
+  const content = (
+      <div className={cn("flex items-center gap-1 group bg-card p-1 rounded-md border", isContainer && "flex-col")}>
+          <div className="flex items-center w-full">
+            <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8">
+                <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
+            </Button>
+            <Button
+                variant={selectedComponentId === component.id ? "secondary" : "ghost"}
+                className="flex-grow justify-start"
+                onClick={() => setSelectedComponentId(component.id)}
+            >
+                <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4" />
+                <span>{component.type}</span>
+                {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
+                </div>
+            </Button>
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive/80 hover:text-destructive opacity-0 group-hover:opacity-100"
+                onClick={() => removeComponent(component.id)}
+            >
+                <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+          {isContainer && children && (
+            <div className="w-full pl-2 pr-1 pb-1">
+                {children}
+            </div>
+          )}
+      </div>
   );
+
+  return isContainer ? <div className="bg-background/50 p-2 rounded-lg border">{content}</div> : content;
 }
+
 
 
 export function SettingsPanel({
@@ -400,9 +406,16 @@ export function SettingsPanel({
                 };
                 break;
             case 'Chart':
+                const sampleData = [
+                    { name: 'Jan', value: 400 },
+                    { name: 'Fev', value: 300 },
+                    { name: 'Mar', value: 600 },
+                    { name: 'Abr', value: 800 },
+                    { name: 'Mai', value: 500 },
+                ];
                 newComponent.props = {
                   type: 'bar',
-                  data: `%%=v(@chartData)=%%`,
+                  data: JSON.stringify(sampleData, null, 2),
                   nameKey: 'name',
                   dataKeys: ['value'],
                   colors: ['#8884d8'],
@@ -546,22 +559,20 @@ export function SettingsPanel({
         const columnCount = component.props.columnCount || 2;
         return (
           <SortableItem key={component.id} component={component}>
-            <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
-                <ComponentItem
-                  component={component}
-                  selectedComponentId={selectedComponentId}
-                  setSelectedComponentId={setSelectedComponentId}
-                  removeComponent={removeComponent}
-                  // dnd props are passed down from SortableItem to this ComponentItem
-                />
-                <div className={`grid grid-cols-${columnCount} gap-2`}>
+            <ComponentItem
+              component={component}
+              selectedComponentId={selectedComponentId}
+              setSelectedComponentId={setSelectedComponentId}
+              removeComponent={removeComponent}
+            >
+              <div className={cn("grid gap-2", `grid-cols-${columnCount}`)} style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
                   {Array.from({ length: columnCount }, (_, i) => (
                     <ColumnDropzone key={i} id={`${component.id}-${i}`}>
                       {renderColumnContent(component.id, i)}
                     </ColumnDropzone>
                   ))}
-                </div>
               </div>
+            </ComponentItem>
           </SortableItem>
         );
       }

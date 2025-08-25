@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Garante que apenas usuários autenticados possam acessar qualquer coisa
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Projetos: Usuários podem ler, escrever e apagar apenas seus próprios projetos.
+    // A regra verifica se o 'userId' do projeto é o mesmo do usuário autenticado.
+    match /projects/{projectId} {
+      allow read, write: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Páginas: Mesma lógica dos projetos. O acesso é restrito ao dono da página.
+    match /pages/{pageId} {
+      allow read, write: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Templates: A lógica é similar, mas usamos o campo 'createdBy' para verificar a posse.
+    // Usuários podem ler, escrever e apagar apenas os templates que eles criaram.
+    match /templates/{templateId} {
+      allow read, write: if isSignedIn() && request.auth.uid == resource.data.createdBy;
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+    }
+  }
+}

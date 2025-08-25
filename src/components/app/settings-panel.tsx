@@ -102,12 +102,17 @@ function SortableItem({ component, children }: { component: PageComponent; child
     zIndex: isDragging ? 10 : 'auto',
   };
   
+  // Clone the child and pass down the dnd props
+  const childWithDndProps = React.isValidElement(children)
+    ? React.cloneElement(children as React.ReactElement, {
+        dndAttributes: attributes,
+        dndListeners: listeners,
+      })
+    : children;
+
   return (
     <div ref={setNodeRef} style={style}>
-      {React.isValidElement(children) ? React.cloneElement(children, {
-          dndAttributes: attributes,
-          dndListeners: listeners,
-        }) : children}
+      {childWithDndProps}
     </div>
   );
 }
@@ -541,15 +546,13 @@ export function SettingsPanel({
         const columnCount = component.props.columnCount || 2;
         return (
           <SortableItem key={component.id} component={component}>
-            {(dndProps: any) => (
-              <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
+            <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
                 <ComponentItem
                   component={component}
                   selectedComponentId={selectedComponentId}
                   setSelectedComponentId={setSelectedComponentId}
                   removeComponent={removeComponent}
-                  dndAttributes={dndProps.dndAttributes}
-                  dndListeners={dndProps.dndListeners}
+                  // dnd props are passed down from SortableItem to this ComponentItem
                 />
                 <div className={`grid grid-cols-${columnCount} gap-2`}>
                   {Array.from({ length: columnCount }, (_, i) => (
@@ -559,22 +562,17 @@ export function SettingsPanel({
                   ))}
                 </div>
               </div>
-            )}
           </SortableItem>
         );
       }
       return (
         <SortableItem key={component.id} component={component}>
-          {(dndProps: any) => (
-            <ComponentItem
-              component={component}
-              selectedComponentId={selectedComponentId}
-              setSelectedComponentId={setSelectedComponentId}
-              removeComponent={removeComponent}
-              dndAttributes={dndProps.dndAttributes}
-              dndListeners={dndProps.dndListeners}
-            />
-          )}
+          <ComponentItem
+            component={component}
+            selectedComponentId={selectedComponentId}
+            setSelectedComponentId={setSelectedComponentId}
+            removeComponent={removeComponent}
+          />
         </SortableItem>
       );
     });
@@ -589,16 +587,12 @@ export function SettingsPanel({
         <SortableContext items={columnComponents.map(c => c.id)} strategy={verticalListSortingStrategy}>
             {columnComponents.map(component => (
                  <SortableItem key={component.id} component={component}>
-                   {(dndProps: any) => (
-                      <ComponentItem
-                          component={component}
-                          selectedComponentId={selectedComponentId}
-                          setSelectedComponentId={setSelectedComponentId}
-                          removeComponent={removeComponent}
-                          dndAttributes={dndProps.dndAttributes}
-                          dndListeners={dndProps.dndListeners}
-                      />
-                   )}
+                   <ComponentItem
+                      component={component}
+                      selectedComponentId={selectedComponentId}
+                      setSelectedComponentId={setSelectedComponentId}
+                      removeComponent={removeComponent}
+                    />
                 </SortableItem>
             ))}
         </SortableContext>

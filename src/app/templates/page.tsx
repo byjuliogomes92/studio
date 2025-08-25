@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Template } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid } from "lucide-react";
+import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,10 +35,55 @@ import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { CreatePageFromTemplateDialog } from "@/components/app/create-page-from-template-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { generateHtml } from "@/lib/html-generator";
 
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
+
+function TemplatePreviewDialog({ template }: { template: Template }) {
+  const previewHtml = useMemo(() => {
+    // Create a mock CloudPage object from the template to use with generateHtml
+    const mockPage = {
+      id: template.id || 'preview',
+      name: template.name,
+      brand: template.brand,
+      components: template.components,
+      styles: template.styles,
+      meta: {
+        ...template.meta,
+        title: template.name,
+        redirectUrl: '',
+        dataExtensionKey: 'PREVIEW',
+      },
+      // Add other required CloudPage fields with default values
+      projectId: 'preview',
+      userId: 'preview',
+      tags: [],
+      cookieBanner: template.cookieBanner,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    return generateHtml(mockPage, true);
+  }, [template]);
+
+  return (
+    <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+      <DialogHeader>
+        <DialogTitle>Preview: {template.name}</DialogTitle>
+        <DialogDescription>{template.description || 'Visualização do template.'}</DialogDescription>
+      </DialogHeader>
+      <div className="flex-grow rounded-lg border bg-muted/40 overflow-hidden">
+        <iframe
+          srcDoc={previewHtml}
+          title={`Preview of ${template.name}`}
+          className="w-full h-full border-0"
+        />
+      </div>
+    </DialogContent>
+  );
+}
 
 export default function TemplatesPage() {
   const router = useRouter();
@@ -214,6 +259,39 @@ export default function TemplatesPage() {
         </DropdownMenuContent>
     </DropdownMenu>
   );
+  
+  const renderTemplateCard = (template: Template) => (
+     <Dialog key={template.id}>
+        <div
+            className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+        >
+          <DialogTrigger asChild>
+            <div className="cursor-pointer">
+              <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
+                  <Server className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold text-lg">{template.name}</h3>
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{template.description || 'Sem descrição'}</p>
+            </div>
+          </DialogTrigger>
+          <div className="flex justify-between items-end mt-4 pt-4 border-t">
+              <div>
+                   {template.isDefault ? (
+                      <Badge variant="secondary">Padrão</Badge>
+                   ) : (
+                      <Badge variant={template.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
+                          {template.brand}
+                      </Badge>
+                   )}
+              </div>
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  {templateActions(template)}
+              </div>
+          </div>
+        </div>
+        <TemplatePreviewDialog template={template} />
+     </Dialog>
+  )
 
   return (
     <div className="min-h-screen">
@@ -288,34 +366,7 @@ export default function TemplatesPage() {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredAndSortedTemplates.map((template) => (
-              <div
-                key={template.id}
-                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div>
-                    <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
-                        <Server className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                    <h3 className="font-semibold text-lg">{template.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{template.description || 'Sem descrição'}</p>
-                </div>
-                <div className="flex justify-between items-end mt-4 pt-4 border-t">
-                    <div>
-                         {template.isDefault ? (
-                            <Badge variant="secondary">Padrão</Badge>
-                         ) : (
-                            <Badge variant={template.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
-                                {template.brand}
-                            </Badge>
-                         )}
-                    </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        {templateActions(template)}
-                    </div>
-                </div>
-              </div>
-            ))}
+            {filteredAndSortedTemplates.map(renderTemplateCard)}
           </div>
         ) : (
           <div className="border rounded-lg">
@@ -330,20 +381,31 @@ export default function TemplatesPage() {
               </TableHeader>
               <TableBody>
                 {filteredAndSortedTemplates.map((template) => (
-                  <TableRow key={template.id}>
-                    <TableCell className="font-medium">{template.name}</TableCell>
-                    <TableCell>
-                        {template.isDefault ? (
-                            <Badge variant="secondary">Padrão</Badge>
-                         ) : (
-                            <Badge variant={template.brand === 'Natura' ? 'default' : 'destructive'} className="capitalize">{template.brand}</Badge>
-                         )}
-                    </TableCell>
-                    <TableCell>{template.updatedAt?.toDate ? format(template.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                       {templateActions(template)}
-                    </TableCell>
-                  </TableRow>
+                  <Dialog key={template.id}>
+                    <TableRow>
+                      <TableCell className="font-medium">{template.name}</TableCell>
+                      <TableCell>
+                          {template.isDefault ? (
+                              <Badge variant="secondary">Padrão</Badge>
+                           ) : (
+                              <Badge variant={template.brand === 'Natura' ? 'default' : 'destructive'} className="capitalize">{template.brand}</Badge>
+                           )}
+                      </TableCell>
+                      <TableCell>{template.updatedAt?.toDate ? format(template.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
+                      <TableCell className="text-right">
+                         <div className="flex items-center justify-end gap-2">
+                            <DialogTrigger asChild>
+                               <Button variant="outline" size="sm">
+                                  <Eye className="mr-2 h-4 w-4"/>
+                                  Visualizar
+                               </Button>
+                            </DialogTrigger>
+                            {templateActions(template)}
+                         </div>
+                      </TableCell>
+                    </TableRow>
+                     <TemplatePreviewDialog template={template} />
+                  </Dialog>
                 ))}
               </TableBody>
             </Table>
@@ -353,3 +415,4 @@ export default function TemplatesPage() {
     </div>
   );
 }
+

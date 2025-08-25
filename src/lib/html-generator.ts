@@ -350,13 +350,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             optionsHtml = faces.map((face, i) => `<button class="nps-option nps-face" data-score="${i}">${face}</button>`).join('');
         }
         
-        const npsScript = isForPreview ? '' : `
-            <script defer src="https://storage.googleapis.com/cloud-page-forge-scripts/nps-handler.js" 
-                    data-nps-id="${npsId}"
-                    data-de-key="${pageState.meta.dataExtensionKey || ''}">
-            </script>
-        `;
-
         return `
             <div id="${npsId}" class="nps-container" style="${styleString}">
                 <div class="nps-content">
@@ -371,7 +364,46 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                     <p>${thankYouMessage}</p>
                 </div>
             </div>
-           ${npsScript}
+            <script>
+                (function() {
+                    const npsContainer = document.getElementById('${npsId}');
+                    if (!npsContainer) return;
+                    
+                    const mainForm = document.querySelector('form[id^="smartcapture-form-"]');
+                    let npsScoreInput;
+
+                    if (mainForm) {
+                        npsScoreInput = mainForm.querySelector('input[name="NPS_SCORE"]');
+                        if (!npsScoreInput) {
+                            npsScoreInput = document.createElement('input');
+                            npsScoreInput.type = 'hidden';
+                            npsScoreInput.name = 'NPS_SCORE';
+                            mainForm.appendChild(npsScoreInput);
+                        }
+                    }
+
+                    const options = npsContainer.querySelectorAll('.nps-option');
+                    options.forEach(option => {
+                        option.addEventListener('click', function() {
+                            const score = this.dataset.score;
+                            
+                            if (npsScoreInput) {
+                                npsScoreInput.value = score;
+                            }
+
+                            // Visual feedback
+                            options.forEach(opt => opt.classList.remove('selected'));
+                            this.classList.add('selected');
+                            
+                            // Show thanks message
+                            const content = npsContainer.querySelector('.nps-content');
+                            const thanks = npsContainer.querySelector('.nps-thanks');
+                            if (content) content.style.display = 'none';
+                            if (thanks) thanks.style.display = 'block';
+                        });
+                    });
+                })();
+            </script>
         `;
     }
     case 'Map': {
@@ -437,7 +469,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                   ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email') : ''}
                  </div>
                  <div class="row">
-                  ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone') : ''}
+                  ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999') : ''}
                   ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF') : ''}
                  </div>
                  <div class="row">
@@ -630,34 +662,6 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
 
     if (!formComponent && !npsComponent) return '';
 
-    const deIdentifier = meta.dataExtensionKey || '';
-    const deMethod = meta.dataExtensionTargetMethod || 'key';
-    
-    let fieldRetrievalScript = '';
-    let rowDataPopulation = '';
-
-    if (formComponent) {
-      const formFields = Object.keys(formComponent.props.fields || {}).filter(f => formComponent.props.fields[f]);
-      formFields.forEach(fieldName => {
-        const deColumnName = fieldName === 'birthdate' ? 'DATANASCIMENTO' : fieldName.toUpperCase();
-        fieldRetrievalScript += `var ${fieldName} = Request.GetFormField("${deColumnName}");\n            `;
-        rowDataPopulation += `if(typeof ${fieldName} !== 'undefined' && ${fieldName} !== null) rowData["${deColumnName}"] = ${fieldName};\n                        `;
-      });
-    }
-    
-    let npsHandlingScript = '';
-    if (npsComponent) {
-        fieldRetrievalScript += `var nps_score = Request.GetFormField("NPS_SCORE");\n            `;
-        rowDataPopulation += 'if(typeof nps_score !== "undefined" && nps_score !== null) rowData["NPS_SCORE"] = nps_score;\n                    ';
-        
-        npsHandlingScript = `
-            var nps_date = Now();
-            if (typeof nps_date !== 'undefined' && nps_date !== null) {
-                rowData["NPS_DATE"] = nps_date;
-            }
-        `;
-    }
-
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
@@ -665,51 +669,50 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
 
     try {
         if (Request.Method == "POST") {
-            var deTarget = "${deIdentifier}";
-            var deMethod = "${deMethod}";
+            var deIdentifier = Request.GetFormField("__de");
+            var deMethod = Request.GetFormField("__de_method");
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
 
-            ${fieldRetrievalScript}
+            var de;
+            if (deMethod == "name") {
+                var deList = DataExtension.Retrieve({Property:"Name",SimpleOperator:"equals",Value:deIdentifier});
+                if (deList && deList.length > 0) {
+                    de = DataExtension.Init(deList[0].CustomerKey);
+                }
+            } else {
+                de = DataExtension.Init(deIdentifier);
+            }
             
-            if (deTarget) {
-                var de;
-                if (deMethod == "name") {
-                    var deList = DataExtension.Retrieve({Property:"Name",SimpleOperator:"equals",Value:deTarget});
-                    if (deList && deList.length > 0) {
-                        de = DataExtension.Init(deList[0].CustomerKey);
+            if (de) {
+                var rowData = {};
+                var formFields = Request.GetFormFields();
+                for (var key in formFields) {
+                    if (key.indexOf("__") != 0) { // Omit private fields
+                        var value = formFields[key];
+                        if (key.toUpperCase() == "OPTIN" && value == "on") {
+                           value = "True";
+                        }
+                        rowData[key] = value;
                     }
+                }
+
+                // Add NPS date if NPS component is present
+                ${npsComponent ? 'if (rowData["NPS_SCORE"]) { rowData["NPS_DATE"] = Now(1); }' : ''}
+                
+                var lookupValue = rowData["EMAIL"] || null;
+                if (lookupValue) {
+                   var existingRows = de.Rows.Lookup(["EMAIL"], [lookupValue]);
+                   if (existingRows && existingRows.length > 0) {
+                       de.Rows.Update(rowData, ["EMAIL"], [lookupValue]);
+                   } else {
+                       de.Rows.Add(rowData);
+                   }
                 } else {
-                    de = DataExtension.Init(deTarget);
+                    de.Rows.Add(rowData);
                 }
 
-                if (de) {
-                    var rowData = {};
-                    
-                    ${rowDataPopulation}
-                    ${npsHandlingScript}
-                    
-                    if (rowData["OPTIN"] == "on") {
-                       rowData["OPTIN"] = "True";
-                    } else if (rowData["OPTIN"] == "" || rowData["OPTIN"] == null) {
-                       rowData["OPTIN"] = "False";
-                    }
-
-                    var lookupValue = rowData["EMAIL"] || null;
-
-                    if (lookupValue) {
-                       var existingRows = de.Rows.Lookup(["EMAIL"], [lookupValue]);
-                       if (existingRows && existingRows.length > 0) {
-                           de.Rows.Update(rowData, ["EMAIL"], [lookupValue]);
-                       } else {
-                           de.Rows.Add(rowData);
-                       }
-                    } else {
-                        de.Rows.Add(rowData);
-                    }
-
-                    showThanks = true;
-                }
+                showThanks = true;
             }
 
             if (showThanks && redirectUrl && !debug) {
@@ -1546,18 +1549,22 @@ ${trackingScripts}
         background-color: #f9f9f9;
         cursor: pointer;
         transition: all 0.2s ease;
+        color: #333;
     }
     .nps-option:hover {
-        background-color: ${styles.themeColor};
-        color: white;
-        border-color: ${styles.themeColor};
-    }
-    .nps-option.selected {
-        background-color: ${styles.themeColor};
-        color: white;
-        font-weight: bold;
         transform: scale(1.1);
     }
+    .nps-option.selected {
+        font-weight: bold;
+        transform: scale(1.15);
+        border-width: 2px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .nps-option[data-score="0"], .nps-option[data-score="1"], .nps-option[data-score="2"], .nps-option[data-score="3"], .nps-option[data-score="4"], .nps-option[data-score="5"], .nps-option[data-score="6"] { --nps-color: #d9534f; }
+    .nps-option[data-score="7"], .nps-option[data-score="8"] { --nps-color: #f0ad4e; }
+    .nps-option[data-score="9"], .nps-option[data-score="10"] { --nps-color: #5cb85c; }
+    .nps-option:hover { background-color: var(--nps-color); color: white; border-color: var(--nps-color); }
+    .nps-option.selected { background-color: var(--nps-color); color: white; border-color: var(--nps-color); }
     .nps-numeric {
         width: 40px;
         height: 40px;
@@ -1703,3 +1710,4 @@ ${clientSideScripts}
     
 
     
+

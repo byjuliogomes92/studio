@@ -305,14 +305,14 @@ export function PageList({ projectId }: PageListProps) {
   }, [projectId, user, authLoading, toast, router]);
 
   useEffect(() => {
-    if (isCreateModalOpen) {
+    if (isCreateModalOpen && user) {
       const fetchTemplates = async () => {
-        const fetchedTemplates = await getTemplates();
+        const fetchedTemplates = await getTemplates(user.uid);
         setTemplates(fetchedTemplates);
       };
       fetchTemplates();
     }
-  }, [isCreateModalOpen])
+  }, [isCreateModalOpen, user])
 
   const handleNextStep = () => {
     if (newPageName.trim() === '') {

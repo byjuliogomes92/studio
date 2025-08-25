@@ -187,9 +187,9 @@ const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'up
 };
 
 
-const getTemplates = async (): Promise<Template[]> => {
+const getTemplates = async (userId: string): Promise<Template[]> => {
     const db = getDbInstance();
-    const templatesQuery = query(collection(db, "templates"), orderBy("name", "asc"));
+    const templatesQuery = query(collection(db, "templates"), where("createdBy", "==", userId), orderBy("name", "asc"));
     const querySnapshot = await getDocs(templatesQuery);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Template));
 };

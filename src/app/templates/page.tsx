@@ -66,7 +66,7 @@ export default function TemplatesPage() {
       if (!user) return;
       setIsLoading(true);
       try {
-        const fetchedTemplates = await getTemplates();
+        const fetchedTemplates = await getTemplates(user.uid);
         setTemplates(fetchedTemplates);
       } catch (err) {
         console.error(err);

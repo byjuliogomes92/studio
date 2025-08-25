@@ -1,5 +1,21 @@
 
 import type { CloudPage, PageComponent, ComponentType } from './types';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage): string {
     return components
@@ -410,6 +426,23 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
     case 'Columns':
         // This case is handled by the recursive renderComponents function
         return '';
+    case 'Chart': {
+        const { type, data, nameKey, dataKeys, colors } = component.props;
+        // The data is a string that can contain AMPScript. It will be parsed on the client.
+        const dataString = typeof data === 'string' ? data : JSON.stringify(data || []);
+        return `
+            <div id="chart-${component.id}" class="chart-container" 
+                data-chart-type="${type}" 
+                data-name-key="${nameKey}" 
+                data-data-keys='${JSON.stringify(dataKeys)}' 
+                data-colors='${JSON.stringify(colors)}'
+                style="${styleString}"
+            >
+                <div class="chart-data-source" style="display:none;">${dataString}</div>
+                <div class="chart-render-target"></div>
+            </div>
+        `;
+    }
     case 'Form': {
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
       const { meta } = pageState;
@@ -819,6 +852,9 @@ ${formScript}
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 ${trackingScripts}
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/recharts@2/umd/Recharts.min.js"></script>
 <style>
     body {
         background-color: ${styles.backgroundColor};
@@ -1402,6 +1438,13 @@ ${trackingScripts}
         min-width: 0;
     }
 
+    /* Chart Styles */
+    .chart-container {
+        width: 100%;
+        height: 400px;
+        margin: 20px 0;
+    }
+
     /* Password Protection Styles */
     .password-protection-container {
         display: flex;
@@ -1634,6 +1677,68 @@ ${trackingScripts}
         });
     }
 
+    function renderCharts() {
+        const { BarChart, LineChart, PieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+        const e = React.createElement;
+
+        document.querySelectorAll('.chart-container').forEach(container => {
+            const renderTarget = container.querySelector('.chart-render-target');
+            if (!renderTarget) return;
+
+            try {
+                const type = container.dataset.chartType;
+                const nameKey = container.dataset.nameKey;
+                const dataKeys = JSON.parse(container.dataset.dataKeys);
+                const colors = JSON.parse(container.dataset.colors);
+                
+                // The data source can contain AMPScript, so its content is the resolved JSON string.
+                const dataString = container.querySelector('.chart-data-source').textContent;
+                const data = JSON.parse(dataString || '[]');
+
+                let chartElement;
+
+                if (type === 'bar') {
+                    const bars = dataKeys.map((key, index) => e(Bar, { key, dataKey: key, fill: colors[index] }));
+                    chartElement = e(BarChart, { width: 500, height: 300, data: data },
+                        e(CartesianGrid, { strokeDasharray: "3 3" }),
+                        e(XAxis, { dataKey: nameKey }),
+                        e(YAxis),
+                        e(Tooltip),
+                        e(Legend),
+                        ...bars
+                    );
+                } else if (type === 'line') {
+                    const lines = dataKeys.map((key, index) => e(Line, { key, type: "monotone", dataKey: key, stroke: colors[index] }));
+                    chartElement = e(LineChart, { width: 500, height: 300, data: data },
+                        e(CartesianGrid, { strokeDasharray: "3 3" }),
+                        e(XAxis, { dataKey: nameKey }),
+                        e(YAxis),
+                        e(Tooltip),
+                        e(Legend),
+                        ...lines
+                    );
+                } else if (type === 'pie') {
+                    chartElement = e(PieChart, { width: 400, height: 400 },
+                        e(Pie, { data: data, dataKey: dataKeys[0], nameKey: nameKey, cx: "50%", cy: "50%", outerRadius: 150, fill: "#8884d8", label: true },
+                           data.map((entry, index) => e(Cell, { key: `cell-${index}`, fill: colors[index % colors.length] }))
+                        ),
+                        e(Tooltip),
+                        e(Legend)
+                    );
+                }
+                
+                if(chartElement) {
+                     const chart = e(ResponsiveContainer, { width: '100%', height: '100%' }, chartElement);
+                     ReactDOM.render(chart, renderTarget);
+                }
+
+            } catch (error) {
+                renderTarget.innerHTML = '<p style="color: red;">Erro ao renderizar o gráfico. Verifique os dados JSON.</p><pre>' + error.message + '</pre>';
+                console.error("Chart Error:", error);
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
         if (loader) {
@@ -1669,6 +1774,9 @@ ${trackingScripts}
         setupAccordions();
         setupTabs();
         setSocialIconStyles();
+        if (typeof Recharts !== 'undefined' && typeof ReactDOM !== 'undefined') {
+            renderCharts();
+        }
     });
 </script>
 </head>
@@ -1693,4 +1801,4 @@ ${trackingScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;

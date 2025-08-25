@@ -32,6 +32,7 @@ import {
   Share2,
   type LucideIcon,
   Columns,
+  BarChart,
 } from "lucide-react";
 import type { ComponentType } from "@/lib/types";
 import { useState } from "react";
@@ -79,6 +80,7 @@ const componentList: {
       { name: "Tabs", icon: PanelTop },
       { name: "Voting", icon: Vote },
       { name: "NPS", icon: Smile },
+      { name: "Chart", icon: BarChart },
     ],
   },
 ];

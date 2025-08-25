@@ -1,5 +1,4 @@
 
-
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -21,7 +20,8 @@ export type ComponentType =
   | 'NPS'
   | 'Map'
   | 'SocialIcons'
-  | 'Columns';
+  | 'Columns'
+  | 'Chart';
   
 export type Brand = 'Natura' | 'Avon';
 

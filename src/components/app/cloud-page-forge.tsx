@@ -4,17 +4,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CloudPage, PageComponent } from "@/lib/types";
+import type { CloudPage, PageComponent, Template } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updatePage, getPage } from "@/lib/firestore";
+import { updatePage, getPage, addTemplate } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { produce } from "immer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface CloudPageForgeProps {
   pageId: string;
@@ -72,6 +76,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [pageName, setPageName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [isSaveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState) || pageName !== savedPageState?.name;
 
@@ -270,6 +279,39 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         setIsSaving(false);
     }
   };
+
+  const handleSaveAsTemplate = async () => {
+    if (!pageState || !user) return;
+    if (!templateName.trim()) {
+        toast({ variant: "destructive", title: "Erro", description: "O nome do template é obrigatório." });
+        return;
+    }
+    setIsSavingTemplate(true);
+
+    try {
+        const { id, projectId, userId, createdAt, updatedAt, meta, ...restOfPage } = pageState;
+        const { dataExtensionKey, redirectUrl, tracking, security, ...restOfMeta } = meta;
+
+        const templateData: Omit<Template, 'id' | 'createdAt' | 'updatedAt'> = {
+            ...restOfPage,
+            name: templateName,
+            description: templateDescription,
+            createdBy: user.uid,
+            meta: restOfMeta,
+        };
+
+        await addTemplate(templateData);
+        toast({ title: "Template salvo!", description: `O template "${templateName}" foi criado com sucesso.` });
+        setSaveTemplateModalOpen(false);
+        setTemplateName("");
+        setTemplateDescription("");
+    } catch (error) {
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar o template." });
+        console.error("Save template error:", error);
+    } finally {
+        setIsSavingTemplate(false);
+    }
+  };
   
   const handleDataExtensionKeyChange = (newKey: string) => {
     setPageState((prev) => {
@@ -341,6 +383,39 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
               <RotateCcw className="mr-2 h-4 w-4" />
               Desfazer
             </Button>
+            <Dialog open={isSaveTemplateModalOpen} onOpenChange={setSaveTemplateModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <CopyPlus className="mr-2 h-4 w-4" />
+                  Salvar como Template
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Salvar como Template</DialogTitle>
+                  <DialogDescription>
+                    Salve a estrutura e o conteúdo desta página como um template reutilizável.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="template-name">Nome do Template</Label>
+                    <Input id="template-name" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="template-description">Descrição</Label>
+                    <Textarea id="template-description" value={templateDescription} onChange={(e) => setTemplateDescription(e.target.value)} />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSaveTemplateModalOpen(false)}>Cancelar</Button>
+                  <Button onClick={handleSaveAsTemplate} disabled={isSavingTemplate}>
+                    {isSavingTemplate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Salvar Template
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges}>
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 {isSaving ? 'Salvando...' : 'Salvar Página'}

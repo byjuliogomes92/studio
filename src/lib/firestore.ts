@@ -1,7 +1,8 @@
 
+
 import { getDb } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore } from "firebase/firestore";
-import type { Project, CloudPage } from "./types";
+import type { Project, CloudPage, Template } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -171,6 +172,41 @@ const movePageToProject = async (pageId: string, newProjectId: string): Promise<
     });
 };
 
+
+// Templates
+
+const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+    const db = getDbInstance();
+    const templateWithTimestamps = {
+        ...templateData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    };
+    const templateRef = await addDoc(collection(db, "templates"), templateWithTimestamps);
+    return templateRef.id;
+};
+
+
+const getTemplates = async (): Promise<Template[]> => {
+    const db = getDbInstance();
+    const templatesQuery = query(collection(db, "templates"), orderBy("name", "asc"));
+    const querySnapshot = await getDocs(templatesQuery);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Template));
+};
+
+const getTemplate = async (templateId: string): Promise<Template | null> => {
+    const db = getDbInstance();
+    const docRef = doc(db, "templates", templateId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Template : null;
+};
+
+const deleteTemplate = async (templateId: string): Promise<void> => {
+    const db = getDbInstance();
+    await deleteDoc(doc(db, "templates", templateId));
+};
+
+
 export {
     addProject,
     updateProject,
@@ -184,5 +220,9 @@ export {
     getProjectWithPages,
     deletePage,
     duplicatePage,
-    movePageToProject
+    movePageToProject,
+    addTemplate,
+    getTemplates,
+    getTemplate,
+    deleteTemplate,
 };

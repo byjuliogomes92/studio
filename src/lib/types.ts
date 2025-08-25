@@ -1,4 +1,5 @@
 
+
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -92,4 +93,20 @@ export interface Project {
     name: string;
     userId: string;
     createdAt: any;
+}
+
+// A Template is essentially a CloudPage, but without project/user specific data.
+// It can be used to create new CloudPages.
+export interface Template {
+  id: string;
+  name: string;
+  brand: Brand;
+  description?: string;
+  styles: CloudPage['styles'];
+  components: CloudPage['components'];
+  meta: Omit<CloudPage['meta'], 'dataExtensionKey' | 'redirectUrl' | 'tracking' | 'security'>;
+  cookieBanner?: CloudPage['cookieBanner'];
+  createdBy: string; // UserID of the creator
+  createdAt: any;
+  updatedAt: any;
 }

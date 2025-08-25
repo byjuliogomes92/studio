@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -240,9 +240,15 @@ export function ProjectDashboard() {
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
-        <div className="flex items-center gap-2 font-semibold text-lg">
-          <Logo className="h-6 w-6 text-primary" />
-          <h1>Meus Projetos</h1>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 font-semibold text-lg">
+            <Logo className="h-6 w-6 text-primary" />
+            <h1>Meus Projetos</h1>
+          </div>
+          <Button variant="ghost" onClick={() => router.push('/templates')}>
+            <Library className="mr-2 h-4 w-4" />
+            Templates
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={() => setIsCreateModalOpen(true)}>
@@ -262,7 +268,7 @@ export function ProjectDashboard() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Notificações</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Nova funcionalidade: Duplique páginas!</DropdownMenuItem>
+              <DropdownMenuItem>Nova funcionalidade: Templates!</DropdownMenuItem>
               <DropdownMenuItem>Melhoria no alinhamento de formulários.</DropdownMenuItem>
               <DropdownMenuItem>Bem-vindo ao CloudPage Studio!</DropdownMenuItem>
             </DropdownMenuContent>

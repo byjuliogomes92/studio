@@ -3,10 +3,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Brand, Project, CloudPage } from "@/lib/types";
+import type { Brand, Project, CloudPage, Template } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -56,11 +56,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
-import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject } from "@/lib/firestore";
+import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject, getTemplates, getTemplate } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format } from 'date-fns';
+import { ScrollArea } from "../ui/scroll-area";
 
 interface PageListProps {
   projectId: string;
@@ -266,6 +267,9 @@ export function PageList({ projectId }: PageListProps) {
 
   // Create Page Dialog State
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [createStep, setCreateStep] = useState(1);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newPageName, setNewPageName] = useState("");
   const [selectedBrand, setSelectedBrand] = useState<Brand>("Natura");
@@ -300,25 +304,76 @@ export function PageList({ projectId }: PageListProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, user, authLoading, toast, router]);
 
+  useEffect(() => {
+    if (isCreateModalOpen) {
+      const fetchTemplates = async () => {
+        const fetchedTemplates = await getTemplates();
+        setTemplates(fetchedTemplates);
+      };
+      fetchTemplates();
+    }
+  }, [isCreateModalOpen])
+
+  const handleNextStep = () => {
+    if (newPageName.trim() === '') {
+        toast({ variant: 'destructive', title: 'Erro', description: 'O nome da página não pode ser vazio.' });
+        return;
+    }
+    setCreateStep(2);
+  }
+
   const handleConfirmCreatePage = async () => {
     if (!user) {
         toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado." });
         return;
     }
-    if (!newPageName.trim()) {
-        toast({ variant: "destructive", title: "Erro", description: "O nome da página não pode ser vazio." });
+    if (selectedTemplate === null) {
+        toast({ variant: "destructive", title: "Erro", description: "Por favor, selecione um template." });
         return;
     }
     setIsCreating(true);
+
     try {
-        const newPageData = getInitialPage(newPageName, projectId, user.uid, selectedBrand);
+        let newPageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
+
+        if (selectedTemplate === 'blank') {
+            newPageData = getInitialPage(newPageName, projectId, user.uid, selectedBrand);
+        } else {
+            const template = await getTemplate(selectedTemplate);
+            if (!template) {
+                throw new Error("Template não encontrado.");
+            }
+            newPageData = {
+                name: newPageName,
+                brand: selectedBrand,
+                projectId: projectId,
+                userId: user.uid,
+                tags: [],
+                styles: template.styles,
+                components: template.components,
+                cookieBanner: template.cookieBanner,
+                meta: {
+                    ...template.meta,
+                    title: `${selectedBrand} - ${newPageName}`,
+                    redirectUrl: selectedBrand === 'Avon' ? 'https://cloud.hello.avon.com/cadastroavonagradecimento' : 'https://www.natura.com.br/',
+                    dataExtensionKey: 'CHANGE-ME',
+                }
+            };
+        }
+        
         const newPageId = await addPage(newPageData);
         toast({ title: "Página criada!", description: `A página "${newPageName}" foi criada com sucesso.` });
+        
+        // Reset state and close
         setCreateModalOpen(false);
         setNewPageName("");
+        setCreateStep(1);
+        setSelectedTemplate(null);
+        
         handlePageClick(newPageId);
+
     } catch(error) {
-        console.error("Failed to create page:", error);
+        console.error("Failed to create page from template:", error);
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível criar a página." });
     } finally {
         setIsCreating(false);
@@ -503,42 +558,79 @@ export function PageList({ projectId }: PageListProps) {
                         <Plus className="mr-2 h-4 w-4" /> Criar Página
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>Criar Nova Página</DialogTitle>
-                        <DialogDescription>Escolha um nome e uma marca para sua nova CloudPage.</DialogDescription>
+                        <DialogDescription>
+                            {createStep === 1 ? "Primeiro, dê um nome e escolha a marca para sua nova página." : "Agora, escolha um template para começar."}
+                        </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="page-name">Nome da Página</Label>
-                            <Input 
-                                id="page-name" 
-                                value={newPageName} 
-                                onChange={(e) => setNewPageName(e.target.value)} 
-                                placeholder="Ex: Campanha Dia das Mães"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Marca</Label>
-                            <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
-                                <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                    <RadioGroupItem value="Natura" id="brand-natura" />
-                                    Natura
-                                </Label>
-                                <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                    <RadioGroupItem value="Avon" id="brand-avon" />
-                                    Avon
-                                </Label>
-                            </RadioGroup>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setCreateModalOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleConfirmCreatePage} disabled={isCreating}>
-                            {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isCreating ? "Criando..." : "Criar Página"}
-                        </Button>
-                    </DialogFooter>
+                    {createStep === 1 ? (
+                        <>
+                            <div className="py-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="page-name">Nome da Página</Label>
+                                    <Input 
+                                        id="page-name" 
+                                        value={newPageName} 
+                                        onChange={(e) => setNewPageName(e.target.value)} 
+                                        placeholder="Ex: Campanha Dia das Mães"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Marca</Label>
+                                    <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
+                                        <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                            <RadioGroupItem value="Natura" id="brand-natura" />
+                                            Natura
+                                        </Label>
+                                        <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                            <RadioGroupItem value="Avon" id="brand-avon" />
+                                            Avon
+                                        </Label>
+                                    </RadioGroup>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setCreateModalOpen(false)}>Cancelar</Button>
+                                <Button onClick={handleNextStep}>Próximo</Button>
+                            </DialogFooter>
+                        </>
+                    ) : (
+                        <>
+                          <ScrollArea className="h-96">
+                            <div className="py-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div 
+                                    className={cn("border-2 rounded-lg p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary", selectedTemplate === 'blank' ? 'border-primary' : 'border-dashed')}
+                                    onClick={() => setSelectedTemplate('blank')}
+                                >
+                                    <FileText className="h-12 w-12 mb-2" />
+                                    <h3 className="font-semibold">Página em Branco</h3>
+                                    <p className="text-sm text-muted-foreground">Comece do zero.</p>
+                                </div>
+                                {templates.map(template => (
+                                    <div 
+                                        key={template.id}
+                                        className={cn("border-2 rounded-lg p-4 cursor-pointer hover:border-primary", selectedTemplate === template.id ? 'border-primary' : '')}
+                                        onClick={() => setSelectedTemplate(template.id)}
+                                    >
+                                        <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
+                                            <Server className="h-8 w-8 text-muted-foreground" />
+                                        </div>
+                                        <h3 className="font-semibold truncate">{template.name}</h3>
+                                        <p className="text-sm text-muted-foreground truncate">{template.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                          </ScrollArea>
+                          <DialogFooter>
+                              <Button variant="outline" onClick={() => setCreateStep(1)}>Voltar</Button>
+                              <Button onClick={handleConfirmCreatePage} disabled={isCreating || !selectedTemplate}>
+                                  {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Criar Página"}
+                              </Button>
+                          </DialogFooter>
+                        </>
+                    )}
                 </DialogContent>
             </Dialog>
             <DropdownMenu>
@@ -554,7 +646,7 @@ export function PageList({ projectId }: PageListProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Notificações</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Nova funcionalidade: Duplique páginas!</DropdownMenuItem>
+                <DropdownMenuItem>Nova funcionalidade: Templates!</DropdownMenuItem>
                 <DropdownMenuItem>Melhoria no alinhamento de formulários.</DropdownMenuItem>
                 <DropdownMenuItem>Bem-vindo ao CloudPage Studio!</DropdownMenuItem>
               </DropdownMenuContent>

@@ -462,6 +462,49 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText3 || 'Todos os preços e condições...'}</span></div>
         </div>
       </footer>`;
+    case 'Chart':
+        const chartData = component.props.data || '[]';
+        return `
+            <div id="chart-${component.id}" class="chart-container" style="${styleString}" data-chart-data='${chartData}'></div>
+            <script>
+              (function() {
+                var container = document.getElementById('chart-${component.id}');
+                if (!container || !window.Recharts) return;
+                
+                var dataStr = container.dataset.chartData;
+                var data;
+                try {
+                  // Attempt to replace AMPScript variables if any, for preview purposes.
+                  // This is a simple replacement and might not cover all cases.
+                  var previewDataStr = dataStr.replace(/%%=v\\(@(.*?)\\)=%%/g, (match, varName) => {
+                      // Provide some default dummy values for preview
+                      const dummyValues = { 'chartData': JSON.stringify([
+                          { name: 'Jan', value: 400 }, { name: 'Fev', value: 300 },
+                          { name: 'Mar', value: 600 }, { name: 'Abr', value: 800 }
+                      ])};
+                      return dummyValues[varName] || '""';
+                  });
+                  data = JSON.parse(previewDataStr);
+                } catch(e) {
+                   console.error("Error parsing chart data:", e, dataStr);
+                   data = [];
+                }
+
+                const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = window.Recharts;
+                const element = React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
+                  React.createElement(BarChart, { data: data },
+                    React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                    React.createElement(XAxis, { dataKey: 'name' }),
+                    React.createElement(YAxis),
+                    React.createElement(Tooltip),
+                    React.createElement(Legend),
+                    React.createElement(Bar, { dataKey: 'value', fill: '${pageState.styles.themeColor}' })
+                  )
+                );
+                ReactDOM.render(element, container);
+              })();
+            </script>
+        `;
     default:
       // This will cause a compile-time error if a new component type is added and not handled here.
       const exhaustiveCheck: never = component.type;
@@ -618,12 +661,33 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
     const { meta, components } = pageState;
     const formComponent = components.find(c => c.type === 'Form');
     const npsComponent = components.find(c => c.type === 'NPS');
-    const abTestComponents = components.filter(c => c.abTestEnabled);
 
     if (!formComponent && !npsComponent) return '';
 
     const deIdentifier = meta.dataExtensionKey || '';
     const deMethod = meta.dataExtensionTargetMethod || 'key';
+    
+    // Dynamically build the list of fields to retrieve from the request
+    let fieldRetrievalScript = '';
+    if (formComponent) {
+        Object.keys(formComponent.props.fields || {}).forEach(fieldName => {
+            if (formComponent.props.fields[fieldName]) {
+                 const deColumnName = fieldName === 'birthdate' ? 'DATANASCIMENTO' : fieldName.toUpperCase();
+                 fieldRetrievalScript += `var ${fieldName} = Request.GetFormField("${deColumnName}");\n            `;
+            }
+        });
+    }
+     if (npsComponent) {
+        fieldRetrievalScript += `var nps_score = Request.GetFormField("NPS_SCORE");\n            var nps_date = Now();\n            `;
+    }
+
+    let fieldProcessingScript = `
+            if (optin == "" || optin == null) {
+                optin = "False";
+            } else if (optin == "on") {
+                optin = "True";
+            }
+    `;
 
     // This script block will be generated to handle form submission.
     return `
@@ -633,50 +697,47 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
 
     try {
         if (Request.Method == "POST") {
-            var deIdentifier = Request.GetFormField("__de");
-            var deMethod = Request.GetFormField("__de_method");
-            var redirectUrl = Request.GetFormField("__successUrl");
+            var deTarget = "${deIdentifier}";
+            var deMethod = "${deMethod}";
+            var redirectUrl = "${meta.redirectUrl}";
             var showThanks = false;
 
-            if (deIdentifier) {
+            ${fieldRetrievalScript}
+            ${npsComponent ? 'if (nps_date == "" || nps_date == null) { nps_date = Now(); }' : ''}
+            
+            if (deTarget) {
                 var de;
-                // Correctly initialize DE based on method
                 if (deMethod == "name") {
-                    var deList = DataExtension.Retrieve({Property:"Name",SimpleOperator:"equals",Value:deIdentifier});
-                    if (deList.length > 0) {
+                    var deList = DataExtension.Retrieve({Property:"Name",SimpleOperator:"equals",Value:deTarget});
+                    if (deList && deList.length > 0) {
                         de = DataExtension.Init(deList[0].CustomerKey);
                     }
                 } else {
-                    de = DataExtension.Init(deIdentifier);
+                    de = DataExtension.Init(deTarget);
                 }
 
                 if (de) {
-                    var formFields = Request.GetFormFields();
                     var rowData = {};
                     var lookupColumn = "";
                     var lookupValue = "";
 
-                    for (var key in formFields) {
-                        if (key.indexOf("__") != 0) { // Ignore system fields
-                            var value = formFields[key];
-                            if (key.toUpperCase() == "OPTIN" && (value == null || value == "")) {
-                                value = "False";
-                            } else if (key.toUpperCase() == "OPTIN" && value == "on") {
-                                value = "True";
-                            }
-                            rowData[key] = value;
-                        }
+                    // Populate rowData object dynamically
+                    ${formComponent ? Object.keys(formComponent.props.fields || {}).filter(f => formComponent.props.fields[f]).map(fieldName => `if(typeof ${fieldName} !== 'undefined') { var deColumnName = "${fieldName === 'birthdate' ? 'DATANASCIMENTO' : fieldName.toUpperCase()}"; rowData[deColumnName] = ${fieldName}; }`).join('\n                    ') : ''}
+                    ${npsComponent ? 'if(typeof nps_score !== "undefined") rowData["NPS_SCORE"] = nps_score;\n                    if(typeof nps_date !== "undefined") rowData["NPS_DATE"] = nps_date;' : ''}
+                    
+                    // Handle Optin specifically
+                    if (rowData["OPTIN"] == "on") {
+                       rowData["OPTIN"] = "True";
+                    } else {
+                       rowData["OPTIN"] = "False";
                     }
 
-                    // Use EMAIL as the primary key for upsert
+
                     if (rowData["EMAIL"]) {
                         lookupColumn = "EMAIL";
                         lookupValue = rowData["EMAIL"];
                     }
                     
-                    // Add NPS date if NPS component exists
-                    ${npsComponent ? 'rowData["NPS_DATE"] = Now();' : ''}
-
                     if (lookupValue) {
                        var existingRows = de.Rows.Lookup([lookupColumn], [lookupValue]);
                        if (existingRows && existingRows.length > 0) {
@@ -685,7 +746,6 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
                            de.Rows.Add(rowData);
                        }
                     } else {
-                        // Fallback for forms without email or if another primary key is needed
                         de.Rows.Add(rowData);
                     }
 
@@ -790,9 +850,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
     SET @showThanks = "false" 
     ${meta.customAmpscript || ''}
     ${security.amscript}
-]%%
-${ssjsBlock}
-<!DOCTYPE html>
+]%%${ssjsBlock}<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -809,6 +867,12 @@ ${ssjsBlock}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+${isForPreview ? `
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+` : ''
+}
 ${trackingScripts}
 <style>
     body {
@@ -1391,6 +1455,10 @@ ${trackingScripts}
     .column {
         flex: 1;
         min-width: 0;
+    }
+    .chart-container {
+        height: 300px;
+        width: 100%;
     }
 
     /* Password Protection Styles */

@@ -418,7 +418,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
       
       const formHtml = `
         <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-            <form id="main-form" method="post" action="%%=RequestParameter('PAGEURL')=%%">
+            <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                  <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                  <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
 
@@ -613,57 +613,74 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
     `;
 };
 
-const getAmpscriptBlock = (pageState: CloudPage): string => {
-    const { components, meta } = pageState;
-    const allFieldNames: string[] = [];
-    
-    const formComponent = components.find(c => c.type === 'Form');
-    if (formComponent) {
-        const { fields = {} } = formComponent.props;
-        if (fields.name) allFieldNames.push("NOME");
-        if (fields.email) allFieldNames.push("EMAIL");
-        if (fields.phone) allFieldNames.push("TELEFONE");
-        if (fields.cpf) allFieldNames.push("CPF");
-        if (fields.birthdate) allFieldNames.push("DATANASCIMENTO");
-        if (fields.city) allFieldNames.push("CIDADE");
-        if (fields.optin) allFieldNames.push("OPTIN");
+
+const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
+    const { meta } = pageState;
+    return `
+<script runat="server">
+    Platform.Load("Core", "1.1.1");
+    var debug = false; 
+
+    try {
+        if (Request.Method == "POST") {
+            var deTarget = Request.GetFormField("__de");
+            var deTargetMethod = "${meta.dataExtensionTargetMethod || 'key'}";
+            var redirectUrl = Request.GetFormField("__successUrl");
+            var showThanks = false;
+
+            if (deTarget) {
+                var de;
+                if (deTargetMethod == "name") {
+                    de = DataExtension.Init(deTarget);
+                } else {
+                    de = DataExtension.Init(deTarget); // Fallback to key/name
+                }
+                
+                var formFields = Request.GetFormFields();
+                var rowData = {};
+                var lookupColumn = "";
+                var lookupValue = "";
+
+                for (var key in formFields) {
+                    if (key.toUpperCase() !== "__DE" && key.toUpperCase() !== "__SUCCESSURL") {
+                        var value = formFields[key];
+                        rowData[key] = value;
+                        if (key.toUpperCase() == 'EMAIL') { // Assuming EMAIL is primary key
+                           lookupColumn = "EMAIL";
+                           lookupValue = value;
+                        }
+                    }
+                }
+
+                if (lookupValue) {
+                   var existingRows = de.Rows.Lookup([lookupColumn], [lookupValue]);
+                   if (existingRows && existingRows.length > 0) {
+                       de.Rows.Update(rowData, [lookupColumn], [lookupValue]);
+                   } else {
+                       de.Rows.Add(rowData);
+                   }
+                } else {
+                    // Fallback for forms without email or if another primary key is needed
+                    de.Rows.Add(rowData);
+                }
+                
+                showThanks = true;
+            }
+
+            if (showThanks && redirectUrl && !debug) {
+                Platform.Response.Redirect(redirectUrl);
+            } else if (showThanks) {
+                Variable.SetValue("@showThanks", "true");
+            }
+        }
+    } catch (e) {
+        if (debug) {
+            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
+        }
     }
-
-    components.filter(c => c.abTestEnabled).forEach(c => {
-        allFieldNames.push(`VARIANTE_${c.id.toUpperCase()}`);
-    });
-
-    if (components.some(c => c.type === 'NPS')) {
-        allFieldNames.push('NPS_SCORE', 'NPS_DATE');
-    }
-
-    const fieldVars = allFieldNames.map(name => `@${name.toLowerCase()}`).join(', ');
-    const fieldRequestParams = allFieldNames.map(name => `SET @${name.toLowerCase()} = RequestParameter("${name}")`).join('\n  ');
-    const upsertFields = allFieldNames.map((name, i) => `"${name}", @${name.toLowerCase()}${i < allFieldNames.length - 1 ? ',' : ''}`).join('\n    ');
-
-    const formProcessingLogic = `
-  /* --- Form Processing --- */
-  IF RequestParameter("submitted") == "true" THEN
-    VAR ${fieldVars}
-    ${fieldRequestParams}
-
-    IF NOT EMPTY(@email) THEN
-      UpsertData("${meta.dataExtensionKey}", 1, "EMAIL", @email,
-        ${upsertFields}
-      )
-    ELSE
-      InsertData("${meta.dataExtensionKey}", ${upsertFields})
-    ENDIF
-
-    SET @showThanks = "true"
-  ENDIF
-`;
-
-    return `%%[
-${meta.customAmpscript || ''}
-${formProcessingLogic}
-]%%`;
-};
+</script>
+    `;
+}
 
 const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
     const security = pageState.meta.security;
@@ -722,13 +739,15 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 }
 
 
-export const generateHtml = (pageState: CloudPage): string => {
+export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false): string => {
   const { styles, components, meta, cookieBanner } = pageState;
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
   
   const security = getSecurityScripts(pageState);
-  const ampscriptBlock = getAmpscriptBlock(pageState);
+  
+  // Only include the SSJS processing block if it's the final code, not for the preview.
+  const ssjsBlock = isForPreview ? '' : getAmpscriptProcessingBlock(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
@@ -740,12 +759,16 @@ export const generateHtml = (pageState: CloudPage): string => {
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState);
   
-  return `%%[ ${security.amscript} ]%%
-${ampscriptBlock}
+  return `%%[ 
+    VAR @showThanks
+    SET @showThanks = "false" 
+    ${meta.customAmpscript || ''}
+    ${security.amscript}
+]%%
+${ssjsBlock}
 <!DOCTYPE html>
 <html>
 <head>
-${security.ssjs}
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${meta.title}</title>
@@ -761,9 +784,6 @@ ${security.ssjs}
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 ${trackingScripts}
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/recharts@2/umd/Recharts.min.js"></script>
 <style>
     body {
         background-color: ${styles.backgroundColor};
@@ -1347,13 +1367,6 @@ ${trackingScripts}
         min-width: 0;
     }
 
-    /* Chart Styles */
-    .chart-container {
-        width: 100%;
-        height: 400px;
-        margin: 20px 0;
-    }
-
     /* Password Protection Styles */
     .password-protection-container {
         display: flex;
@@ -1548,41 +1561,34 @@ ${trackingScripts}
     }
 
     function setupSubmitButton() {
-        const form = document.getElementById('main-form');
-        if (!form) return;
+        document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton && !submitButton.querySelector('.button-loader')) {
+                const buttonTextContent = submitButton.textContent;
+                submitButton.innerHTML = '';
+                
+                const buttonText = document.createElement('span');
+                buttonText.className = 'button-text';
+                buttonText.textContent = buttonTextContent;
+                
+                const buttonLoader = document.createElement('div');
+                buttonLoader.className = 'button-loader';
 
-        const submitButton = form.querySelector('button[type="submit"]');
-        if (submitButton && !submitButton.querySelector('.button-loader')) {
-            const buttonTextContent = submitButton.textContent;
-            submitButton.innerHTML = '';
-            
-            const buttonText = document.createElement('span');
-            buttonText.className = 'button-text';
-            buttonText.textContent = buttonTextContent;
-            
-            const buttonLoader = document.createElement('div');
-            buttonLoader.className = 'button-loader';
-
-            submitButton.appendChild(buttonText);
-            submitButton.appendChild(buttonLoader);
-        }
-        
-        form.addEventListener('submit', function(e) {
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'submitted';
-            hiddenInput.value = 'true';
-            form.appendChild(hiddenInput);
-
-            if (!validateForm(form)) {
-                e.preventDefault();
-            } else {
-               if (submitButton) {
-                 submitButton.disabled = true;
-                 submitButton.querySelector('.button-text').style.opacity = '0';
-                 submitButton.querySelector('.button-loader').style.display = 'block';
-               }
+                submitButton.appendChild(buttonText);
+                submitButton.appendChild(buttonLoader);
             }
+            
+            form.addEventListener('submit', function(e) {
+                if (!validateForm(form)) {
+                    e.preventDefault();
+                } else {
+                   if (submitButton) {
+                     submitButton.disabled = true;
+                     submitButton.querySelector('.button-text').style.opacity = '0';
+                     submitButton.querySelector('.button-loader').style.display = 'block';
+                   }
+                }
+            });
         });
     }
 
@@ -1645,4 +1651,4 @@ ${trackingScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
+`

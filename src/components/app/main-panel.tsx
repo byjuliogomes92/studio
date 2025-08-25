@@ -20,21 +20,25 @@ import {
 } from "@/components/ui/tooltip";
 import { HowToUseDialog } from "./how-to-use-dialog";
 import type { CloudPage } from "@/lib/types";
+import { generateHtml } from "@/lib/html-generator";
 
 interface MainPanelProps {
-  htmlCode: string;
   pageState: CloudPage;
   setPageState: Dispatch<SetStateAction<CloudPage | null>>;
   onDataExtensionKeyChange: (newKey: string) => void;
 }
 
-export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKeyChange }: MainPanelProps) {
+export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Generate HTML for preview and for final code separately
+  const previewHtmlCode = generateHtml(pageState, true);
+  const finalHtmlCode = generateHtml(pageState, false);
 
   const handleInlineEdit = useCallback((componentId: string, propName: string, newContent: string) => {
     setPageState(prev => {
@@ -86,20 +90,14 @@ export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKe
 
     // Cleanup
     return () => {
-      iframe.removeEventListener('load', handleIframeLoad);
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if(iframeDoc) {
-        const editableElements = iframeDoc.querySelectorAll<HTMLElement>('[contenteditable="true"]');
-         editableElements.forEach(el => {
-             // You can't easily remove anonymous functions, so this part is tricky
-             // For this app, since the iframe reloads, it's not a huge memory leak issue.
-         });
+      if (iframe) {
+        iframe.removeEventListener('load', handleIframeLoad);
       }
     };
-  }, [htmlCode, handleInlineEdit]);
+  }, [previewHtmlCode, handleInlineEdit]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(htmlCode);
+    navigator.clipboard.writeText(finalHtmlCode);
     toast({
       title: "Copiado para a Área de Transferência",
       description: "O código HTML foi copiado.",
@@ -107,7 +105,7 @@ export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKe
   };
 
   const handleDownload = () => {
-    const blob = new Blob([htmlCode], { type: "text/html" });
+    const blob = new Blob([finalHtmlCode], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -124,7 +122,7 @@ export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKe
 
   const handleOpenInNewTab = () => {
     try {
-        const blob = new Blob([htmlCode], { type: 'text/html' });
+        const blob = new Blob([previewHtmlCode], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
         // Revogar a URL do objeto após um tempo para permitir que a nova aba a carregue
@@ -143,7 +141,7 @@ export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKe
     setChecking(true);
     setAccessibilityIssues(null);
     try {
-      const result = await accessibilityCheck({ htmlCode });
+      const result = await accessibilityCheck({ htmlCode: finalHtmlCode });
       setAccessibilityIssues(result.suggestions);
     } catch (error) {
       console.error("A verificação de acessibilidade falhou:", error);
@@ -196,7 +194,7 @@ export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKe
             <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
               <iframe
                   ref={iframeRef}
-                  srcDoc={htmlCode}
+                  srcDoc={previewHtmlCode}
                   title="Preview da Cloud Page"
                   className={cn(
                       "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
@@ -218,7 +216,7 @@ export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKe
             </div>
             <div className="w-full flex-grow text-xs font-mono bg-card rounded-md overflow-hidden">
               <SyntaxHighlighter language="html" style={vscDarkPlus} showLineNumbers customStyle={{ margin: 0, height: '100%', width: '100%', fontSize: '14px' }}>
-                  {htmlCode}
+                  {finalHtmlCode}
               </SyntaxHighlighter>
             </div>
           </TabsContent>
@@ -254,5 +252,3 @@ export function MainPanel({ htmlCode, pageState, setPageState, onDataExtensionKe
     </>
   );
 }
-
-    

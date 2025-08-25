@@ -70,8 +70,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [initialPageState, setInitialPageState] = useState<CloudPage | null>(null);
   const [savedPageState, setSavedPageState] = useState<CloudPage | null>(null);
   const { state: pageState, setState: setPageState, undo, canUndo, resetState } = useHistoryState<CloudPage | null>(initialPageState);
-
-  const [htmlCode, setHtmlCode] = useState("");
+  
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [pageName, setPageName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -164,12 +163,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId, router, user, toast, authLoading, searchParams]);
   
-  useEffect(() => {
-    if(pageState) {
-      setHtmlCode(generateHtml(pageState));
-    }
-  }, [pageState]);
-
+  
   useEffect(() => {
     if (!pageState) return;
   
@@ -436,7 +430,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         </aside>
         <main className="flex-grow h-full">
           <MainPanel 
-            htmlCode={htmlCode} 
             pageState={pageState} 
             setPageState={setPageState}
             onDataExtensionKeyChange={handleDataExtensionKeyChange}

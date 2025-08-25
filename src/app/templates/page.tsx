@@ -8,14 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -34,7 +26,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
@@ -43,6 +34,8 @@ import { defaultTemplates } from "@/lib/default-templates";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { CreatePageFromTemplateDialog } from "@/components/app/create-page-from-template-dialog";
+
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -103,14 +96,12 @@ export default function TemplatesPage() {
     setTemplateToDelete(template);
   };
   
-  const handleTemplateClick = (template: Template) => {
+  const handleEditTemplate = (template: Template) => {
     if (template.isDefault) {
-      // Default templates can't be edited from this page. They are used for creation.
-      toast({variant: "default", title: "Templates Padrão", description: "Use os templates padrão ao criar uma nova página dentro de um projeto."});
+      toast({variant: "default", title: "Templates Padrão", description: "Templates padrão não podem ser editados."});
       return;
     }
     // A template is edited using the same editor as a page.
-    // We can pass a query param to indicate that we are editing a template.
     router.push(`/editor/${template.id}?isTemplate=true`);
   };
 
@@ -179,7 +170,17 @@ export default function TemplatesPage() {
             </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
-            <DropdownMenuItem onClick={() => handleTemplateClick(template)} disabled={template.isDefault}>
+           <CreatePageFromTemplateDialog
+                templateId={template.id}
+                isDefaultTemplate={!!template.isDefault}
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Usar template
+                  </DropdownMenuItem>
+                }
+            />
+            <DropdownMenuItem onClick={() => handleEditTemplate(template)} disabled={template.isDefault}>
                 Editar
             </DropdownMenuItem>
             {!template.isDefault && (
@@ -290,8 +291,7 @@ export default function TemplatesPage() {
             {filteredAndSortedTemplates.map((template) => (
               <div
                 key={template.id}
-                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => handleTemplateClick(template)}
+                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
               >
                 <div>
                     <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
@@ -330,7 +330,7 @@ export default function TemplatesPage() {
               </TableHeader>
               <TableBody>
                 {filteredAndSortedTemplates.map((template) => (
-                  <TableRow key={template.id} className="cursor-pointer" onClick={() => handleTemplateClick(template)}>
+                  <TableRow key={template.id}>
                     <TableCell className="font-medium">{template.name}</TableCell>
                     <TableCell>
                         {template.isDefault ? (

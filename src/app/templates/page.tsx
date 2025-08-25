@@ -103,10 +103,11 @@ export default function TemplatesPage() {
     setTemplateToDelete(template);
   };
   
-  const handleEditTemplate = (template: Template) => {
+  const handleTemplateClick = (template: Template) => {
     if (template.isDefault) {
-        toast({variant: "default", title: "Ação não permitida", description: "Templates padrão não podem ser editados."});
-        return;
+      // Default templates can't be edited from this page. They are used for creation.
+      toast({variant: "default", title: "Templates Padrão", description: "Use os templates padrão ao criar uma nova página dentro de um projeto."});
+      return;
     }
     // A template is edited using the same editor as a page.
     // We can pass a query param to indicate that we are editing a template.
@@ -178,7 +179,7 @@ export default function TemplatesPage() {
             </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
-            <DropdownMenuItem onClick={() => handleEditTemplate(template)} disabled={template.isDefault}>
+            <DropdownMenuItem onClick={() => handleTemplateClick(template)} disabled={template.isDefault}>
                 Editar
             </DropdownMenuItem>
             {!template.isDefault && (
@@ -290,7 +291,7 @@ export default function TemplatesPage() {
               <div
                 key={template.id}
                 className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => handleEditTemplate(template)}
+                onClick={() => handleTemplateClick(template)}
               >
                 <div>
                     <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
@@ -329,7 +330,7 @@ export default function TemplatesPage() {
               </TableHeader>
               <TableBody>
                 {filteredAndSortedTemplates.map((template) => (
-                  <TableRow key={template.id} className="cursor-pointer" onClick={() => handleEditTemplate(template)}>
+                  <TableRow key={template.id} className="cursor-pointer" onClick={() => handleTemplateClick(template)}>
                     <TableCell className="font-medium">{template.name}</TableCell>
                     <TableCell>
                         {template.isDefault ? (

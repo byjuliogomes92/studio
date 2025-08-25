@@ -613,9 +613,10 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 };
 
 const getFormScript = (pageState: CloudPage): string => {
-    const { components } = pageState;
+    const { components, meta } = pageState;
     const allFieldNames: string[] = [];
-    
+    const deObject: { [key: string]: string } = {};
+
     const formComponent = components.find(c => c.type === 'Form');
     if (formComponent) {
         const { fields = {} } = formComponent.props;
@@ -638,8 +639,11 @@ const getFormScript = (pageState: CloudPage): string => {
     
     // Dynamically generate the parts of the SSJS script
     const fieldVars = allFieldNames.map(name => `var ${name.toLowerCase()} = Request.GetFormField("${name}");`).join('\n        ');
-    const updateObject = allFieldNames.filter(name => name.toUpperCase() !== "EMAIL").map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                    ');
-    const addObject = allFieldNames.map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                ');
+    
+    // Create an object for Add and an object for Update
+    const addObj = allFieldNames.map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                ');
+    const updateObj = allFieldNames.filter(name => name.toUpperCase() !== "EMAIL").map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                    ');
+
 
     return `
 <script runat="server">
@@ -676,15 +680,14 @@ const getFormScript = (pageState: CloudPage): string => {
                 if (typeof email !== 'undefined' && email != null && email != "") {
                     var existing = de.Rows.Lookup(["EMAIL"], [email]);
                     if (existing.length > 0) {
-                        de.Rows.Update({${updateObject}}, ["EMAIL"], [email]);
+                        de.Rows.Update({${updateObj}}, ["EMAIL"], [email]);
                         if (debug) { Write("<br><b>Status:</b> Registro atualizado."); }
                     } else {
-                        de.Rows.Add({${addObject}});
+                        de.Rows.Add({${addObj}});
                         if (debug) { Write("<br><b>Status:</b> Novo registro inserido."); }
                     }
                 } else {
-                    // Fallback for forms without email (e.g. NPS only)
-                     de.Rows.Add({${addObject}});
+                     de.Rows.Add({${addObj}});
                      if (debug) { Write("<br><b>Status:</b> Novo registro inserido (sem email)."); }
                 }
                 showThanks = true;
@@ -783,6 +786,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   
   const security = getSecurityScripts(pageState);
   const formScript = getFormScript(pageState);
+  const customAmpscript = meta.customAmpscript ? `%%[\n${meta.customAmpscript}\n]%%` : '';
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
@@ -1669,6 +1673,7 @@ ${trackingScripts}
 </script>
 </head>
 <body>
+  ${customAmpscript}
   ${security.body}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
@@ -1689,4 +1694,3 @@ ${trackingScripts}
 </body>
 </html>
 `
-}

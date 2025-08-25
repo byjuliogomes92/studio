@@ -62,6 +62,7 @@ export interface CloudPage {
     dataExtensionTargetMethod?: 'key' | 'name';
     metaDescription: string;
     metaKeywords: string;
+    customAmpscript?: string;
     tracking?: {
       ga4: { enabled: boolean; id?: string };
       meta: { enabled: boolean; id?: string };

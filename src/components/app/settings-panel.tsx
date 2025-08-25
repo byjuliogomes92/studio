@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -725,6 +725,41 @@ export function SettingsPanel({
                 </AccordionContent>
               </AccordionItem>
             )}
+             <AccordionItem value="ampscript">
+                <AccordionTrigger className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    <span>AMPScript Personalizado</span>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                            <Label htmlFor="custom-ampscript">Código AMPScript</Label>
+                            <Tooltip>
+                                <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                                <TooltipContent>
+                                    <div className="max-w-xs">
+                                        <p>Adicione seu código AMPScript aqui. Ele será executado no topo da página.</p>
+                                        <p className="mt-2"><b>Exemplo:</b></p>
+                                        <pre className="text-xs bg-muted p-2 rounded-md mt-1">
+                                            {`VAR @name
+SET @name = AttributeValue("FirstName")`}
+                                        </pre>
+                                        <p className="mt-2">Então use `%%=v(@name)=%%` no HTML de um componente.</p>
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <Textarea 
+                            id="custom-ampscript"
+                            value={pageState.meta.customAmpscript || ''}
+                            onChange={(e) => handleMetaChange('customAmpscript', e.target.value)}
+                            placeholder={'VAR @name\nSET @name = AttributeValue("FirstName")'}
+                            rows={10}
+                            className="font-mono text-xs"
+                        />
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
             <AccordionItem value="meta">
               <AccordionTrigger>Configurações, SEO & Pixels</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">

@@ -26,6 +26,7 @@ import { defaultTemplates } from '@/lib/default-templates';
 import { cn } from '@/lib/utils';
 import { FileText, Loader2, Server } from 'lucide-react';
 import { produce } from 'immer';
+import { Badge } from '@/components/ui/badge';
 
 interface CreatePageFromTemplateDialogProps {
   trigger: React.ReactNode;

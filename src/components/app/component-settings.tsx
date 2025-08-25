@@ -19,7 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { produce } from 'immer';
-import { ChartSettings } from "./chart-settings";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -862,8 +861,6 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 </div>
             </div>
         );
-      case "Chart":
-        return <ChartSettings props={props} onPropChange={onPropChange} />;
       case "Footer":
         return (
           <div className="space-y-4">

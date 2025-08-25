@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
@@ -19,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, BarChart } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -69,7 +68,6 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Map: MapPin,
     SocialIcons: Share2,
     Columns: Columns,
-    Chart: BarChart,
 };
 
 const googleFonts = [
@@ -403,22 +401,6 @@ export function SettingsPanel({
                         align: 'center',
                         iconSize: '24px',
                     }
-                };
-                break;
-            case 'Chart':
-                const sampleData = [
-                    { name: 'Jan', value: 400 },
-                    { name: 'Fev', value: 300 },
-                    { name: 'Mar', value: 600 },
-                    { name: 'Abr', value: 800 },
-                    { name: 'Mai', value: 500 },
-                ];
-                newComponent.props = {
-                  type: 'bar',
-                  data: JSON.stringify(sampleData, null, 2),
-                  nameKey: 'name',
-                  dataKeys: ['value'],
-                  colors: ['#8884d8'],
                 };
                 break;
         }

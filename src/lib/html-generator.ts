@@ -1,20 +1,5 @@
 
 import type { CloudPage, PageComponent, ComponentType } from './types';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage): string {
@@ -426,23 +411,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
     case 'Columns':
         // This case is handled by the recursive renderComponents function
         return '';
-    case 'Chart': {
-        const { type, data, nameKey, dataKeys, colors } = component.props;
-        // The data is a string that can contain AMPScript. It will be parsed on the client.
-        const dataString = typeof data === 'string' ? data : JSON.stringify(data || []);
-        return `
-            <div id="chart-${component.id}" class="chart-container" 
-                data-chart-type="${type}" 
-                data-name-key="${nameKey}" 
-                data-data-keys='${JSON.stringify(dataKeys)}' 
-                data-colors='${JSON.stringify(colors)}'
-                style="${styleString}"
-            >
-                <div class="chart-data-source" style="display:none;">${dataString}</div>
-                <div class="chart-render-target"></div>
-            </div>
-        `;
-    }
     case 'Form': {
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
       const { meta } = pageState;
@@ -645,11 +613,10 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
     `;
 };
 
-const getFormScript = (pageState: CloudPage): string => {
+const getAmpscriptBlock = (pageState: CloudPage): string => {
     const { components, meta } = pageState;
     const allFieldNames: string[] = [];
-    const deObject: { [key: string]: string } = {};
-
+    
     const formComponent = components.find(c => c.type === 'Form');
     if (formComponent) {
         const { fields = {} } = formComponent.props;
@@ -669,126 +636,69 @@ const getFormScript = (pageState: CloudPage): string => {
     if (components.some(c => c.type === 'NPS')) {
         allFieldNames.push('NPS_SCORE', 'NPS_DATE');
     }
-    
-    // Dynamically generate the parts of the SSJS script
-    const fieldVars = allFieldNames.map(name => `var ${name.toLowerCase()} = Request.GetFormField("${name}");`).join('\n        ');
-    
-    // Create an object for Add and an object for Update
-    const addObj = allFieldNames.map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                ');
-    const updateObj = allFieldNames.filter(name => name.toUpperCase() !== "EMAIL").map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                    ');
 
+    const fieldVars = allFieldNames.map(name => `@${name.toLowerCase()}`).join(', ');
+    const fieldRequestParams = allFieldNames.map(name => `SET @${name.toLowerCase()} = RequestParameter("${name}")`).join('\n  ');
+    const upsertFields = allFieldNames.map((name, i) => `"${name}", @${name.toLowerCase()}${i < allFieldNames.length - 1 ? ',' : ''}`).join('\n    ');
 
-    return `
-<script runat="server">
-    Platform.Load("Core", "1.1.1");
-    var debug = false; 
+    const formProcessingLogic = `
+  /* --- Form Processing --- */
+  IF RequestParameter("submitted") == "true" THEN
+    VAR ${fieldVars}
+    ${fieldRequestParams}
 
-    try {
-        if (Request.Method == "POST" && Request.GetFormField("__isFormPost") == "true") {
-            var deKey = Request.GetFormField("__de");
-            var redirectUrl = Request.GetFormField("__successUrl");
-            var showThanks = false;
+    IF NOT EMPTY(@email) THEN
+      UpsertData("${meta.dataExtensionKey}", 1, "EMAIL", @email,
+        ${upsertFields}
+      )
+    ELSE
+      InsertData("${meta.dataExtensionKey}", ${upsertFields})
+    ENDIF
 
-            ${fieldVars}
-
-            if (typeof optin !== 'undefined' && (optin == "" || optin == null)) {
-                optin = "False";
-            } else if (typeof optin !== 'undefined' && optin == "on") {
-                 optin = "True";
-            }
-
-            if (typeof nps_date !== 'undefined' && (nps_date == "" || nps_date == null)) {
-                nps_date = Now();
-            }
-
-            if (debug) {
-                Write("<br><b>--- DEBUG ---</b><br>");
-                Write("DE Key: " + deKey + "<br>");
-                ${allFieldNames.map(name => `Write("${name}: " + (${name.toLowerCase()} || 'null') + "<br>");`).join('\n                ')}
-            }
-
-            if (deKey != null && deKey != "") {
-                var de = DataExtension.Init(deKey);
-                
-                if (typeof email !== 'undefined' && email != null && email != "") {
-                    var existing = de.Rows.Lookup(["EMAIL"], [email]);
-                    if (existing.length > 0) {
-                        de.Rows.Update({${updateObj}}, ["EMAIL"], [email]);
-                        if (debug) { Write("<br><b>Status:</b> Registro atualizado."); }
-                    } else {
-                        de.Rows.Add({${addObj}});
-                        if (debug) { Write("<br><b>Status:</b> Novo registro inserido."); }
-                    }
-                } else {
-                     de.Rows.Add({${addObj}});
-                     if (debug) { Write("<br><b>Status:</b> Novo registro inserido (sem email)."); }
-                }
-                showThanks = true;
-            }
-
-            if (showThanks && redirectUrl && !debug) {
-                Platform.Response.Redirect(redirectUrl);
-            } else if (showThanks) {
-                Variable.SetValue("@showThanks", "true");
-            }
-        }
-    } catch (e) {
-        if (debug) {
-            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
-        } else {
-            // In case of error, you might want to redirect to an error page or show a message.
-            // For now, we'll just suppress the error in non-debug mode.
-        }
-    }
-</script>
+    SET @showThanks = "true"
+  ENDIF
 `;
+
+    return `%%[
+${meta.customAmpscript || ''}
+${formProcessingLogic}
+]%%`;
 };
 
 const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
     const security = pageState.meta.security;
     if (!security || security.type === 'none') {
-        return { ssjs: 'VAR @isAuthenticated = true;', amscript: '', body: '' };
+        return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
     }
 
     if (security.type === 'sso') {
-        const amscript = `%%[
+        const amscript = `
   VAR @IsAuthenticated, @RedirectURL
   SET @RedirectURL = CloudPagesURL(PageID)
   TRY 
     SET @IsAuthenticated = Request.GetUserInfo()
   CATCH(e) 
     Redirect("https://mc.login.exacttarget.com/hub/auth?returnUrl=" + URLEncode(@RedirectURL), false)
-  ENDTRY
-]%%`;
-        return { ssjs: 'VAR @isAuthenticated = true;', amscript, body: '' };
+  ENDTRY`;
+        return { ssjs: '', amscript, body: '' };
     }
     
     if (security.type === 'password' && security.passwordConfig) {
         const config = security.passwordConfig;
-        const ssjs = `
-<script runat="server">
-    Platform.Load("Core", "1.1.1");
-    var isAuthenticated = false;
-    var submittedPassword = Request.GetFormField("page_password");
-    var identifier = Request.GetQueryStringParameter("${config.urlParameter}");
+        const amscript = `
+  VAR @isAuthenticated, @submittedPassword, @identifier, @correctPassword
+  SET @isAuthenticated = false
+  SET @submittedPassword = RequestParameter("page_password")
+  SET @identifier = RequestParameter("${config.urlParameter}")
 
-    if(submittedPassword != null && identifier != null) {
-        var pw_de = DataExtension.Init("${config.dataExtensionKey}");
-        var filter = {Property: "${config.identifierColumn}", SimpleOperator: "equals", Value: identifier};
-        var data = pw_de.Rows.Retrieve(filter);
-
-        if(data && data.length > 0) {
-            var correctPassword = data[0].${config.passwordColumn};
-            if(submittedPassword == correctPassword) {
-                isAuthenticated = true;
-                Platform.Function.SetCookie("page_auth_token", Platform.Function.GUID(), 1); 
-            }
-        }
-    } else if (Platform.Request.GetCookieValue("page_auth_token")) {
-        isAuthenticated = true;
-    }
-    Variable.SetValue("@isAuthenticated", isAuthenticated);
-</script>`;
+  IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN
+      SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
+      IF @submittedPassword == @correctPassword THEN
+          SET @isAuthenticated = true
+          /* You might want to set a cookie here for persistent login */
+      ENDIF
+  ENDIF
+`;
 
         const body = `
 %%[ IF @isAuthenticated != true THEN ]%%
@@ -798,17 +708,17 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
         <p>Por favor, insira a senha para continuar.</p>
         <input type="password" name="page_password" placeholder="Sua senha" required>
         <button type="submit">Acessar</button>
-        %%[ IF Request.Method == "POST" THEN ]%%
+        %%[ IF RequestParameter("page_password") != "" THEN ]%%
             <p class="error-message">Senha incorreta. Tente novamente.</p>
         %%[ ENDIF ]%%
     </form>
 </div>
 %%[ ENDIF ]%%`;
 
-        return { ssjs, amscript: '', body };
+        return { ssjs: '', amscript, body };
     }
 
-    return { ssjs: 'VAR @isAuthenticated = true;', amscript: '', body: '' };
+    return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
 }
 
 
@@ -818,8 +728,7 @@ export const generateHtml = (pageState: CloudPage): string => {
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
   
   const security = getSecurityScripts(pageState);
-  const formScript = getFormScript(pageState);
-  const customAmpscript = meta.customAmpscript ? `%%[\n${meta.customAmpscript}\n]%%` : '';
+  const ampscriptBlock = getAmpscriptBlock(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
@@ -831,12 +740,12 @@ export const generateHtml = (pageState: CloudPage): string => {
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState);
   
-  return `${security.amscript}
+  return `%%[ ${security.amscript} ]%%
+${ampscriptBlock}
 <!DOCTYPE html>
 <html>
 <head>
 ${security.ssjs}
-${formScript}
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${meta.title}</title>
@@ -1661,7 +1570,7 @@ ${trackingScripts}
         form.addEventListener('submit', function(e) {
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
-            hiddenInput.name = '__isFormPost';
+            hiddenInput.name = 'submitted';
             hiddenInput.value = 'true';
             form.appendChild(hiddenInput);
 
@@ -1673,72 +1582,6 @@ ${trackingScripts}
                  submitButton.querySelector('.button-text').style.opacity = '0';
                  submitButton.querySelector('.button-loader').style.display = 'block';
                }
-            }
-        });
-    }
-
-    function renderCharts() {
-        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined' || typeof Recharts === 'undefined') {
-            console.error('Recharts or React is not loaded');
-            return;
-        }
-
-        const { BarChart, LineChart, PieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
-        const e = React.createElement;
-
-        document.querySelectorAll('.chart-container').forEach(container => {
-            const renderTarget = container.querySelector('.chart-render-target');
-            if (!renderTarget) return;
-
-            try {
-                const type = container.dataset.chartType;
-                const nameKey = container.dataset.nameKey;
-                const dataKeys = JSON.parse(container.dataset.dataKeys || '[]');
-                const colors = JSON.parse(container.dataset.colors || '[]');
-                
-                const dataString = container.querySelector('.chart-data-source').textContent || '[]';
-                const data = JSON.parse(dataString);
-
-                let chartElement;
-
-                if (type === 'bar') {
-                    const bars = dataKeys.map((key, index) => e(Bar, { key, dataKey: key, fill: colors[index % colors.length] }));
-                    chartElement = e(BarChart, { data: data },
-                        e(CartesianGrid, { strokeDasharray: "3 3" }),
-                        e(XAxis, { dataKey: nameKey }),
-                        e(YAxis),
-                        e(Tooltip),
-                        e(Legend),
-                        ...bars
-                    );
-                } else if (type === 'line') {
-                    const lines = dataKeys.map((key, index) => e(Line, { key, type: "monotone", dataKey: key, stroke: colors[index % colors.length] }));
-                    chartElement = e(LineChart, { data: data },
-                        e(CartesianGrid, { strokeDasharray: "3 3" }),
-                        e(XAxis, { dataKey: nameKey }),
-                        e(YAxis),
-                        e(Tooltip),
-                        e(Legend),
-                        ...lines
-                    );
-                } else if (type === 'pie') {
-                    const pieCells = data.map((entry, index) => e(Cell, { key: \`cell-\${index}\`, fill: colors[index % colors.length] }));
-                    const pie = e(Pie, { data, dataKey: dataKeys[0], nameKey, cx: "50%", cy: "50%", outerRadius: '80%', fill: "#8884d8", label: true }, ...pieCells);
-                    chartElement = e(PieChart, null,
-                        pie,
-                        e(Tooltip),
-                        e(Legend)
-                    );
-                }
-                
-                if(chartElement) {
-                     const chart = e(ResponsiveContainer, { width: '100%', height: '100%' }, chartElement);
-                     ReactDOM.render(chart, renderTarget);
-                }
-
-            } catch (error) {
-                renderTarget.innerHTML = '<p style="color: red;">Erro ao renderizar o gráfico. Verifique os dados JSON.</p><pre>' + error.message + '</pre>';
-                console.error("Chart Error:", error);
             }
         });
     }
@@ -1778,13 +1621,10 @@ ${trackingScripts}
         setupAccordions();
         setupTabs();
         setSocialIconStyles();
-        renderCharts();
     });
 </script>
 </head>
 <body>
-  ${customAmpscript}
-  ${security.body}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
     <img src="${meta.loaderImageUrl}" alt="Loader">
@@ -1800,7 +1640,9 @@ ${trackingScripts}
   </div>
 
   ${cookieBannerHtml}
+  %%[ ELSE ]%%
+  ${security.body}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;

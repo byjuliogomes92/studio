@@ -20,8 +20,7 @@ export type ComponentType =
   | 'NPS'
   | 'Map'
   | 'SocialIcons'
-  | 'Columns'
-  | 'Chart';
+  | 'Columns';
   
 export type Brand = 'Natura' | 'Avon';
 

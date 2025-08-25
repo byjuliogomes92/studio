@@ -14,7 +14,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                     const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
                     columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
                 }
-                return `<div class="columns-container" style="--column-count: ${columnCount}">${renderSingleComponent(component, pageState, isForPreview, columnsHtml)}</div>`;
+                return renderSingleComponent(component, pageState, isForPreview, columnsHtml);
             }
             return `<div class="component-wrapper">${renderComponent(component, pageState, isForPreview)}</div>`;
         })
@@ -74,6 +74,11 @@ const getStyleString = (styles: any = {}): string => {
 
 
 const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean): string => {
+  if (isForPreview) {
+    // For preview, we don't want the A/B testing logic with AMPScript
+    return renderSingleComponent(component, pageState, isForPreview);
+  }
+
   if (component.abTestEnabled) {
     const variantB = (component.abTestVariants && component.abTestVariants[0]) || {};
     const propsA = component.props;
@@ -344,6 +349,13 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             const faces = ['😡', '😠', '😑', '😐', '🙂', '😄', '😁'];
             optionsHtml = faces.map((face, i) => `<button class="nps-option nps-face" data-score="${i}">${face}</button>`).join('');
         }
+        
+        const npsScript = isForPreview ? '' : `
+            <script defer src="https://storage.googleapis.com/cloud-page-forge-scripts/nps-handler.js" 
+                    data-nps-id="${npsId}"
+                    data-de-key="${pageState.meta.dataExtensionKey || ''}">
+            </script>
+        `;
 
         return `
             <div id="${npsId}" class="nps-container" style="${styleString}">
@@ -359,10 +371,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                     <p>${thankYouMessage}</p>
                 </div>
             </div>
-            <script defer src="https://storage.googleapis.com/cloud-page-forge-scripts/nps-handler.js" 
-                    data-nps-id="${npsId}"
-                    data-de-key="${pageState.meta.dataExtensionKey || ''}">
-            </script>
+           ${npsScript}
         `;
     }
     case 'Map': {
@@ -624,7 +633,6 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
     const deIdentifier = meta.dataExtensionKey || '';
     const deMethod = meta.dataExtensionTargetMethod || 'key';
     
-    // Dynamically build the list of fields to retrieve from the request
     let fieldRetrievalScript = '';
     let rowDataPopulation = '';
 
@@ -636,15 +644,20 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
         rowDataPopulation += `if(typeof ${fieldName} !== 'undefined' && ${fieldName} !== null) rowData["${deColumnName}"] = ${fieldName};\n                        `;
       });
     }
-
+    
+    let npsHandlingScript = '';
     if (npsComponent) {
-        fieldRetrievalScript += `var nps_score = Request.GetFormField("NPS_SCORE");\n            var nps_date = Now();\n            `;
+        fieldRetrievalScript += `var nps_score = Request.GetFormField("NPS_SCORE");\n            `;
         rowDataPopulation += 'if(typeof nps_score !== "undefined" && nps_score !== null) rowData["NPS_SCORE"] = nps_score;\n                    ';
-        rowDataPopulation += 'if(typeof nps_date !== "undefined" && nps_date !== null) rowData["NPS_DATE"] = nps_date;\n                    ';
+        
+        npsHandlingScript = `
+            var nps_date = Now();
+            if (typeof nps_date !== 'undefined' && nps_date !== null) {
+                rowData["NPS_DATE"] = nps_date;
+            }
+        `;
     }
 
-
-    // This script block will be generated to handle form submission.
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
@@ -672,34 +685,26 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
 
                 if (de) {
                     var rowData = {};
-                    var lookupColumn = "";
-                    var lookupValue = "";
-
-                    // Populate rowData object dynamically
-                    ${rowDataPopulation}
                     
-                    // Handle Optin specifically
+                    ${rowDataPopulation}
+                    ${npsHandlingScript}
+                    
                     if (rowData["OPTIN"] == "on") {
                        rowData["OPTIN"] = "True";
                     } else if (rowData["OPTIN"] == "" || rowData["OPTIN"] == null) {
                        rowData["OPTIN"] = "False";
                     }
 
+                    var lookupValue = rowData["EMAIL"] || null;
 
-                    if (rowData["EMAIL"]) {
-                        lookupColumn = "EMAIL";
-                        lookupValue = rowData["EMAIL"];
-                    }
-                    
-                    if (lookupColumn && lookupValue) {
-                       var existingRows = de.Rows.Lookup([lookupColumn], [lookupValue]);
+                    if (lookupValue) {
+                       var existingRows = de.Rows.Lookup(["EMAIL"], [lookupValue]);
                        if (existingRows && existingRows.length > 0) {
-                           de.Rows.Update(rowData, [lookupColumn], [lookupValue]);
+                           de.Rows.Update(rowData, ["EMAIL"], [lookupValue]);
                        } else {
                            de.Rows.Add(rowData);
                        }
                     } else {
-                        // If no email to lookup, just add the row
                         de.Rows.Add(rowData);
                     }
 
@@ -994,7 +999,6 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   
   const security = getSecurityScripts(pageState);
   
-  // Only include the SSJS processing block if it's the final code, not for the preview.
   const ssjsBlock = isForPreview ? '' : getAmpscriptProcessingBlock(pageState);
   const clientSideScripts = getClientSideScripts();
   

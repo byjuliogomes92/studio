@@ -1718,7 +1718,7 @@ ${trackingScripts}
                     );
                 } else if (type === 'pie') {
                     const pieCells = data.map((entry, index) => e(Cell, { key: \`cell-\${index}\`, fill: colors[index % colors.length] }));
-                    const pie = e(Pie, { data: data, dataKey: dataKeys[0], nameKey: nameKey, cx: "50%", cy: "50%", outerRadius: 150, fill: "#8884d8", label: true }, ...pieCells);
+                    const pie = e(Pie, { data, dataKey: dataKeys[0], nameKey, cx: "50%", cy: "50%", outerRadius: 150, fill: "#8884d8", label: true }, ...pieCells);
                     chartElement = e(PieChart, { width: 400, height: 400 },
                         pie,
                         e(Tooltip),
@@ -1800,4 +1800,5 @@ ${trackingScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;
+};

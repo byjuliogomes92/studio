@@ -102,17 +102,9 @@ function SortableItem({ component, children }: { component: PageComponent; child
     zIndex: isDragging ? 10 : 'auto',
   };
   
-  // Clone the child and pass the dnd props to it
-  const childWithDndProps = React.cloneElement(children as React.ReactElement, {
-    dndAttributes: attributes,
-    dndListeners: listeners,
-  });
-
   return (
     <div ref={setNodeRef} style={style}>
       {React.isValidElement(children) ? React.cloneElement(children, {
-          // Pass dnd props only if the child is the ComponentItem for a Column container
-          // or if it's a regular ComponentItem
           dndAttributes: attributes,
           dndListeners: listeners,
         }) : children}
@@ -549,34 +541,40 @@ export function SettingsPanel({
         const columnCount = component.props.columnCount || 2;
         return (
           <SortableItem key={component.id} component={component}>
-            <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
-              <ComponentItem
-                component={component}
-                selectedComponentId={selectedComponentId}
-                setSelectedComponentId={setSelectedComponentId}
-                removeComponent={removeComponent}
-                // dnd props passed by SortableItem's cloneElement
-              />
-              <div className={`grid grid-cols-${columnCount} gap-2`}>
-                {Array.from({ length: columnCount }, (_, i) => (
-                  <ColumnDropzone key={i} id={`${component.id}-${i}`}>
-                    {renderColumnContent(component.id, i)}
-                  </ColumnDropzone>
-                ))}
+            {(dndProps: any) => (
+              <div className="flex flex-col gap-2 bg-background/50 p-2 rounded-lg border">
+                <ComponentItem
+                  component={component}
+                  selectedComponentId={selectedComponentId}
+                  setSelectedComponentId={setSelectedComponentId}
+                  removeComponent={removeComponent}
+                  dndAttributes={dndProps.dndAttributes}
+                  dndListeners={dndProps.dndListeners}
+                />
+                <div className={`grid grid-cols-${columnCount} gap-2`}>
+                  {Array.from({ length: columnCount }, (_, i) => (
+                    <ColumnDropzone key={i} id={`${component.id}-${i}`}>
+                      {renderColumnContent(component.id, i)}
+                    </ColumnDropzone>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </SortableItem>
         );
       }
       return (
         <SortableItem key={component.id} component={component}>
-          <ComponentItem
-            component={component}
-            selectedComponentId={selectedComponentId}
-            setSelectedComponentId={setSelectedComponentId}
-            removeComponent={removeComponent}
-             // dnd props passed by SortableItem's cloneElement
-          />
+          {(dndProps: any) => (
+            <ComponentItem
+              component={component}
+              selectedComponentId={selectedComponentId}
+              setSelectedComponentId={setSelectedComponentId}
+              removeComponent={removeComponent}
+              dndAttributes={dndProps.dndAttributes}
+              dndListeners={dndProps.dndListeners}
+            />
+          )}
         </SortableItem>
       );
     });
@@ -591,12 +589,16 @@ export function SettingsPanel({
         <SortableContext items={columnComponents.map(c => c.id)} strategy={verticalListSortingStrategy}>
             {columnComponents.map(component => (
                  <SortableItem key={component.id} component={component}>
-                    <ComponentItem
-                        component={component}
-                        selectedComponentId={selectedComponentId}
-                        setSelectedComponentId={setSelectedComponentId}
-                        removeComponent={removeComponent}
-                    />
+                   {(dndProps: any) => (
+                      <ComponentItem
+                          component={component}
+                          selectedComponentId={selectedComponentId}
+                          setSelectedComponentId={setSelectedComponentId}
+                          removeComponent={removeComponent}
+                          dndAttributes={dndProps.dndAttributes}
+                          dndListeners={dndProps.dndListeners}
+                      />
+                   )}
                 </SortableItem>
             ))}
         </SortableContext>

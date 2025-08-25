@@ -4,7 +4,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import type { CloudPage, ComponentType, PageComponent, SecurityType } from "@/lib/types";
-import React from 'react';
+import React, { useState } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type Active, type Over } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -34,6 +34,7 @@ import { AddComponentDialog } from './add-component-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { cn } from "@/lib/utils";
 import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
+import { Dialog, DialogTrigger } from "../ui/dialog";
 
 
 interface SettingsPanelProps {
@@ -190,6 +191,8 @@ export function SettingsPanel({
   setPageName,
   onComponentChange,
 }: SettingsPanelProps) {
+
+  const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -377,7 +380,7 @@ export function SettingsPanel({
                 break;
             case 'Map':
                 newComponent.props = {
-                    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
+                    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
                 };
                 break;
             case 'SocialIcons':
@@ -755,10 +758,19 @@ SET @name = AttributeValue("FirstName")`}
                                     </TooltipContent>
                                 </Tooltip>
                            </div>
-                           <AmpscriptSnippetDialog 
-                                currentCode={pageState.meta.customAmpscript || ''}
-                                onCodeChange={handleAmpscriptChange}
-                           />
+                           <Dialog open={isAmpscriptDialogOpen} onOpenChange={setIsAmpscriptDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Bot className="mr-2 h-4 w-4" />
+                                        Adicionar Automação
+                                    </Button>
+                                </DialogTrigger>
+                                <AmpscriptSnippetDialog 
+                                    currentCode={pageState.meta.customAmpscript || ''}
+                                    onCodeChange={handleAmpscriptChange}
+                                    onClose={() => setIsAmpscriptDialogOpen(false)}
+                                />
+                           </Dialog>
                         </div>
                         <Textarea 
                             id="custom-ampscript"

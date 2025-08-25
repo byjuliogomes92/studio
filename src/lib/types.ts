@@ -1,4 +1,5 @@
 
+
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -33,6 +34,7 @@ export interface PageComponent {
   order: number;          // Order within its container (root or a column)
   abTestEnabled?: boolean;
   abTestVariants?: any[];
+  children?: PageComponent[]; // For nesting components, e.g., inside columns
 }
 
 export type SecurityType = 'none' | 'sso' | 'password';
@@ -102,10 +104,11 @@ export interface Template {
   brand: Brand;
   description?: string;
   styles: CloudPage['styles'];
-  components: CloudPage['components'];
+  components: PageComponent[];
   meta: Omit<CloudPage['meta'], 'dataExtensionKey' | 'redirectUrl' | 'tracking' | 'security'>;
   cookieBanner?: CloudPage['cookieBanner'];
   createdBy: string; // UserID of the creator
   createdAt: any;
   updatedAt: any;
+  isDefault?: boolean; // Flag to identify default templates
 }

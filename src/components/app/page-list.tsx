@@ -57,11 +57,13 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject, getTemplates, getTemplate } from "@/lib/firestore";
+import { defaultTemplates } from "@/lib/default-templates";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format } from 'date-fns';
 import { ScrollArea } from "../ui/scroll-area";
+import { produce } from "immer";
 
 interface PageListProps {
   projectId: string;
@@ -268,8 +270,9 @@ export function PageList({ projectId }: PageListProps) {
   // Create Page Dialog State
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [userTemplates, setUserTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [selectedTemplateIsDefault, setSelectedTemplateIsDefault] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newPageName, setNewPageName] = useState("");
   const [selectedBrand, setSelectedBrand] = useState<Brand>("Natura");
@@ -308,7 +311,7 @@ export function PageList({ projectId }: PageListProps) {
     if (isCreateModalOpen && user) {
       const fetchTemplates = async () => {
         const fetchedTemplates = await getTemplates(user.uid);
-        setTemplates(fetchedTemplates);
+        setUserTemplates(fetchedTemplates);
       };
       fetchTemplates();
     }
@@ -339,10 +342,51 @@ export function PageList({ projectId }: PageListProps) {
         if (selectedTemplate === 'blank') {
             newPageData = getInitialPage(newPageName, projectId, user.uid, selectedBrand);
         } else {
-            const template = await getTemplate(selectedTemplate);
+            let template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'> | null = null;
+            if (selectedTemplateIsDefault) {
+                // Find it in the hardcoded default templates
+                template = defaultTemplates.find(t => t.name === selectedTemplate) || null;
+            } else {
+                // Find it in the user's Firestore templates
+                template = await getTemplate(selectedTemplate);
+            }
+            
             if (!template) {
                 throw new Error("Template não encontrado.");
             }
+            // Deep copy and recursively replace IDs
+            const newComponents = produce(template.components, draft => {
+                const idMap: { [oldId: string]: string } = {};
+
+                const generateNewId = () => `comp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+                // First pass: create a map of old IDs to new IDs
+                const traverseAndMap = (components: any[]) => {
+                    components.forEach(component => {
+                        const oldId = component.id;
+                        idMap[oldId] = generateNewId();
+                        if (component.children) {
+                            traverseAndMap(component.children);
+                        }
+                    });
+                };
+                traverseAndMap(draft);
+                
+                // Second pass: replace all IDs
+                const traverseAndReplace = (components: any[]) => {
+                    components.forEach(component => {
+                        component.id = idMap[component.id];
+                        if (component.parentId) {
+                            component.parentId = idMap[component.parentId];
+                        }
+                        if (component.children) {
+                            traverseAndReplace(component.children);
+                        }
+                    });
+                }
+                traverseAndReplace(draft);
+            });
+
             newPageData = {
                 name: newPageName,
                 brand: selectedBrand,
@@ -350,7 +394,7 @@ export function PageList({ projectId }: PageListProps) {
                 userId: user.uid,
                 tags: [],
                 styles: template.styles,
-                components: template.components,
+                components: newComponents,
                 cookieBanner: template.cookieBanner,
                 meta: {
                     ...template.meta,
@@ -453,6 +497,11 @@ export function PageList({ projectId }: PageListProps) {
         }
       });
   }, [pages, activeTag, searchTerm, sortOption]);
+  
+  const combinedTemplates = useMemo(() => {
+    const defaults = defaultTemplates.map(t => ({...t, id: t.name, isDefault: true}));
+    return [...defaults, ...userTemplates];
+  }, [userTemplates])
 
   const getSortDirection = (column: 'name' | 'updatedAt') => {
     if (sortOption.startsWith(column)) {
@@ -602,23 +651,24 @@ export function PageList({ projectId }: PageListProps) {
                             <div className="py-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div 
                                     className={cn("border-2 rounded-lg p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary", selectedTemplate === 'blank' ? 'border-primary' : 'border-dashed')}
-                                    onClick={() => setSelectedTemplate('blank')}
+                                    onClick={() => { setSelectedTemplate('blank'); setSelectedTemplateIsDefault(false); }}
                                 >
                                     <FileText className="h-12 w-12 mb-2" />
                                     <h3 className="font-semibold">Página em Branco</h3>
                                     <p className="text-sm text-muted-foreground">Comece do zero.</p>
                                 </div>
-                                {templates.map(template => (
+                                {combinedTemplates.map(template => (
                                     <div 
                                         key={template.id}
                                         className={cn("border-2 rounded-lg p-4 cursor-pointer hover:border-primary", selectedTemplate === template.id ? 'border-primary' : '')}
-                                        onClick={() => setSelectedTemplate(template.id)}
+                                        onClick={() => { setSelectedTemplate(template.id); setSelectedTemplateIsDefault(!!template.isDefault); }}
                                     >
                                         <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
                                             <Server className="h-8 w-8 text-muted-foreground" />
                                         </div>
                                         <h3 className="font-semibold truncate">{template.name}</h3>
                                         <p className="text-sm text-muted-foreground truncate">{template.description}</p>
+                                         {template.isDefault && <Badge variant="secondary" className="mt-2">Padrão</Badge>}
                                     </div>
                                 ))}
                             </div>

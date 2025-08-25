@@ -2,7 +2,7 @@
 import type { CloudPage, PageComponent, ComponentType } from './types';
 
 
-function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage): string {
+function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
         .sort((a, b) => a.order - b.order)
         .map(component => {
@@ -11,11 +11,11 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                 let columnsHtml = '';
                 for (let i = 0; i < columnCount; i++) {
                     const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
-                    columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState)}</div>`;
+                    columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
                 }
-                return `<div class="columns-container" style="--column-count: ${columnCount}">${columnsHtml}</div>`;
+                return `<div class="columns-container" style="--column-count: ${columnCount}">${renderSingleComponent(component, pageState, isForPreview, columnsHtml)}</div>`;
             }
-            return `<div class="component-wrapper">${renderComponent(component, pageState)}</div>`;
+            return `<div class="component-wrapper">${renderComponent(component, pageState, isForPreview)}</div>`;
         })
         .join('\n');
 }
@@ -72,14 +72,14 @@ const getStyleString = (styles: any = {}): string => {
 };
 
 
-const renderComponent = (component: PageComponent, pageState: CloudPage): string => {
+const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean): string => {
   if (component.abTestEnabled) {
     const variantB = (component.abTestVariants && component.abTestVariants[0]) || {};
     const propsA = component.props;
     const propsB = { ...propsA, ...variantB }; // Variant B props override Variant A
 
-    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState);
-    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState);
+    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview);
+    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview);
 
     const randomVar = `v(@Random_${component.id.slice(-5)})`;
     const hiddenInput = `<input type="hidden" name="VARIANTE_${component.id.toUpperCase()}" value="%%=v(@VARIANTE_${component.id.toUpperCase()})=%%">`;
@@ -98,13 +98,13 @@ const renderComponent = (component: PageComponent, pageState: CloudPage): string
     ${hiddenInput}
     `;
   }
-  return renderSingleComponent(component, pageState);
+  return renderSingleComponent(component, pageState, isForPreview);
 };
 
-const renderSingleComponent = (component: PageComponent, pageState: CloudPage): string => {
+const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = ''): string => {
   const styles = component.props.styles || {};
   const styleString = getStyleString(styles);
-  const editableAttrs = (propName: string) => `contenteditable="true" data-component-id="${component.id}" data-prop-name="${propName}"`;
+  const editableAttrs = (propName: string) => isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="${propName}"` : '';
 
 
   switch (component.type) {
@@ -409,8 +409,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
         return `<div class="social-icons-container" style="text-align: ${align}; ${styleString}" data-icon-size="${iconSize}">${iconsHtml}</div>`;
     }
     case 'Columns':
-        // This case is handled by the recursive renderComponents function
-        return '';
+        return `<div class="columns-container" style="--column-count: ${component.props.columnCount || 2}; ${styleString}">${childrenHtml}</div>`;
     case 'Form': {
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
       const { meta } = pageState;
@@ -420,6 +419,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
         <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
             <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                  <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
+                 <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
                  <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
 
                  <div class="row">
@@ -615,56 +615,82 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 
 
 const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
-    const { meta } = pageState;
+    const { meta, components } = pageState;
+    const formComponent = components.find(c => c.type === 'Form');
+    const npsComponent = components.find(c => c.type === 'NPS');
+    const abTestComponents = components.filter(c => c.abTestEnabled);
+
+    if (!formComponent && !npsComponent) return '';
+
+    const deIdentifier = meta.dataExtensionKey || '';
+    const deMethod = meta.dataExtensionTargetMethod || 'key';
+
+    // This script block will be generated to handle form submission.
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
-    var debug = false; 
+    var debug = false;
 
     try {
         if (Request.Method == "POST") {
-            var deTarget = Request.GetFormField("__de");
-            var deTargetMethod = "${meta.dataExtensionTargetMethod || 'key'}";
+            var deIdentifier = Request.GetFormField("__de");
+            var deMethod = Request.GetFormField("__de_method");
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
 
-            if (deTarget) {
+            if (deIdentifier) {
                 var de;
-                if (deTargetMethod == "name") {
-                    de = DataExtension.Init(deTarget);
+                // Correctly initialize DE based on method
+                if (deMethod == "name") {
+                    var deList = DataExtension.Retrieve({Property:"Name",SimpleOperator:"equals",Value:deIdentifier});
+                    if (deList.length > 0) {
+                        de = DataExtension.Init(deList[0].CustomerKey);
+                    }
                 } else {
-                    de = DataExtension.Init(deTarget); // Fallback to key/name
+                    de = DataExtension.Init(deIdentifier);
                 }
-                
-                var formFields = Request.GetFormFields();
-                var rowData = {};
-                var lookupColumn = "";
-                var lookupValue = "";
 
-                for (var key in formFields) {
-                    if (key.toUpperCase() !== "__DE" && key.toUpperCase() !== "__SUCCESSURL") {
-                        var value = formFields[key];
-                        rowData[key] = value;
-                        if (key.toUpperCase() == 'EMAIL') { // Assuming EMAIL is primary key
-                           lookupColumn = "EMAIL";
-                           lookupValue = value;
+                if (de) {
+                    var formFields = Request.GetFormFields();
+                    var rowData = {};
+                    var lookupColumn = "";
+                    var lookupValue = "";
+
+                    for (var key in formFields) {
+                        if (key.indexOf("__") != 0) { // Ignore system fields
+                            var value = formFields[key];
+                            if (key.toUpperCase() == "OPTIN" && (value == null || value == "")) {
+                                value = "False";
+                            } else if (key.toUpperCase() == "OPTIN" && value == "on") {
+                                value = "True";
+                            }
+                            rowData[key] = value;
                         }
                     }
-                }
 
-                if (lookupValue) {
-                   var existingRows = de.Rows.Lookup([lookupColumn], [lookupValue]);
-                   if (existingRows && existingRows.length > 0) {
-                       de.Rows.Update(rowData, [lookupColumn], [lookupValue]);
-                   } else {
-                       de.Rows.Add(rowData);
-                   }
-                } else {
-                    // Fallback for forms without email or if another primary key is needed
-                    de.Rows.Add(rowData);
+                    // Use EMAIL as the primary key for upsert
+                    if (rowData["EMAIL"]) {
+                        lookupColumn = "EMAIL";
+                        lookupValue = rowData["EMAIL"];
+                    }
+                    
+                    // Add NPS date if NPS component exists
+                    ${npsComponent ? 'rowData["NPS_DATE"] = Now();' : ''}
+
+                    if (lookupValue) {
+                       var existingRows = de.Rows.Lookup([lookupColumn], [lookupValue]);
+                       if (existingRows && existingRows.length > 0) {
+                           de.Rows.Update(rowData, [lookupColumn], [lookupValue]);
+                       } else {
+                           de.Rows.Add(rowData);
+                       }
+                    } else {
+                        // Fallback for forms without email or if another primary key is needed
+                        de.Rows.Add(rowData);
+                    }
+
+                    showThanks = true;
                 }
-                
-                showThanks = true;
             }
 
             if (showThanks && redirectUrl && !debug) {
@@ -679,7 +705,7 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
         }
     }
 </script>
-    `;
+`;
 }
 
 const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
@@ -749,7 +775,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   // Only include the SSJS processing block if it's the final code, not for the preview.
   const ssjsBlock = isForPreview ? '' : getAmpscriptProcessingBlock(pageState);
   
-  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
+  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
   const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
   const footerComponent = components.find(c => c.type === 'Footer' && c.parentId === null);
@@ -757,7 +783,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState);
+  const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState, isForPreview);
   
   return `%%[ 
     VAR @showThanks
@@ -1637,12 +1663,12 @@ ${trackingScripts}
   </div>
   ${stripeComponents}
   <div class="container" style="display: block;">
-    ${headerComponent ? renderComponent(headerComponent, pageState) : ''}
-    ${bannerComponent ? renderComponent(bannerComponent, pageState) : ''}
+    ${headerComponent ? renderComponent(headerComponent, pageState, isForPreview) : ''}
+    ${bannerComponent ? renderComponent(bannerComponent, pageState, isForPreview) : ''}
     <div class="content-wrapper">
       ${mainComponents}
     </div>
-    ${footerComponent ? renderComponent(footerComponent, pageState) : ''}
+    ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}
   </div>
 
   ${cookieBannerHtml}
@@ -1652,3 +1678,4 @@ ${trackingScripts}
 </body>
 </html>
 `
+    

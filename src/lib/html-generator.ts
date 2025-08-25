@@ -1691,7 +1691,6 @@ ${trackingScripts}
                 const dataKeys = JSON.parse(container.dataset.dataKeys);
                 const colors = JSON.parse(container.dataset.colors);
                 
-                // The data source can contain AMPScript, so its content is the resolved JSON string.
                 const dataString = container.querySelector('.chart-data-source').textContent;
                 const data = JSON.parse(dataString || '[]');
 
@@ -1718,10 +1717,10 @@ ${trackingScripts}
                         ...lines
                     );
                 } else if (type === 'pie') {
+                    const pieCells = data.map((entry, index) => e(Cell, { key: \`cell-\${index}\`, fill: colors[index % colors.length] }));
+                    const pie = e(Pie, { data: data, dataKey: dataKeys[0], nameKey: nameKey, cx: "50%", cy: "50%", outerRadius: 150, fill: "#8884d8", label: true }, ...pieCells);
                     chartElement = e(PieChart, { width: 400, height: 400 },
-                        e(Pie, { data: data, dataKey: dataKeys[0], nameKey: nameKey, cx: "50%", cy: "50%", outerRadius: 150, fill: "#8884d8", label: true },
-                           data.map((entry, index) => e(Cell, { key: `cell-${index}`, fill: colors[index % colors.length] }))
-                        ),
+                        pie,
                         e(Tooltip),
                         e(Legend)
                     );
@@ -1801,4 +1800,4 @@ ${trackingScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
+`

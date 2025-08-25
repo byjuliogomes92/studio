@@ -2,6 +2,7 @@
 "use client";
 
 import type { PageComponent, ComponentType } from "@/lib/types";
+import React, { useState, useEffect } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -253,6 +254,24 @@ function VotingOptionsManager({
     );
 }
 
+// A generic text input component that updates on blur
+const DebouncedTextInput = ({ value, onBlur, ...props }: { value: string; onBlur: (value: string) => void;[key: string]: any; }) => {
+    const [localValue, setLocalValue] = useState(value);
+
+    useEffect(() => {
+        setLocalValue(value);
+    }, [value]);
+
+    return (
+        <Textarea
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={() => onBlur(localValue)}
+            {...props}
+        />
+    );
+}
+
 const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
     switch (type) {
       case "Header":
@@ -295,10 +314,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="text-content">Texto</Label>
-              <Textarea
+              <DebouncedTextInput
                 id="text-content"
                 value={props.text || ""}
-                onChange={(e) => onPropChange("text", e.target.value)}
+                onBlur={(value) => onPropChange("text", value)}
                 rows={4}
               />
             </div>
@@ -325,10 +344,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </TooltipContent>
                     </Tooltip>
                 </div>
-                <Textarea
+                <DebouncedTextInput
                 id="text-content"
                 value={props.text || ""}
-                onChange={(e) => onPropChange("text", e.target.value)}
+                onBlur={(value) => onPropChange("text", value)}
                 rows={8}
                 />
             </div>
@@ -856,7 +875,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     <TooltipContent><p>Primeira linha de texto no rodapé (ex: copyright).</p></TooltipContent>
                   </Tooltip>
                 </div>
-                <Textarea id="footer-text-1" value={props.footerText1 || ""} onChange={(e) => onPropChange("footerText1", e.target.value)} rows={3}/>
+                <DebouncedTextInput id="footer-text-1" value={props.footerText1 || ""} onBlur={(value) => onPropChange("footerText1", value)} rows={3}/>
             </div>
             <div className="space-y-2">
                  <div className="flex items-center gap-1.5">
@@ -866,7 +885,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     <TooltipContent><p>Segunda linha de texto no rodapé (ex: informações da empresa).</p></TooltipContent>
                   </Tooltip>
                 </div>
-                <Textarea id="footer-text-2" value={props.footerText2 || ""} onChange={(e) => onPropChange("footerText2", e.target.value)} rows={6} />
+                <DebouncedTextInput id="footer-text-2" value={props.footerText2 || ""} onBlur={(value) => onPropChange("footerText2", value)} rows={6} />
             </div>
             <div className="space-y-2">
                  <div className="flex items-center gap-1.5">
@@ -876,7 +895,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     <TooltipContent><p>Terceira linha de texto no rodapé (ex: aviso legal).</p></TooltipContent>
                   </Tooltip>
                 </div>
-                <Textarea id="footer-text-3" value={props.footerText3 || ""} onChange={(e) => onPropChange("footerText3", e.target.value)} rows={4}/>
+                <DebouncedTextInput id="footer-text-3" value={props.footerText3 || ""} onBlur={(value) => onPropChange("footerText3", value)} rows={4}/>
             </div>
           </div>
         );

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -19,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 interface CloudPageForgeProps {
   pageId: string;
@@ -417,24 +417,31 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         </div>
       </header>
       <div className="flex flex-grow overflow-hidden">
-        <aside className="w-[380px] border-r flex-shrink-0 bg-card/20">
-          <SettingsPanel
-            pageState={pageState}
-            setPageState={setPageState}
-            selectedComponentId={selectedComponentId}
-            setSelectedComponentId={setSelectedComponentId}
-            pageName={pageName}
-            setPageName={setPageName}
-            onComponentChange={handleComponentChange}
-          />
-        </aside>
-        <main className="flex-grow h-full">
-          <MainPanel 
-            pageState={pageState} 
-            setPageState={setPageState}
-            onDataExtensionKeyChange={handleDataExtensionKeyChange}
-           />
-        </main>
+        <ResizablePanelGroup direction="horizontal" className="flex-grow">
+            <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                <aside className="h-full bg-card/20">
+                    <SettingsPanel
+                        pageState={pageState}
+                        setPageState={setPageState}
+                        selectedComponentId={selectedComponentId}
+                        setSelectedComponentId={setSelectedComponentId}
+                        pageName={pageName}
+                        setPageName={setPageName}
+                        onComponentChange={handleComponentChange}
+                    />
+                </aside>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={75}>
+                <main className="flex-grow h-full">
+                    <MainPanel 
+                        pageState={pageState} 
+                        setPageState={setPageState}
+                        onDataExtensionKeyChange={handleDataExtensionKeyChange}
+                    />
+                </main>
+            </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
     </>

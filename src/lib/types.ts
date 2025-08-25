@@ -103,6 +103,7 @@ export interface Template {
   name: string;
   brand: Brand;
   description?: string;
+  icon?: string;
   styles: CloudPage['styles'];
   components: PageComponent[];
   meta: Omit<CloudPage['meta'], 'dataExtensionKey' | 'redirectUrl' | 'tracking' | 'security'>;

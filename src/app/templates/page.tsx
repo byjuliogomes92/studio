@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Template } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Eye } from "lucide-react";
+import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Eye, Rocket, Handshake, CalendarClock, Smile, CheckCheck, PartyPopper } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +41,17 @@ import { generateHtml } from "@/lib/html-generator";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
+
+const iconMap: { [key: string]: React.ElementType } = {
+  rocket: Rocket,
+  handshake: Handshake,
+  'calendar-clock': CalendarClock,
+  smile: Smile,
+  'check-check': CheckCheck,
+  'party-popper': PartyPopper,
+  default: Server,
+};
+
 
 function TemplatePreviewDialog({ template }: { template: Template }) {
   const previewHtml = useMemo(() => {
@@ -260,7 +271,9 @@ export default function TemplatesPage() {
     </DropdownMenu>
   );
   
-  const renderTemplateCard = (template: Template) => (
+  const renderTemplateCard = (template: Template) => {
+    const Icon = iconMap[template.icon || 'default'] || Server;
+    return (
      <Dialog key={template.id}>
         <div
             className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
@@ -268,7 +281,7 @@ export default function TemplatesPage() {
           <DialogTrigger asChild>
             <div className="cursor-pointer">
               <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
-                  <Server className="h-12 w-12 text-muted-foreground" />
+                  <Icon className="h-12 w-12 text-muted-foreground" />
               </div>
               <h3 className="font-semibold text-lg">{template.name}</h3>
               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{template.description || 'Sem descrição'}</p>
@@ -291,7 +304,8 @@ export default function TemplatesPage() {
         </div>
         <TemplatePreviewDialog template={template} />
      </Dialog>
-  )
+    )
+  }
 
   return (
     <div className="min-h-screen">

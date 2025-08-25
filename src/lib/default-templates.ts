@@ -11,6 +11,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     description: 'Um template elegante para anunciar um novo produto e capturar leads. Foco em imagem e formulário simples.',
     brand: 'Natura', // Default brand, can be changed on page creation
     isDefault: true,
+    icon: 'rocket',
     meta: {
         title: 'Lançamento de Produto',
         faviconUrl: '',
@@ -132,6 +133,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     description: 'Um template para engajar um novo cliente ou inscrito logo após o cadastro.',
     brand: 'Natura',
     isDefault: true,
+    icon: 'handshake',
     meta: {
       title: 'Bem-vindo!',
       faviconUrl: '',
@@ -167,6 +169,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     description: 'Promova um evento ou webinar e capture inscrições com um contador regressivo para urgência.',
     brand: 'Avon',
     isDefault: true,
+    icon: 'calendar-clock',
     meta: {
       title: 'Participe do Nosso Evento Exclusivo',
       faviconUrl: '',
@@ -198,6 +201,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     description: 'Template simples e direto para coletar feedback de satisfação do cliente (NPS).',
     brand: 'Natura',
     isDefault: true,
+    icon: 'smile',
     meta: {
       title: 'Pesquisa de Satisfação',
       faviconUrl: '',
@@ -227,6 +231,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     description: 'Confirme uma ação do usuário e sugira os próximos passos, como ler artigos ou ver produtos.',
     brand: 'Avon',
     isDefault: true,
+    icon: 'check-check',
     meta: {
       title: 'Obrigado!',
       faviconUrl: '',
@@ -262,6 +267,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     description: 'Página de manutenção ou "coming soon" para capturar o interesse antes do lançamento.',
     brand: 'Natura',
     isDefault: true,
+    icon: 'party-popper',
     meta: {
       title: 'Em Breve: Novidades Incríveis',
       faviconUrl: '',

@@ -3,7 +3,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import type { CloudPage, ComponentType, PageComponent } from "@/lib/types";
+import type { CloudPage, ComponentType, PageComponent, SecurityType } from "@/lib/types";
 import React from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type Active, type Over } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -206,9 +206,50 @@ export function SettingsPanel({
     setPageState((prev) => prev ? ({ ...prev, styles: { ...prev.styles, [prop]: value } }) : null);
   };
 
-  const handleMetaChange = (prop: keyof CloudPage["meta"], value: string | boolean | ('key' | 'name')) => {
-    setPageState((prev) => prev ? ({ ...prev, meta: { ...prev.meta, [prop]: value } }) : null);
+  const handleMetaChange = (prop: keyof CloudPage["meta"], value: any) => {
+    setPageState((prev) => {
+        if (!prev) return null;
+        return produce(prev, draft => {
+            (draft.meta as any)[prop] = value;
+        });
+    });
   };
+
+  const handleSecurityChange = (prop: string, value: any) => {
+    setPageState(prev => {
+        if (!prev) return null;
+        return produce(prev, draft => {
+            if (!draft.meta.security) {
+                draft.meta.security = { type: 'none' };
+            }
+            (draft.meta.security as any)[prop] = value;
+
+            // if changing type, reset passwordConfig
+            if (prop === 'type' && value !== 'password') {
+                draft.meta.security.passwordConfig = undefined;
+            }
+             if (prop === 'type' && value === 'password' && !draft.meta.security.passwordConfig) {
+                 draft.meta.security.passwordConfig = {
+                    dataExtensionKey: '',
+                    identifierColumn: 'SubscriberKey',
+                    passwordColumn: 'Password',
+                    urlParameter: 'id',
+                 }
+            }
+        });
+    });
+  };
+
+   const handlePasswordConfigChange = (prop: string, value: string) => {
+        setPageState(prev => {
+            if (!prev) return null;
+            return produce(prev, draft => {
+                if (draft.meta.security && draft.meta.security.passwordConfig) {
+                    (draft.meta.security.passwordConfig as any)[prop] = value;
+                }
+            });
+        });
+    };
   
   const handleCookieBannerChange = (prop: keyof NonNullable<CloudPage['cookieBanner']>, value: any) => {
      setPageState(prev => {
@@ -477,6 +518,8 @@ export function SettingsPanel({
   const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
+  const security = pageState.meta.security || { type: 'none' };
+
 
   const renderComponents = (parentId: string | null) => {
     const componentsToRender = pageState.components
@@ -814,20 +857,48 @@ export function SettingsPanel({
              <AccordionItem value="security">
                 <AccordionTrigger>Segurança & Acesso</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="sso-enabled" className="flex items-center gap-2">
-                            <Lock className="h-4 w-4"/>
-                            Proteger com SSO do Marketing Cloud
-                        </Label>
-                        <Switch
-                            id="sso-enabled"
-                            checked={pageState.meta.ssoProtection || false}
-                            onCheckedChange={(checked) => handleMetaChange('ssoProtection', checked)}
-                        />
+                     <div className="space-y-2">
+                        <Label htmlFor="security-type">Tipo de Proteção</Label>
+                        <Select value={security.type} onValueChange={(value: SecurityType) => handleSecurityChange('type', value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione um tipo de proteção" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Sem proteção (Pública)</SelectItem>
+                                <SelectItem value="sso">SSO do Marketing Cloud</SelectItem>
+                                <SelectItem value="password">Senha única por usuário</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                        Se ativado, os usuários serão redirecionados para a tela de login do Salesforce Marketing Cloud se não estiverem autenticados antes de poderem ver esta página.
-                    </p>
+
+                    {security.type === 'sso' && (
+                         <p className="text-sm text-muted-foreground">
+                            Os usuários serão redirecionados para a tela de login do Salesforce Marketing Cloud se não estiverem autenticados.
+                        </p>
+                    )}
+
+                     {security.type === 'password' && security.passwordConfig && (
+                        <div className="space-y-4 pt-4 border-t">
+                            <h4 className="font-medium text-sm">Configuração da Senha</h4>
+                            <div className="space-y-2">
+                                <Label htmlFor="pw-de-key">Chave da Data Extension de Senhas</Label>
+                                <Input id="pw-de-key" value={security.passwordConfig.dataExtensionKey} onChange={(e) => handlePasswordConfigChange('dataExtensionKey', e.target.value)} placeholder="Ex: DE_SENHAS_USUARIOS" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="pw-id-col">Coluna do Identificador do Usuário</Label>
+                                <Input id="pw-id-col" value={security.passwordConfig.identifierColumn} onChange={(e) => handlePasswordConfigChange('identifierColumn', e.target.value)} placeholder="Ex: SubscriberKey ou EmailAddress"/>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="pw-pass-col">Coluna da Senha</Label>
+                                <Input id="pw-pass-col" value={security.passwordConfig.passwordColumn} onChange={(e) => handlePasswordConfigChange('passwordColumn', e.target.value)} placeholder="Ex: Senha" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="pw-url-param">Parâmetro de URL para Identificador</Label>
+                                <Input id="pw-url-param" value={security.passwordConfig.urlParameter} onChange={(e) => handlePasswordConfigChange('urlParameter', e.target.value)} placeholder="Ex: id" />
+                            </div>
+                        </div>
+                    )}
+
                 </AccordionContent>
             </AccordionItem>
              <AccordionItem value="cookie-banner">

@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType } from './types';
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage): string {
@@ -418,10 +417,9 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage): 
       
       const formHtml = `
         <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-            <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
+            <form id="main-form" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                  <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                  <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
-                 <input type="hidden" name="__targetMethod" value="${meta.dataExtensionTargetMethod || 'key'}">
 
                  <div class="row">
                   ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
@@ -614,12 +612,10 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
     `;
 };
 
-
-const generateSSJSScript = (pageState: CloudPage): string => {
+const getFormScript = (pageState: CloudPage): string => {
     const { components } = pageState;
     const allFieldNames: string[] = [];
     
-    // --- Dynamically gather all field names from components ---
     const formComponent = components.find(c => c.type === 'Form');
     if (formComponent) {
         const { fields = {} } = formComponent.props;
@@ -639,14 +635,11 @@ const generateSSJSScript = (pageState: CloudPage): string => {
     if (components.some(c => c.type === 'NPS')) {
         allFieldNames.push('NPS_SCORE', 'NPS_DATE');
     }
-
-    // Generate SSJS code for getting form fields
-    const getFieldsScript = allFieldNames.map(name => `var ${name.toLowerCase()} = Request.GetFormField("${name}");`).join('\n        ');
     
-    // Generate SSJS objects for Add and Update
-    const addObjFields = allFieldNames.map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                ');
-    const updateObjFields = allFieldNames.filter(name => name.toUpperCase() !== "EMAIL").map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                    ');
-
+    // Dynamically generate the parts of the SSJS script
+    const fieldVars = allFieldNames.map(name => `var ${name.toLowerCase()} = Request.GetFormField("${name}");`).join('\n        ');
+    const updateObject = allFieldNames.filter(name => name.toUpperCase() !== "EMAIL").map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                    ');
+    const addObject = allFieldNames.map(name => `"${name}": ${name.toLowerCase()}`).join(',\n                ');
 
     return `
 <script runat="server">
@@ -654,15 +647,13 @@ const generateSSJSScript = (pageState: CloudPage): string => {
     var debug = false; 
 
     try {
-        if (Request.Method == "POST") {
+        if (Request.Method == "POST" && Request.GetFormField("__isFormPost") == "true") {
             var deKey = Request.GetFormField("__de");
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
 
-            // --- Dynamically get all configured fields ---
-            ${getFieldsScript}
+            ${fieldVars}
 
-            // --- Handle specific field types ---
             if (typeof optin !== 'undefined' && (optin == "" || optin == null)) {
                 optin = "False";
             } else if (typeof optin !== 'undefined' && optin == "on") {
@@ -679,27 +670,23 @@ const generateSSJSScript = (pageState: CloudPage): string => {
                 ${allFieldNames.map(name => `Write("${name}: " + (${name.toLowerCase()} || 'null') + "<br>");`).join('\n                ')}
             }
 
-            if (email != null && email != "" && deKey != null && deKey != "") {
+            if (deKey != null && deKey != "") {
                 var de = DataExtension.Init(deKey);
-                var existing = de.Rows.Lookup(["EMAIL"], [email]);
-
-                if (existing.length > 0) {
-                    // Update existing record
-                    de.Rows.Update(
-                        {
-                            ${updateObjFields}
-                        },
-                        ["EMAIL"], [email]
-                    );
-                     if (debug) { Write("<br><b>Status:</b> Registro atualizado."); }
+                
+                if (typeof email !== 'undefined' && email != null && email != "") {
+                    var existing = de.Rows.Lookup(["EMAIL"], [email]);
+                    if (existing.length > 0) {
+                        de.Rows.Update({${updateObject}}, ["EMAIL"], [email]);
+                        if (debug) { Write("<br><b>Status:</b> Registro atualizado."); }
+                    } else {
+                        de.Rows.Add({${addObject}});
+                        if (debug) { Write("<br><b>Status:</b> Novo registro inserido."); }
+                    }
                 } else {
-                    // Add new record
-                    de.Rows.Add({
-                        ${addObjFields}
-                    });
-                     if (debug) { Write("<br><b>Status:</b> Novo registro inserido."); }
+                    // Fallback for forms without email (e.g. NPS only)
+                     de.Rows.Add({${addObject}});
+                     if (debug) { Write("<br><b>Status:</b> Novo registro inserido (sem email)."); }
                 }
-
                 showThanks = true;
             }
 
@@ -712,14 +699,23 @@ const generateSSJSScript = (pageState: CloudPage): string => {
     } catch (e) {
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
+        } else {
+            // In case of error, you might want to redirect to an error page or show a message.
+            // For now, we'll just suppress the error in non-debug mode.
         }
     }
 </script>
 `;
 };
 
-const getSsoScript = (): string => {
-    return `%%[
+const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
+    const security = pageState.meta.security;
+    if (!security || security.type === 'none') {
+        return { ssjs: 'VAR @isAuthenticated = true;', amscript: '', body: '' };
+    }
+
+    if (security.type === 'sso') {
+        const amscript = `%%[
   VAR @IsAuthenticated, @RedirectURL
   SET @RedirectURL = CloudPagesURL(PageID)
   TRY 
@@ -728,16 +724,66 @@ const getSsoScript = (): string => {
     Redirect("https://mc.login.exacttarget.com/hub/auth?returnUrl=" + URLEncode(@RedirectURL), false)
   ENDTRY
 ]%%`;
-};
+        return { ssjs: 'VAR @isAuthenticated = true;', amscript, body: '' };
+    }
+    
+    if (security.type === 'password' && security.passwordConfig) {
+        const config = security.passwordConfig;
+        const ssjs = `
+<script runat="server">
+    Platform.Load("Core", "1.1.1");
+    var isAuthenticated = false;
+    var submittedPassword = Request.GetFormField("page_password");
+    var identifier = Request.GetQueryStringParameter("${config.urlParameter}");
+
+    if(submittedPassword != null && identifier != null) {
+        var pw_de = DataExtension.Init("${config.dataExtensionKey}");
+        var filter = {Property: "${config.identifierColumn}", SimpleOperator: "equals", Value: identifier};
+        var data = pw_de.Rows.Retrieve(filter);
+
+        if(data && data.length > 0) {
+            var correctPassword = data[0].${config.passwordColumn};
+            if(submittedPassword == correctPassword) {
+                isAuthenticated = true;
+                Platform.Function.SetCookie("page_auth_token", Platform.Function.GUID(), 1); 
+            }
+        }
+    } else if (Platform.Request.GetCookieValue("page_auth_token")) {
+        isAuthenticated = true;
+    }
+    Variable.SetValue("@isAuthenticated", isAuthenticated);
+</script>`;
+
+        const body = `
+%%[ IF @isAuthenticated != true THEN ]%%
+<div class="password-protection-container">
+    <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
+        <h2>Acesso Restrito</h2>
+        <p>Por favor, insira a senha para continuar.</p>
+        <input type="password" name="page_password" placeholder="Sua senha" required>
+        <button type="submit">Acessar</button>
+        %%[ IF Request.Method == "POST" THEN ]%%
+            <p class="error-message">Senha incorreta. Tente novamente.</p>
+        %%[ ENDIF ]%%
+    </form>
+</div>
+%%[ ENDIF ]%%`;
+
+        return { ssjs, amscript: '', body };
+    }
+
+    return { ssjs: 'VAR @isAuthenticated = true;', amscript: '', body: '' };
+}
 
 
 export const generateHtml = (pageState: CloudPage): string => {
   const { styles, components, meta, cookieBanner } = pageState;
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
-
-  const ssoScript = meta.ssoProtection ? getSsoScript() : '';
-  const ssjsScript = generateSSJSScript(pageState);
+  
+  const security = getSecurityScripts(pageState);
+  const formScript = getFormScript(pageState);
+  
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState)).join('\n');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
   const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
@@ -747,12 +793,13 @@ export const generateHtml = (pageState: CloudPage): string => {
   const googleFont = styles.fontFamily || 'Roboto';
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState);
-  const formComponent = components.find(c => c.type === 'Form');
   
-  return `${ssoScript}
+  return `${security.amscript}
 <!DOCTYPE html>
 <html>
 <head>
+${security.ssjs}
+${formScript}
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${meta.title}</title>
@@ -1351,6 +1398,50 @@ ${trackingScripts}
         min-width: 0;
     }
 
+    /* Password Protection Styles */
+    .password-protection-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-grow: 1;
+        width: 100%;
+    }
+    .password-form {
+        background: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+    }
+    .password-form h2 {
+        margin-top: 0;
+    }
+    .password-form input {
+         width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+    .password-form button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 20px;
+        background-color: ${styles.themeColor};
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+     .password-form .error-message {
+        display: block;
+        margin-top: 10px;
+    }
+
+
     @media (max-width: 768px) {
         .columns-container {
             flex-direction: column;
@@ -1501,34 +1592,41 @@ ${trackingScripts}
     }
 
     function setupSubmitButton() {
-        document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
-            const submitButton = form.querySelector('button[type="submit"]');
-            if (submitButton && !submitButton.querySelector('.button-loader')) {
-                const buttonTextContent = submitButton.textContent;
-                submitButton.innerHTML = '';
-                
-                const buttonText = document.createElement('span');
-                buttonText.className = 'button-text';
-                buttonText.textContent = buttonTextContent;
-                
-                const buttonLoader = document.createElement('div');
-                buttonLoader.className = 'button-loader';
+        const form = document.getElementById('main-form');
+        if (!form) return;
 
-                submitButton.appendChild(buttonText);
-                submitButton.appendChild(buttonLoader);
-            }
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton && !submitButton.querySelector('.button-loader')) {
+            const buttonTextContent = submitButton.textContent;
+            submitButton.innerHTML = '';
             
-            form.addEventListener('submit', function(e) {
-                if (!validateForm(form)) {
-                    e.preventDefault();
-                } else {
-                   if (submitButton) {
-                     submitButton.disabled = true;
-                     submitButton.querySelector('.button-text').style.opacity = '0';
-                     submitButton.querySelector('.button-loader').style.display = 'block';
-                   }
-                }
-            });
+            const buttonText = document.createElement('span');
+            buttonText.className = 'button-text';
+            buttonText.textContent = buttonTextContent;
+            
+            const buttonLoader = document.createElement('div');
+            buttonLoader.className = 'button-loader';
+
+            submitButton.appendChild(buttonText);
+            submitButton.appendChild(buttonLoader);
+        }
+        
+        form.addEventListener('submit', function(e) {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = '__isFormPost';
+            hiddenInput.value = 'true';
+            form.appendChild(hiddenInput);
+
+            if (!validateForm(form)) {
+                e.preventDefault();
+            } else {
+               if (submitButton) {
+                 submitButton.disabled = true;
+                 submitButton.querySelector('.button-text').style.opacity = '0';
+                 submitButton.querySelector('.button-loader').style.display = 'block';
+               }
+            }
         });
     }
 
@@ -1571,7 +1669,8 @@ ${trackingScripts}
 </script>
 </head>
 <body>
-  ${ssjsScript}
+  ${security.body}
+  %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
     <img src="${meta.loaderImageUrl}" alt="Loader">
   </div>
@@ -1586,6 +1685,8 @@ ${trackingScripts}
   </div>
 
   ${cookieBannerHtml}
+  %%[ ENDIF ]%%
 </body>
-</html>`;
+</html>
+`
 }

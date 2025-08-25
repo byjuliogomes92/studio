@@ -1,5 +1,4 @@
 
-
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -36,6 +35,8 @@ export interface PageComponent {
   abTestVariants?: any[];
 }
 
+export type SecurityType = 'none' | 'sso' | 'password';
+
 export interface CloudPage {
   id: string;
   name: string;
@@ -66,7 +67,15 @@ export interface CloudPage {
       meta: { enabled: boolean; id?: string };
       linkedin: { enabled: boolean; id?: string };
     };
-    ssoProtection?: boolean;
+    security?: {
+        type: SecurityType;
+        passwordConfig?: {
+            dataExtensionKey: string;
+            identifierColumn: string;
+            passwordColumn: string;
+            urlParameter: string;
+        }
+    }
   };
   cookieBanner?: {
     enabled: boolean;

@@ -1678,6 +1678,11 @@ ${trackingScripts}
     }
 
     function renderCharts() {
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined' || typeof Recharts === 'undefined') {
+            console.error('Recharts or React is not loaded');
+            return;
+        }
+
         const { BarChart, LineChart, PieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
         const e = React.createElement;
 
@@ -1688,17 +1693,17 @@ ${trackingScripts}
             try {
                 const type = container.dataset.chartType;
                 const nameKey = container.dataset.nameKey;
-                const dataKeys = JSON.parse(container.dataset.dataKeys);
-                const colors = JSON.parse(container.dataset.colors);
+                const dataKeys = JSON.parse(container.dataset.dataKeys || '[]');
+                const colors = JSON.parse(container.dataset.colors || '[]');
                 
-                const dataString = container.querySelector('.chart-data-source').textContent;
-                const data = JSON.parse(dataString || '[]');
+                const dataString = container.querySelector('.chart-data-source').textContent || '[]';
+                const data = JSON.parse(dataString);
 
                 let chartElement;
 
                 if (type === 'bar') {
-                    const bars = dataKeys.map((key, index) => e(Bar, { key, dataKey: key, fill: colors[index] }));
-                    chartElement = e(BarChart, { width: 500, height: 300, data: data },
+                    const bars = dataKeys.map((key, index) => e(Bar, { key, dataKey: key, fill: colors[index % colors.length] }));
+                    chartElement = e(BarChart, { data: data },
                         e(CartesianGrid, { strokeDasharray: "3 3" }),
                         e(XAxis, { dataKey: nameKey }),
                         e(YAxis),
@@ -1707,8 +1712,8 @@ ${trackingScripts}
                         ...bars
                     );
                 } else if (type === 'line') {
-                    const lines = dataKeys.map((key, index) => e(Line, { key, type: "monotone", dataKey: key, stroke: colors[index] }));
-                    chartElement = e(LineChart, { width: 500, height: 300, data: data },
+                    const lines = dataKeys.map((key, index) => e(Line, { key, type: "monotone", dataKey: key, stroke: colors[index % colors.length] }));
+                    chartElement = e(LineChart, { data: data },
                         e(CartesianGrid, { strokeDasharray: "3 3" }),
                         e(XAxis, { dataKey: nameKey }),
                         e(YAxis),
@@ -1718,8 +1723,8 @@ ${trackingScripts}
                     );
                 } else if (type === 'pie') {
                     const pieCells = data.map((entry, index) => e(Cell, { key: \`cell-\${index}\`, fill: colors[index % colors.length] }));
-                    const pie = e(Pie, { data, dataKey: dataKeys[0], nameKey, cx: "50%", cy: "50%", outerRadius: 150, fill: "#8884d8", label: true }, ...pieCells);
-                    chartElement = e(PieChart, { width: 400, height: 400 },
+                    const pie = e(Pie, { data, dataKey: dataKeys[0], nameKey, cx: "50%", cy: "50%", outerRadius: '80%', fill: "#8884d8", label: true }, ...pieCells);
+                    chartElement = e(PieChart, null,
                         pie,
                         e(Tooltip),
                         e(Legend)
@@ -1773,9 +1778,7 @@ ${trackingScripts}
         setupAccordions();
         setupTabs();
         setSocialIconStyles();
-        if (typeof Recharts !== 'undefined' && typeof ReactDOM !== 'undefined') {
-            renderCharts();
-        }
+        renderCharts();
     });
 </script>
 </head>
@@ -1800,5 +1803,4 @@ ${trackingScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
-};
+`

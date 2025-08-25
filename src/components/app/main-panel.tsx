@@ -122,11 +122,19 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
 
   const handleOpenInNewTab = () => {
     try {
-        const blob = new Blob([previewHtmlCode], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        // Revogar a URL do objeto após um tempo para permitir que a nova aba a carregue
-        setTimeout(() => URL.revokeObjectURL(url), 100);
+        // Generate the preview HTML
+        const previewHtml = generateHtml(pageState, true);
+        
+        // Store it in localStorage. This is a simple way to pass a potentially large
+        // string to a new tab without hitting URL length limits.
+        const stateToStore = {
+            previewHtml: previewHtml,
+        };
+        localStorage.setItem('cloudPagePreviewState', JSON.stringify(stateToStore));
+
+        // Open the dedicated preview route in a new tab.
+        window.open('/api/preview', '_blank');
+
     } catch (error) {
         console.error("Failed to open in new tab:", error);
         toast({

@@ -10,8 +10,9 @@ import { generateHtml } from '@/lib/html-generator';
 // and serves it as a raw text/html file.
 // The CloudPage in Marketing Cloud will use HTTPGet() to fetch the content from this URL in real-time.
 
-// Opt out of caching for this route by setting headers
-// export const dynamic = 'force-dynamic'; // This can cause issues with some hosting providers like Netlify
+// By setting these cache headers, we ensure the route is treated as dynamic
+// and that no upstream cache (like a CDN or browser) will store the response.
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,

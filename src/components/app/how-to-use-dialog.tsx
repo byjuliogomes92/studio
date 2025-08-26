@@ -89,7 +89,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
             <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Passo 2: Configure sua Data Extension</h3>
                 <p className="text-sm text-muted-foreground">
-                    Certifique-se de que sua Data Extension no Marketing Cloud está configurada corretamente para receber os dados. A chave externa da DE deve ser: <strong>{pageState.meta.dataExtensionKey}</strong>.
+                    Certifique-se de que sua Data Extension no Marketing Cloud está configurada corretamente para receber os dados. A chave externa (ou nome) da DE deve ser exatamente a mesma que você configurou no painel de "Configurações, SEO & Pixels": <strong>{pageState.meta.dataExtensionKey}</strong>.
                 </p>
                  <img src="https://i.postimg.cc/J0bW8Gz2/step2.png" alt="Cole o código no Content Builder" className="rounded-md border" />
             </div>

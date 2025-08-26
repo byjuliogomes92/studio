@@ -66,6 +66,8 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
       meta: {
         ...template.meta,
         title: template.name,
+        // Provide a valid placeholder if the loader image is not set on the template
+        loaderImageUrl: template.meta.loaderImageUrl || 'https://placehold.co/150x150.png',
         redirectUrl: '',
         dataExtensionKey: 'PREVIEW',
       },
@@ -436,6 +438,7 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
 
 
 

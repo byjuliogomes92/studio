@@ -10,8 +10,8 @@ import { generateHtml } from '@/lib/html-generator';
 // and serves it as a raw text/html file.
 // The CloudPage in Marketing Cloud will use HTTPGet() to fetch the content from this URL in real-time.
 
-// Opt out of caching for this route
-export const dynamic = 'force-dynamic';
+// Opt out of caching for this route by setting headers
+// export const dynamic = 'force-dynamic'; // This can cause issues with some hosting providers like Netlify
 
 export async function GET(
   req: NextRequest,
@@ -24,9 +24,6 @@ export async function GET(
   }
 
   try {
-    // We need a way to initialize Firebase Admin on the server side for this to work in a deployed environment.
-    // For now, this relies on client-side getDb which might not be ideal for a server route.
-    // This is a known limitation to be addressed with a proper server-side Firebase setup.
     const pageData = await getPage(pageId);
 
     if (!pageData) {
@@ -36,12 +33,14 @@ export async function GET(
     // Generate the final HTML, ensuring it's not in preview mode.
     const htmlContent = generateHtml(pageData, false);
 
-    // Return the generated HTML with the correct content type.
+    // Return the generated HTML with the correct content type and cache headers.
     return new NextResponse(htmlContent, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-store, max-age=0', // Ensure SFMC doesn't cache the proxy response
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (error: any) {

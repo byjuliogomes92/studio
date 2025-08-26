@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getPage } from '@/lib/firestore';
+import { getPage, logPageView } from '@/lib/firestore';
 import { generateHtml } from '@/lib/html-generator';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +24,9 @@ export async function GET(
       console.error(`[API Route /api/pages] Error: Page not found for pageid: ${pageid}`);
       return new NextResponse('Page not found', { status: 404 });
     }
+    
+    // Log the page view asynchronously, don't block the response
+    logPageView(pageData, request.headers).catch(console.error);
 
     const htmlContent = generateHtml(pageData, false);
 

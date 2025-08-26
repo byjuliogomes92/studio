@@ -129,3 +129,14 @@ export interface UserProgress {
   objectives: OnboardingObjectives;
   // Potentially add more progress tracking in the future
 }
+
+export interface PageView {
+  id?: string;
+  pageId: string;
+  projectId: string;
+  userId: string;
+  timestamp: any;
+  country?: string;
+  city?: string;
+  userAgent?: string;
+}

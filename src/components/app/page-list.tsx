@@ -1,12 +1,13 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Brand, Project, CloudPage, Template } from "@/lib/types";
+import type { Brand, Project, CloudPage, Template, PageView } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -54,12 +55,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
-import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject } from "@/lib/firestore";
+import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject, getPageViews } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format } from 'date-fns';
 import { CreatePageFromTemplateDialog } from "./create-page-from-template-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PageListProps {
   projectId: string;
@@ -89,6 +92,77 @@ interface MovePageDialogProps {
   page: CloudPage;
   onPageMoved: () => void;
   currentProjectId: string;
+}
+
+function AnalyticsDashboard({ pageId }: { pageId: string }) {
+    const [views, setViews] = useState<PageView[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        getPageViews(pageId)
+            .then(setViews)
+            .finally(() => setLoading(false));
+    }, [pageId]);
+
+    const totalViews = views.length;
+    const uniqueCountries = useMemo(() => {
+        const countries = new Set(views.map(v => v.country).filter(Boolean));
+        return Array.from(countries);
+    }, [views]);
+
+    if (loading) {
+        return <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total de Visualizações</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{totalViews}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Países Únicos</CardTitle>
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{uniqueCountries.length}</div>
+                    </CardContent>
+                </Card>
+            </div>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Acessos Recentes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Data</TableHead>
+                                <TableHead>País</TableHead>
+                                <TableHead>Cidade</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {views.slice(0, 10).map(view => (
+                                <TableRow key={view.id}>
+                                    <TableCell>{view.timestamp ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
+                                    <TableCell>{view.country || 'N/A'}</TableCell>
+                                    <TableCell>{view.city || 'N/A'}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
+    );
 }
 
 function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogProps) {
@@ -417,163 +491,184 @@ export function PageList({ projectId }: PageListProps) {
         </header>
 
         <main className="p-6">
-          <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-             <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Buscar páginas..."
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={() => setSearchTerm("")}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium mr-2 hidden md:inline">Filtrar:</span>
-                 <div className="flex items-center gap-1 rounded-md border bg-background p-1">
-                    <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
-                        <LayoutGrid className="h-4 w-4"/>
-                    </Button>
-                    <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
-                        <List className="h-4 w-4"/>
-                    </Button>
-                </div>
-                {allTags.map(tag => (
-                    <Badge 
-                        key={tag}
-                        onClick={() => setActiveTag(tag === activeTag ? null : tag)}
-                        className={cn(
-                            "cursor-pointer transition-all hover:brightness-110 border",
-                            activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
-                            getTagColor(tag)
-                        )}
-                    >
-                        {tag}
-                    </Badge>
-                ))}
-                {activeTag && (
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-          </div>
-
-
-          {filteredAndSortedPages.length === 0 ? (
-            <div className="text-center py-16">
-              <FileText size={48} className="mx-auto text-muted-foreground" />
-              <h2 className="mt-4 text-xl font-semibold">Nenhuma página encontrada</h2>
-              <p className="mt-2 text-muted-foreground">
-                {searchTerm || activeTag ? "Ajuste seus filtros ou " : "Comece criando a primeira página para este projeto."}
-                {!searchTerm && !activeTag && (
-                  <CreatePageFromTemplateDialog
-                      projectId={projectId}
-                      trigger={
-                          <Button className="mt-6">
-                              <Plus className="mr-2 h-4 w-4" /> Criar Página
-                          </Button>
-                      }
-                      onPageCreated={() => fetchProjectData()}
-                  />
-                )}
-              </p>
-            </div>
-          ) : viewMode === 'grid' ? (
-             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredAndSortedPages.map((page) => (
-                <div
-                  key={page.id}
-                  className="group relative flex flex-col bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"
-                  onClick={() => handlePageClick(page.id)}
-                >
-                    <div className="aspect-[4/3] w-full bg-muted/50 rounded-t-lg flex flex-col items-center justify-center p-4 overflow-hidden cursor-pointer">
-                        <div className="w-full h-full border-2 border-dashed rounded-md flex flex-col p-2 gap-1.5 bg-background">
-                            <div className="h-4 w-1/3 bg-muted rounded"></div>
-                            <div className="h-2 w-full bg-muted rounded"></div>
-                            <div className="h-2 w-full bg-muted rounded"></div>
-                            <div className="h-2 w-2/3 bg-muted rounded"></div>
+            <Tabs defaultValue="pages">
+                <TabsList className="mb-4">
+                    <TabsTrigger value="pages">Páginas</TabsTrigger>
+                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                </TabsList>
+                <TabsContent value="pages">
+                    <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="relative w-full max-w-sm">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                placeholder="Buscar páginas..."
+                                className="pl-9"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            {searchTerm && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                    onClick={() => setSearchTerm("")}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
                         </div>
-                    </div>
-                  <div className="p-4 flex-grow flex flex-col justify-between">
-                    <div>
-                        <div className="flex justify-between items-start">
-                            <h3 className="font-semibold text-base leading-tight truncate pr-2" title={page.name}>
-                                {page.name}
-                            </h3>
-                            <Badge variant={page.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
-                                {page.brand}
-                            </Badge>
-                        </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {page.updatedAt?.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : 'Recém-criado'}
-                      </p>
-                    </div>
-                    <div className="mt-4 pt-4 border-t flex flex-wrap gap-2 items-center justify-between">
-                         <div className="flex flex-wrap gap-1">
-                            {(page.tags || []).map(tag => (
-                                <Badge key={tag} className={cn('border text-xs', getTagColor(tag))}>{tag}</Badge>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium mr-2 hidden md:inline">Filtrar:</span>
+                            <div className="flex items-center gap-1 rounded-md border bg-background p-1">
+                                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
+                                    <LayoutGrid className="h-4 w-4"/>
+                                </Button>
+                                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
+                                    <List className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                            {allTags.map(tag => (
+                                <Badge 
+                                    key={tag}
+                                    onClick={() => setActiveTag(tag === activeTag ? null : tag)}
+                                    className={cn(
+                                        "cursor-pointer transition-all hover:brightness-110 border",
+                                        activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
+                                        getTagColor(tag)
+                                    )}
+                                >
+                                    {tag}
+                                </Badge>
                             ))}
+                            {activeTag && (
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
                         </div>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2">
-                           {pageActions(page)}
-                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="border rounded-lg bg-card">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50%]" onClick={() => handleSort('name')}>
-                      <div className="flex items-center gap-2 cursor-pointer">
-                        Nome da Página
-                        {getSortDirection('name') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
-                      </div>
-                    </TableHead>
-                    <TableHead>Tags</TableHead>
-                    <TableHead onClick={() => handleSort('updatedAt')}>
-                      <div className="flex items-center gap-2 cursor-pointer">
-                        Última Modificação
-                        {getSortDirection('updatedAt') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAndSortedPages.map((page) => (
-                    <TableRow key={page.id} className="cursor-pointer" onClick={() => handlePageClick(page.id)}>
-                      <TableCell className="font-medium">{page.name}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {(page.tags || []).map(tag => (
-                            <Badge key={tag} className={cn('border', getTagColor(tag))}>{tag}</Badge>
-                          ))}
+
+
+                    {filteredAndSortedPages.length === 0 ? (
+                        <div className="text-center py-16">
+                        <FileText size={48} className="mx-auto text-muted-foreground" />
+                        <h2 className="mt-4 text-xl font-semibold">Nenhuma página encontrada</h2>
+                        <p className="mt-2 text-muted-foreground">
+                            {searchTerm || activeTag ? "Ajuste seus filtros ou " : "Comece criando a primeira página para este projeto."}
+                            {!searchTerm && !activeTag && (
+                            <CreatePageFromTemplateDialog
+                                projectId={projectId}
+                                trigger={
+                                    <Button className="mt-6">
+                                        <Plus className="mr-2 h-4 w-4" /> Criar Página
+                                    </Button>
+                                }
+                                onPageCreated={() => fetchProjectData()}
+                            />
+                            )}
+                        </p>
                         </div>
-                      </TableCell>
-                      <TableCell>{page.updatedAt?.toDate ? format(page.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
-                      <TableCell className="text-right">
-                        {pageActions(page)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                    ) : viewMode === 'grid' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {filteredAndSortedPages.map((page) => (
+                            <div
+                            key={page.id}
+                            className="group relative flex flex-col bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+                            onClick={() => handlePageClick(page.id)}
+                            >
+                                <div className="aspect-[4/3] w-full bg-muted/50 rounded-t-lg flex flex-col items-center justify-center p-4 overflow-hidden cursor-pointer">
+                                    <div className="w-full h-full border-2 border-dashed rounded-md flex flex-col p-2 gap-1.5 bg-background">
+                                        <div className="h-4 w-1/3 bg-muted rounded"></div>
+                                        <div className="h-2 w-full bg-muted rounded"></div>
+                                        <div className="h-2 w-full bg-muted rounded"></div>
+                                        <div className="h-2 w-2/3 bg-muted rounded"></div>
+                                    </div>
+                                </div>
+                            <div className="p-4 flex-grow flex flex-col justify-between">
+                                <div>
+                                    <div className="flex justify-between items-start">
+                                        <h3 className="font-semibold text-base leading-tight truncate pr-2" title={page.name}>
+                                            {page.name}
+                                        </h3>
+                                        <Badge variant={page.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
+                                            {page.brand}
+                                        </Badge>
+                                    </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {page.updatedAt?.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : 'Recém-criado'}
+                                </p>
+                                </div>
+                                <div className="mt-4 pt-4 border-t flex flex-wrap gap-2 items-center justify-between">
+                                    <div className="flex flex-wrap gap-1">
+                                        {(page.tags || []).map(tag => (
+                                            <Badge key={tag} className={cn('border text-xs', getTagColor(tag))}>{tag}</Badge>
+                                        ))}
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2">
+                                    {pageActions(page)}
+                                </div>
+                                </div>
+                            </div>
+                            </div>
+                        ))}
+                        </div>
+                    ) : (
+                        <div className="border rounded-lg bg-card">
+                        <Table>
+                            <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[50%]" onClick={() => handleSort('name')}>
+                                <div className="flex items-center gap-2 cursor-pointer">
+                                    Nome da Página
+                                    {getSortDirection('name') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
+                                </div>
+                                </TableHead>
+                                <TableHead>Tags</TableHead>
+                                <TableHead onClick={() => handleSort('updatedAt')}>
+                                <div className="flex items-center gap-2 cursor-pointer">
+                                    Última Modificação
+                                    {getSortDirection('updatedAt') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
+                                </div>
+                                </TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {filteredAndSortedPages.map((page) => (
+                                <TableRow key={page.id} className="cursor-pointer" onClick={() => handlePageClick(page.id)}>
+                                <TableCell className="font-medium">{page.name}</TableCell>
+                                <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                    {(page.tags || []).map(tag => (
+                                        <Badge key={tag} className={cn('border', getTagColor(tag))}>{tag}</Badge>
+                                    ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell>{page.updatedAt?.toDate ? format(page.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
+                                <TableCell className="text-right">
+                                    {pageActions(page)}
+                                </TableCell>
+                                </TableRow>
+                            ))}
+                            </TableBody>
+                        </Table>
+                        </div>
+                    )}
+                </TabsContent>
+                <TabsContent value="analytics">
+                     <Select onValueChange={(pageId) => router.replace(`/project/${projectId}?page=${pageId}`)}>
+                        <SelectTrigger className="w-[300px] mb-4">
+                            <SelectValue placeholder="Selecione uma página para ver as análises" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {pages.map(page => (
+                                <SelectItem key={page.id} value={page.id}>{page.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                     {router.query?.page && <AnalyticsDashboard pageId={router.query.page as string} />}
+                </TabsContent>
+            </Tabs>
         </main>
       </div>
 
@@ -595,5 +690,3 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
-
-    

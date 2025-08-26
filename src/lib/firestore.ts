@@ -2,7 +2,7 @@
 
 import { getDb } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc } from "firebase/firestore";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -259,6 +259,39 @@ const updateUserProgress = async (userId: string, objective: keyof OnboardingObj
     };
 };
 
+// Analytics
+const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void> => {
+    const db = getDbInstance();
+    
+    // Prevent logging for previews or internal navigation
+    if (headers.get('Sec-Fetch-Dest') === 'iframe') {
+        return;
+    }
+
+    const viewData: PageView = {
+        pageId: pageData.id,
+        projectId: pageData.projectId,
+        userId: pageData.userId,
+        timestamp: serverTimestamp(),
+        country: headers.get('x-vercel-ip-country') || undefined,
+        city: headers.get('x-vercel-ip-city') || undefined,
+        userAgent: headers.get('user-agent') || undefined,
+    };
+
+    await addDoc(collection(db, 'pageViews'), viewData);
+};
+
+const getPageViews = async (pageId: string): Promise<PageView[]> => {
+    const db = getDbInstance();
+    const q = query(
+        collection(db, 'pageViews'),
+        where('pageId', '==', pageId),
+        orderBy('timestamp', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PageView));
+};
+
 
 export {
     addProject,
@@ -280,4 +313,6 @@ export {
     deleteTemplate,
     getUserProgress,
     updateUserProgress,
+    logPageView,
+    getPageViews,
 };

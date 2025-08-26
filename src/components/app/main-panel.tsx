@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink } from "lucide-react";
+import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -38,6 +38,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
 
   // Generate HTML for preview and for final code separately
   const previewHtmlCode = generateHtml(pageState, true);
+  const finalHtmlCode = generateHtml(pageState, false);
 
   const handleInlineEdit = useCallback((componentId: string, propName: string, newContent: string) => {
     setPageState(prev => {
@@ -120,6 +121,26 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     }
   };
 
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(finalHtmlCode);
+    toast({
+      title: "Copiado para a Área de Transferência!",
+    });
+  };
+
+  const handleDownloadCode = () => {
+    const blob = new Blob([finalHtmlCode], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${pageState.name.replace(/ /g, "_") || "cloudpage"}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+
   const handleAccessibilityCheck = async () => {
     setChecking(true);
     setAccessibilityIssues(null);
@@ -143,8 +164,9 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
       <Tabs defaultValue="preview" className="w-full h-full flex flex-col bg-muted/20">
         <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
           <div className="flex">
-            <TabsList className="grid w-full grid-cols-1 bg-transparent p-0 max-w-sm rounded-none">
+            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 max-w-sm rounded-none">
               <TabsTrigger value="preview" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Preview</TabsTrigger>
+               <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Código</TabsTrigger>
             </TabsList>
              <TooltipProvider>
               <Tooltip>
@@ -188,6 +210,36 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
                   )}
               />
             </div>
+          </TabsContent>
+           <TabsContent value="code" className="w-full h-full m-0 relative">
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
+              <Button variant="secondary" onClick={handleCopyCode}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar Código
+              </Button>
+              <Button variant="secondary" onClick={handleDownloadCode}>
+                <Download className="mr-2 h-4 w-4" />
+                Baixar HTML
+              </Button>
+            </div>
+            <SyntaxHighlighter
+              language="html"
+              style={vscDarkPlus}
+              customStyle={{
+                margin: 0,
+                height: '100%',
+                width: '100%',
+                borderRadius: 0,
+              }}
+              codeTagProps={{
+                style: {
+                  fontFamily: 'var(--font-mono)',
+                },
+              }}
+              showLineNumbers
+            >
+              {finalHtmlCode}
+            </SyntaxHighlighter>
           </TabsContent>
           <TabsContent value="accessibility" className="w-full h-full m-0 p-6">
             <div className="flex flex-col items-start gap-4">

@@ -3,11 +3,11 @@
 "use client";
 
 import type { PageComponent, ComponentType } from "@/lib/types";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2 } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -20,6 +20,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { produce } from 'immer';
+import { generateText } from "@/ai/flows/text-generator";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -254,6 +265,78 @@ function VotingOptionsManager({
     );
 }
 
+function AiGenerateTextDialog({
+  componentType,
+  currentText,
+  onTextGenerated,
+  trigger
+}: {
+  componentType: string;
+  currentText: string;
+  onTextGenerated: (newText: string) => void;
+  trigger: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Por favor, insira um comando.' });
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const result = await generateText({
+        prompt,
+        componentType,
+        context: currentText
+      });
+      onTextGenerated(result.suggestion);
+      setIsOpen(false);
+      setPrompt("");
+      toast({ title: 'Texto gerado com sucesso!' });
+    } catch (error) {
+      console.error("AI text generation failed:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível gerar o texto." });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Gerar Texto com IA</DialogTitle>
+          <DialogDescription>
+            Descreva o que você quer para o texto do seu componente de {componentType.toLowerCase()}.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-2">
+          <Label htmlFor="ai-prompt">Comando</Label>
+          <Textarea
+            id="ai-prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Ex: um título chamativo para uma promoção de batom"
+            rows={4}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+          <Button onClick={handleGenerate} disabled={isGenerating}>
+            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Gerar Texto"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 // A generic text input component that updates on blur
 const DebouncedTextInput = ({ value, onBlur, ...props }: { value: string; onBlur: (value: string) => void;[key: string]: any; }) => {
     const [localValue, setLocalValue] = useState(value);
@@ -315,7 +398,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
          return (
           <div className="space-y-4">
             <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-between gap-1.5">
                   <Label htmlFor="text-content">Texto Padrão</Label>
                    <Tooltip>
                         <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
@@ -324,12 +407,25 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </TooltipContent>
                     </Tooltip>
                 </div>
-                <DebouncedTextInput
-                  id="text-content"
-                  value={props.text || ""}
-                  onBlur={(value) => onPropChange("text", value)}
-                  rows={isParagraph ? 8 : 4}
-                />
+                 <div className="relative">
+                    <DebouncedTextInput
+                        id="text-content"
+                        value={props.text || ""}
+                        onBlur={(value) => onPropChange("text", value)}
+                        rows={isParagraph ? 8 : 4}
+                        className="pr-10"
+                    />
+                    <AiGenerateTextDialog
+                        componentType={type}
+                        currentText={props.text || ""}
+                        onTextGenerated={(newText) => onPropChange("text", newText)}
+                        trigger={
+                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-primary">
+                                <Wand2 className="h-4 w-4" />
+                            </Button>
+                        }
+                    />
+                </div>
             </div>
             <Separator />
              <div className="space-y-2">
@@ -482,12 +578,25 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
             <div className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="button-text">Texto do Botão</Label>
-                    <Input
-                        id="button-text"
-                        value={props.text || ''}
-                        onChange={(e) => onPropChange('text', e.target.value)}
-                        placeholder="Clique Aqui"
-                    />
+                     <div className="relative">
+                        <Input
+                            id="button-text"
+                            value={props.text || ''}
+                            onChange={(e) => onPropChange('text', e.target.value)}
+                            placeholder="Clique Aqui"
+                            className="pr-10"
+                        />
+                         <AiGenerateTextDialog
+                            componentType="Button"
+                            currentText={props.text || ""}
+                            onTextGenerated={(newText) => onPropChange("text", newText)}
+                            trigger={
+                                <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-8 w-8 text-primary">
+                                    <Wand2 className="h-4 w-4" />
+                                </Button>
+                            }
+                        />
+                    </div>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="button-href">URL do Link</Label>

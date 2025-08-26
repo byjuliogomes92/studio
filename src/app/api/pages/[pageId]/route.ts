@@ -24,10 +24,8 @@ export async function GET(
       return new NextResponse('Page not found', { status: 404 });
     }
 
-    // Generate the final HTML, ensuring it's not in preview mode.
     const htmlContent = generateHtml(pageData, false);
 
-    // Return the generated HTML with the correct content type and cache headers.
     return new NextResponse(htmlContent, {
       status: 200,
       headers: {
@@ -38,7 +36,7 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error(`[API /pages/${pageId}] Error:`, error);
+    console.error(`[API /pages/${pageId}] Error:`, error.message, error.stack);
     return new NextResponse(`Internal Server Error: ${error.message}`, { status: 500 });
   }
 }

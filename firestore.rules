@@ -1,31 +1,39 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Garante que apenas usuários autenticados possam acessar qualquer coisa
-    function isSignedIn() {
-      return request.auth != null;
+
+    // Helper function to check ownership
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    // Projetos: Usuários podem ler, escrever e apagar apenas seus próprios projetos.
-    // A regra verifica se o 'userId' do projeto é o mesmo do usuário autenticado.
+    // Projects: Users can only access their own projects
     match /projects/{projectId} {
-      allow read, write: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
 
-    // Páginas: Mesma lógica dos projetos. O acesso é restrito ao dono da página.
+    // Pages: Users can only access their own pages
     match /pages/{pageId} {
-      allow read, write: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
 
-    // Templates: A lógica é similar, mas usamos o campo 'createdBy' para verificar a posse.
-    // Usuários podem ler, escrever e apagar apenas os templates que eles criaram.
+    // Templates: Users can access their own templates and default templates
     match /templates/{templateId} {
-      allow read, write: if isSignedIn() && request.auth.uid == resource.data.createdBy;
-      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      // Anyone authenticated can read default templates or their own templates
+      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
+      // Users can only update or delete their own templates
+      allow update, delete: if isOwner(resource.data.createdBy);
+      // Anyone authenticated can create a template
+      allow create: if request.auth != null && isOwner(request.resource.data.createdBy);
+    }
+    
+    // User Progress: Users can only access their own progress document
+    match /userProgress/{userId} {
+        allow read, update, create: if isOwner(userId);
     }
   }
 }

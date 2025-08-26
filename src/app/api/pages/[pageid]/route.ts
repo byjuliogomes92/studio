@@ -10,8 +10,6 @@ export async function GET(
   { params }: { params: { pageid: string } }
 ) {
   const { pageid } = params;
-  const searchParams = request.nextUrl.searchParams;
-  const isPreview = searchParams.get('preview') === 'true';
 
   if (!pageid) {
     return new NextResponse('Page ID is required', { status: 400 });
@@ -24,10 +22,10 @@ export async function GET(
       return new NextResponse('Page not found', { status: 404 });
     }
     
-    // Only log page view if it's not a preview
-    if (!isPreview) {
-        logPageView(pageData, request.headers).catch(console.error);
-    }
+    // The previous logic for `isPreview` was flawed because the Marketing Cloud
+    // HTTPGet function does not forward URL parameters. We will now log every hit
+    // to this endpoint. Previews from the editor will be handled separately.
+    logPageView(pageData, request.headers).catch(console.error);
 
     const htmlContent = generateHtml(pageData, false);
 

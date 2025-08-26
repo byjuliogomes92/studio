@@ -793,7 +793,7 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 </div>
 %%[ ENDIF ]%%`;
 
-        return { ssjs: '', amscript, body };
+        return { ssjs: '', amscript, body: '' };
     }
 
     return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
@@ -1028,9 +1028,6 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   const googleFont = styles.fontFamily || 'Roboto';
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState, isForPreview);
-
-  const previewParam = isForPreview ? '?preview=true' : '';
-  const pageUrl = `%%=RequestParameter('PAGEURL')=%%${previewParam}`;
 
   // Use TreatAsContentArea for better performance and to avoid script injection issues
   return `%%[ 

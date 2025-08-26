@@ -334,7 +334,7 @@ export function ProjectDashboard() {
           <div className="text-center py-16">
             <Folder size={48} className="mx-auto text-muted-foreground" />
             <h2 className="mt-4 text-xl font-semibold">Nenhum projeto encontrado</h2>
-            <p className="mt-2 text-muted-foreground">Comece criando seu primeiro projeto ou ajuste sua busca.</p>
+            <p className="mt-2 text-muted-foreground">Projetos são como pastas para organizar suas páginas. Comece criando seu primeiro projeto.</p>
             <Button onClick={() => setIsCreateModalOpen(true)} className="mt-6">
               <Plus className="mr-2 h-4 w-4" /> Criar Projeto
             </Button>
@@ -489,3 +489,5 @@ export function ProjectDashboard() {
     </div>
   );
 }
+
+    

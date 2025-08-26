@@ -474,20 +474,19 @@ export function PageList({ projectId }: PageListProps) {
               <FileText size={48} className="mx-auto text-muted-foreground" />
               <h2 className="mt-4 text-xl font-semibold">Nenhuma página encontrada</h2>
               <p className="mt-2 text-muted-foreground">
-                  {searchTerm || activeTag ? "Ajuste seus filtros ou " : "Comece criando a primeira página para este projeto."}
-                  {searchTerm && !activeTag && <Button variant="link" onClick={() => setSearchTerm('')}>limpe a busca</Button>}
+                {searchTerm || activeTag ? "Ajuste seus filtros ou " : "Comece criando a primeira página para este projeto."}
+                {!searchTerm && !activeTag && (
+                  <CreatePageFromTemplateDialog
+                      projectId={projectId}
+                      trigger={
+                          <Button className="mt-6">
+                              <Plus className="mr-2 h-4 w-4" /> Criar Página
+                          </Button>
+                      }
+                      onPageCreated={() => fetchProjectData()}
+                  />
+                )}
               </p>
-               {!searchTerm && !activeTag && (
-                 <CreatePageFromTemplateDialog
-                    projectId={projectId}
-                    trigger={
-                        <Button className="mt-6">
-                            <Plus className="mr-2 h-4 w-4" /> Criar Página
-                        </Button>
-                    }
-                    onPageCreated={() => fetchProjectData()}
-                />
-               )}
             </div>
           ) : viewMode === 'grid' ? (
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -596,3 +595,5 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
+    

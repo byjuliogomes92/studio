@@ -264,11 +264,13 @@ const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void>
     const db = getDbInstance();
     
     // Prevent logging for previews or internal navigation
-    if (headers.get('Sec-Fetch-Dest') === 'iframe') {
+    const secFetchDest = headers.get('Sec-Fetch-Dest') || headers.get('sec-fetch-dest');
+    if (secFetchDest === 'iframe') {
+        console.log("Skipping analytics logging for iframe request.");
         return;
     }
 
-    const viewData: PageView = {
+    const viewData: Omit<PageView, 'id'> = {
         pageId: pageData.id,
         projectId: pageData.projectId,
         userId: pageData.userId,
@@ -278,7 +280,11 @@ const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void>
         userAgent: headers.get('user-agent') || undefined,
     };
 
-    await addDoc(collection(db, 'pageViews'), viewData);
+    try {
+        await addDoc(collection(db, 'pageViews'), viewData);
+    } catch(e) {
+        console.error("Failed to log page view:", e);
+    }
 };
 
 const getPageViews = async (pageId: string): Promise<PageView[]> => {

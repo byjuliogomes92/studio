@@ -1,4 +1,3 @@
-
 // src/app/api/pages/[pageid]/route.ts
 
 import { type NextRequest, NextResponse } from 'next/server';

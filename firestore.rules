@@ -3,37 +3,29 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check ownership
+    
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Projects: Users can only access their own projects
     match /projects/{projectId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read, write: if isOwner(resource.data.userId);
     }
 
-    // Pages: Users can only access their own pages
+    // Allow public read for the API proxy, but restrict write operations to the owner.
     match /pages/{pageId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
-    }
-
-    // Templates: Users can access their own templates and default templates
-    match /templates/{templateId} {
-      // Anyone authenticated can read default templates or their own templates
-      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
-      // Users can only update or delete their own templates
-      allow update, delete: if isOwner(resource.data.createdBy);
-      // Anyone authenticated can create a template
-      allow create: if request.auth != null && isOwner(request.resource.data.createdBy);
+      allow read: if true;
+      allow write: if isOwner(resource.data.userId);
     }
     
-    // User Progress: Users can only access their own progress document
+    match /templates/{templateId} {
+      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
+      allow create: if isOwner(request.resource.data.createdBy);
+      allow update, delete: if isOwner(resource.data.createdBy);
+    }
+
     match /userProgress/{userId} {
-        allow read, update, create: if isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
   }
 }

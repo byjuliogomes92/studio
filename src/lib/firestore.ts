@@ -262,13 +262,6 @@ const updateUserProgress = async (userId: string, objective: keyof OnboardingObj
 // Analytics
 const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void> => {
     const db = getDbInstance();
-    
-    // Prevent logging for previews or internal navigation
-    const secFetchDest = headers.get('Sec-Fetch-Dest') || headers.get('sec-fetch-dest');
-    if (secFetchDest === 'iframe') {
-        console.log("Skipping analytics logging for iframe request.");
-        return;
-    }
 
     const viewData: Omit<PageView, 'id'> = {
         pageId: pageData.id,

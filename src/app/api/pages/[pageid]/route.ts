@@ -9,11 +9,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { pageid: string } }
 ) {
-  console.log(`[API Route /api/pages] Received request for pageid: ${params.pageid}`);
   const { pageid } = params;
+  const searchParams = request.nextUrl.searchParams;
+  const isPreview = searchParams.get('preview') === 'true';
 
   if (!pageid) {
-    console.error('[API Route /api/pages] Error: Page ID is required.');
     return new NextResponse('Page ID is required', { status: 400 });
   }
 
@@ -21,12 +21,13 @@ export async function GET(
     const pageData = await getPage(pageid);
 
     if (!pageData) {
-      console.error(`[API Route /api/pages] Error: Page not found for pageid: ${pageid}`);
       return new NextResponse('Page not found', { status: 404 });
     }
     
-    // Log the page view asynchronously, don't block the response
-    logPageView(pageData, request.headers).catch(console.error);
+    // Only log page view if it's not a preview
+    if (!isPreview) {
+        logPageView(pageData, request.headers).catch(console.error);
+    }
 
     const htmlContent = generateHtml(pageData, false);
 

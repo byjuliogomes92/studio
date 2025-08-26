@@ -3,17 +3,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPage } from '@/lib/firestore';
 import { generateHtml } from '@/lib/html-generator';
 
-// This forces the route to be dynamic, ensuring it's treated as a serverless function
-// and that the `params` object is correctly populated.
 export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { pageid: string } }
 ) {
+  console.log(`[API Route /api/pages] Received request for pageid: ${params.pageid}`);
   const { pageid } = params;
 
   if (!pageid) {
+    console.error('[API Route /api/pages] Error: Page ID is required.');
     return new NextResponse('Page ID is required', { status: 400 });
   }
 
@@ -21,6 +21,7 @@ export async function GET(
     const pageData = await getPage(pageid);
 
     if (!pageData) {
+      console.error(`[API Route /api/pages] Error: Page not found for pageid: ${pageid}`);
       return new NextResponse('Page not found', { status: 404 });
     }
 
@@ -36,7 +37,7 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error(`[API Route /api/pages/${pageid}] Error:`, error.message, error.stack);
+    console.error(`[API Route /api/pages/${pageid}] Internal Server Error:`, error.message, error.stack);
     return new NextResponse(`Internal Server Error: ${error.message}`, { status: 500 });
   }
 }

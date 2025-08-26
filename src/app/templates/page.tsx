@@ -54,6 +54,7 @@ const iconMap: { [key: string]: React.ElementType } = {
 
 
 function TemplatePreviewDialog({ template }: { template: Template }) {
+  const [isLoading, setIsLoading] = useState(true);
   const previewHtml = useMemo(() => {
     // Create a mock CloudPage object from the template to use with generateHtml
     const mockPage = {
@@ -85,11 +86,17 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
         <DialogTitle>Preview: {template.name}</DialogTitle>
         <DialogDescription>{template.description || 'Visualização do template.'}</DialogDescription>
       </DialogHeader>
-      <div className="flex-grow rounded-lg border bg-muted/40 overflow-hidden">
+      <div className="flex-grow rounded-lg border bg-muted/40 overflow-hidden relative">
+        {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        )}
         <iframe
           srcDoc={previewHtml}
           title={`Preview of ${template.name}`}
           className="w-full h-full border-0"
+          onLoad={() => setIsLoading(false)}
         />
       </div>
     </DialogContent>
@@ -429,5 +436,6 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
 
 

@@ -5,8 +5,6 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getPage } from '@/lib/firestore';
 import { generateHtml } from '@/lib/html-generator';
 
-// By setting this to force-dynamic, we ensure the route is always treated as dynamic
-// and that no upstream cache (like a CDN or browser) will store the response.
 export const dynamic = 'force-dynamic';
 
 export async function GET(

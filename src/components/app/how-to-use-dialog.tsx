@@ -11,20 +11,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { CloudPage } from "@/lib/types";
 import { Copy, AlertTriangle, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-
-interface HowToUseDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  pageState: CloudPage;
-}
+import type { CloudPage } from "@/lib/types";
 
 interface DeField {
     name: string;
@@ -103,14 +96,14 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Como Publicar sua CloudPage (Método Rápido)</DialogTitle>
           <DialogDescription>
             Use este método para publicar suas alterações instantaneamente, sem o cache do Marketing Cloud.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] pr-6">
+        <div className="flex-grow overflow-y-auto pr-6 -mr-6">
           <div className="space-y-6 py-4">
 
             <Alert>
@@ -181,8 +174,8 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
             </div>
 
           </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
           <Button onClick={() => window.open(pageUrl, '_blank')}>
             <ExternalLink className="mr-2 h-4 w-4" />

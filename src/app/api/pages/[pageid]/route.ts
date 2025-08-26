@@ -1,5 +1,5 @@
 
-// src/app/api/pages/[pageId]/route.ts
+// src/app/api/pages/[pageid]/route.ts
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { getPage } from '@/lib/firestore';
@@ -9,16 +9,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { pageId: string } }
+  { params }: { params: { pageid: string } }
 ) {
-  const { pageId } = params;
+  const { pageid } = params;
 
-  if (!pageId) {
+  if (!pageid) {
     return new NextResponse('Page ID is required', { status: 400 });
   }
 
   try {
-    const pageData = await getPage(pageId);
+    const pageData = await getPage(pageid);
 
     if (!pageData) {
       return new NextResponse('Page not found', { status: 404 });
@@ -36,7 +36,7 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error(`[API /pages/${pageId}] Error:`, error.message, error.stack);
+    console.error(`[API /pages/${pageid}] Error:`, error.message, error.stack);
     return new NextResponse(`Internal Server Error: ${error.message}`, { status: 500 });
   }
 }

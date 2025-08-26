@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CloudPage, PageComponent } from "@/lib/types";
+import { CloudPage } from "@/lib/types";
 import { Copy, AlertTriangle, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
@@ -126,17 +126,18 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
               <p className="text-sm text-muted-foreground">
                 No Content Builder, crie uma CloudPage, selecione o layout em branco e cole o código AMPScript abaixo em um bloco de conteúdo "HTML". **Faça isso apenas uma vez por página.**
               </p>
-              <div className="relative">
-                  <SyntaxHighlighter language="ampscript" style={vscDarkPlus} customStyle={{ margin: 0, borderRadius: '0.5rem', padding: '1rem' }}>
+              <div className="relative rounded-lg bg-[#1e1e1e]">
+                  <SyntaxHighlighter language="ampscript" style={vscDarkPlus} customStyle={{ margin: 0, background: 'transparent', padding: '1rem' }}>
                     {proxySnippet}
                   </SyntaxHighlighter>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute top-2 right-2 h-7 w-7"
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="absolute top-2 right-2 h-8"
                     onClick={() => handleCopy(proxySnippet)}
                   >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar
                   </Button>
               </div>
             </div>
@@ -146,7 +147,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
                 <p className="text-sm text-muted-foreground">
                     Crie uma Data Extension no Marketing Cloud com o Identificador (Nome ou Chave Externa) <strong>{pageState.meta.dataExtensionKey || '[NÃO DEFINIDO]'}</strong>. Use os seguintes campos para garantir que todos os dados da sua página sejam salvos corretamente:
                 </p>
-                 <div className="rounded-md border">
+                 <div className="rounded-md border overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -160,7 +161,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
                         <TableBody>
                             {deFields.map(field => (
                                 <TableRow key={field.name}>
-                                    <TableCell className="font-mono text-xs">{field.name}</TableCell>
+                                    <TableCell className="font-mono text-xs whitespace-nowrap">{field.name}</TableCell>
                                     <TableCell>{field.type}</TableCell>
                                     <TableCell>{field.length || '-'}</TableCell>
                                     <TableCell>{field.primaryKey ? 'Sim' : 'Não'}</TableCell>
@@ -192,4 +193,3 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
     </Dialog>
   );
 }
-

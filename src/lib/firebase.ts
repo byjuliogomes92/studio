@@ -8,11 +8,11 @@ import { firebaseConfig } from "./firebase-config";
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
-// Defer Firestore initialization to client-side
-let db: Firestore | null = null;
+// Use a singleton pattern for Firestore to work on both client and server
+let db: Firestore;
 
 function getDb() {
-  if (typeof window !== 'undefined' && !db) {
+  if (!db) {
     db = getFirestore(app);
   }
   return db;

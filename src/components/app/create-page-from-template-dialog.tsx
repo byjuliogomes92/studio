@@ -21,7 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import type { Brand, Template, Project, CloudPage } from '@/lib/types';
-import { getTemplates, getTemplate, addPage, getProjectsForUser } from '@/lib/firestore';
+import { getTemplates, getTemplate, addPage, getProjectsForUser, updateUserProgress } from '@/lib/firestore';
 import { defaultTemplates } from '@/lib/default-templates';
 import { cn } from '@/lib/utils';
 import { FileText, Loader2, Server } from 'lucide-react';
@@ -248,6 +248,15 @@ export function CreatePageFromTemplateDialog({
         
         const newPageId = await addPage(newPageData);
         toast({ title: "Página criada!", description: `A página "${newPageName}" foi criada com sucesso.` });
+        
+        // Check onboarding progress
+        const updatedProgress = await updateUserProgress(user.uid, 'createdFirstPage');
+         if (updatedProgress.objectives.createdFirstPage) {
+            toast({
+              title: "🎉 Objetivo Concluído!",
+              description: "Você criou sua primeira página."
+            });
+         }
         
         resetState();
         onPageCreated?.(); // Callback to refresh list on project page

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Project, CloudPage } from "@/lib/types";
+import type { Project, CloudPage, UserProgress } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library } from "lucide-react";
 import {
@@ -37,10 +37,11 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
-import { addProject, deleteProject, getProjectsForUser, updateProject } from "@/lib/firestore";
+import { addProject, deleteProject, getProjectsForUser, updateProject, getUserProgress, updateUserProgress } from "@/lib/firestore";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { OnboardingGuide } from "./onboarding-guide";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -57,6 +58,7 @@ export function ProjectDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
 
   // State for modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -75,16 +77,20 @@ export function ProjectDashboard() {
 
 
   useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchInitialData = async () => {
       if (!user) return;
       setIsLoading(true);
       try {
-        const { projects, pages } = await getProjectsForUser(user.uid);
+        const [{ projects, pages }, progress] = await Promise.all([
+          getProjectsForUser(user.uid),
+          getUserProgress(user.uid),
+        ]);
         setProjects(projects);
         setPages(pages);
+        setUserProgress(progress);
       } catch (err) {
         console.error(err);
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os projetos.' });
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os dados.' });
       } finally {
         setIsLoading(false);
       }
@@ -92,7 +98,7 @@ export function ProjectDashboard() {
 
     if (!authLoading) {
       if (user) {
-        fetchProjects();
+        fetchInitialData();
       } else {
         router.push('/login');
       }
@@ -114,6 +120,17 @@ export function ProjectDashboard() {
       setNewProjectName("");
       setIsCreateModalOpen(false);
       toast({ title: "Projeto criado!", description: `O projeto "${newProjectName}" foi criado.` });
+      
+      // Check onboarding progress
+      const updatedProgress = await updateUserProgress(user.uid, 'createdFirstProject');
+      setUserProgress(updatedProgress);
+       if (updatedProgress.objectives.createdFirstProject) {
+          toast({
+            title: "🎉 Objetivo Concluído!",
+            description: "Você criou seu primeiro projeto."
+          });
+       }
+
     } catch (error) {
       toast({ variant: "destructive", title: "Erro", description: "Não foi possível criar o projeto." });
     }
@@ -329,6 +346,13 @@ export function ProjectDashboard() {
               </DropdownMenu>
             </div>
         </div>
+        
+        {userProgress && userProgress.objectives && Object.values(userProgress.objectives).some(v => !v) && (
+          <div className="mb-6">
+            <OnboardingGuide objectives={userProgress.objectives} />
+          </div>
+        )}
+
 
         {filteredAndSortedProjects.length === 0 ? (
           <div className="text-center py-16">
@@ -489,5 +513,3 @@ export function ProjectDashboard() {
     </div>
   );
 }
-
-    

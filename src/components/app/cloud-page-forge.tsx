@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CloudPage, PageComponent, Template } from "@/lib/types";
+import type { CloudPage, PageComponent, Template, OnboardingObjectives } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
@@ -11,7 +11,7 @@ import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updatePage, getPage, addTemplate } from "@/lib/firestore";
+import { updatePage, getPage, addTemplate, updateUserProgress } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { produce } from "immer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -250,6 +250,31 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     };
   }, [hasUnsavedChanges]);
 
+  const checkOnboardingProgress = async (savedPage: CloudPage) => {
+    if (!user) return;
+    
+    // Check for first form added
+    if (savedPage.components.some(c => c.type === 'Form')) {
+      const updatedProgress = await updateUserProgress(user.uid, 'addedFirstForm');
+      if (updatedProgress.objectives.addedFirstForm) {
+        toast({
+          title: "🎉 Objetivo Concluído!",
+          description: "Você adicionou seu primeiro formulário."
+        });
+      }
+    }
+    
+    // Check for first AMPScript added
+    if (savedPage.meta.customAmpscript && savedPage.meta.customAmpscript.trim() !== '') {
+      const updatedProgress = await updateUserProgress(user.uid, 'addedFirstAmpscript');
+       if (updatedProgress.objectives.addedFirstAmpscript) {
+        toast({
+          title: "🎉 Objetivo Concluído!",
+          description: "Você adicionou seu primeiro AMPScript."
+        });
+      }
+    }
+  };
 
   const handleSave = async () => {
     if (!pageState || !user) return;
@@ -266,6 +291,9 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       setSavedPageState(finalPageState);
       resetState(finalPageState);
       toast({ title: "Página atualizada!", description: `A página "${pageName}" foi salva com sucesso.` });
+
+      // Check onboarding progress after saving
+      await checkOnboardingProgress(finalPageState);
     } catch(error) {
          toast({ variant: "destructive", title: "Erro ao salvar", description: "Não foi possível salvar a página." });
          console.error("Save error:", error);
@@ -299,6 +327,15 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         setSaveTemplateModalOpen(false);
         setTemplateName("");
         setTemplateDescription("");
+        
+        // Check onboarding progress
+        const updatedProgress = await updateUserProgress(user.uid, 'createdFirstTemplate');
+         if (updatedProgress.objectives.createdFirstTemplate) {
+            toast({
+              title: "🎉 Objetivo Concluído!",
+              description: "Você criou seu primeiro template."
+            });
+         }
     } catch (error) {
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar o template." });
         console.error("Save template error:", error);

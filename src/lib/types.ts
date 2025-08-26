@@ -113,3 +113,18 @@ export interface Template {
   updatedAt: any;
   isDefault?: boolean; // Flag to identify default templates
 }
+
+export interface OnboardingObjectives {
+  createdFirstProject: boolean;
+  createdFirstPage: boolean;
+  addedFirstForm: boolean;
+  createdFirstTemplate: boolean;
+  addedFirstAmpscript: boolean;
+}
+
+export interface UserProgress {
+  id: string; // Same as user.uid
+  userId: string;
+  objectives: OnboardingObjectives;
+  // Potentially add more progress tracking in the future
+}

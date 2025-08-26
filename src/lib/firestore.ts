@@ -1,8 +1,8 @@
 
 
 import { getDb } from "./firebase";
-import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore } from "firebase/firestore";
-import type { Project, CloudPage, Template } from "./types";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc } from "firebase/firestore";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -207,6 +207,59 @@ const deleteTemplate = async (templateId: string): Promise<void> => {
 };
 
 
+// User Progress (Onboarding)
+const getUserProgress = async (userId: string): Promise<UserProgress> => {
+    const db = getDbInstance();
+    const docRef = doc(db, "userProgress", userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as UserProgress;
+    } else {
+        // Create a new progress document if it doesn't exist
+        const newProgress: UserProgress = {
+            id: userId,
+            userId,
+            objectives: {
+                createdFirstProject: false,
+                createdFirstPage: false,
+                addedFirstForm: false,
+                createdFirstTemplate: false,
+                addedFirstAmpscript: false,
+            },
+        };
+        await setDoc(docRef, newProgress);
+        return newProgress;
+    }
+};
+
+const updateUserProgress = async (userId: string, objective: keyof OnboardingObjectives): Promise<UserProgress> => {
+    const db = getDbInstance();
+    const docRef = doc(db, "userProgress", userId);
+    
+    // Ensure the document exists before trying to update it
+    const currentProgress = await getUserProgress(userId);
+
+    if (currentProgress.objectives[objective]) {
+        return currentProgress; // Objective already completed, no need to update
+    }
+
+    const updates = {
+        [`objectives.${objective}`]: true,
+    };
+    await updateDoc(docRef, updates);
+
+    // Return the updated document
+    return {
+        ...currentProgress,
+        objectives: {
+            ...currentProgress.objectives,
+            [objective]: true,
+        },
+    };
+};
+
+
 export {
     addProject,
     updateProject,
@@ -225,4 +278,6 @@ export {
     getTemplates,
     getTemplate,
     deleteTemplate,
+    getUserProgress,
+    updateUserProgress,
 };

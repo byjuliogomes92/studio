@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { PageComponent, ComponentType } from "@/lib/types";
@@ -6,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -309,46 +310,47 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
         );
       case "Title":
       case "Subtitle":
-         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="text-content">Texto</Label>
-              <DebouncedTextInput
-                id="text-content"
-                value={props.text || ""}
-                onBlur={(value) => onPropChange("text", value)}
-                rows={4}
-              />
-            </div>
-            <Separator />
-            <TextStyleSettings props={props} onPropChange={onPropChange} />
-          </div>
-        );
       case "Paragraph":
+         const isParagraph = type === 'Paragraph';
          return (
           <div className="space-y-4">
             <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="text-content">Texto</Label>
+                  <Label htmlFor="text-content">Texto Padrão</Label>
                    <Tooltip>
                         <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
                         <TooltipContent>
-                            <p>Você pode usar tags HTML básicas para formatar:</p>
-                            <ul className="list-disc pl-4 mt-2">
-                                <li>{'<b>Negrito</b>'}</li>
-                                <li>{'<i>Itálico</i>'}</li>
-                                <li>{'<u>Sublinhado</u>'}</li>
-                                <li>{'<a href="..." target="_blank">Link</a>'}</li>
-                            </ul>
+                            <p className="max-w-xs">Este é o texto exibido se o campo de dados conectado não for encontrado. {isParagraph && 'Suporta HTML básico.'}</p>
                         </TooltipContent>
                     </Tooltip>
                 </div>
                 <DebouncedTextInput
-                id="text-content"
-                value={props.text || ""}
-                onBlur={(value) => onPropChange("text", value)}
-                rows={8}
+                  id="text-content"
+                  value={props.text || ""}
+                  onBlur={(value) => onPropChange("text", value)}
+                  rows={isParagraph ? 8 : 4}
                 />
+            </div>
+            <Separator />
+             <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                    <Label htmlFor="data-binding">Conectar a um Campo de Dados</Label>
+                    <Tooltip>
+                        <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                        <TooltipContent>
+                            <p className="max-w-xs">Insira o nome da variável AMPScript (sem @ ou %%) para exibir dados dinâmicos. Ex: 'FirstName' para usar `%%=v(@FirstName)=%%`.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
+                <div className="flex items-center gap-2">
+                   <Zap className="h-4 w-4 text-muted-foreground" />
+                   <Input
+                      id="data-binding"
+                      value={props.dataBinding || ''}
+                      onChange={(e) => onPropChange('dataBinding', e.target.value)}
+                      placeholder="Ex: FirstName"
+                   />
+                </div>
             </div>
             <Separator />
             <TextStyleSettings props={props} onPropChange={onPropChange} />

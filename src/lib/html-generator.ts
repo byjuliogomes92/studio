@@ -111,6 +111,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
   const styles = component.props.styles || {};
   const styleString = getStyleString(styles);
   const editableAttrs = (propName: string) => isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="${propName}"` : '';
+  const dataBinding = component.props.dataBinding;
 
 
   switch (component.type) {
@@ -125,11 +126,14 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             <img src="${component.props.imageUrl || 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png'}" alt="Banner">
         </div>`;
     case 'Title':
-        return `<h1 style="${styleString}" ${editableAttrs('text')}>${component.props.text || 'Título Principal'}</h1>`;
+        const titleText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Título Principal');
+        return `<h1 style="${styleString}" ${editableAttrs('text')}>${titleText}</h1>`;
     case 'Subtitle':
-        return `<h2 style="${styleString}" ${editableAttrs('text')}>${component.props.text || 'Subtítulo'}</h2>`;
+        const subtitleText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Subtítulo');
+        return `<h2 style="${styleString}" ${editableAttrs('text')}>${subtitleText}</h2>`;
     case 'Paragraph':
-        return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs('text')}>${component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.'}</div>`;
+        const paragraphText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.');
+        return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs('text')}>${paragraphText}</div>`;
     case 'Divider':
         return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0; ${styleString}" />`;
     case 'Image':
@@ -1710,4 +1714,5 @@ ${clientSideScripts}
     
 
     
+
 

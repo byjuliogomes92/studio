@@ -1,4 +1,5 @@
 
+
 export interface Snippet {
     id: string;
     name: string;
@@ -16,21 +17,21 @@ export const snippets: Snippet[] = [
     {
         id: 'lookup-from-url',
         name: 'Buscar Dados do Cliente pela URL',
-        description: 'Personaliza a página buscando dados de uma DE com base em um parâmetro na URL (ex: ?email=...).',
+        description: 'Personaliza a página buscando dados de uma DE com base em um parâmetro na URL (ex: ?id=...).',
         configFields: [
             { name: 'deName', label: 'Nome ou Chave Externa da DE', placeholder: 'Ex: Clientes_VIP' },
-            { name: 'urlParam', label: 'Parâmetro na URL', placeholder: 'Ex: email', defaultValue: 'email' },
-            { name: 'lookupColumn', label: 'Coluna para Buscar na DE', placeholder: 'Ex: EmailAddress' },
-            { name: 'dataToFetch', label: 'Variáveis a Buscar (separadas por vírgula)', placeholder: 'Ex: @nome=Nome, @cidade=Cidade' },
+            { name: 'urlParam', label: 'Parâmetro na URL', placeholder: 'Ex: id', defaultValue: 'id' },
+            { name: 'lookupColumn', label: 'Coluna de Busca na DE (chave)', placeholder: 'Ex: SubscriberKey' },
+            { name: 'dataToFetch', label: 'Variáveis a Buscar (Ex: var=Coluna)', placeholder: 'Ex: FirstName=Nome, City=Cidade' },
         ],
         generate: (config) => {
             const { deName, urlParam, lookupColumn, dataToFetch } = config;
             const fields = dataToFetch.split(',').map(f => f.trim());
             
-            const varDeclarations = fields.map(f => f.split('=')[0]).join(', ');
+            const varDeclarations = fields.map(f => `@${f.split('=')[0].trim()}`).join(', ');
             const lookups = fields.map(f => {
-                const [varName, colName] = f.split('=');
-                return `SET ${varName.trim()} = Lookup("${deName}", "${colName.trim()}", "${lookupColumn}", @lookupValue)`;
+                const [varName, colName] = f.split('=').map(s => s.trim());
+                return `SET @${varName} = Lookup("${deName}", "${colName}", "${lookupColumn}", @lookupValue)`;
             }).join('\n    ');
 
             return `%%[
@@ -40,6 +41,9 @@ SET @lookupValue = QueryParameter("${urlParam}")
 
 IF NOT EMPTY(@lookupValue) THEN
     ${lookups}
+ELSE
+    /* Valores Padrão (Opcional) */
+    ${fields.map(f => { const [varName] = f.split('=').map(s => s.trim()); return `SET @${varName} = ""`; }).join('\n    ')}
 ENDIF
 /* --- Fim: Busca de Dados do Cliente --- */
 ]%%`;

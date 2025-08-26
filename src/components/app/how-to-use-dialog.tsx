@@ -127,7 +127,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
                 No Content Builder, crie uma CloudPage, selecione o layout em branco e cole o código AMPScript abaixo em um bloco de conteúdo "HTML". **Faça isso apenas uma vez por página.**
               </p>
               <div className="relative rounded-lg bg-[#1e1e1e]">
-                  <SyntaxHighlighter language="ampscript" style={vscDarkPlus} customStyle={{ margin: 0, background: 'transparent', padding: '1rem' }}>
+                  <SyntaxHighlighter language="ampscript" style={vscDarkPlus} customStyle={{ margin: 0, background: 'transparent', padding: '1rem', overflowX: 'auto' }} wrapLongLines={true}>
                     {proxySnippet}
                   </SyntaxHighlighter>
                   <Button
@@ -147,7 +147,7 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
                 <p className="text-sm text-muted-foreground">
                     Crie uma Data Extension no Marketing Cloud com o Identificador (Nome ou Chave Externa) <strong>{pageState.meta.dataExtensionKey || '[NÃO DEFINIDO]'}</strong>. Use os seguintes campos para garantir que todos os dados da sua página sejam salvos corretamente:
                 </p>
-                 <div className="rounded-md border overflow-x-auto">
+                 <div className="relative w-full overflow-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>

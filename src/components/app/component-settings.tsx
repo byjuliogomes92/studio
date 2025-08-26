@@ -863,6 +863,41 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 </div>
             </div>
         );
+      case "WhatsApp":
+        return (
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="wa-phone">Número de Telefone</Label>
+                    <Input
+                        id="wa-phone"
+                        value={props.phoneNumber || ''}
+                        onChange={(e) => onPropChange('phoneNumber', e.target.value)}
+                        placeholder="Ex: 5511999999999"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="wa-message">Mensagem Padrão</Label>
+                    <Textarea
+                        id="wa-message"
+                        value={props.defaultMessage || ''}
+                        onChange={(e) => onPropChange('defaultMessage', e.target.value)}
+                        rows={4}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="wa-position">Posição do Botão</Label>
+                    <Select value={props.position || 'bottom-right'} onValueChange={(value) => onPropChange('position', value)}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="bottom-right">Canto Inferior Direito</SelectItem>
+                            <SelectItem value="bottom-left">Canto Inferior Esquerdo</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        );
       case "Footer":
         return (
           <div className="space-y-4">

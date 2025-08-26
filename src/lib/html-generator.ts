@@ -456,6 +456,15 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     }
     case 'Columns':
         return `<div class="columns-container" style="--column-count: ${component.props.columnCount || 2}; ${styleString}">${childrenHtml}</div>`;
+    case 'WhatsApp': {
+        const { phoneNumber, defaultMessage, position = 'bottom-right' } = component.props;
+        const encodedMessage = encodeURIComponent(defaultMessage);
+        const href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        return `
+            <a href="${href}" target="_blank" class="whatsapp-float-btn ${position}" aria-label="Fale conosco no WhatsApp">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </a>`;
+    }
     case 'Form': {
       const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
       const { meta } = pageState;
@@ -1002,7 +1011,7 @@ const getClientSideScripts = () => {
 export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false): string => {
   const { styles, components, meta, cookieBanner } = pageState;
   
-  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe'];
+  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
   
   const security = getSecurityScripts(pageState);
   
@@ -1010,6 +1019,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   const clientSideScripts = getClientSideScripts();
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
+  const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
   const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
   const footerComponent = components.find(c => c.type === 'Footer' && c.parentId === null);
@@ -1628,6 +1638,34 @@ ${trackingScripts}
         flex: 1;
         min-width: 0;
     }
+    /* WhatsApp Button Styles */
+    .whatsapp-float-btn {
+        position: fixed;
+        width: 60px;
+        height: 60px;
+        background-color: #25D366;
+        color: #FFF;
+        border-radius: 50px;
+        text-align: center;
+        font-size: 30px;
+        box-shadow: 2px 2px 3px #999;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .whatsapp-float-btn.bottom-right {
+        bottom: 40px;
+        right: 40px;
+    }
+    .whatsapp-float-btn.bottom-left {
+        bottom: 40px;
+        left: 40px;
+    }
+    .whatsapp-float-btn svg {
+        width: 32px;
+        height: 32px;
+    }
 
     /* Password Protection Styles */
     .password-protection-container {
@@ -1704,6 +1742,7 @@ ${clientSideScripts}
     ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}
   </div>
 
+  ${whatsAppComponent ? renderComponent(whatsAppComponent, pageState, isForPreview) : ''}
   ${cookieBannerHtml}
   %%[ ELSE ]%%
   ${security.body}
@@ -1714,5 +1753,3 @@ ${clientSideScripts}
     
 
     
-
-

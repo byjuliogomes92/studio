@@ -21,7 +21,8 @@ export type ComponentType =
   | 'NPS'
   | 'Map'
   | 'SocialIcons'
-  | 'Columns';
+  | 'Columns'
+  | 'WhatsApp';
   
 export type Brand = 'Natura' | 'Avon';
 

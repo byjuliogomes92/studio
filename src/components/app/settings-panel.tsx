@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
@@ -68,6 +69,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Map: MapPin,
     SocialIcons: Share2,
     Columns: Columns,
+    WhatsApp: Zap,
 };
 
 const googleFonts = [
@@ -329,7 +331,8 @@ export function SettingsPanel({
                     fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
                     placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
                     consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
-                    buttonText: 'Finalizar'
+                    buttonText: 'Finalizar',
+                    dataBinding: ''
                 };
                 break;
             case 'Countdown':
@@ -401,6 +404,13 @@ export function SettingsPanel({
                         align: 'center',
                         iconSize: '24px',
                     }
+                };
+                break;
+            case 'WhatsApp':
+                newComponent.props = {
+                    phoneNumber: '5511999999999',
+                    defaultMessage: 'Olá! Gostaria de mais informações.',
+                    position: 'bottom-right'
                 };
                 break;
         }
@@ -749,8 +759,10 @@ export function SettingsPanel({
                                             <p>Adicione seu código AMPScript aqui. Ele será executado no topo da página.</p>
                                             <p className="mt-2"><b>Exemplo:</b></p>
                                             <pre className="text-xs bg-muted p-2 rounded-md mt-1">
-                                                {`VAR @name
-SET @name = AttributeValue("FirstName")`}
+                                                {`%%[
+VAR @name
+SET @name = AttributeValue("FirstName")
+]%%`}
                                             </pre>
                                             <p className="mt-2">Então use `%%=v(@name)=%%` no HTML de um componente.</p>
                                         </div>

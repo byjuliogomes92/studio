@@ -33,6 +33,7 @@ import {
   type LucideIcon,
   Columns,
   BarChart,
+  Zap,
 } from "lucide-react";
 import type { ComponentType } from "@/lib/types";
 import { useState } from "react";
@@ -71,6 +72,7 @@ const componentList: {
       { name: "Divider", icon: Minus, enabled: true },
       { name: "Spacer", icon: StretchHorizontal, enabled: true },
       { name: "SocialIcons", icon: Share2, enabled: true },
+      { name: "WhatsApp", icon: Zap, enabled: true },
     ],
   },
   {

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -18,6 +19,12 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import type { CloudPage } from "@/lib/types";
+
+interface HowToUseDialogProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  pageState: CloudPage;
+}
 
 interface DeField {
     name: string;
@@ -186,3 +193,4 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
     </Dialog>
   );
 }
+

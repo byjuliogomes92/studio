@@ -2,12 +2,12 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -97,12 +97,22 @@ interface MovePageDialogProps {
 function AnalyticsDashboard({ pageId }: { pageId: string }) {
     const [views, setViews] = useState<PageView[]>([]);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    
+    const fetchAnalyticsData = useCallback(() => {
+        setIsRefreshing(true);
         getPageViews(pageId)
             .then(setViews)
-            .finally(() => setLoading(false));
+            .finally(() => {
+                setLoading(false);
+                setIsRefreshing(false);
+            });
     }, [pageId]);
+
+    useEffect(() => {
+        setLoading(true);
+        fetchAnalyticsData();
+    }, [fetchAnalyticsData]);
 
     const totalViews = views.length;
     const uniqueCountries = useMemo(() => {
@@ -116,6 +126,12 @@ function AnalyticsDashboard({ pageId }: { pageId: string }) {
 
     return (
         <div className="space-y-6">
+            <div className="flex items-center gap-2">
+                <Button onClick={fetchAnalyticsData} variant="outline" disabled={isRefreshing}>
+                    <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
+                    Atualizar Dados
+                </Button>
+            </div>
             <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -141,24 +157,26 @@ function AnalyticsDashboard({ pageId }: { pageId: string }) {
                     <CardTitle>Acessos Recentes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Data</TableHead>
-                                <TableHead>País</TableHead>
-                                <TableHead>Cidade</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {views.slice(0, 10).map(view => (
-                                <TableRow key={view.id}>
-                                    <TableCell>{view.timestamp?.toDate ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
-                                    <TableCell>{view.country || 'N/A'}</TableCell>
-                                    <TableCell>{view.city || 'N/A'}</TableCell>
+                     <div className="relative w-full overflow-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Data</TableHead>
+                                    <TableHead>País</TableHead>
+                                    <TableHead>Cidade</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {views.slice(0, 10).map(view => (
+                                    <TableRow key={view.id}>
+                                        <TableCell>{view.timestamp?.toDate ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
+                                        <TableCell>{view.country || 'N/A'}</TableCell>
+                                        <TableCell>{view.city || 'N/A'}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                     </div>
                 </CardContent>
             </Card>
         </div>
@@ -693,4 +711,5 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
 

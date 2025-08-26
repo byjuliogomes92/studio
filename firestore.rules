@@ -4,28 +4,44 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user owns the document
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
+    // Projects can be read and written only by the user who created them
     match /projects/{projectId} {
-      allow read, write: if isOwner(resource.data.userId);
+      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
-    // Allow public read for the API proxy, but restrict write operations to the owner.
+    // Pages can be read and written only by the user who created them
+    // The public can read them via the API endpoint, which uses admin/server-side auth
     match /pages/{pageId} {
-      allow read: if true;
-      allow write: if isOwner(resource.data.userId);
+      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
+      // Public read is handled by the API route, not direct client access
     }
     
+    // Templates can be read and written only by the user who created them
     match /templates/{templateId} {
-      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
-      allow create: if isOwner(request.resource.data.createdBy);
-      allow update, delete: if isOwner(resource.data.createdBy);
+        allow read, write: if isAuthenticated() && isOwner(resource.data.createdBy);
     }
 
+    // User progress can be read and written only by the user themselves
     match /userProgress/{userId} {
-      allow read, write: if isOwner(userId);
+        allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Page views can be created by the server-side API.
+    // They can only be read by the user who owns the page.
+    match /pageViews/{viewId} {
+      allow create: if true; // Allows server-side creation
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if false; // Clients should not be able to update/delete
     }
   }
 }

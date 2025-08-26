@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Copy, Loader2, Sparkles, Download, Monitor, Smartphone, ExternalLink } from "lucide-react";
+import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -38,7 +38,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
 
   // Generate HTML for preview and for final code separately
   const previewHtmlCode = generateHtml(pageState, true);
-  const finalHtmlCode = generateHtml(pageState, false);
 
   const handleInlineEdit = useCallback((componentId: string, propName: string, newContent: string) => {
     setPageState(prev => {
@@ -96,30 +95,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     };
   }, [previewHtmlCode, handleInlineEdit]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(finalHtmlCode);
-    toast({
-      title: "Copiado para a Área de Transferência",
-      description: "O código HTML foi copiado.",
-    });
-  };
-
-  const handleDownload = () => {
-    const blob = new Blob([finalHtmlCode], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "cloudpage.html";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast({
-      title: "Download Iniciado",
-      description: "O download do seu arquivo HTML começou.",
-    });
-  }
-
   const handleOpenInNewTab = () => {
     try {
         // Generate the preview HTML
@@ -149,7 +124,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     setChecking(true);
     setAccessibilityIssues(null);
     try {
-      const result = await accessibilityCheck({ htmlCode: finalHtmlCode });
+      const result = await accessibilityCheck({ htmlCode: generateHtml(pageState, false) });
       setAccessibilityIssues(result.suggestions);
     } catch (error) {
       console.error("A verificação de acessibilidade falhou:", error);
@@ -168,11 +143,10 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
       <Tabs defaultValue="preview" className="w-full h-full flex flex-col bg-muted/20">
         <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
           <div className="flex">
-            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 max-w-sm rounded-none">
+            <TabsList className="grid w-full grid-cols-1 bg-transparent p-0 max-w-sm rounded-none">
               <TabsTrigger value="preview" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Preview</TabsTrigger>
-              <TabsTrigger value="code" className="rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent">Código</TabsTrigger>
             </TabsList>
-            <TooltipProvider>
+             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
@@ -186,6 +160,10 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
             </TooltipProvider>
           </div>
           <div className="flex items-center gap-2">
+              <Button onClick={() => setIsHowToUseOpen(true)} variant="secondary">
+                <Info className="mr-2 h-4 w-4" />
+                Como Publicar
+              </Button>
               <Button variant="ghost" size="icon" onClick={handleOpenInNewTab} aria-label="Abrir em nova aba">
                   <ExternalLink className="h-5 w-5"/>
               </Button>
@@ -209,23 +187,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
                       previewMode === 'desktop' ? 'w-full h-full' : 'w-[375px] h-[667px]'
                   )}
               />
-            </div>
-          </TabsContent>
-          <TabsContent value="code" className="w-full h-full m-0 p-4 flex flex-col gap-4">
-            <div className="flex-shrink-0 flex items-center gap-2">
-              <Button onClick={() => setIsHowToUseOpen(true)} variant="outline">
-                <Copy className="mr-2 h-4 w-4" />
-                Copiar Código & Ver Instruções
-              </Button>
-              <Button onClick={() => setIsHowToUseOpen(true)} variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Download & Ver Instruções
-              </Button>
-            </div>
-            <div className="w-full flex-grow text-xs font-mono bg-card rounded-md overflow-hidden">
-              <SyntaxHighlighter language="html" style={vscDarkPlus} showLineNumbers customStyle={{ margin: 0, height: '100%', width: '100%', fontSize: '14px' }}>
-                  {finalHtmlCode}
-              </SyntaxHighlighter>
             </div>
           </TabsContent>
           <TabsContent value="accessibility" className="w-full h-full m-0 p-6">
@@ -253,9 +214,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
         isOpen={isHowToUseOpen}
         onOpenChange={setIsHowToUseOpen}
         pageState={pageState}
-        onCopy={handleCopy}
-        onDownload={handleDownload}
-        onDataExtensionKeyChange={onDataExtensionKeyChange}
       />
     </>
   );

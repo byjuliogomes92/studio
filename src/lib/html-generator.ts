@@ -1029,8 +1029,9 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState, isForPreview);
   
+  // Use TreatAsContentArea for better performance and to avoid script injection issues
   return `%%[ 
-    VAR @showThanks
+    VAR @showThanks, @status
     SET @showThanks = "false" 
     ${meta.customAmpscript || ''}
     ${security.amscript}
@@ -1039,7 +1040,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${meta.title}</title>
+<title>%%=v(@title)=%%</title>
 <meta name="description" content="${meta.metaDescription}">
 <meta name="keywords" content="${meta.metaKeywords}">
 <link rel="icon" href="${meta.faviconUrl}" sizes="16x16" type="image/png">
@@ -1730,7 +1731,7 @@ ${clientSideScripts}
 <body>
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
-    <img src="${meta.loaderImageUrl}" alt="Loader">
+    <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
   </div>
   ${stripeComponents}
   <div class="container" style="display: block;">
@@ -1751,5 +1752,5 @@ ${clientSideScripts}
 </html>
 `
     
-
     
+

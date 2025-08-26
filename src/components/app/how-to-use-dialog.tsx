@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,167 +11,93 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CloudPage } from "@/lib/types";
-import { Copy, Download, Pencil, TestTube2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Copy, AlertTriangle, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface HowToUseDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   pageState: CloudPage;
-  onCopy: () => void;
-  onDownload: () => void;
-  onDataExtensionKeyChange: (newKey: string) => void;
 }
 
-type DeField = {
-  name: string;
-  type: 'Text' | 'Number' | 'Date' | 'Boolean' | 'EmailAddress' | 'Phone';
-  maxLength?: number;
-  required: boolean;
-};
+export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDialogProps) {
+  const { toast } = useToast();
+  const [pageUrl, setPageUrl] = useState('');
 
-const getRequiredFields = (pageState: CloudPage): DeField[] => {
-  const fields: DeField[] = [];
-  
-  const formComponent = pageState.components.find(c => c.type === 'Form');
-  if (formComponent) {
-    const formProps = formComponent.props;
-    if (formProps.fields?.name) fields.push({ name: 'NOME', type: 'Text', maxLength: 100, required: true });
-    if (formProps.fields?.email) fields.push({ name: 'EMAIL', type: 'EmailAddress', required: true });
-    if (formProps.fields?.phone) fields.push({ name: 'TELEFONE', type: 'Phone', required: true });
-    if (formProps.fields?.cpf) fields.push({ name: 'CPF', type: 'Text', maxLength: 14, required: true });
-    if (formProps.fields?.birthdate) fields.push({ name: 'DATANASCIMENTO', type: 'Date', required: false });
-    if (formProps.fields?.city) fields.push({ name: 'CIDADE', type: 'Text', maxLength: 100, required: false });
-    if (formProps.fields?.optin) fields.push({ name: 'OPTIN', type: 'Boolean', required: true });
-  }
-
-  const npsComponent = pageState.components.find(c => c.type === 'NPS');
-  if (npsComponent) {
-    fields.push({ name: 'NPS_SCORE', type: 'Number', required: true });
-    fields.push({ name: 'NPS_DATE', type: 'Date', required: true });
-  }
-  
-  // Logic for A/B Test fields
-  pageState.components.forEach(component => {
-    if (component.abTestEnabled) {
-      fields.push({
-        name: `VARIANTE_${component.id.toUpperCase()}`,
-        type: 'Text',
-        maxLength: 1, // 'A', 'B', etc.
-        required: true
-      });
+  useEffect(() => {
+    // This ensures the URL is constructed only on the client-side where `window.location` is available.
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.origin}/api/pages/${pageState.id}`;
+      setPageUrl(url);
     }
-  });
+  }, [pageState.id]);
 
+  const proxySnippet = `%%=TreatAsContentArea("CONTENT", HTTPGet("${pageUrl}", false, 0, @status))=%%`;
 
-  return fields;
-};
-
-export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDownload, onDataExtensionKeyChange }: HowToUseDialogProps) {
-
-  const [isEditingDeKey, setIsEditingDeKey] = useState(false);
-  const [deKey, setDeKey] = useState(pageState.meta.dataExtensionKey || 'CHANGE-ME');
-
-  const requiredFields = getRequiredFields(pageState);
-  const hasAbTest = requiredFields.some(field => field.name.startsWith('VARIANTE_'));
-
-  const handleDeKeySave = () => {
-    onDataExtensionKeyChange(deKey);
-    setIsEditingDeKey(false);
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copiado para a Área de Transferência!",
+    });
   };
-  
-  const handleDeKeyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleDeKeySave();
-    }
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Como Usar sua CloudPage no Marketing Cloud</DialogTitle>
+          <DialogTitle>Como Publicar sua CloudPage (Método Rápido)</DialogTitle>
           <DialogDescription>
-            Siga estes passos para configurar e publicar sua página corretamente.
+            Use este método para publicar suas alterações instantaneamente, sem o cache do Marketing Cloud.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] pr-6">
           <div className="space-y-6 py-4">
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">1. Configurando a Data Extension</h3>
-              <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-                <span>Crie uma nova Data Extension com a Chave Externa:</span>
-                {isEditingDeKey ? (
-                  <Input
-                    value={deKey}
-                    onChange={(e) => setDeKey(e.target.value)}
-                    onBlur={handleDeKeySave}
-                    onKeyDown={handleDeKeyKeyDown}
-                    autoFocus
-                    className="h-8 max-w-sm"
-                  />
-                ) : (
-                  <Badge variant="outline" className="cursor-pointer" onClick={() => setIsEditingDeKey(true)}>
-                    {pageState.meta.dataExtensionKey || 'CHANGE-ME'}
-                    <Pencil className="h-3 w-3 ml-2" />
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Ela deve ser "Sendable" e "Testable", e o campo de envio deve ser o que corresponde ao `EMAIL`. Os campos abaixo são baseados nos componentes que você adicionou à sua página.
-              </p>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome do Campo</TableHead>
-                      <TableHead>Tipo de Dado</TableHead>
-                      <TableHead>Tamanho Máx.</TableHead>
-                      <TableHead>Anulável</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {requiredFields.map(field => (
-                      <TableRow key={field.name}>
-                        <TableCell className="font-medium">{field.name}</TableCell>
-                        <TableCell>{field.type}</TableCell>
-                        <TableCell>{field.maxLength || 'N/A'}</TableCell>
-                        <TableCell>{field.required ? 'Não' : 'Sim'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
 
-              {hasAbTest && (
-                <Alert>
-                  <TestTube2 className="h-4 w-4" />
-                  <AlertTitle>Você está usando Teste A/B!</AlertTitle>
-                  <AlertDescription>
-                      <p>Detectamos que você configurou um Teste A/B em um ou mais componentes. Os campos `VARIANTE_*` foram adicionados automaticamente à sua lista de campos.</p>
-                      <p className="mt-2"><b>Como funciona:</b> O sistema mostrará aleatoriamente a versão A (original) ou B (variante) do seu componente para cada visitante. Quando o formulário for enviado, o campo `VARIANTE_*` será preenchido com **'A'** ou **'B'**, indicando qual versão o usuário visualizou. Isso permitirá que você analise qual variante gerou mais conversões.</p>
-                  </AlertDescription>
-                </Alert>
-              )}
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Como Funciona?</AlertTitle>
+              <AlertDescription>
+                Você colará um pequeno código na sua CloudPage **apenas uma vez**. A partir daí, todas as alterações salvas aqui serão refletidas na sua página publicada instantaneamente, sem precisar editar nada no Marketing Cloud novamente.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Passo 1: Cole este Snippet na sua CloudPage</h3>
+              <p className="text-sm text-muted-foreground">
+                No Content Builder, crie uma CloudPage, selecione o layout em branco e cole o código AMPScript abaixo em um bloco de conteúdo "HTML". **Faça isso apenas uma vez por página.**
+              </p>
+              <div className="relative">
+                  <SyntaxHighlighter language="ampscript" style={vscDarkPlus} customStyle={{ margin: 0, borderRadius: '0.5rem', padding: '1rem' }}>
+                    {proxySnippet}
+                  </SyntaxHighlighter>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute top-2 right-2 h-7 w-7"
+                    onClick={() => handleCopy(proxySnippet)}
+                  >
+                      <Copy className="h-4 w-4" />
+                  </Button>
+              </div>
             </div>
 
             <div className="space-y-4">
-                <h3 className="font-semibold text-lg">2. Cole o Código no Content Builder</h3>
+                <h3 className="font-semibold text-lg">Passo 2: Configure sua Data Extension</h3>
                 <p className="text-sm text-muted-foreground">
-                    No Content Builder, crie um novo "Bloco de Conteúdo" do tipo "HTML". O código gerado já inclui a lógica de envio do formulário (SSJS) que se comunica com a sua Data Extension. Cole o código HTML copiado no editor.
+                    Certifique-se de que sua Data Extension no Marketing Cloud está configurada corretamente para receber os dados. A chave externa da DE deve ser: <strong>{pageState.meta.dataExtensionKey}</strong>.
                 </p>
-                <img src="https://i.postimg.cc/J0bW8Gz2/step2.png" alt="Cole o código no Content Builder" className="rounded-md border" />
+                 <img src="https://i.postimg.cc/J0bW8Gz2/step2.png" alt="Cole o código no Content Builder" className="rounded-md border" />
             </div>
 
              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">3. Crie e Publique a CloudPage</h3>
+                <h3 className="font-semibold text-lg">Passo 3: Salve e Publique</h3>
                 <p className="text-sm text-muted-foreground">
-                    Crie uma nova CloudPage, selecione o layout em branco e arraste seu bloco de conteúdo HTML para a página. Salve, publique e sua página estará pronta para receber envios!
+                    Salve e publique sua CloudPage. É isso! A partir de agora, qualquer alteração que você salvar aqui na plataforma aparecerá automaticamente na sua página publicada.
                 </p>
                  <img src="https://i.postimg.cc/q7yZ26Y1/step3.png" alt="Crie e publique a CloudPage" className="rounded-md border" />
             </div>
@@ -180,13 +106,9 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState, onCopy, onDown
         </ScrollArea>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={onDownload}>
-            <Download className="mr-2 h-4 w-4" />
-            Baixar Arquivo HTML
-          </Button>
-          <Button onClick={onCopy}>
-            <Copy className="mr-2 h-4 w-4" />
-            Copiar Código
+          <Button onClick={() => window.open(pageUrl, '_blank')}>
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Testar URL da Página
           </Button>
         </DialogFooter>
       </DialogContent>

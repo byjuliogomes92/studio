@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,7 +152,7 @@ function AnalyticsDashboard({ pageId }: { pageId: string }) {
                         <TableBody>
                             {views.slice(0, 10).map(view => (
                                 <TableRow key={view.id}>
-                                    <TableCell>{view.timestamp ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
+                                    <TableCell>{view.timestamp?.toDate ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
                                     <TableCell>{view.country || 'N/A'}</TableCell>
                                     <TableCell>{view.city || 'N/A'}</TableCell>
                                 </TableRow>
@@ -240,6 +240,7 @@ function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogP
 
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -257,6 +258,8 @@ export function PageList({ projectId }: PageListProps) {
   // Mobile Warning Dialog
   const [isMobileWarningOpen, setIsMobileWarningOpen] = useState(false);
   const [pageToNavigate, setPageToNavigate] = useState<string | null>(null);
+
+  const selectedPageId = searchParams.get('page');
 
 
   const fetchProjectData = async () => {
@@ -656,7 +659,7 @@ export function PageList({ projectId }: PageListProps) {
                     )}
                 </TabsContent>
                 <TabsContent value="analytics">
-                     <Select onValueChange={(pageId) => router.replace(`/project/${projectId}?page=${pageId}`)}>
+                     <Select onValueChange={(pageId) => router.push(`/project/${projectId}?page=${pageId}`)} defaultValue={selectedPageId || ''}>
                         <SelectTrigger className="w-[300px] mb-4">
                             <SelectValue placeholder="Selecione uma página para ver as análises" />
                         </SelectTrigger>
@@ -666,7 +669,7 @@ export function PageList({ projectId }: PageListProps) {
                             ))}
                         </SelectContent>
                     </Select>
-                     {router.query?.page && <AnalyticsDashboard pageId={router.query.page as string} />}
+                     {selectedPageId && <AnalyticsDashboard pageId={selectedPageId} />}
                 </TabsContent>
             </Tabs>
         </main>
@@ -690,3 +693,4 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+

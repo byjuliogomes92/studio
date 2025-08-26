@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -242,6 +243,11 @@ export function CreatePageFromTemplateDialog({
                     title: `${selectedBrand} - ${newPageName}`,
                     redirectUrl: selectedBrand === 'Avon' ? 'https://cloud.hello.avon.com/cadastroavonagradecimento' : 'https://www.natura.com.br/',
                     dataExtensionKey: 'CHANGE-ME',
+                    tracking: {
+                      ga4: { enabled: false, id: '' },
+                      meta: { enabled: false, id: '' },
+                      linkedin: { enabled: false, id: '' }
+                    },
                 }
             };
         }

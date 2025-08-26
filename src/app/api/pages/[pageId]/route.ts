@@ -10,7 +10,7 @@ import { generateHtml } from '@/lib/html-generator';
 // and serves it as a raw text/html file.
 // The CloudPage in Marketing Cloud will use HTTPGet() to fetch the content from this URL in real-time.
 
-// By setting these cache headers, we ensure the route is treated as dynamic
+// By setting this to force-dynamic, we ensure the route is always treated as dynamic
 // and that no upstream cache (like a CDN or browser) will store the response.
 export const dynamic = 'force-dynamic';
 

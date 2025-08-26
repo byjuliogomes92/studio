@@ -1750,7 +1750,7 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
-    
+`;
+}
     
 

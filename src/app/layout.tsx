@@ -7,10 +7,13 @@ import { AppFooter } from '@/components/app/app-footer';
 
 export const metadata: Metadata = {
   title: {
-    default: 'CloudPage Studio',
-    template: '%s | CloudPage Studio',
+    default: 'Cloud Page Forge',
+    template: '%s | Cloud Page Forge',
   },
-  description: 'Gere páginas para Salesforce Marketing Cloud com facilidade, utilizando componentes pré-prontos e uma interface intuitiva.',
+  description: 'Crie e gerencie Cloud Pages para Salesforce Marketing Cloud com uma interface visual intuitiva, componentes reutilizáveis e publicação instantânea.',
+  icons: {
+    icon: `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /><path d="m14 12-4 4 4 4" /><path d="m10 12 4 4" /></svg>')}`,
+  },
 };
 
 export default function RootLayout({

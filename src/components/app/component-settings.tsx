@@ -1053,8 +1053,8 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                       <TooltipContent>
                         <div className="max-w-xs">
                           <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
-                          <p className="mt-2">Ex. de variável: `&lt;h2&gt;Obrigado, %%NOME%%!&lt;/h2&gt;`.</p>
-                          <p className="mt-1">Ex. de botão: `&lt;a href="https://..." class="custom-button"&gt;Clique Aqui&lt;/a&gt;`.</p>
+                          <p className="mt-2">Ex. de variável: `<h2>Obrigado, %%NOME%%!</h2>`.</p>
+                          <p className="mt-1">Ex. de botão: `<a href="https://..." class="custom-button">Clique Aqui</a>`.</p>
                           <p className="mt-1">Variáveis disponíveis: `%%NOME%%`, `%%EMAIL%%`, e os nomes dos seus campos personalizados.</p>
                         </div>
                       </TooltipContent>

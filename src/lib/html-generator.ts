@@ -2061,4 +2061,3 @@ ${clientSideScripts}
 </body>
 </html>
 `;
-};

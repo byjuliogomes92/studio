@@ -1,5 +1,4 @@
 
-
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -35,6 +34,17 @@ export interface FormFieldConditional {
 export interface FormFieldConfig {
     enabled: boolean;
     conditional: FormFieldConditional | null;
+}
+
+export type CustomFormFieldType = 'text' | 'number' | 'date' | 'checkbox';
+
+export interface CustomFormField {
+    id: string;
+    name: string; // This will be the DE column name
+    label: string;
+    type: CustomFormFieldType;
+    required: boolean;
+    placeholder?: string;
 }
 
 export interface PageComponent {
@@ -153,5 +163,3 @@ export interface PageView {
   city?: string;
   userAgent?: string;
 }
-
-    

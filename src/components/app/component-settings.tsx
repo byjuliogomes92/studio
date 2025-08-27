@@ -1,11 +1,12 @@
+
 "use client";
 
-import type { PageComponent, ComponentType, FormFieldConfig } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType } from "@/lib/types";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download, Send, ArrowRight, CheckCircle } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download, Send, ArrowRight, CheckCircle, GripVertical } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -45,6 +46,7 @@ const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] 
 ];
 
 const lucideIcons = [
+    { value: 'none', label: 'Sem ícone' },
     { value: 'send', label: 'Enviar' },
     { value: 'arrow-right', label: 'Seta para a Direita' },
     { value: 'check-circle', label: 'Círculo de Verificação' },
@@ -360,6 +362,82 @@ const DebouncedTextInput = ({ value, onBlur, ...props }: { value: string; onBlur
             onBlur={() => onBlur(localValue)}
             {...props}
         />
+    );
+}
+
+function CustomFieldsManager({ fields, onPropChange }: { fields: CustomFormField[], onPropChange: (prop: string, value: any) => void }) {
+    const addField = () => {
+        const newField: CustomFormField = {
+            id: `custom-${Date.now()}`,
+            name: `CustomField${(fields?.length || 0) + 1}`,
+            label: 'Novo Campo',
+            type: 'text',
+            required: false,
+            placeholder: ''
+        };
+        onPropChange('customFields', [...(fields || []), newField]);
+    };
+
+    const updateField = (id: string, prop: keyof CustomFormField, value: any) => {
+        const newFields = fields.map(f => f.id === id ? { ...f, [prop]: value } : f);
+        onPropChange('customFields', newFields);
+    };
+
+    const removeField = (id: string) => {
+        onPropChange('customFields', fields.filter(f => f.id !== id));
+    };
+
+    return (
+        <div className="space-y-4">
+            <Label className="font-semibold">Campos Personalizados</Label>
+            <div className="space-y-3">
+                {fields?.map(field => (
+                    <div key={field.id} className="p-3 border rounded-md space-y-3 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                            <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                             <Button variant="ghost" size="icon" onClick={() => removeField(field.id)} className="h-7 w-7">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <Label htmlFor={`label-${field.id}`} className="text-xs">Rótulo</Label>
+                                <Input id={`label-${field.id}`} value={field.label} onChange={e => updateField(field.id, 'label', e.target.value)} />
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor={`name-${field.id}`} className="text-xs">Nome/Chave na DE</Label>
+                                <Input id={`name-${field.id}`} value={field.name} onChange={e => updateField(field.id, 'name', e.target.value.replace(/ /g, '_'))} />
+                            </div>
+                        </div>
+                         <div className="space-y-1">
+                            <Label htmlFor={`placeholder-${field.id}`} className="text-xs">Placeholder</Label>
+                            <Input id={`placeholder-${field.id}`} value={field.placeholder} onChange={e => updateField(field.id, 'placeholder', e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 items-end">
+                            <div className="space-y-1">
+                                <Label htmlFor={`type-${field.id}`} className="text-xs">Tipo de Campo</Label>
+                                <Select value={field.type} onValueChange={(v: CustomFormFieldType) => updateField(field.id, 'type', v)}>
+                                    <SelectTrigger id={`type-${field.id}`}><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="text">Texto</SelectItem>
+                                        <SelectItem value="number">Número</SelectItem>
+                                        <SelectItem value="date">Data</SelectItem>
+                                        <SelectItem value="checkbox">Caixa de Seleção</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Switch id={`required-${field.id}`} checked={field.required} onCheckedChange={c => updateField(field.id, 'required', c)} />
+                                <Label htmlFor={`required-${field.id}`} className="text-xs">Obrigatório</Label>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <Button variant="outline" className="w-full" onClick={addField}>
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Campo Personalizado
+            </Button>
+        </div>
     );
 }
 
@@ -708,8 +786,8 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
             // Ensure all form fields are objects for backward compatibility
             for (const fieldKey of Object.keys(props.fields || {})) {
                 const fieldValue = props.fields[fieldKey];
-                if (typeof fieldValue === 'boolean') {
-                    fieldsConfig[fieldKey] = { enabled: fieldValue, conditional: null };
+                if (typeof fieldValue === 'boolean' || fieldValue === undefined) {
+                    fieldsConfig[fieldKey] = { enabled: !!fieldValue, conditional: null };
                 } else {
                     fieldsConfig[fieldKey] = fieldValue;
                 }
@@ -740,7 +818,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
             return (
               <div className="space-y-4">
                 <div>
-                  <Label className="font-semibold">Campos do Formulário</Label>
+                  <Label className="font-semibold">Campos Padrão</Label>
                   <div className="space-y-3 mt-2">
                     {formFields.map((field, index) => (
                       <div key={field.id} className="p-3 border rounded-md space-y-3">
@@ -793,6 +871,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     ))}
                   </div>
                 </div>
+
+                <Separator />
+                
+                <CustomFieldsManager fields={props.customFields || []} onPropChange={onPropChange} />
           
                 <Separator />
           
@@ -895,10 +977,9 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </div>
                         <div className="space-y-2">
                             <Label>Ícone</Label>
-                            <Select value={props.buttonProps?.icon || ''} onValueChange={(value) => onSubPropChange('buttonProps', 'icon', value)}>
+                            <Select value={props.buttonProps?.icon || 'none'} onValueChange={(value) => onSubPropChange('buttonProps', 'icon', value === 'none' ? '' : value)}>
                                 <SelectTrigger><SelectValue placeholder="Sem ícone"/></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">Sem ícone</SelectItem>
                                     {lucideIcons.map(icon => <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
@@ -917,8 +998,11 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         )}
                         <div className="flex items-center justify-between">
                             <Label htmlFor="enable-when-valid" className="flex items-center gap-2">
-                                <HelpCircle className="h-4 w-4" />
                                 Habilitar ao preencher
+                                <Tooltip>
+                                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                                    <TooltipContent><p>O botão só será clicável quando todos os campos obrigatórios estiverem preenchidos.</p></TooltipContent>
+                                </Tooltip>
                             </Label>
                             <Switch id="enable-when-valid" checked={props.buttonProps?.enableWhenValid || false} onCheckedChange={(checked) => onSubPropChange('buttonProps', 'enableWhenValid', checked)} />
                         </div>
@@ -935,9 +1019,9 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                       <TooltipContent>
                         <div className="max-w-xs">
                           <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
-                          <p className="mt-2">Ex. de variável: `<h2>Obrigado, {'{{NOME}}'}!</h2>`.</p>
+                          <p className="mt-2">Ex. de variável: `&lt;h2&gt;Obrigado, %%NOME%%!&lt;/h2&gt;`.</p>
                           <p className="mt-1">Ex. de botão: `&lt;a href="https://..." class="custom-button"&gt;Clique Aqui&lt;/a&gt;`.</p>
-                          <p className="mt-1">Variáveis disponíveis: `{'{{NOME}}'}`, `{'{{EMAIL}}'}`, etc.</p>
+                          <p className="mt-1">Variáveis disponíveis: `%%NOME%%`, `%%EMAIL%%`, e os nomes dos seus campos personalizados.</p>
                         </div>
                       </TooltipContent>
                     </Tooltip>

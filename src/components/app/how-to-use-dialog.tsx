@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -18,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import type { CloudPage } from "@/lib/types";
+import type { CloudPage, CustomFormField, CustomFormFieldType } from "@/lib/types";
 
 interface HowToUseDialogProps {
   isOpen: boolean;
@@ -32,6 +31,16 @@ interface DeField {
     length?: number;
     primaryKey: boolean;
     nullable: boolean;
+}
+
+const mapCustomFieldTypeToDeType = (type: CustomFormFieldType): { type: string, length?: number } => {
+    switch (type) {
+        case 'text': return { type: 'Text', length: 255 };
+        case 'number': return { type: 'Number' };
+        case 'date': return { type: 'Date' };
+        case 'checkbox': return { type: 'Boolean' };
+        default: return { type: 'Text', length: 255 };
+    }
 }
 
 // Function to generate the required Data Extension fields based on the page state
@@ -50,19 +59,30 @@ const generateDeFields = (page: CloudPage): DeField[] => {
     };
 
     page.components.forEach(component => {
-        if (component.type === 'Form' && component.props.fields) {
-            if (component.props.fields.name) addField('NOME', 'Text', 100);
-            if (component.props.fields.email) {
-                // If email is a field, it's often better as the PK than SubscriberKey
-                const skIndex = fields.findIndex(f => f.name === 'SubscriberKey');
-                if (skIndex > -1) fields[skIndex].primaryKey = false;
-                addField('EMAIL', 'EmailAddress', 254, true, false);
+        if (component.type === 'Form') {
+            // Standard Fields
+            if (component.props.fields) {
+                if (component.props.fields.name?.enabled) addField('NOME', 'Text', 100);
+                if (component.props.fields.email?.enabled) {
+                    // If email is a field, it's often better as the PK than SubscriberKey
+                    const skIndex = fields.findIndex(f => f.name === 'SubscriberKey');
+                    if (skIndex > -1) fields[skIndex].primaryKey = false;
+                    addField('EMAIL', 'EmailAddress', 254, true, false);
+                }
+                if (component.props.fields.phone?.enabled) addField('TELEFONE', 'Phone');
+                if (component.props.fields.cpf?.enabled) addField('CPF', 'Text', 11);
+                if (component.props.fields.city?.enabled) addField('CIDADE', 'Text', 100);
+                if (component.props.fields.birthdate?.enabled) addField('DATANASCIMENTO', 'Date');
+                if (component.props.fields.optin?.enabled) addField('OPTIN', 'Boolean');
             }
-            if (component.props.fields.phone) addField('TELEFONE', 'Phone');
-            if (component.props.fields.cpf) addField('CPF', 'Text', 11);
-            if (component.props.fields.city) addField('CIDADE', 'Text', 100);
-            if (component.props.fields.birthdate) addField('DATANASCIMENTO', 'Date');
-            if (component.props.fields.optin) addField('OPTIN', 'Boolean');
+
+            // Custom Fields
+            if(component.props.customFields) {
+                component.props.customFields.forEach((customField: CustomFormField) => {
+                    const deType = mapCustomFieldTypeToDeType(customField.type);
+                    addField(customField.name, deType.type, deType.length, false, !customField.required);
+                });
+            }
         }
 
         if (component.type === 'NPS') {
@@ -193,4 +213,3 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
     </Dialog>
   );
 }
-

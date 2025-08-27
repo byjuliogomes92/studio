@@ -1,6 +1,5 @@
 
-
-import type { CloudPage, PageComponent, ComponentType } from './types';
+import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType } from './types';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -46,6 +45,35 @@ const renderField = (
         <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
       </div>
     `;
+  };
+
+  const renderCustomField = (field: CustomFormField): string => {
+      const { id, name, label, type, required, placeholder = '' } = field;
+      const inputId = `custom-field-${id}`;
+  
+      if (type === 'checkbox') {
+          return `
+              <div class="input-wrapper consent">
+                  <input type="checkbox" id="${inputId}" name="${name}" value="true" ${required ? 'required="required"' : ''}>
+                  <label for="${inputId}">${label}</label>
+                  <div class="error-message" id="error-${name.toLowerCase()}">É necessário aceitar para continuar.</div>
+              </div>
+          `;
+      }
+  
+      return `
+          <div class="input-wrapper">
+              <label for="${inputId}">${label}</label>
+              <input 
+                  type="${type}" 
+                  id="${inputId}" 
+                  name="${name}" 
+                  placeholder="${placeholder}" 
+                  ${required ? 'required="required"' : ''}
+              >
+              <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
+          </div>
+      `;
   };
   
   const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, required: boolean = false): string => {
@@ -566,7 +594,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage, buttonProps = {} } = component.props;
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage, buttonProps = {}, customFields = [] } = component.props;
         const { meta } = pageState;
         const thankYouHtml = `<div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">${thankYouMessage}</div>`;
         
@@ -605,6 +633,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                    <div class="row">
                     ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, false) : ''}
                     ${fields.city?.enabled ? renderCityDropdown(cities, fields.city.conditional, false) : ''}
+                   </div>
+                   
+                   <div class="custom-fields-wrapper">
+                    ${customFields.map(renderCustomField).join('\n')}
                    </div>
              
                   ${fields.optin?.enabled ? `
@@ -833,6 +865,10 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
                         var value = formFields[key];
                         if (key.toUpperCase() == "OPTIN" && value == "on") {
                            value = "True";
+                        }
+                        // For custom checkboxes not checked
+                        if (value === null || value === undefined) {
+                            value = "False";
                         }
                         rowData[key] = value;
                     }
@@ -1426,6 +1462,18 @@ ${trackingScripts}
     .form-container .input-wrapper {
         flex: 1 1 calc(50% - 10px);
         min-width: 200px;
+    }
+
+    .form-container .custom-fields-wrapper, .form-container .input-wrapper {
+        margin-bottom: 15px;
+    }
+    .form-container .input-wrapper label,
+    .form-container .custom-fields-wrapper label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 14px;
+        color: #333;
+        text-align: left;
     }
     
     .form-container input,

@@ -449,16 +449,25 @@ const animationUrls = {
 };
 
 function AnimationPreview({ animation }: { animation: keyof typeof animationUrls | 'none' | '' }) {
-    const [animationData, setAnimationData] = useState(null);
+    const [animationData, setAnimationData] = useState<any>(null);
 
     useEffect(() => {
+        let isCancelled = false;
+        setAnimationData(null); // Clear previous animation data
+
         if (animation && animationUrls[animation as keyof typeof animationUrls]) {
             fetch(animationUrls[animation as keyof typeof animationUrls])
                 .then(response => response.json())
-                .then(data => setAnimationData(data));
-        } else {
-            setAnimationData(null);
+                .then(data => {
+                    if (!isCancelled) {
+                       setAnimationData(data);
+                    }
+                });
         }
+        
+        return () => {
+            isCancelled = true;
+        };
     }, [animation]);
 
     if (!animationData) {
@@ -1495,3 +1504,5 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
+
+    

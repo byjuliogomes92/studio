@@ -886,17 +886,19 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
     
     // Generate the SSJS
     const varDeclarations = enabledFields.map(f => `var ${f.deField.toLowerCase()} = Request.GetFormField("${f.formField}");`).join('\n            ');
+    
     const specialHandling = enabledFields.map(f => {
         if (f.isCheckbox) {
-            return `if (${f.deField.toLowerCase()} == "" || ${f.deField.toLowerCase()} == null) { ${f.deField.toLowerCase()} = "False"; } else if (${f.deField.toLowerCase()} == "on" || ${f.deField.toLowerCase()} == "true") { ${f.deField.toLowerCase()} = "True"; }`;
+            return `if (${f.deField.toLowerCase()} == "" || ${f.deField.toLowerCase()} == null) { ${f.deField.toLowerCase()} = "False"; } else if (${f.deField.toLowerCase()} == "on" || ${f.deField.toLowerCase()} == "true" || ${f.deField.toLowerCase()} == "True") { ${f.deField.toLowerCase()} = "True"; }`;
         }
         if (f.formField === 'NPS_DATE') {
             return `var nps_date = Now(1);`;
         }
         return null;
     }).filter(Boolean).join('\n            ');
-
-    const rowDataObject = enabledFields.map(f => `"${f.deField}": ${f.deField.toLowerCase()}`).join(',\n                        ');
+    
+    const rowDataObjectFields = enabledFields.map(f => `"${f.deField}": ${f.deField.toLowerCase()}`).join(',\n                        ');
+    const rowDataObject = `var rowData = {\n                        ${rowDataObjectFields}\n                    };`;
 
     const lookupKey = fields.email?.enabled ? "EMAIL" : (fields.cpf?.enabled ? "CPF" : "");
 
@@ -931,9 +933,7 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
                 }
 
                 if (de) {
-                    var rowData = {
-                        ${rowData}
-                    };
+                    ${rowDataObject}
 
                     var updateKey = ${lookupKey ? `"${lookupKey}"` : '""'};
                     var updateValue = ${lookupKey ? `${lookupKey.toLowerCase()}` : '""'};
@@ -1353,7 +1353,7 @@ ${setStatements}
 `;
 }
 
-export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string => {
+export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string {
   const { id, styles, components, meta, cookieBanner } = pageState;
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
@@ -1384,7 +1384,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
     SET @showThanks = "false" 
     ${meta.customAmpscript || ''}
     ${security.amscript}
-    ${prefillAmpscript}
+    ${prefillAmpscript || ''}
 ]%%${ssjsBlock}<!DOCTYPE html>
 <html>
 <head>
@@ -1541,7 +1541,7 @@ ${trackingScripts}
     }
     
     .custom-button, .thank-you-message a.custom-button {
-      background-color: ${styles.themeColor};
+      background-color: var(--theme-color);
       color: white !important;
       padding: 10px 20px;
       text-decoration: none;
@@ -1553,7 +1553,7 @@ ${trackingScripts}
     }
     
     .custom-button:hover, .thank-you-message a.custom-button:hover {
-      background-color: ${styles.themeColorHover};
+      background-color: var(--theme-color-hover);
     }
 
     .progress-container {
@@ -1828,8 +1828,8 @@ ${trackingScripts}
         background-color: #f9f9f9;
     }
     .tab-trigger[aria-selected="true"] {
-        border-bottom-color: ${styles.themeColor};
-        color: ${styles.themeColor};
+        border-bottom-color: var(--theme-color);
+        color: var(--theme-color);
         font-weight: bold;
     }
     .tab-panel {
@@ -1857,8 +1857,8 @@ ${trackingScripts}
     .voting-option {
         width: 100%;
         padding: 12px;
-        border: 1px solid ${styles.themeColor};
-        color: ${styles.themeColor};
+        border: 1px solid var(--theme-color);
+        color: var(--theme-color);
         background-color: transparent;
         border-radius: 5px;
         cursor: pointer;
@@ -1866,7 +1866,7 @@ ${trackingScripts}
         font-size: 1em;
     }
     .voting-option:hover {
-        background-color: ${styles.themeColor};
+        background-color: var(--theme-color);
         color: white;
     }
     .voting-results {
@@ -1892,7 +1892,7 @@ ${trackingScripts}
     }
     .result-bar {
         height: 20px;
-        background-color: ${styles.themeColor};
+        background-color: var(--theme-color);
         width: 0%;
         border-radius: 5px;
         transition: width 0.5s ease;
@@ -1989,7 +1989,7 @@ ${trackingScripts}
     .nps-thanks {
         font-size: 1.2em;
         font-weight: bold;
-        color: ${styles.themeColor};
+        color: var(--theme-color);
     }
     /* Map Component Styles */
     .map-container {
@@ -2010,7 +2010,7 @@ ${trackingScripts}
     }
     .social-icon:hover {
         transform: scale(1.1);
-        color: ${styles.themeColor};
+        color: var(--theme-color);
     }
     .social-icon svg {
         width: 24px; /* Default size */
@@ -2088,7 +2088,7 @@ ${trackingScripts}
         width: 100%;
         padding: 12px;
         margin-top: 20px;
-        background-color: ${styles.themeColor};
+        background-color: var(--theme-color);
         color: white;
         border: none;
         border-radius: 5px;
@@ -2140,6 +2140,4 @@ ${clientSideScripts}
 </body>
 </html>
 `;
-};
-
-    
+}

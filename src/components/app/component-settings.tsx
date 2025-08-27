@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig } from "@/lib/types";
@@ -628,8 +627,9 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
           
             const handleFieldChange = (fieldId: string, property: keyof FormFieldConfig, value: any) => {
               const newFields = produce(fieldsConfig, (draft) => {
-                if (!draft[fieldId]) {
-                  draft[fieldId] = { enabled: false, conditional: null };
+                // Ensure the field exists as an object before modifying
+                if (typeof draft[fieldId] !== 'object' || draft[fieldId] === null) {
+                    draft[fieldId] = { enabled: false, conditional: null };
                 }
                 (draft[fieldId] as any)[property] = value;
               });
@@ -1231,3 +1231,5 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
+
+    

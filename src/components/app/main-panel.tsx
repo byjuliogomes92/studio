@@ -173,11 +173,14 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
   
     // Cleanup
     return () => {
-        iframe.removeEventListener('load', handleLoad);
-        if (iframe.contentWindow) {
-            iframe.contentWindow.document.removeEventListener('selectionchange', handleSelectionChange);
-            iframe.contentWindow.document.body.removeEventListener('blur', handleBlur, true);
+      const currentIframe = iframeRef.current;
+      if (currentIframe) {
+        currentIframe.removeEventListener('load', handleLoad);
+        if (currentIframe.contentWindow) {
+          currentIframe.contentWindow.document.removeEventListener('selectionchange', handleSelectionChange);
+          currentIframe.contentWindow.document.body.removeEventListener('blur', handleBlur, true);
         }
+      }
     };
   }, [previewHtmlCode, handleInlineEdit]);
 

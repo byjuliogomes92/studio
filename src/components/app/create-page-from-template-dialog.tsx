@@ -382,7 +382,7 @@ export function CreatePageFromTemplateDialog({
                     </div>
                      <div className="space-y-2">
                         <Label>Plataforma</Label>
-                        <RadioGroup defaultValue="sfmc" value={selectedPlatform} onValueChange={setSelectedPlatform} className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                        <RadioGroup value={selectedPlatform} onValueChange={setSelectedPlatform} className="grid grid-cols-3 md:grid-cols-6 gap-2">
                             {platforms.map(platform => {
                                 const content = (
                                     <Label 
@@ -390,7 +390,7 @@ export function CreatePageFromTemplateDialog({
                                         htmlFor={`platform-${platform.id}`}
                                         className={cn(
                                             "flex flex-col items-center justify-center gap-2 border-2 rounded-lg p-3 cursor-pointer hover:border-primary has-[:checked]:border-primary",
-                                            !platform.enabled && "cursor-not-allowed opacity-50"
+                                            !platform.enabled && "cursor-not-allowed"
                                         )}
                                     >
                                         <RadioGroupItem value={platform.id} id={`platform-${platform.id}`} className="sr-only" disabled={!platform.enabled} />
@@ -399,9 +399,9 @@ export function CreatePageFromTemplateDialog({
                                           alt={platform.name} 
                                           className={cn(
                                             "h-10 object-contain transition-all",
-                                            "invert brightness-50 contrast-200",
-                                            "group-hover:filter-none",
-                                            "has-[:checked]:filter-none"
+                                            selectedPlatform === platform.id ? "opacity-100" : "opacity-40",
+                                            platform.enabled && "group-hover:opacity-100",
+                                            !platform.enabled && "opacity-20"
                                           )}
                                         />
                                         <span className="text-xs text-center">{platform.name}</span>
@@ -438,3 +438,4 @@ export function CreatePageFromTemplateDialog({
     </Dialog>
   );
 }
+

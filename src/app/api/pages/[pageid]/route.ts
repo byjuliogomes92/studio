@@ -38,10 +38,8 @@ export async function GET(
     // Asynchronously log the page view without waiting for it to complete.
     logPageView(pageData, request.headers).catch(console.error);
 
-    // Construct the base URL from the request to ensure it works in any environment
-    const protocol = request.headers.get('x-forwarded-proto') || 'http';
-    const host = request.headers.get('host');
-    const baseUrl = `${protocol}://${host}`;
+    // Hardcode the base URL to ensure it's always correct, even when called via HTTPGet from SFMC.
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cloudpagestudio.vercel.app';
 
     const htmlContent = generateHtml(pageData, false, baseUrl);
 

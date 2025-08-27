@@ -455,7 +455,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       </header>
       <div className="flex flex-grow overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="flex-grow">
-            <ResizablePanel defaultSize={30} minSize={20}>
+            <ResizablePanel defaultSize={35} minSize={20}>
                 <aside className="h-full bg-card/20">
                     <SettingsPanel
                         pageState={pageState}
@@ -469,7 +469,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 </aside>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={70}>
+            <ResizablePanel defaultSize={65}>
                 <main className="flex-grow h-full">
                     <MainPanel 
                         pageState={pageState} 
@@ -484,5 +484,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     </>
   );
 }
+
+    
 
     

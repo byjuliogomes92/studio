@@ -21,6 +21,19 @@ export async function GET(
     if (!pageData) {
       return new NextResponse('Page not found', { status: 404 });
     }
+
+    const now = new Date();
+    // The publishDate/expiryDate can be a Firebase Timestamp, so we need to convert it.
+    const publishDate = pageData.publishDate?.toDate ? pageData.publishDate.toDate() : (pageData.publishDate ? new Date(pageData.publishDate) : null);
+    const expiryDate = pageData.expiryDate?.toDate ? pageData.expiryDate.toDate() : (pageData.expiryDate ? new Date(pageData.expiryDate) : null);
+
+    if (publishDate && now < publishDate) {
+      return new NextResponse('Esta página ainda não está disponível.', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+
+    if (expiryDate && now > expiryDate) {
+        return new NextResponse('Esta página expirou.', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
     
     // The previous logic for `isPreview` was flawed.
     // The most reliable way to track views is to log every hit to this endpoint,

@@ -86,6 +86,8 @@ export interface CloudPage {
     text: string;
     buttonText: string;
   };
+  publishDate?: any;
+  expiryDate?: any;
   createdAt: any;
   updatedAt: any;
 }

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -219,6 +219,17 @@ export function SettingsPanel({
         if (!prev) return null;
         return produce(prev, draft => {
             (draft.meta as any)[prop] = value;
+        });
+    });
+  };
+
+  const handleScheduleChange = (prop: 'publishDate' | 'expiryDate', value: string) => {
+    setPageState(prev => {
+        if (!prev) return null;
+        // If the value is cleared, set it to null, otherwise create a new Date object.
+        const dateValue = value ? new Date(value) : null;
+        return produce(prev, draft => {
+            (draft as any)[prop] = dateValue;
         });
     });
   };
@@ -539,6 +550,13 @@ export function SettingsPanel({
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
   const security = pageState.meta.security || { type: 'none' };
+  
+    const toDatetimeLocal = (date: any) => {
+        if (!date) return '';
+        const d = date.toDate ? date.toDate() : new Date(date);
+        const pad = (num: number) => num.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
 
 
   const renderComponents = (parentId: string | null) => {
@@ -742,6 +760,32 @@ export function SettingsPanel({
                 </AccordionContent>
               </AccordionItem>
             )}
+             <AccordionItem value="scheduling">
+                <AccordionTrigger className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4" />
+                    <span>Agendamento</span>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="publish-date">Data de Publicação</Label>
+                        <Input
+                            id="publish-date"
+                            type="datetime-local"
+                            value={toDatetimeLocal(pageState.publishDate)}
+                            onChange={(e) => handleScheduleChange('publishDate', e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="expiry-date">Data de Expiração</Label>
+                        <Input
+                            id="expiry-date"
+                            type="datetime-local"
+                            value={toDatetimeLocal(pageState.expiryDate)}
+                            onChange={(e) => handleScheduleChange('expiryDate', e.target.value)}
+                        />
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
              <AccordionItem value="ampscript">
                 <AccordionTrigger className="flex items-center gap-2">
                     <Zap className="h-4 w-4" />

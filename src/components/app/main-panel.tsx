@@ -28,20 +28,20 @@ interface MainPanelProps {
 }
 
 function WysiwygToolbar({ editor, iframe, onAction }: { editor: HTMLElement | null, iframe: HTMLIFrameElement | null, onAction: () => void }) {
-    if (!editor || !iframe) return null;
+    if (!editor || !iframe?.contentWindow) return null;
 
-    const iframeRect = iframe.getBoundingClientRect();
-    const selection = iframe.contentWindow?.getSelection();
+    const selection = iframe.contentWindow.getSelection();
     if (!selection) return null;
     
-    // Use selection range if something is selected, otherwise use editor position
     const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-    const rect = range?.getBoundingClientRect() ?? editor.getBoundingClientRect();
-
-    // Adjust position if nothing is selected to appear right above the editor
-    const topOffset = selection.isCollapsed ? 40 : 50;
-    const top = iframeRect.top + rect.top - topOffset; 
-    const left = iframeRect.left + rect.left + (rect.width / 2) - 150; 
+    if (!range) return null;
+    
+    const iframeRect = iframe.getBoundingClientRect();
+    const rangeRect = range.getBoundingClientRect();
+    
+    // Position the toolbar above the selection
+    const top = iframeRect.top + rangeRect.top - 50; 
+    const left = iframeRect.left + rangeRect.left + (rangeRect.width / 2) - 150;
 
     const applyStyle = (command: string, value?: string) => {
         iframe.contentWindow?.document.execCommand(command, false, value);
@@ -128,58 +128,54 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) return;
+    if (!iframe?.contentWindow) return;
+  
+    const iframeDoc = iframe.contentWindow.document;
     
-    let currentActiveElement: HTMLElement | null = null;
+    const updateActiveEditor = () => {
+        const selection = iframeDoc.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            let node = selection.focusNode;
+            if (node) {
+                // Find the parent element with contenteditable
+                let editor = (node.nodeType === Node.ELEMENT_NODE ? node : node.parentNode) as HTMLElement | null;
+                while (editor && editor.contentEditable !== 'true') {
+                    editor = editor.parentElement;
+                }
 
-    const handleSelectionChange = () => {
-        const selection = iframeDoc?.getSelection();
-        if (selection && !selection.isCollapsed && currentActiveElement && currentActiveElement.hasAttribute('contenteditable')) {
-            setActiveEditor(currentActiveElement);
-        } else if (currentActiveElement) {
-             // Keep toolbar if focused, even if selection is collapsed
-             setActiveEditor(currentActiveElement);
-        } else {
-            setActiveEditor(null);
+                if(editor) {
+                    setActiveEditor(editor);
+                    return;
+                }
+            }
         }
-    };
-    
-    const handleIframeLoad = () => {
-      const editableElements = iframeDoc.querySelectorAll<HTMLElement>('[contenteditable="true"]');
-
-      editableElements.forEach(el => {
-          const handleBlur = () => {
-              const componentId = el.dataset.componentId;
-              const propName = el.dataset.propName;
-              if(componentId && propName) {
-                  handleInlineEdit(componentId, propName, el.innerHTML);
-              }
-              setActiveEditor(null);
-              currentActiveElement = null;
-          };
-
-          const handleFocus = () => {
-              setActiveEditor(el);
-              currentActiveElement = el;
-          };
-          
-          el.addEventListener('blur', handleBlur);
-          el.addEventListener('focus', handleFocus);
-      });
-      
-      iframeDoc.addEventListener('selectionchange', handleSelectionChange);
+        setActiveEditor(null);
     };
 
-    iframe.addEventListener('load', handleIframeLoad);
-
+    const handleLoad = () => {
+        iframeDoc.addEventListener('click', updateActiveEditor, true);
+        iframeDoc.addEventListener('selectionchange', updateActiveEditor, true);
+        iframeDoc.addEventListener('focusout', (e) => {
+            const editor = e.target as HTMLElement;
+            if (editor.hasAttribute('contenteditable')) {
+                const componentId = editor.dataset.componentId;
+                const propName = editor.dataset.propName;
+                if(componentId && propName) {
+                    handleInlineEdit(componentId, propName, editor.innerHTML);
+                }
+            }
+        }, true);
+    }
+  
+    iframe.addEventListener('load', handleLoad);
+  
     // Cleanup
     return () => {
-      if (iframeDoc) {
-          iframeDoc.removeEventListener('selectionchange', handleSelectionChange);
-      }
+        iframe.removeEventListener('load', handleLoad);
+        if (iframe.contentWindow) {
+            iframe.contentWindow.document.removeEventListener('click', updateActiveEditor, true);
+            iframe.contentWindow.document.removeEventListener('selectionchange', updateActiveEditor, true);
+        }
     };
   }, [previewHtmlCode, handleInlineEdit]);
 

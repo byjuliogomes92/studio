@@ -571,6 +571,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const thankYouHtml = `<div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">${thankYouMessage}</div>`;
         
         const lucideIconSvgs: Record<string, string> = {
+            none: '',
             send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
             'arrow-right': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
             'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
@@ -648,7 +649,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
       // This will cause a compile-time error if a new component type is added and not handled here.
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
-    }
+  }
 };
 
 const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): string => {
@@ -1966,5 +1967,3 @@ ${clientSideScripts}
 </html>
 `;
 };
-
-    

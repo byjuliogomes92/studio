@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -404,8 +404,8 @@ export function SettingsPanel({
                 newComponent.props = {
                     question: 'Em uma escala de 0 a 10, o quão provável você é de recomendar nosso produto/serviço a um amigo ou colega?',
                     type: 'numeric',
-                    lowLabel: 'Pouco provável',
-                    highLabel: 'Muito provável',
+                    lowLabel: 'Pouco Provável',
+                    highLabel: 'Muito Provável',
                     thankYouMessage: 'Obrigado pelo seu feedback!'
                 };
                 break;
@@ -636,7 +636,10 @@ export function SettingsPanel({
         <div className="p-4 space-y-6">
           <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full">
             <AccordionItem value="page-settings">
-              <AccordionTrigger>Configurações da Página</AccordionTrigger>
+              <AccordionTrigger className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <span>Configurações da Página</span>
+              </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div className="space-y-2">
                   <Label htmlFor="page-name">Nome da Página</Label>
@@ -666,7 +669,10 @@ export function SettingsPanel({
             </AccordionItem>
             
             <AccordionItem value="components">
-              <AccordionTrigger>Componentes</AccordionTrigger>
+              <AccordionTrigger className="flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" />
+                <span>Componentes</span>
+              </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <DndContext 
                   sensors={sensors}
@@ -699,7 +705,10 @@ export function SettingsPanel({
             )}
 
             <AccordionItem value="styles">
-              <AccordionTrigger>Estilos Globais</AccordionTrigger>
+              <AccordionTrigger className="flex items-center gap-2">
+                <Palette className="h-4 w-4" />
+                <span>Estilos Globais</span>
+              </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
@@ -775,7 +784,10 @@ export function SettingsPanel({
             </AccordionItem>
             
             <AccordionItem value="meta">
-              <AccordionTrigger>Configurações, SEO & Pixels</AccordionTrigger>
+              <AccordionTrigger className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                <span>Configurações, SEO & Pixels</span>
+              </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
@@ -958,11 +970,13 @@ SET @name = AttributeValue("FirstName")
             </AccordionItem>
 
             <AccordionItem value="cookie-banner">
-                <AccordionTrigger>Banner de Cookies</AccordionTrigger>
+                <AccordionTrigger className="flex items-center gap-2">
+                    <Cookie className="h-4 w-4"/>
+                    <span>Banner de Cookies</span>
+                </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="cookie-enabled" className="flex items-center gap-2">
-                            <Cookie className="h-4 w-4"/>
                             Ativar Banner de Cookies
                         </Label>
                         <Switch
@@ -996,7 +1010,10 @@ SET @name = AttributeValue("FirstName")
             </AccordionItem>
 
             <AccordionItem value="security">
-                <AccordionTrigger>Segurança & Acesso</AccordionTrigger>
+                <AccordionTrigger className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    <span>Segurança & Acesso</span>
+                </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
                      <div className="space-y-2">
                         <Label htmlFor="security-type">Tipo de Proteção</Label>

@@ -25,7 +25,7 @@ export async function GET(
     // The previous logic for `isPreview` was flawed.
     // The most reliable way to track views is to log every hit to this endpoint,
     // as it's primarily called by the MC proxy. Previews from the editor will be handled separately if needed.
-    logPageView(pageData, request.headers).catch(console.error);
+    // logPageView(pageData, request.headers).catch(console.error);
 
     const htmlContent = generateHtml(pageData, false);
 

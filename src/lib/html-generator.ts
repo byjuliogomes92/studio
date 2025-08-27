@@ -1009,7 +1009,7 @@ const getClientSideScripts = () => {
 }
 
 export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false): string => {
-  const { styles, components, meta, cookieBanner } = pageState;
+  const { id, styles, components, meta, cookieBanner } = pageState;
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
   
@@ -1028,6 +1028,9 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   const googleFont = styles.fontFamily || 'Roboto';
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState, isForPreview);
+  
+  // Add the tracking pixel only when not in preview mode.
+  const trackingPixel = isForPreview ? '' : `<img src="/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
 
   // Use TreatAsContentArea for better performance and to avoid script injection issues
   return `%%[ 
@@ -1745,6 +1748,7 @@ ${clientSideScripts}
 
   ${whatsAppComponent ? renderComponent(whatsAppComponent, pageState, isForPreview) : ''}
   ${cookieBannerHtml}
+  ${trackingPixel}
   %%[ ELSE ]%%
   ${security.body}
   %%[ ENDIF ]%%

@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download, Send, ArrowRight, CheckCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -44,6 +44,16 @@ const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] 
     { id: 'cpf', label: 'CPF' },
     { id: 'city', label: 'Cidades' },
     { id: 'birthdate', label: 'Data de Nascimento' },
+];
+
+const lucideIcons = [
+    { value: 'send', label: 'Enviar' },
+    { value: 'arrow-right', label: 'Seta para a Direita' },
+    { value: 'check-circle', label: 'Círculo de Verificação' },
+    { value: 'plus', label: 'Mais' },
+    { value: 'download', label: 'Download' },
+    { value: 'star', label: 'Estrela' },
+    { value: 'zap', label: 'Raio' },
 ];
 
 function SpacingSettings({ props, onPropChange }: { props: any, onPropChange: (prop: string, value: any) => void }) {
@@ -856,29 +866,65 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 </div>
           
                 <Separator />
-          
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="form-button-text">Texto do Botão de Envio</Label>
-                    <Input
-                      id="form-button-text"
-                      value={props.buttonText || ""}
-                      onChange={(e) => onPropChange("buttonText", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="form-button-align">Alinhamento do Botão</Label>
-                    <Select value={props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o alinhamento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="left">Esquerda</SelectItem>
-                        <SelectItem value="center">Centro</SelectItem>
-                        <SelectItem value="right">Direita</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+
+                <div>
+                    <h4 className="font-semibold mb-4">Estilo do Botão de Envio</h4>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="form-button-text">Texto do Botão</Label>
+                            <Input id="form-button-text" value={props.buttonText || ""} onChange={(e) => onPropChange("buttonText", e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="form-button-align">Alinhamento do Botão</Label>
+                            <Select value={props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="left">Esquerda</SelectItem>
+                                    <SelectItem value="center">Centro</SelectItem>
+                                    <SelectItem value="right">Direita</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Cor de Fundo</Label>
+                                <Input type="color" value={props.buttonProps?.bgColor || '#000000'} onChange={(e) => onSubPropChange('buttonProps', 'bgColor', e.target.value)} className="p-1 h-10" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Cor do Texto</Label>
+                                <Input type="color" value={props.buttonProps?.textColor || '#FFFFFF'} onChange={(e) => onSubPropChange('buttonProps', 'textColor', e.target.value)} className="p-1 h-10" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Ícone</Label>
+                            <Select value={props.buttonProps?.icon || ''} onValueChange={(value) => onSubPropChange('buttonProps', 'icon', value)}>
+                                <SelectTrigger><SelectValue placeholder="Sem ícone"/></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="">Sem ícone</SelectItem>
+                                    {lucideIcons.map(icon => <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {props.buttonProps?.icon && (
+                            <div className="space-y-2">
+                                <Label>Posição do Ícone</Label>
+                                <Select value={props.buttonProps?.iconPosition || 'left'} onValueChange={(value) => onSubPropChange('buttonProps', 'iconPosition', value)}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="left">Esquerda</SelectItem>
+                                        <SelectItem value="right">Direita</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="enable-when-valid" className="flex items-center gap-2">
+                                <HelpCircle className="h-4 w-4" />
+                                Habilitar ao preencher
+                            </Label>
+                            <Switch id="enable-when-valid" checked={props.buttonProps?.enableWhenValid || false} onCheckedChange={(checked) => onSubPropChange('buttonProps', 'enableWhenValid', checked)} />
+                        </div>
+                    </div>
                 </div>
           
                 <Separator />
@@ -1312,3 +1358,5 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
+
+    

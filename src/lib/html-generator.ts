@@ -566,10 +566,26 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage, buttonProps = {} } = component.props;
         const { meta } = pageState;
         const thankYouHtml = `<div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">${thankYouMessage}</div>`;
         
+        const lucideIconSvgs: Record<string, string> = {
+            send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
+            'arrow-right': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+            'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
+            'plus': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+            'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
+            'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+            'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
+        };
+        
+        const iconHtml = buttonProps.icon && lucideIconSvgs[buttonProps.icon] ? lucideIconSvgs[buttonProps.icon] : '';
+
+        const buttonContent = buttonProps.iconPosition === 'right' 
+            ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
+            : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
+
         const formHtml = `
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
               <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
@@ -599,8 +615,19 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                     <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
                   </div>
                   ` : ''}
-                  <div style="text-align: ${buttonAlign || 'center'};">
-                      <button type="submit">${buttonText || 'Finalizar'}</button>
+                  <div class="form-submit-wrapper" style="text-align: ${buttonAlign || 'center'};">
+                      <button type="submit"
+                        class="form-submit-button"
+                        style="
+                            background-color: ${buttonProps.bgColor || 'var(--theme-color)'};
+                            color: ${buttonProps.textColor || '#FFFFFF'};
+                        "
+                        onmouseover="this.style.backgroundColor='${buttonProps.hoverBgColor || 'var(--theme-color-hover)'}'"
+                        onmouseout="this.style.backgroundColor='${buttonProps.bgColor || 'var(--theme-color)'}'"
+                        ${buttonProps.enableWhenValid ? 'disabled' : ''}
+                      >
+                          ${buttonContent}
+                      </button>
                   </div>
               </form>
               ${thankYouHtml}
@@ -1040,7 +1067,7 @@ const getClientSideScripts = () => {
         document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
             const submitButton = form.querySelector('button[type="submit"]');
             if (submitButton && !submitButton.querySelector('.button-loader')) {
-                const buttonTextContent = submitButton.textContent;
+                const buttonTextContent = submitButton.querySelector('span')?.textContent || submitButton.textContent;
                 submitButton.innerHTML = '';
                 
                 const buttonText = document.createElement('span');
@@ -1060,11 +1087,26 @@ const getClientSideScripts = () => {
                 } else {
                    if (submitButton) {
                      submitButton.disabled = true;
-                     submitButton.querySelector('.button-text').style.opacity = '0';
-                     submitButton.querySelector('.button-loader').style.display = 'block';
+                     const textSpan = submitButton.querySelector('.button-text');
+                     const loader = submitButton.querySelector('.button-loader');
+                     if (textSpan) textSpan.style.opacity = '0';
+                     if (loader) loader.style.display = 'block';
                    }
                 }
             });
+
+            if (submitButton?.hasAttribute('disabled')) {
+                const requiredInputs = Array.from(form.querySelectorAll('[required]'));
+                const checkFormValidity = () => {
+                    const allValid = requiredInputs.every(input => {
+                        if (input.type === 'checkbox') return input.checked;
+                        return input.value.trim() !== '';
+                    });
+                    submitButton.disabled = !allValid;
+                };
+                requiredInputs.forEach(input => input.addEventListener('input', checkFormValidity));
+                checkFormValidity(); // Initial check
+            }
         });
     }
 
@@ -1199,6 +1241,10 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 ${trackingScripts}
 <style>
+    :root {
+      --theme-color: ${styles.themeColor || '#000000'};
+      --theme-color-hover: ${styles.themeColorHover || '#333333'};
+    }
     body {
         background-color: ${styles.backgroundColor};
         background-image: url(${styles.backgroundImage});
@@ -1381,10 +1427,8 @@ ${trackingScripts}
         min-width: 200px;
     }
     
-
     .form-container input,
-    .form-container select,
-    .form-container button {
+    .form-container select {
         width: 100%;
         padding: 15px;
         margin: 0;
@@ -1396,26 +1440,30 @@ ${trackingScripts}
         font-style: normal;
     }
 
-    .form-container button {
-        background-color: ${styles.themeColor};
-        color: #ffffff;
+    .form-submit-button {
         border: none;
         cursor: pointer;
         position: relative;
         transition: all 0.3s ease;
         margin-top: 10px;
         font-size: large;
-        width: 200px;
-        padding: 15px 20px;
+        width: auto;
+        min-width: 200px;
+        padding: 15px 30px;
         border-radius: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .form-submit-button .lucide-icon {
+        width: 1.2em;
+        height: 1.2em;
     }
 
-    .form-container button:hover {
-        background-color: ${styles.themeColorHover};
-    }
-
-    .form-container button:disabled {
-        background-color: #ccc;
+    .form-submit-button:disabled {
+        background-color: #ccc !important;
         cursor: not-allowed;
     }
     
@@ -1918,3 +1966,5 @@ ${clientSideScripts}
 </html>
 `;
 };
+
+    

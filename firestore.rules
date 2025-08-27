@@ -11,10 +11,9 @@ service cloud.firestore {
       allow read, write: if isOwner(resource.data.userId);
     }
 
-    // Allow public read for the API proxy, but restrict write operations to the owner.
     match /pages/{pageId} {
       allow read: if true;
-      allow write: if isOwner(resource.data.userId);
+      allow write: if isOwner(request.resource.data.userId);
     }
     
     match /templates/{templateId} {
@@ -26,14 +25,13 @@ service cloud.firestore {
     match /userProgress/{userId} {
       allow read, write: if isOwner(userId);
     }
-
+    
     match /pageViews/{viewId} {
-      // Anyone can create a page view log (via the tracking pixel).
+      // Allow anyone to create a page view (triggered by the public API route).
       allow create: if true;
-      // Only the owner of the page can read its analytics.
-      allow read: if isOwner(resource.data.userId);
-      // Nobody can update or delete analytics logs.
-      allow update, delete: if false;
+      
+      // Allow a user to read page views only if they own the page being referenced.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
   }
 }

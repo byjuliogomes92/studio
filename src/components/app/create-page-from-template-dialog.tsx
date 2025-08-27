@@ -25,7 +25,7 @@ import type { Brand, Template, Project, CloudPage } from '@/lib/types';
 import { getTemplates, getTemplate, addPage, getProjectsForUser, updateUserProgress } from '@/lib/firestore';
 import { defaultTemplates } from '@/lib/default-templates';
 import { cn } from '@/lib/utils';
-import { FileText, Loader2, Server } from 'lucide-react';
+import { FileText, Globe, Loader2, Server } from 'lucide-react';
 import { produce } from 'immer';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
@@ -44,7 +44,7 @@ const platforms = [
     { id: 'rdstation', name: 'RD Station', logo: 'https://gleybionycamargo.com.br/wp-content/uploads/2022/10/logo-rd-branca.png', enabled: false },
     { id: 'braze', name: 'Braze', logo: 'https://cdn.prod.website-files.com/616f0a7a027baab453433911/680fe9f825f815d39843558e_Braze_Logo_Light%20(1).svg', enabled: false },
     { id: 'klaviyo', name: 'Klaviyo', logo: 'https://cdn.prod.website-files.com/616f0a7a027baab453433911/657263261463fe4fc816b96e_klaviyo-logo-horizontal-white.svg', enabled: false },
-    { id: 'web', name: 'Web', logo: 'https://cdn.worldvectorlogo.com/logos/internet-3.svg', enabled: false },
+    { id: 'web', name: 'Web', Icon: Globe, enabled: false },
 ];
 
 const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
@@ -389,21 +389,27 @@ export function CreatePageFromTemplateDialog({
                                         key={platform.id}
                                         htmlFor={`platform-${platform.id}`}
                                         className={cn(
-                                            "flex flex-col items-center justify-center gap-2 border-2 rounded-lg p-3 transition-all",
+                                            "flex flex-col items-center justify-center gap-2 border-2 rounded-lg p-3 transition-all h-28",
                                             platform.enabled ? "cursor-pointer hover:border-primary" : "cursor-not-allowed",
                                             selectedPlatform === platform.id && "border-primary"
                                         )}
                                     >
                                         <RadioGroupItem value={platform.id} id={`platform-${platform.id}`} className="sr-only" disabled={!platform.enabled} />
-                                        <img 
-                                          src={platform.logo} 
-                                          alt={platform.name} 
-                                          className={cn(
-                                            "h-10 object-contain transition-opacity",
-                                            selectedPlatform === platform.id ? "opacity-100" : "opacity-40",
+                                         <div className={cn(
+                                            "flex items-center justify-center h-10 w-full transition-opacity",
+                                            selectedPlatform !== platform.id && "opacity-40",
                                             !platform.enabled && "opacity-20"
-                                          )}
-                                        />
+                                        )}>
+                                            {platform.Icon ? (
+                                                <platform.Icon className="h-10 w-10" />
+                                            ) : (
+                                                <img 
+                                                  src={platform.logo} 
+                                                  alt={platform.name} 
+                                                  className="h-10 object-contain"
+                                                />
+                                            )}
+                                        </div>
                                         <span className="text-xs text-center">{platform.name}</span>
                                     </Label>
                                 );
@@ -438,3 +444,5 @@ export function CreatePageFromTemplateDialog({
     </Dialog>
   );
 }
+
+    

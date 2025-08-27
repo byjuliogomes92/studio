@@ -455,7 +455,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       </header>
       <div className="flex flex-grow overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="flex-grow">
-            <ResizablePanel defaultSize={30} minSize={25} maxSize={40} className="min-w-[350px] max-w-[500px]">
+            <ResizablePanel defaultSize={30} minSize={20}>
                 <aside className="h-full bg-card/20">
                     <SettingsPanel
                         pageState={pageState}

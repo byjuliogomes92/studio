@@ -1,4 +1,6 @@
 
+import { Timestamp } from "firebase/firestore";
+
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -118,7 +120,7 @@ export interface Project {
     id: string;
     name: string;
     userId: string;
-    createdAt: any;
+    createdAt: Timestamp;
 }
 
 // A Template is essentially a CloudPage, but without project/user specific data.

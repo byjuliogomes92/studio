@@ -1,7 +1,7 @@
 
 
 import { getDb } from "./firebase";
-import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp } from "firebase/firestore";
 import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission } from "./types";
 
 const getDbInstance = (): Firestore => {
@@ -17,13 +17,21 @@ const getDbInstance = (): Firestore => {
 
 const addProject = async (name: string, userId: string): Promise<Project> => {
     const db = getDbInstance();
-    const projectRef = await addDoc(collection(db, "projects"), {
+    const newProjectData = {
         name,
         userId,
         createdAt: serverTimestamp(),
-    });
-    const newProjectDoc = await getDoc(projectRef);
-    return { id: newProjectDoc.id, ...newProjectDoc.data() } as Project;
+    };
+    const projectRef = await addDoc(collection(db, "projects"), newProjectData);
+    
+    // Return a locally constructed project object to avoid issues with serverTimestamp being null initially.
+    // The client-side state will be correct, and subsequent reads will get the server-generated timestamp.
+    return {
+        id: projectRef.id,
+        name,
+        userId,
+        createdAt: Timestamp.now(), // Use client-side timestamp for the immediate return
+    };
 };
 
 const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {

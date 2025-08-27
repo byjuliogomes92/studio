@@ -133,68 +133,71 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    const handleLoad = () => {
-        const iframeDoc = iframe.contentWindow?.document;
-        if (!iframeDoc) return;
-
-        const handleSelectionChange = () => {
-            const selection = iframeDoc.getSelection();
-            if (selection && selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const parentElement = range.startContainer.parentElement;
-
-                if (parentElement?.isContentEditable) {
-                    setActiveEditor(parentElement);
-                    return;
-                }
-            }
-             // Hide toolbar if selection is not in an editable area or is collapsed
-            if (selection?.isCollapsed) {
-                setActiveEditor(null);
-            }
-        };
-
-        const handleBlur = (e: FocusEvent) => {
-            const target = e.target as HTMLElement;
-            if (target.hasAttribute('contenteditable')) {
-                const componentId = target.dataset.componentId;
-                const propName = target.dataset.propName;
-                if (componentId && propName) {
-                    handleInlineEdit(componentId, propName, target.innerHTML);
-                }
-            }
-             // Check if the focus is moving outside the iframe before hiding the toolbar
-            setTimeout(() => {
-                if (iframeDoc.activeElement === iframeDoc.body || iframeDoc.activeElement === null) {
-                    setActiveEditor(null);
-                }
-            }, 100);
-        };
-
-        iframeDoc.addEventListener('selectionchange', handleSelectionChange);
-        iframeDoc.body.addEventListener('blur', handleBlur, true);
-
-        // Cleanup function for when the iframe reloads
-        return () => {
-            iframeDoc.removeEventListener('selectionchange', handleSelectionChange);
-            iframeDoc.body.removeEventListener('blur', handleBlur, true);
-        };
-    };
-
-    iframe.addEventListener('load', handleLoad);
-    const currentIframe = iframe; // Capture the current iframe instance for cleanup
-
-    // Cleanup for when the component unmounts
-    return () => {
-        if (currentIframe) {
-            currentIframe.removeEventListener('load', handleLoad);
-            const iframeDoc = currentIframe.contentWindow?.document;
-            if(iframeDoc) {
-                 iframeDoc.body.removeEventListener('blur', handleBlur, true);
-            }
+    const handleBlur = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.hasAttribute('contenteditable')) {
+        const componentId = target.dataset.componentId;
+        const propName = target.dataset.propName;
+        if (componentId && propName) {
+            handleInlineEdit(componentId, propName, target.innerHTML);
         }
+      }
+      // Check if the focus is moving outside the iframe before hiding the toolbar
+      setTimeout(() => {
+        const iframeDoc = iframe.contentWindow?.document;
+        if (iframeDoc && (iframeDoc.activeElement === iframeDoc.body || iframeDoc.activeElement === null)) {
+            setActiveEditor(null);
+        }
+      }, 100);
     };
-}, [previewHtmlCode, handleInlineEdit]);
+
+    const handleLoad = () => {
+      const iframeDoc = iframe.contentWindow?.document;
+      if (!iframeDoc) return;
+
+      const handleSelectionChange = () => {
+        const selection = iframeDoc.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const parentElement = range.startContainer.parentElement;
+
+          if (parentElement?.isContentEditable) {
+            setActiveEditor(parentElement);
+            return;
+          }
+        }
+        // Hide toolbar if selection is not in an editable area or is collapsed
+        if (selection?.isCollapsed) {
+          setActiveEditor(null);
+        }
+      };
+
+      iframeDoc.addEventListener('selectionchange', handleSelectionChange);
+      iframeDoc.body.addEventListener('blur', handleBlur, true);
+
+      // Return a cleanup function for when the iframe reloads or component unmounts
+      return () => {
+        iframeDoc.removeEventListener('selectionchange', handleSelectionChange);
+        iframeDoc.body.removeEventListener('blur', handleBlur, true);
+      };
+    };
+
+    let cleanupLoad: (() => void) | undefined;
+    
+    const setup = () => {
+      cleanupLoad = handleLoad();
+    }
+    
+    iframe.addEventListener('load', setup);
+
+    // Main cleanup for when the component unmounts
+    return () => {
+      iframe.removeEventListener('load', setup);
+      if (cleanupLoad) {
+        cleanupLoad();
+      }
+    };
+  }, [previewHtmlCode, handleInlineEdit]);
 
 
   const handleOpenInNewTab = () => {

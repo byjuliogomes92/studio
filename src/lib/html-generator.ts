@@ -22,45 +22,53 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
 }
 
 const renderField = (
-  id: string, 
-  name: string, 
-  type: string, 
-  dataType: string, 
-  placeholder: string,
-  required: boolean = true
+    id: string, 
+    name: string, 
+    type: string, 
+    dataType: string, 
+    placeholder: string,
+    conditionalLogic: any,
+    required: boolean = true
   ): string => {
-  // Use the name for the id as well, as it's what we send to the DE
-  return `
-    <div class="input-wrapper">
-      <input 
-        type="${type}" 
-        id="${name}" 
-        name="${name}" 
-        placeholder="${placeholder}" 
-        ${required ? 'required="required"' : ''}
-      >
-      <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
-    </div>
-  `;
-}
-
-const renderCityDropdown = (citiesString: string = '', required: boolean = false): string => {
-    const cities = citiesString.split('\n').filter(city => city.trim() !== '');
-    const options = cities.map(city => `<option value="${city}">${city}</option>`).join('');
+    const conditionalAttrs = conditionalLogic
+      ? `data-conditional-on="${conditionalLogic.field}" data-conditional-value="${conditionalLogic.value}"`
+      : '';
+  
     return `
-        <div class="input-wrapper">
-            <select
-                id="CIDADE"
-                name="CIDADE"
-                ${required ? 'required="required"' : ''}
-            >
-                <option value="" disabled selected>Selecione sua cidade</option>
-                ${options}
-            </select>
-            <div class="error-message" id="error-cidade">Por favor, seleciona uma cidade.</div>
-        </div>
+      <div class="input-wrapper" id="wrapper-${id}" style="display: ${conditionalLogic ? 'none' : 'block'};" ${conditionalAttrs}>
+        <input 
+          type="${type}" 
+          id="${name}" 
+          name="${name}" 
+          placeholder="${placeholder}" 
+          ${required ? 'required="required"' : ''}
+        >
+        <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
+      </div>
     `;
-};
+  };
+  
+  const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, required: boolean = false): string => {
+      const cities = citiesString.split('\n').filter(city => city.trim() !== '');
+      const options = cities.map(city => `<option value="${city}">${city}</option>`).join('');
+      const conditionalAttrs = conditionalLogic
+        ? `data-conditional-on="${conditionalLogic.field}" data-conditional-value="${conditionalLogic.value}"`
+        : '';
+  
+      return `
+          <div class="input-wrapper" id="wrapper-city" style="display: ${conditionalLogic ? 'none' : 'block'};" ${conditionalAttrs}>
+              <select
+                  id="CIDADE"
+                  name="CIDADE"
+                  ${required ? 'required="required"' : ''}
+              >
+                  <option value="" disabled selected>Selecione sua cidade</option>
+                  ${options}
+              </select>
+              <div class="error-message" id="error-cidade">Por favor, seleciona uma cidade.</div>
+          </div>
+      `;
+  };
 
 const getStyleString = (styles: any = {}): string => {
     return Object.entries(styles)
@@ -466,48 +474,48 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-      const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
-      const { meta } = pageState;
-      const thankYouHtml = `<div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">${thankYouMessage}</div>`;
-      
-      const formHtml = `
-        <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-            <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
-                 <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
-                 <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                 <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
-
-                 <div class="row">
-                  ${fields.name ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome') : ''}
-                  ${fields.email ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email') : ''}
-                 </div>
-                 <div class="row">
-                  ${fields.phone ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999') : ''}
-                  ${fields.cpf ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF') : ''}
-                 </div>
-                 <div class="row">
-                  ${fields.birthdate ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', false) : ''}
-                  ${fields.city ? renderCityDropdown(cities, false) : ''}
-                 </div>
-           
-                ${fields.optin ? `
-                <div class="consent">
-                    <input type="checkbox" id="OPTIN" name="OPTIN" value="on" required="required">
-                    <label for="OPTIN">
-                        ${consentText || 'Quero receber novidades e promoções...'}
-                    </label>
-                  <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
-                </div>
-                ` : ''}
-                <div style="text-align: ${buttonAlign || 'center'};">
-                    <button type="submit">${buttonText || 'Finalizar'}</button>
-                </div>
-            </form>
-            ${thankYouHtml}
-        </div>
-      `;
-      return formHtml;
-    }
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage } = component.props;
+        const { meta } = pageState;
+        const thankYouHtml = `<div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">${thankYouMessage}</div>`;
+        
+        const formHtml = `
+          <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
+              <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
+                   <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
+                   <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
+                   <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
+  
+                   <div class="row">
+                    ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional) : ''}
+                    ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional) : ''}
+                   </div>
+                   <div class="row">
+                    ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional) : ''}
+                    ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional) : ''}
+                   </div>
+                   <div class="row">
+                    ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, false) : ''}
+                    ${fields.city?.enabled ? renderCityDropdown(cities, fields.city.conditional, false) : ''}
+                   </div>
+             
+                  ${fields.optin?.enabled ? `
+                  <div class="consent" id="wrapper-optin" style="display: ${fields.optin.conditional ? 'none' : 'flex'}" ${fields.optin.conditional ? `data-conditional-on="${fields.optin.conditional.field}" data-conditional-value="${fields.optin.conditional.value}"` : ''}>
+                      <input type="checkbox" id="OPTIN" name="OPTIN" value="on" required="required">
+                      <label for="OPTIN">
+                          ${consentText || 'Quero receber novidades e promoções...'}
+                      </label>
+                    <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
+                  </div>
+                  ` : ''}
+                  <div style="text-align: ${buttonAlign || 'center'};">
+                      <button type="submit">${buttonText || 'Finalizar'}</button>
+                  </div>
+              </form>
+              ${thankYouHtml}
+          </div>
+        `;
+        return formHtml;
+      }
     case 'Footer':
       return `
       <footer style="${styleString}">
@@ -968,6 +976,37 @@ const getClientSideScripts = () => {
         });
     }
 
+    function handleConditionalFields() {
+        const form = document.querySelector('form[id^="smartcapture-form-"]');
+        if (!form) return;
+    
+        const controllerFields = new Map();
+    
+        form.querySelectorAll('[data-conditional-on]').forEach(dependentField => {
+            const controllerId = dependentField.dataset.conditionalOn;
+            if (!controllerFields.has(controllerId)) {
+                controllerFields.set(controllerId, form.querySelector(\`[id="\${controllerId.toUpperCase()}"]\`));
+            }
+        });
+
+        controllerFields.forEach((controller, controllerId) => {
+            if (controller) {
+                controller.addEventListener('change', () => {
+                    const currentValue = controller.value;
+                    form.querySelectorAll(\`[data-conditional-on="\${controllerId}"]\`).forEach(dependentField => {
+                        if (dependentField.dataset.conditionalValue === currentValue) {
+                            dependentField.style.display = 'block';
+                        } else {
+                            dependentField.style.display = 'none';
+                        }
+                    });
+                });
+                // Trigger change on load to set initial state
+                controller.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
         if (loader) {
@@ -1003,6 +1042,7 @@ const getClientSideScripts = () => {
         setupAccordions();
         setupTabs();
         setSocialIconStyles();
+        handleConditionalFields();
     });
 </script>
     `;
@@ -1288,6 +1328,8 @@ ${trackingScripts}
         margin: 10px 0;
         text-align: left;
         color: #000;
+        display: flex;
+        align-items: center;
     }
 
     .consent input {
@@ -1756,4 +1798,3 @@ ${clientSideScripts}
 </html>
 `;
 };
-    

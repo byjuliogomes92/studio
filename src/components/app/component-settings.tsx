@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { PageComponent, ComponentType } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig } from "@/lib/types";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -622,147 +622,212 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 </div>
             </div>
         );
-      case "Form":
-        return (
-          <div className="space-y-4">
-             <div>
-                <Label className="font-semibold">Campos do Formulário</Label>
-                <div className="space-y-3 mt-2">
-                    {formFields.map((field) => (
-                        <div key={field.id} className="flex items-center justify-between">
-                            <Label htmlFor={`field-${field.id}`}>{field.label}</Label>
-                            <Switch
-                                id={`field-${field.id}`}
-                                checked={props.fields?.[field.id] || false}
-                                onCheckedChange={(checked) => onSubPropChange('fields', field.id, checked)}
-                            />
+        case "Form": {
+            const formProps = props || {};
+            const fieldsConfig: Record<string, FormFieldConfig> = formProps.fields || {};
+          
+            const handleFieldChange = (fieldId: string, property: keyof FormFieldConfig, value: any) => {
+              const newFields = produce(fieldsConfig, (draft) => {
+                if (!draft[fieldId]) {
+                  draft[fieldId] = { enabled: false, conditional: null };
+                }
+                (draft[fieldId] as any)[property] = value;
+              });
+              onPropChange('fields', newFields);
+            };
+          
+            const handleConditionalChange = (fieldId: string, property: 'field' | 'value', value: string) => {
+              const newFields = produce(fieldsConfig, (draft) => {
+                const field = draft[fieldId];
+                if (field && field.conditional) {
+                  field.conditional[property] = value;
+                }
+              });
+              onPropChange('fields', newFields);
+            };
+          
+            const enabledFields = formFields.filter(f => fieldsConfig[f.id]?.enabled);
+          
+            return (
+              <div className="space-y-4">
+                <div>
+                  <Label className="font-semibold">Campos do Formulário</Label>
+                  <div className="space-y-3 mt-2">
+                    {formFields.map((field, index) => (
+                      <div key={field.id} className="p-3 border rounded-md space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={`field-${field.id}`}>{field.label}</Label>
+                          <Switch
+                            id={`field-${field.id}`}
+                            checked={fieldsConfig[field.id]?.enabled || false}
+                            onCheckedChange={(checked) => handleFieldChange(field.id, 'enabled', checked)}
+                          />
                         </div>
+                        {fieldsConfig[field.id]?.enabled && index > 0 && (
+                          <div className="space-y-3 pt-3 border-t">
+                            <div className="flex items-center justify-between">
+                               <Label htmlFor={`cond-${field.id}`} className="text-xs">Lógica Condicional</Label>
+                                <Switch
+                                    id={`cond-${field.id}`}
+                                    checked={!!fieldsConfig[field.id]?.conditional}
+                                    onCheckedChange={(checked) => handleFieldChange(field.id, 'conditional', checked ? { field: '', value: '' } : null)}
+                                />
+                            </div>
+                            {fieldsConfig[field.id]?.conditional && (
+                                <div className="space-y-2 text-xs">
+                                     <Label>Exibir se:</Label>
+                                     <Select 
+                                        value={fieldsConfig[field.id]?.conditional?.field}
+                                        onValueChange={(value) => handleConditionalChange(field.id, 'field', value)}
+                                     >
+                                        <SelectTrigger className="h-8">
+                                            <SelectValue placeholder="Selecione um campo..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {enabledFields
+                                                .filter(f => f.id !== field.id)
+                                                .map(f => <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>)
+                                            }
+                                        </SelectContent>
+                                     </Select>
+                                     <Input 
+                                        placeholder="Tiver o valor..."
+                                        className="h-8"
+                                        value={fieldsConfig[field.id]?.conditional?.value || ''}
+                                        onChange={(e) => handleConditionalChange(field.id, 'value', e.target.value)}
+                                     />
+                                </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     ))}
+                  </div>
                 </div>
-            </div>
-
-            <Separator />
-
-            <div>
-                <Label className="font-semibold">Placeholders dos Campos</Label>
-                <div className="space-y-3 mt-2">
-                    {formFields.filter(f => props.fields?.[f.id] && f.id !== 'city').map((field) => (
-                         <div className="space-y-2" key={`placeholder-${field.id}`}>
-                            <Label htmlFor={`placeholder-${field.id}`}>{field.label}</Label>
-                            <Input
-                                id={`placeholder-${field.id}`}
-                                value={props.placeholders?.[field.id] || ''}
-                                onChange={(e) => onSubPropChange('placeholders', field.id, e.target.value)}
-                             />
-                        </div>
+          
+                <Separator />
+          
+                <div>
+                  <Label className="font-semibold">Placeholders dos Campos</Label>
+                  <div className="space-y-3 mt-2">
+                    {formFields.filter(f => fieldsConfig[f.id]?.enabled && f.id !== 'city').map((field) => (
+                      <div className="space-y-2" key={`placeholder-${field.id}`}>
+                        <Label htmlFor={`placeholder-${field.id}`}>{field.label}</Label>
+                        <Input
+                          id={`placeholder-${field.id}`}
+                          value={props.placeholders?.[field.id] || ''}
+                          onChange={(e) => onSubPropChange('placeholders', field.id, e.target.value)}
+                        />
+                      </div>
                     ))}
+                  </div>
                 </div>
-            </div>
-
-            {props.fields?.city && (
-                 <>
+          
+                {fieldsConfig.city?.enabled && (
+                  <>
                     <Separator />
                     <div className="space-y-2">
-                         <div className="flex items-center gap-1.5">
-                            <Label htmlFor="form-cities">Lista de Cidades</Label>
-                            <Tooltip>
-                                <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                                <TooltipContent><p>Uma cidade por linha. Serão exibidas no dropdown.</p></TooltipContent>
-                            </Tooltip>
-                         </div>
-                        <Textarea
-                            id="form-cities"
-                            value={props.cities || ''}
-                            onChange={(e) => onPropChange('cities', e.target.value)}
-                            rows={6}
-                        />
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="form-cities">Lista de Cidades</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                          <TooltipContent><p>Uma cidade por linha. Serão exibidas no dropdown.</p></TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Textarea
+                        id="form-cities"
+                        value={props.cities || ''}
+                        onChange={(e) => onPropChange('cities', e.target.value)}
+                        rows={6}
+                      />
                     </div>
-                 </>
-            )}
-            
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="field-optin" className="font-semibold">Opt-in de Consentimento</Label>
-                <Switch
-                    id="field-optin"
-                    checked={props.fields?.optin || false}
-                    onCheckedChange={(checked) => onSubPropChange('fields', 'optin', checked)}
-                />
-              </div>
-              {props.fields?.optin && (
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center gap-1.5">
-                    <Label htmlFor="form-consent-text">Texto de Consentimento</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                      <TooltipContent><p>O texto legal para o consentimento do usuário. Suporta HTML.</p></TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Textarea
-                    id="form-consent-text"
-                    value={props.consentText || ""}
-                    onChange={(e) => onPropChange("consentText", e.target.value)}
-                    rows={10}
-                  />
-                </div>
-              )}
-            </div>
-
-            <Separator />
-            
-            <div className="space-y-4">
+                  </>
+                )}
+          
+                <Separator />
+          
                 <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="field-optin" className="font-semibold">Opt-in de Consentimento</Label>
+                    <Switch
+                      id="field-optin"
+                      checked={fieldsConfig.optin?.enabled || false}
+                      onCheckedChange={(checked) => handleFieldChange('optin', 'enabled', checked)}
+                    />
+                  </div>
+                  {fieldsConfig.optin?.enabled && (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center gap-1.5">
+                        <Label htmlFor="form-consent-text">Texto de Consentimento</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                          <TooltipContent><p>O texto legal para o consentimento do usuário. Suporta HTML.</p></TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Textarea
+                        id="form-consent-text"
+                        value={props.consentText || ""}
+                        onChange={(e) => onPropChange("consentText", e.target.value)}
+                        rows={10}
+                      />
+                    </div>
+                  )}
+                </div>
+          
+                <Separator />
+          
+                <div className="space-y-4">
+                  <div className="space-y-2">
                     <Label htmlFor="form-button-text">Texto do Botão de Envio</Label>
                     <Input
-                        id="form-button-text"
-                        value={props.buttonText || ""}
-                        onChange={(e) => onPropChange("buttonText", e.target.value)}
+                      id="form-button-text"
+                      value={props.buttonText || ""}
+                      onChange={(e) => onPropChange("buttonText", e.target.value)}
                     />
-                </div>
-                 <div className="space-y-2">
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="form-button-align">Alinhamento do Botão</Label>
-                     <Select value={props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
-                        <SelectTrigger>
+                    <Select value={props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
+                      <SelectTrigger>
                         <SelectValue placeholder="Selecione o alinhamento" />
-                        </SelectTrigger>
-                        <SelectContent>
+                      </SelectTrigger>
+                      <SelectContent>
                         <SelectItem value="left">Esquerda</SelectItem>
                         <SelectItem value="center">Centro</SelectItem>
                         <SelectItem value="right">Direita</SelectItem>
-                        </SelectContent>
+                      </SelectContent>
                     </Select>
+                  </div>
                 </div>
-            </div>
-
-            <Separator />
-
-             <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
-                  <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent>
+          
+                <Separator />
+          
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent>
                         <div className="max-w-xs">
                           <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
                           <p className="mt-2">Ex. de variável: `<h2>Obrigado, {'{{NOME}}'}!</h2>`.</p>
                           <p className="mt-1">Ex. de botão: `&lt;a href="https://..." class="custom-button"&gt;Clique Aqui&lt;/a&gt;`.</p>
                           <p className="mt-1">Variáveis disponíveis: `{'{{NOME}}'}`, `{'{{EMAIL}}'}`, etc.</p>
                         </div>
-                    </TooltipContent>
-                  </Tooltip>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    id="form-thank-you"
+                    value={props.thankYouMessage || ''}
+                    onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
+                    rows={8}
+                    placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
+                  />
                 </div>
-                <Textarea
-                  id="form-thank-you"
-                  value={props.thankYouMessage || ''}
-                  onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
-                  rows={8}
-                  placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
-                />
-            </div>
-          </div>
-        );
+              </div>
+            );
+          }
       case 'Accordion':
       case 'Tabs':
         return <ListManager items={props.items || []} onPropChange={onPropChange} />;

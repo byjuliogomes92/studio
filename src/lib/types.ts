@@ -26,6 +26,16 @@ export type ComponentType =
   
 export type Brand = 'Natura' | 'Avon';
 
+export interface FormFieldConditional {
+    field: string;
+    value: string;
+}
+  
+export interface FormFieldConfig {
+    enabled: boolean;
+    conditional: FormFieldConditional | null;
+}
+
 export interface PageComponent {
   id: string;
   type: ComponentType;

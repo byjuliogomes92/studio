@@ -214,8 +214,8 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                     const progressContainer = document.getElementById('progress-container-${component.id}');
                     const progressBar = document.getElementById('progress-bar-${component.id}');
                     
-                    progressContainer.style.display = 'block';
-                    downloadBtn.style.display = 'none';
+                    if (progressContainer) progressContainer.style.display = 'block';
+                    if (downloadBtn) downloadBtn.style.display = 'none';
 
                     try {
                         const response = await fetch(url);
@@ -224,10 +224,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                         }
 
                         const contentLength = response.headers.get('content-length');
-                        if (!contentLength) {
-                            console.warn("Content-Length header not found. Progress bar will not be accurate.");
-                        }
-                        const total = parseInt(contentLength, 10);
+                        const total = contentLength ? parseInt(contentLength, 10) : 0;
                         let loaded = 0;
 
                         const stream = new ReadableStream({
@@ -237,7 +234,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                                     const { done, value } = await reader.read();
                                     if (done) break;
                                     loaded += value.byteLength;
-                                    if(total) {
+                                    if(total && progressBar) {
                                        const percentage = Math.round((loaded / total) * 100);
                                        progressBar.style.width = percentage + '%';
                                        progressBar.textContent = percentage + '%';
@@ -265,10 +262,12 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                         console.error('Erro no download:', error);
                         alert('Não foi possível baixar o arquivo.');
                     } finally {
-                        progressContainer.style.display = 'none';
-                        downloadBtn.style.display = 'inline-block';
-                        progressBar.style.width = '0%';
-                        progressBar.textContent = '0%';
+                        if (progressContainer) progressContainer.style.display = 'none';
+                        if (downloadBtn) downloadBtn.style.display = 'inline-block';
+                        if (progressBar) {
+                            progressBar.style.width = '0%';
+                            progressBar.textContent = '';
+                        }
                     }
                 });
             })();
@@ -614,7 +613,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
       // This will cause a compile-time error if a new component type is added and not handled here.
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
-  }
+    }
 };
 
 const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): string => {
@@ -1899,3 +1898,5 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
+`;
+};

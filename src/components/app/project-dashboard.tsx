@@ -59,6 +59,7 @@ export function ProjectDashboard() {
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
+  const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
 
   // State for modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -77,6 +78,10 @@ export function ProjectDashboard() {
 
 
   useEffect(() => {
+    if (localStorage.getItem('onboardingGuideClosed') === 'true') {
+      setIsOnboardingGuideOpen(false);
+    }
+
     const fetchInitialData = async () => {
       if (!user) return;
       setIsLoading(true);
@@ -191,6 +196,11 @@ export function ProjectDashboard() {
     setProjectToDelete(project);
     setIsDeleteModalOpen(true);
   }
+
+  const closeOnboardingGuide = () => {
+    setIsOnboardingGuideOpen(false);
+    localStorage.setItem('onboardingGuideClosed', 'true');
+  };
 
   const filteredAndSortedProjects = useMemo((): EnrichedProject[] => {
     return projects
@@ -347,9 +357,9 @@ export function ProjectDashboard() {
             </div>
         </div>
         
-        {userProgress && userProgress.objectives && Object.values(userProgress.objectives).some(v => !v) && (
+        {isOnboardingGuideOpen && userProgress && userProgress.objectives && Object.values(userProgress.objectives).some(v => !v) && (
           <div className="mb-6">
-            <OnboardingGuide objectives={userProgress.objectives} />
+            <OnboardingGuide objectives={userProgress.objectives} onClose={closeOnboardingGuide} />
           </div>
         )}
 

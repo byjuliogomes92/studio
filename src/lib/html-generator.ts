@@ -188,6 +188,91 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         return `<div style="height: ${component.props.height || 20}px; ${styleString}"></div>`;
     case 'Button':
          return `<div style="text-align: ${component.props.align || 'center'}; ${styleString}"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
+    case 'DownloadButton':
+        const { text = 'Download', fileUrl = '', fileName = '', align = 'center' } = component.props;
+        const buttonId = `download-btn-${component.id}`;
+        return `
+            <div style="text-align: ${align}; ${styleString}">
+                <button id="${buttonId}" class="custom-button">${text}</button>
+                <div id="progress-container-${component.id}" class="progress-container" style="display: none;">
+                    <div id="progress-bar-${component.id}" class="progress-bar"></div>
+                </div>
+            </div>
+            <script>
+            (function() {
+                const downloadBtn = document.getElementById('${buttonId}');
+                if (!downloadBtn) return;
+                
+                downloadBtn.addEventListener('click', async function() {
+                    const url = '${fileUrl}';
+                    const filename = '${fileName}';
+                    if (!url) {
+                        alert('URL do arquivo não definida.');
+                        return;
+                    }
+
+                    const progressContainer = document.getElementById('progress-container-${component.id}');
+                    const progressBar = document.getElementById('progress-bar-${component.id}');
+                    
+                    progressContainer.style.display = 'block';
+                    downloadBtn.style.display = 'none';
+
+                    try {
+                        const response = await fetch(url);
+                        if (!response.ok) {
+                            throw new Error('Falha na rede ao tentar baixar o arquivo.');
+                        }
+
+                        const contentLength = response.headers.get('content-length');
+                        if (!contentLength) {
+                            console.warn("Content-Length header not found. Progress bar will not be accurate.");
+                        }
+                        const total = parseInt(contentLength, 10);
+                        let loaded = 0;
+
+                        const stream = new ReadableStream({
+                            async start(controller) {
+                                const reader = response.body.getReader();
+                                for (;;) {
+                                    const { done, value } = await reader.read();
+                                    if (done) break;
+                                    loaded += value.byteLength;
+                                    if(total) {
+                                       const percentage = Math.round((loaded / total) * 100);
+                                       progressBar.style.width = percentage + '%';
+                                       progressBar.textContent = percentage + '%';
+                                    }
+                                    controller.enqueue(value);
+                                }
+                                controller.close();
+                            },
+                        });
+
+                        const newResponse = new Response(stream);
+                        const blob = await newResponse.blob();
+                        const blobUrl = window.URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = blobUrl;
+                        a.download = filename || url.split('/').pop();
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(blobUrl);
+                        document.body.removeChild(a);
+
+                    } catch (error) {
+                        console.error('Erro no download:', error);
+                        alert('Não foi possível baixar o arquivo.');
+                    } finally {
+                        progressContainer.style.display = 'none';
+                        downloadBtn.style.display = 'inline-block';
+                        progressBar.style.width = '0%';
+                        progressBar.textContent = '0%';
+                    }
+                });
+            })();
+            </script>`;
     case 'Accordion': {
         const items = component.props.items || [];
         const itemsHtml = items
@@ -1245,6 +1330,24 @@ ${trackingScripts}
       background-color: ${styles.themeColorHover};
     }
 
+    .progress-container {
+        width: 100%;
+        background-color: #f3f3f3;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+    .progress-bar {
+        width: 0%;
+        height: 20px;
+        background-color: ${styles.themeColor};
+        text-align: center;
+        line-height: 20px;
+        color: white;
+        border-radius: 5px;
+        transition: width 0.1s linear;
+    }
+
     .form-container {
         padding: 20px 0;
     }
@@ -1796,5 +1899,3 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
-};

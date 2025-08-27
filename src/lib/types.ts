@@ -22,7 +22,8 @@ export type ComponentType =
   | 'Map'
   | 'SocialIcons'
   | 'Columns'
-  | 'WhatsApp';
+  | 'WhatsApp'
+  | 'DownloadButton';
   
 export type Brand = 'Natura' | 'Avon';
 

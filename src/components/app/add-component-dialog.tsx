@@ -34,6 +34,7 @@ import {
   Columns,
   BarChart,
   Zap,
+  Download,
 } from "lucide-react";
 import type { ComponentType } from "@/lib/types";
 import { useState } from "react";
@@ -68,6 +69,7 @@ const componentList: {
     components: [
       { name: "Columns", icon: Columns, enabled: true },
       { name: "Button", icon: MousePointerClick, enabled: true },
+      { name: "DownloadButton", icon: Download, enabled: true },
       { name: "Countdown", icon: Timer, enabled: true },
       { name: "Divider", icon: Minus, enabled: true },
       { name: "Spacer", icon: StretchHorizontal, enabled: true },

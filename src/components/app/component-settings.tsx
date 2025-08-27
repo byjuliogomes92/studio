@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig } from "@/lib/types";
@@ -6,7 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2 } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -621,13 +622,66 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 </div>
             </div>
         );
+    case 'DownloadButton':
+        return (
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="download-text">Texto do Botão</Label>
+                    <Input
+                        id="download-text"
+                        value={props.text || 'Download'}
+                        onChange={(e) => onPropChange('text', e.target.value)}
+                        placeholder="Ex: Baixar PDF"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="download-url">URL do Arquivo</Label>
+                    <Input
+                        id="download-url"
+                        value={props.fileUrl || ''}
+                        onChange={(e) => onPropChange('fileUrl', e.target.value)}
+                        placeholder="https://exemplo.com/arquivo.pdf"
+                    />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="download-filename">Nome do Arquivo (ao Salvar)</Label>
+                    <Input
+                        id="download-filename"
+                        value={props.fileName || ''}
+                        onChange={(e) => onPropChange('fileName', e.target.value)}
+                        placeholder="Ex: catalogo.pdf"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="download-align">Alinhamento</Label>
+                     <Select value={props.align || 'center'} onValueChange={(value) => onPropChange('align', value)}>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Selecione o alinhamento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="left">Esquerda</SelectItem>
+                        <SelectItem value="center">Centro</SelectItem>
+                        <SelectItem value="right">Direita</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        );
         case "Form": {
-            const formProps = props || {};
-            const fieldsConfig: Record<string, FormFieldConfig> = formProps.fields || {};
+            const fieldsConfig: Record<string, FormFieldConfig> = {};
+
+            // Ensure all form fields are objects for backward compatibility
+            for (const fieldKey of Object.keys(props.fields || {})) {
+                const fieldValue = props.fields[fieldKey];
+                if (typeof fieldValue === 'boolean') {
+                    fieldsConfig[fieldKey] = { enabled: fieldValue, conditional: null };
+                } else {
+                    fieldsConfig[fieldKey] = fieldValue;
+                }
+            }
           
             const handleFieldChange = (fieldId: string, property: keyof FormFieldConfig, value: any) => {
               const newFields = produce(fieldsConfig, (draft) => {
-                // Ensure the field exists as an object before modifying
                 if (typeof draft[fieldId] !== 'object' || draft[fieldId] === null) {
                     draft[fieldId] = { enabled: false, conditional: null };
                 }
@@ -1231,5 +1285,3 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
-
-    

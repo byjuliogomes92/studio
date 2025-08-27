@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentSettings } from "./component-settings";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -60,6 +60,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Video: Film,
     Countdown: Timer,
     Button: MousePointerClick,
+    DownloadButton: Download,
     Spacer: StretchHorizontal,
     Accordion: Layers,
     Tabs: PanelTop,
@@ -354,7 +355,7 @@ export function SettingsPanel({
                 break;
             case 'Form':
                 newComponent.props = {
-                    fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
+                    fields: { name: {enabled: true, conditional: null}, email: {enabled: true, conditional: null}, phone: {enabled: true, conditional: null}, cpf: {enabled: true, conditional: null}, city: {enabled: false, conditional: null}, birthdate: {enabled: false, conditional: null}, optin: {enabled: true, conditional: null} },
                     placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
                     consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
                     buttonText: 'Finalizar',
@@ -372,6 +373,9 @@ export function SettingsPanel({
                 break;
             case 'Button':
                 newComponent.props = { text: 'Clique Aqui', href: '#', align: 'center' };
+                break;
+            case 'DownloadButton':
+                newComponent.props = { text: 'Download', fileUrl: '', fileName: 'arquivo', align: 'center' };
                 break;
             case 'Accordion':
             case 'Tabs':

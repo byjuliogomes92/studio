@@ -335,123 +335,140 @@ export function SettingsPanel({
     });
   };
 
-  const addComponent = (type: ComponentType, parentId: string | null = null, column: number = 0) => {
+  const addComponent = (typeOrBlock: ComponentType | PageComponent[]) => {
     setPageState(prev => {
       if (!prev) return null;
   
       return produce(prev, draft => {
-        const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
-  
-        const newComponent: PageComponent = {
-          id: Date.now().toString(),
-          type,
-          props: {},
-          parentId,
-          order: siblings.length,
-          column,
-          abTestEnabled: false,
-          abTestVariants: [],
-        };
-  
-        // Default props for new components
-        switch(type) {
-            case 'Columns':
-                newComponent.props = { columnCount: 2 };
-                break;
-            case 'Form':
-                newComponent.props = {
-                    fields: { name: {enabled: true, conditional: null}, email: {enabled: true, conditional: null}, phone: {enabled: true, conditional: null}, cpf: {enabled: true, conditional: null}, city: {enabled: false, conditional: null}, birthdate: {enabled: false, conditional: null}, optin: {enabled: true, conditional: null} },
-                    placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
-                    consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
-                    buttonText: 'Finalizar',
-                    dataBinding: ''
-                };
-                break;
-            case 'Countdown':
-                newComponent.props = { targetDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16) };
-                break;
-            case 'Spacer':
-                newComponent.props = { height: 20 };
-                break;
-            case 'Divider':
-                newComponent.props = { thickness: 1, style: 'solid', color: '#cccccc', margin: 20 };
-                break;
-            case 'Button':
-                newComponent.props = { text: 'Clique Aqui', href: '#', align: 'center' };
-                break;
-            case 'DownloadButton':
-                newComponent.props = { text: 'Download', fileUrl: '', fileName: 'arquivo', align: 'center' };
-                break;
-            case 'Accordion':
-            case 'Tabs':
-                newComponent.props = {
-                    items: [
-                        { id: 'item-1', title: 'Item 1', content: 'Conteúdo do item 1.' },
-                        { id: 'item-2', title: 'Item 2', content: 'Conteúdo do item 2.' },
-                    ]
-                };
-                break;
-            case 'Voting':
-                newComponent.props = {
-                    question: 'Qual sua cor favorita?',
-                    options: [
-                        { id: 'opt1', text: 'Azul' },
-                        { id: 'opt2', text: 'Verde' },
-                    ]
-                };
-                break;
-            case 'Stripe':
-                newComponent.props = {
-                    text: 'Anúncio ou aviso importante aqui!',
-                    isClosable: true,
-                    backgroundColor: '#000000',
-                    textColor: '#FFFFFF',
-                    linkUrl: ''
-                };
-                break;
-            case 'NPS':
-                newComponent.props = {
-                    question: 'Em uma escala de 0 a 10, o quão provável você é de recomendar nosso produto/serviço a um amigo ou colega?',
-                    type: 'numeric',
-                    lowLabel: 'Pouco Provável',
-                    highLabel: 'Muito Provável',
-                    thankYouMessage: 'Obrigado pelo seu feedback!'
-                };
-                break;
-            case 'Map':
-                newComponent.props = {
-                    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
-                };
-                break;
-            case 'SocialIcons':
-                newComponent.props = {
-                    links: {
-                        facebook: '',
-                        instagram: '',
-                        twitter: '',
-                        linkedin: '',
-                        youtube: '',
-                        tiktok: '',
-                        pinterest: '',
-                        snapchat: '',
-                    },
-                    styles: {
-                        align: 'center',
-                        iconSize: '24px',
-                    }
-                };
-                break;
-            case 'WhatsApp':
-                newComponent.props = {
-                    phoneNumber: '5511999999999',
-                    defaultMessage: 'Olá! Gostaria de mais informações.',
-                    position: 'bottom-right'
-                };
-                break;
-        }
-
-        draft.components.push(newComponent);
-        setSelectedComponentId(newComponent.id);
+          if (Array.isArray(typeOrBlock)) {
+              // It's a block (an array of components)
+              const newComponents = typeOrBlock.map(comp => {
+                  const siblings = draft.components.filter(c => c.parentId === comp.parentId);
+                  return {...comp, order: siblings.length + (comp.order || 0) };
+              });
+              draft.components.push(...newComponents);
+              // Select the main parent component of the block if it exists
+              const mainParent = newComponents.find(c => c.parentId === null);
+              if (mainParent) {
+                  setSelectedComponentId(mainParent.id);
+              }
+          } else {
+              // It's a single component type
+              const type = typeOrBlock;
+              const parentId = null; // For simplicity, new components are added to the root.
+              const column = 0;
+              const siblings = draft.components.filter(c => c.parentId === parentId);
+    
+              const newComponent: PageComponent = {
+                id: Date.now().toString(),
+                type,
+                props: {},
+                parentId,
+                order: siblings.length,
+                column,
+                abTestEnabled: false,
+                abTestVariants: [],
+              };
+        
+              // Default props for new components
+              switch(type) {
+                  case 'Columns':
+                      newComponent.props = { columnCount: 2 };
+                      break;
+                  case 'Form':
+                      newComponent.props = {
+                          fields: { name: {enabled: true, conditional: null}, email: {enabled: true, conditional: null}, phone: {enabled: true, conditional: null}, cpf: {enabled: true, conditional: null}, city: {enabled: false, conditional: null}, birthdate: {enabled: false, conditional: null}, optin: {enabled: true, conditional: null} },
+                          placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
+                          consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
+                          buttonText: 'Finalizar',
+                          dataBinding: ''
+                      };
+                      break;
+                  case 'Countdown':
+                      newComponent.props = { targetDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16) };
+                      break;
+                  case 'Spacer':
+                      newComponent.props = { height: 20 };
+                      break;
+                  case 'Divider':
+                      newComponent.props = { thickness: 1, style: 'solid', color: '#cccccc', margin: 20 };
+                      break;
+                  case 'Button':
+                      newComponent.props = { text: 'Clique Aqui', href: '#', align: 'center' };
+                      break;
+                  case 'DownloadButton':
+                      newComponent.props = { text: 'Download', fileUrl: '', fileName: 'arquivo', align: 'center' };
+                      break;
+                  case 'Accordion':
+                  case 'Tabs':
+                      newComponent.props = {
+                          items: [
+                              { id: 'item-1', title: 'Item 1', content: 'Conteúdo do item 1.' },
+                              { id: 'item-2', title: 'Item 2', content: 'Conteúdo do item 2.' },
+                          ]
+                      };
+                      break;
+                  case 'Voting':
+                      newComponent.props = {
+                          question: 'Qual sua cor favorita?',
+                          options: [
+                              { id: 'opt1', text: 'Azul' },
+                              { id: 'opt2', text: 'Verde' },
+                          ]
+                      };
+                      break;
+                  case 'Stripe':
+                      newComponent.props = {
+                          text: 'Anúncio ou aviso importante aqui!',
+                          isClosable: true,
+                          backgroundColor: '#000000',
+                          textColor: '#FFFFFF',
+                          linkUrl: ''
+                      };
+                      break;
+                  case 'NPS':
+                      newComponent.props = {
+                          question: 'Em uma escala de 0 a 10, o quão provável você é de recomendar nosso produto/serviço a um amigo ou colega?',
+                          type: 'numeric',
+                          lowLabel: 'Pouco Provável',
+                          highLabel: 'Muito Provável',
+                          thankYouMessage: 'Obrigado pelo seu feedback!'
+                      };
+                      break;
+                  case 'Map':
+                      newComponent.props = {
+                          embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
+                      };
+                      break;
+                  case 'SocialIcons':
+                      newComponent.props = {
+                          links: {
+                              facebook: '',
+                              instagram: '',
+                              twitter: '',
+                              linkedin: '',
+                              youtube: '',
+                              tiktok: '',
+                              pinterest: '',
+                              snapchat: '',
+                          },
+                          styles: {
+                              align: 'center',
+                              iconSize: '24px',
+                          }
+                      };
+                      break;
+                  case 'WhatsApp':
+                      newComponent.props = {
+                          phoneNumber: '5511999999999',
+                          defaultMessage: 'Olá! Gostaria de mais informações.',
+                          position: 'bottom-right'
+                      };
+                      break;
+              }
+              draft.components.push(newComponent);
+              setSelectedComponentId(newComponent.id);
+          }
       });
     });
   };
@@ -573,7 +590,7 @@ export function SettingsPanel({
         if (!date) return '';
         const d = date.toDate ? date.toDate() : new Date(date);
         const pad = (num: number) => num.toString().padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getMinutes())}`;
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
 
@@ -643,6 +660,7 @@ export function SettingsPanel({
       <TooltipProvider>
         <div className="p-4 space-y-6">
           <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full">
+            
             <AccordionItem value="page-settings">
               <AccordionTrigger>
                 <div className="flex items-center gap-2">
@@ -778,7 +796,7 @@ export function SettingsPanel({
                       </div>
                     </SortableContext>
                 </DndContext>
-                <AddComponentDialog onAddComponent={(type) => addComponent(type)} />
+                <AddComponentDialog onAddComponent={addComponent} />
               </AccordionContent>
             </AccordionItem>
 

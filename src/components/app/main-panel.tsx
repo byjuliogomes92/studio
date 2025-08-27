@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download } from "lucide-react";
+import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -28,6 +28,64 @@ interface MainPanelProps {
   onDataExtensionKeyChange: (newKey: string) => void;
 }
 
+function WysiwygToolbar({ editor, iframe, onAction }: { editor: HTMLElement | null, iframe: HTMLIFrameElement | null, onAction: () => void }) {
+    if (!editor || !iframe) return null;
+
+    const iframeRect = iframe.getBoundingClientRect();
+    const selection = iframe.contentWindow?.getSelection();
+    if (!selection || selection.isCollapsed) return null;
+
+    const range = selection.getRangeAt(0);
+    const rangeRect = range.getBoundingClientRect();
+
+    const top = iframeRect.top + rangeRect.top - 50; // Position above selection
+    const left = iframeRect.left + rangeRect.left + (rangeRect.width / 2) - 150; // Center on selection
+
+    const applyStyle = (command: string, value?: string) => {
+        iframe.contentWindow?.document.execCommand(command, false, value);
+        onAction();
+        editor.focus();
+    };
+    
+    const createLink = () => {
+        const url = prompt('Digite a URL do link:');
+        if (url) {
+            applyStyle('createLink', url);
+        }
+    };
+    
+    const setCase = (caseType: 'uppercase' | 'lowercase') => {
+        const sel = iframe.contentWindow?.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            const selectedText = range.toString();
+            const newText = caseType === 'uppercase' ? selectedText.toUpperCase() : selectedText.toLowerCase();
+            range.deleteContents();
+            range.insertNode(document.createTextNode(newText));
+            onAction();
+        }
+    };
+
+
+    return (
+        <div 
+            className="fixed z-50 bg-card border shadow-lg rounded-lg p-1 flex items-center gap-1"
+            style={{ top: `${top}px`, left: `${left}px` }}
+            onMouseDown={(e) => e.preventDefault()} // Prevent toolbar from stealing focus
+        >
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('bold')}><Bold className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('italic')}><Italic className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('underline')}><Underline className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('strikeThrough')}><Strikethrough className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={createLink}><Link className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('formatBlock', '<blockquote>')}><Quote className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCase('uppercase')}><CaseUpper className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCase('lowercase')}><CaseLower className="h-4 w-4" /></Button>
+        </div>
+    );
+}
+
+
 export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
@@ -36,6 +94,9 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  const [activeEditor, setActiveEditor] = useState<HTMLElement | null>(null);
+  const [toolbarUpdate, setToolbarUpdate] = useState(0);
+
   // Generate HTML for preview and for final code separately
   const previewHtmlCode = generateHtml(pageState, true);
   const finalHtmlCode = generateHtml(pageState, false);
@@ -43,6 +104,11 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
   const handleInlineEdit = useCallback((componentId: string, propName: string, newContent: string) => {
     setPageState(prev => {
       if (!prev) return null;
+      // Avoid updating state if content hasn't changed
+      const currentContent = prev.components.find(c => c.id === componentId)?.props[propName];
+      if (currentContent === newContent) {
+          return prev;
+      }
       return {
         ...prev,
         components: prev.components.map(c => 
@@ -54,14 +120,27 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     });
   }, [setPageState]);
 
+  const forceToolbarUpdate = () => {
+    setToolbarUpdate(v => v + 1);
+  };
+
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) return;
+
+    const handleSelectionChange = () => {
+        const selection = iframeDoc?.getSelection();
+        if(selection && !selection.isCollapsed && iframeDoc?.activeElement?.hasAttribute('contenteditable')) {
+            setActiveEditor(iframeDoc.activeElement as HTMLElement);
+        } else {
+            setActiveEditor(null);
+        }
+    };
+    
     const handleIframeLoad = () => {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) return;
-      
       const editableElements = iframeDoc.querySelectorAll<HTMLElement>('[contenteditable="true"]');
 
       editableElements.forEach(el => {
@@ -71,27 +150,29 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
               if(componentId && propName) {
                   handleInlineEdit(componentId, propName, el.innerHTML);
               }
+              setActiveEditor(null);
           };
 
-          const handleKeyDown = (e: KeyboardEvent) => {
-              // Prevent new lines on Enter, and save on Enter
-              if (e.key === 'Enter') {
-                  e.preventDefault();
-                  el.blur();
-              }
+          const handleFocus = () => {
+              // setActiveEditor(el); // Don't activate on focus, only on selection
           };
           
           el.addEventListener('blur', handleBlur);
-          el.addEventListener('keydown', handleKeyDown);
+          el.addEventListener('focus', handleFocus);
       });
+      
+      iframeDoc.addEventListener('selectionchange', handleSelectionChange);
     };
 
     iframe.addEventListener('load', handleIframeLoad);
 
     // Cleanup
     return () => {
+      if (iframeDoc) {
+          iframeDoc.removeEventListener('selectionchange', handleSelectionChange);
+      }
       if (iframe) {
-        iframe.removeEventListener('load', handleIframeLoad);
+        // Find a way to remove blur/focus listeners if needed, though they get cleaned up with the iframe reload
       }
     };
   }, [previewHtmlCode, handleInlineEdit]);
@@ -161,6 +242,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
 
   return (
     <>
+      <WysiwygToolbar key={toolbarUpdate} editor={activeEditor} iframe={iframeRef.current} onAction={forceToolbarUpdate} />
       <Tabs defaultValue="preview" className="w-full h-full flex flex-col bg-muted/20">
         <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
           <div className="flex">
@@ -270,3 +352,5 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     </>
   );
 }
+
+    

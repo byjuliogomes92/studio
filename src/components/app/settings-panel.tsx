@@ -673,46 +673,6 @@ export function SettingsPanel({
                 </div>
               </AccordionContent>
             </AccordionItem>
-            
-            <AccordionItem value="components">
-              <AccordionTrigger>
-                 <div className="flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4" />
-                  <span>Componentes</span>
-                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <DndContext 
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                    <SortableContext items={pageState.components.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-2">
-                          {renderComponents(null)}
-                      </div>
-                    </SortableContext>
-                </DndContext>
-                <AddComponentDialog onAddComponent={(type) => addComponent(type)} />
-              </AccordionContent>
-            </AccordionItem>
-
-            {selectedComponent && (
-              <AccordionItem value="component-settings">
-                <AccordionTrigger>
-                  <div className="flex items-center gap-2">
-                    <Code className="h-4 w-4" />
-                    <span>Configurações de {selectedComponent.type}</span>
-                  </div>
-                 </AccordionTrigger>
-                <AccordionContent className="pt-2">
-                  <ComponentSettings
-                    component={selectedComponent}
-                    onComponentChange={onComponentChange}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            )}
 
             <AccordionItem value="styles">
               <AccordionTrigger>
@@ -794,7 +754,102 @@ export function SettingsPanel({
                 </div>
               </AccordionContent>
             </AccordionItem>
-            
+
+            <AccordionItem value="components">
+              <AccordionTrigger>
+                 <div className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  <span>Componentes</span>
+                 </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <DndContext 
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                    <SortableContext items={pageState.components.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-2">
+                          {renderComponents(null)}
+                      </div>
+                    </SortableContext>
+                </DndContext>
+                <AddComponentDialog onAddComponent={(type) => addComponent(type)} />
+              </AccordionContent>
+            </AccordionItem>
+
+            {selectedComponent && (
+              <AccordionItem value="component-settings">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    <span>Configurações de {selectedComponent.type}</span>
+                  </div>
+                 </AccordionTrigger>
+                <AccordionContent className="pt-2">
+                  <ComponentSettings
+                    component={selectedComponent}
+                    onComponentChange={onComponentChange}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            <AccordionItem value="ampscript">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    <span>AMPScript Personalizado</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-1.5">
+                           <div className="flex items-center gap-1.5">
+                                <Label htmlFor="custom-ampscript">Código AMPScript</Label>
+                                <Tooltip>
+                                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                                    <TooltipContent>
+                                        <div className="max-w-xs">
+                                            <p>Adicione seu código AMPScript aqui. Ele será executado no topo da página.</p>
+                                            <p className="mt-2"><b>Exemplo:</b></p>
+                                            <pre className="text-xs bg-muted p-2 rounded-md mt-1">
+                                                {`%%[
+VAR @name
+SET @name = AttributeValue("FirstName")
+]%%`}
+                                            </pre>
+                                            <p className="mt-2">Então use `%%=v(@name)=%%` no HTML de um componente.</p>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                           </div>
+                           <Dialog open={isAmpscriptDialogOpen} onOpenChange={setIsAmpscriptDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Bot className="mr-2 h-4 w-4" />
+                                        Adicionar Automação
+                                    </Button>
+                                </DialogTrigger>
+                                <AmpscriptSnippetDialog 
+                                    currentCode={pageState.meta.customAmpscript || ''}
+                                    onCodeChange={handleAmpscriptChange}
+                                    onClose={() => setIsAmpscriptDialogOpen(false)}
+                                />
+                           </Dialog>
+                        </div>
+                        <Textarea 
+                            id="custom-ampscript"
+                            value={pageState.meta.customAmpscript || ''}
+                            onChange={(e) => handleMetaChange('customAmpscript', e.target.value)}
+                            placeholder={'%%[ \n\n ]%%'}
+                            rows={10}
+                            className="font-mono text-xs"
+                        />
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+
             <AccordionItem value="meta">
               <AccordionTrigger>
                 <div className="flex items-center gap-2">
@@ -928,61 +983,6 @@ export function SettingsPanel({
                   </div>
                 </div>
               </AccordionContent>
-            </AccordionItem>
-
-             <AccordionItem value="ampscript">
-                <AccordionTrigger>
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4" />
-                    <span>AMPScript Personalizado</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-1.5">
-                           <div className="flex items-center gap-1.5">
-                                <Label htmlFor="custom-ampscript">Código AMPScript</Label>
-                                <Tooltip>
-                                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                                    <TooltipContent>
-                                        <div className="max-w-xs">
-                                            <p>Adicione seu código AMPScript aqui. Ele será executado no topo da página.</p>
-                                            <p className="mt-2"><b>Exemplo:</b></p>
-                                            <pre className="text-xs bg-muted p-2 rounded-md mt-1">
-                                                {`%%[
-VAR @name
-SET @name = AttributeValue("FirstName")
-]%%`}
-                                            </pre>
-                                            <p className="mt-2">Então use `%%=v(@name)=%%` no HTML de um componente.</p>
-                                        </div>
-                                    </TooltipContent>
-                                </Tooltip>
-                           </div>
-                           <Dialog open={isAmpscriptDialogOpen} onOpenChange={setIsAmpscriptDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        <Bot className="mr-2 h-4 w-4" />
-                                        Adicionar Automação
-                                    </Button>
-                                </DialogTrigger>
-                                <AmpscriptSnippetDialog 
-                                    currentCode={pageState.meta.customAmpscript || ''}
-                                    onCodeChange={handleAmpscriptChange}
-                                    onClose={() => setIsAmpscriptDialogOpen(false)}
-                                />
-                           </Dialog>
-                        </div>
-                        <Textarea 
-                            id="custom-ampscript"
-                            value={pageState.meta.customAmpscript || ''}
-                            onChange={(e) => handleMetaChange('customAmpscript', e.target.value)}
-                            placeholder={'%%[ \n\n ]%%'}
-                            rows={10}
-                            className="font-mono text-xs"
-                        />
-                    </div>
-                </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="cookie-banner">

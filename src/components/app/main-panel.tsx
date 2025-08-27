@@ -31,10 +31,13 @@ function WysiwygToolbar({ editor, iframe, onAction }: { editor: HTMLElement | nu
     if (!editor || !iframe?.contentWindow) return null;
 
     const selection = iframe.contentWindow.getSelection();
-    if (!selection) return null;
+    if (!selection || selection.rangeCount === 0) return null;
     
-    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const range = selection.getRangeAt(0);
     if (!range) return null;
+
+    // Don't show toolbar for collapsed selections (carets)
+    if (range.collapsed) return null;
     
     const iframeRect = iframe.getBoundingClientRect();
     const rangeRect = range.getBoundingClientRect();
@@ -107,8 +110,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     setPageState(prev => {
       if (!prev) return null;
       // Avoid updating state if content hasn't changed
-      const currentContent = prev.components.find(c => c.id === componentId)?.props[propName];
-      if (currentContent === newContent) {
+      const component = prev.components.find(c => c.id === componentId);
+      if (component && component.props[propName] === newContent) {
           return prev;
       }
       return {
@@ -128,61 +131,71 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe?.contentWindow) return;
-  
-    const iframeDoc = iframe.contentWindow.document;
-    
-    const handleSelectionChange = () => {
-        const selection = iframeDoc.getSelection();
-        if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            const parentElement = range.startContainer.parentElement;
-
-            if (parentElement?.isContentEditable) {
-                // If there's a selection or just a caret inside an editable element
-                setActiveEditor(parentElement);
-                return;
-            }
-        }
-        setActiveEditor(null);
-    };
-
-    const handleBlur = (e: FocusEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.hasAttribute('contenteditable')) {
-            const componentId = target.dataset.componentId;
-            const propName = target.dataset.propName;
-            if (componentId && propName) {
-                handleInlineEdit(componentId, propName, target.innerHTML);
-            }
-        }
-        // Check if the focus is moving outside the iframe before hiding the toolbar
-        setTimeout(() => {
-            if (iframeDoc.activeElement === iframeDoc.body || iframeDoc.activeElement === null) {
-                setActiveEditor(null);
-            }
-        }, 100);
-    };
+    if (!iframe) return;
 
     const handleLoad = () => {
+        const iframeDoc = iframe.contentWindow?.document;
+        if (!iframeDoc) return;
+
+        const handleSelectionChange = () => {
+            const selection = iframeDoc.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const parentElement = range.startContainer.parentElement;
+
+                if (parentElement?.isContentEditable) {
+                    setActiveEditor(parentElement);
+                    return;
+                }
+            }
+             // Hide toolbar if selection is not in an editable area or is collapsed
+            if (selection?.isCollapsed) {
+                setActiveEditor(null);
+            }
+        };
+
+        const handleBlur = (e: FocusEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.hasAttribute('contenteditable')) {
+                const componentId = target.dataset.componentId;
+                const propName = target.dataset.propName;
+                if (componentId && propName) {
+                    handleInlineEdit(componentId, propName, target.innerHTML);
+                }
+            }
+             // Check if the focus is moving outside the iframe before hiding the toolbar
+            setTimeout(() => {
+                if (iframeDoc.activeElement === iframeDoc.body || iframeDoc.activeElement === null) {
+                    setActiveEditor(null);
+                }
+            }, 100);
+        };
+
         iframeDoc.addEventListener('selectionchange', handleSelectionChange);
-        iframeDoc.body.addEventListener('blur', handleBlur, true); // Use capture phase
-    }
-  
-    iframe.addEventListener('load', handleLoad);
-  
-    // Cleanup
-    return () => {
-      const currentIframe = iframeRef.current;
-      if (currentIframe) {
-        currentIframe.removeEventListener('load', handleLoad);
-        if (currentIframe.contentWindow) {
-          currentIframe.contentWindow.document.removeEventListener('selectionchange', handleSelectionChange);
-          currentIframe.contentWindow.document.body.removeEventListener('blur', handleBlur, true);
-        }
-      }
+        iframeDoc.body.addEventListener('blur', handleBlur, true);
+
+        // Cleanup function for when the iframe reloads
+        return () => {
+            iframeDoc.removeEventListener('selectionchange', handleSelectionChange);
+            iframeDoc.body.removeEventListener('blur', handleBlur, true);
+        };
     };
-  }, [previewHtmlCode, handleInlineEdit]);
+
+    iframe.addEventListener('load', handleLoad);
+    const currentIframe = iframe; // Capture the current iframe instance for cleanup
+
+    // Cleanup for when the component unmounts
+    return () => {
+        if (currentIframe) {
+            currentIframe.removeEventListener('load', handleLoad);
+            const iframeDoc = currentIframe.contentWindow?.document;
+            if(iframeDoc) {
+                 iframeDoc.body.removeEventListener('blur', handleBlur, true);
+            }
+        }
+    };
+}, [previewHtmlCode, handleInlineEdit]);
+
 
   const handleOpenInNewTab = () => {
     try {

@@ -844,17 +844,52 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 };
 
 const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
-    const { meta, components } = pageState;
-    const formComponent = components.find(c => c.type === 'Form');
-    const npsComponent = components.find(c => c.type === 'NPS');
+    const formComponent = pageState.components.find(c => c.type === 'Form');
+    if (!formComponent) return '';
 
-    if (!formComponent && !npsComponent) return '';
+    const allFormFields = new Map<string, string>();
+    const fields = formComponent.props.fields as Record<string, FormFieldConfig>;
+    if (fields) {
+        if (fields.name?.enabled) allFormFields.set('NOME', 'Request.GetFormField("NOME")');
+        if (fields.email?.enabled) allFormFields.set('EMAIL', 'Request.GetFormField("EMAIL")');
+        if (fields.phone?.enabled) allFormFields.set('TELEFONE', 'Request.GetFormField("TELEFONE")');
+        if (fields.cpf?.enabled) allFormFields.set('CPF', 'Request.GetFormField("CPF")');
+        if (fields.city?.enabled) allFormFields.set('CIDADE', 'Request.GetFormField("CIDADE")');
+        if (fields.birthdate?.enabled) allFormFields.set('DATANASCIMENTO', 'Request.GetFormField("DATANASCIMENTO")');
+        if (fields.optin?.enabled) allFormFields.set('OPTIN', 'IIF(Request.GetFormField("OPTIN") == "on", "True", "False")');
+    }
+    
+    if (formComponent.props.customFields) {
+        (formComponent.props.customFields as CustomFormField[]).forEach(field => {
+            if (field.type === 'checkbox') {
+                allFormFields.set(field.name, `IIF(Request.GetFormField("${field.name}") == "true", "True", "False")`);
+            } else {
+                 allFormFields.set(field.name, `Request.GetFormField("${field.name}")`);
+            }
+        });
+    }
+
+    if (pageState.components.some(c => c.type === 'NPS')) {
+        allFormFields.set('NPS_SCORE', 'Request.GetFormField("NPS_SCORE")');
+        allFormFields.set('NPS_DATE', 'Now(1)');
+    }
+    
+    // Add Variant fields for A/B testing
+    pageState.components.forEach(c => {
+        if (c.abTestEnabled) {
+            const fieldName = `VARIANTE_${c.id.toUpperCase()}`;
+            allFormFields.set(fieldName, `Request.GetFormField("${fieldName}")`);
+        }
+    });
+
+    const rowData = Array.from(allFormFields.entries())
+                         .map(([key, value]) => `rowData["${key}"] = ${value};`)
+                         .join('\n                ');
 
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
     var debug = false;
-
     try {
         if (Request.Method == "POST") {
             var deIdentifier = Request.GetFormField("__de");
@@ -874,24 +909,8 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
             
             if (de) {
                 var rowData = {};
-                var formFields = Request.GetFormFields();
-                for (var key in formFields) {
-                    if (key.indexOf("__") != 0) { // Omit private fields
-                        var value = formFields[key];
-                        if (key.toUpperCase() == "OPTIN" && value == "on") {
-                           value = "True";
-                        }
-                        // For custom checkboxes not checked
-                        if (value === null || value === undefined) {
-                            value = "False";
-                        }
-                        rowData[key] = value;
-                    }
-                }
+                ${rowData}
 
-                // Add NPS date if NPS component is present
-                ${npsComponent ? 'if (rowData["NPS_SCORE"]) { rowData["NPS_DATE"] = Now(1); }' : ''}
-                
                 var lookupValue = rowData["EMAIL"] || null;
                 if (lookupValue) {
                    var existingRows = de.Rows.Lookup(["EMAIL"], [lookupValue]);
@@ -903,7 +922,6 @@ const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
                 } else {
                     de.Rows.Add(rowData);
                 }
-
                 showThanks = true;
             }
 

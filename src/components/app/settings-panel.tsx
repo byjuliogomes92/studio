@@ -197,6 +197,7 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
 
   const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
+  const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState.publishDate || !!pageState.expiryDate);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -226,13 +227,25 @@ export function SettingsPanel({
   const handleScheduleChange = (prop: 'publishDate' | 'expiryDate', value: string) => {
     setPageState(prev => {
         if (!prev) return null;
-        // If the value is cleared, set it to null, otherwise create a new Date object.
         const dateValue = value ? new Date(value) : null;
         return produce(prev, draft => {
             (draft as any)[prop] = dateValue;
         });
     });
   };
+
+  const toggleScheduling = (enabled: boolean) => {
+    setIsSchedulingEnabled(enabled);
+    if (!enabled) {
+        setPageState(prev => {
+            if (!prev) return null;
+            return produce(prev, draft => {
+                draft.publishDate = null;
+                draft.expiryDate = null;
+            });
+        });
+    }
+  }
 
   const handleAmpscriptChange = (newCode: string) => {
     handleMetaChange('customAmpscript', newCode);
@@ -247,7 +260,6 @@ export function SettingsPanel({
             }
             (draft.meta.security as any)[prop] = value;
 
-            // if changing type, reset passwordConfig
             if (prop === 'type' && value !== 'password') {
                 draft.meta.security.passwordConfig = undefined;
             }
@@ -491,7 +503,6 @@ export function SettingsPanel({
             newParentId = overIdString.split('-')[0];
             newColumnIndex = parseInt(overIdString.split('-')[1], 10);
             
-            // Find the last component in that column to place the new one after
             const siblingsInNewColumn = draft.components
                 .filter(c => c.parentId === newParentId && c.column === newColumnIndex)
                 .sort((a,b) => a.order - b.order);
@@ -499,7 +510,6 @@ export function SettingsPanel({
             if (siblingsInNewColumn.length > 0) {
                 overIndex = findComponentIndex(siblingsInNewColumn[siblingsInNewColumn.length - 1].id);
             } else {
-                 // If column is empty, find the parent column container and place it there
                  overIndex = findComponentIndex(newParentId)
             }
         } else {
@@ -512,16 +522,13 @@ export function SettingsPanel({
 
         const activeIndex = findComponentIndex(activeId);
         
-        // Update component's parent and column
         draft.components[activeIndex].parentId = newParentId;
         draft.components[activeIndex].column = newColumnIndex;
         
-        // Move the component in the array
         const [movedComponent] = draft.components.splice(activeIndex, 1);
-        const correctedOverIndex = findComponentIndex(overId); // Recalculate index after splice
+        const correctedOverIndex = findComponentIndex(overId); 
         draft.components.splice(correctedOverIndex, 0, movedComponent);
 
-        // Re-order all components to ensure data integrity
         const allParentIds = [null, ...draft.components.filter(c => c.type === 'Columns').map(c => c.id)];
         allParentIds.forEach(pId => {
             const parentComponent = findComponent(pId as string);
@@ -766,24 +773,36 @@ export function SettingsPanel({
                     <span>Agendamento</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                        <Label htmlFor="publish-date">Data de Publicação</Label>
-                        <Input
-                            id="publish-date"
-                            type="datetime-local"
-                            value={toDatetimeLocal(pageState.publishDate)}
-                            onChange={(e) => handleScheduleChange('publishDate', e.target.value)}
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="scheduling-enabled">Ativar Agendamento</Label>
+                        <Switch
+                            id="scheduling-enabled"
+                            checked={isSchedulingEnabled}
+                            onCheckedChange={toggleScheduling}
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="expiry-date">Data de Expiração</Label>
-                        <Input
-                            id="expiry-date"
-                            type="datetime-local"
-                            value={toDatetimeLocal(pageState.expiryDate)}
-                            onChange={(e) => handleScheduleChange('expiryDate', e.target.value)}
-                        />
-                    </div>
+                    {isSchedulingEnabled && (
+                        <div className="space-y-4 pt-4 border-t">
+                            <div className="space-y-2">
+                                <Label htmlFor="publish-date">Data de Publicação</Label>
+                                <Input
+                                    id="publish-date"
+                                    type="datetime-local"
+                                    value={toDatetimeLocal(pageState.publishDate)}
+                                    onChange={(e) => handleScheduleChange('publishDate', e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="expiry-date">Data de Expiração</Label>
+                                <Input
+                                    id="expiry-date"
+                                    type="datetime-local"
+                                    value={toDatetimeLocal(pageState.expiryDate)}
+                                    onChange={(e) => handleScheduleChange('expiryDate', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </AccordionContent>
             </AccordionItem>
              <AccordionItem value="ampscript">

@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { FileText, Loader2, Server } from 'lucide-react';
 import { produce } from 'immer';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface CreatePageFromTemplateDialogProps {
   trigger: React.ReactNode;
@@ -36,6 +37,15 @@ interface CreatePageFromTemplateDialogProps {
   projectId?: string; // Pre-selected project from project page
   onPageCreated?: () => void;
 }
+
+const platforms = [
+    { id: 'sfmc', name: 'Salesforce Marketing Cloud', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg', enabled: true },
+    { id: 'hubspot', name: 'Hubspot', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/3f/HubSpot_Logo.svg', enabled: false },
+    { id: 'rdstation', name: 'RD Station', logo: 'https://cdn.brandfetch.io/idh5VzpTAM/theme/dark/logo.svg?c=1dxbfHSJFAPEGdCLU4o5B', enabled: false },
+    { id: 'braze', name: 'Braze', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Braze_Logo.svg/1024px-Braze_Logo.svg.png', enabled: false },
+    { id: 'klaviyo', name: 'Klaviyo', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/b/b0/Klaviyo_primary_logo.svg/875px-Klaviyo_primary_logo.svg.png', enabled: false },
+    { id: 'web', name: 'Web', logo: 'https://www.svgrepo.com/show/447845/website-click.svg', enabled: false },
+];
 
 const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
     const isAvon = brand === 'Avon';
@@ -133,6 +143,7 @@ export function CreatePageFromTemplateDialog({
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(templateId || null);
   const [selectedTemplateIsDefault, setSelectedTemplateIsDefault] = useState<boolean>(!!isDefaultTemplate);
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState('sfmc');
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -288,7 +299,7 @@ export function CreatePageFromTemplateDialog({
         <DialogHeader>
           <DialogTitle>Criar Nova Página</DialogTitle>
           <DialogDescription>
-            {step === 1 ? "Escolha um template para começar." : "Agora, dê um nome e escolha a marca e o projeto para sua nova página."}
+            {step === 1 ? "Escolha um template para começar." : "Agora, dê um nome e escolha a marca, projeto e plataforma para sua nova página."}
           </DialogDescription>
         </DialogHeader>
 
@@ -328,7 +339,7 @@ export function CreatePageFromTemplateDialog({
         )}
 
         {step === 2 && (
-            <>
+            <TooltipProvider>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="page-name">Nome da Página</Label>
@@ -339,34 +350,72 @@ export function CreatePageFromTemplateDialog({
                             placeholder="Ex: Campanha Dia das Mães"
                         />
                     </div>
-                    {!projectId && (
-                         <div className="space-y-2">
-                             <Label htmlFor="project-id">Salvar no Projeto</Label>
-                             <Select onValueChange={setSelectedProjectId} value={selectedProjectId}>
-                                <SelectTrigger>
-                                <SelectValue placeholder="Selecione um projeto..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                {userProjects.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                         </div>
-                    )}
-                    <div className="space-y-2">
-                        <Label>Marca</Label>
-                        <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
-                            <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                <RadioGroupItem value="Natura" id="brand-natura" />
-                                Natura
-                            </Label>
-                            <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                <RadioGroupItem value="Avon" id="brand-avon" />
-                                Avon
-                            </Label>
-                        </RadioGroup>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {!projectId && (
+                             <div className="space-y-2">
+                                 <Label htmlFor="project-id">Salvar no Projeto</Label>
+                                 <Select onValueChange={setSelectedProjectId} value={selectedProjectId}>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um projeto..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                    {userProjects.map(p => (
+                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                    ))}
+                                    </SelectContent>
+                                </Select>
+                             </div>
+                        )}
+                        <div className="space-y-2">
+                            <Label>Marca</Label>
+                            <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
+                                <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                    <RadioGroupItem value="Natura" id="brand-natura" />
+                                    Natura
+                                </Label>
+                                <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
+                                    <RadioGroupItem value="Avon" id="brand-avon" />
+                                    Avon
+                                </Label>
+                            </RadioGroup>
+                        </div>
                     </div>
+                     <div className="space-y-2">
+                        <Label>Plataforma</Label>
+                        <RadioGroup defaultValue="sfmc" value={selectedPlatform} onValueChange={setSelectedPlatform} className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                            {platforms.map(platform => {
+                                const content = (
+                                    <Label 
+                                        key={platform.id}
+                                        htmlFor={`platform-${platform.id}`}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center gap-2 border-2 rounded-lg p-3 cursor-pointer hover:border-primary has-[:checked]:border-primary",
+                                            !platform.enabled && "cursor-not-allowed opacity-50"
+                                        )}
+                                    >
+                                        <RadioGroupItem value={platform.id} id={`platform-${platform.id}`} className="sr-only" disabled={!platform.enabled} />
+                                        <img src={platform.logo} alt={platform.name} className="h-10 object-contain" />
+                                        <span className="text-xs text-center">{platform.name}</span>
+                                    </Label>
+                                );
+
+                                if (platform.enabled) {
+                                    return content;
+                                }
+
+                                return (
+                                    <Tooltip key={platform.id}>
+                                        <TooltipTrigger asChild>
+                                            {content}
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Em breve</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                );
+                            })}
+                        </RadioGroup>
+                     </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => templateId ? resetState() : setStep(1) }>Voltar</Button>
@@ -374,7 +423,7 @@ export function CreatePageFromTemplateDialog({
                         {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Criar Página e Abrir Editor"}
                     </Button>
                 </DialogFooter>
-            </>
+            </TooltipProvider>
         )}
       </DialogContent>
     </Dialog>

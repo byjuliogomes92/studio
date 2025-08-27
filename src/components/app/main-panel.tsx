@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -33,13 +32,16 @@ function WysiwygToolbar({ editor, iframe, onAction }: { editor: HTMLElement | nu
 
     const iframeRect = iframe.getBoundingClientRect();
     const selection = iframe.contentWindow?.getSelection();
-    if (!selection || selection.isCollapsed) return null;
+    if (!selection) return null;
+    
+    // Use selection range if something is selected, otherwise use editor position
+    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const rect = range?.getBoundingClientRect() ?? editor.getBoundingClientRect();
 
-    const range = selection.getRangeAt(0);
-    const rangeRect = range.getBoundingClientRect();
-
-    const top = iframeRect.top + rangeRect.top - 50; // Position above selection
-    const left = iframeRect.left + rangeRect.left + (rangeRect.width / 2) - 150; // Center on selection
+    // Adjust position if nothing is selected to appear right above the editor
+    const topOffset = selection.isCollapsed ? 40 : 50;
+    const top = iframeRect.top + rect.top - topOffset; 
+    const left = iframeRect.left + rect.left + (rect.width / 2) - 150; 
 
     const applyStyle = (command: string, value?: string) => {
         iframe.contentWindow?.document.execCommand(command, false, value);
@@ -61,7 +63,7 @@ function WysiwygToolbar({ editor, iframe, onAction }: { editor: HTMLElement | nu
             const selectedText = range.toString();
             const newText = caseType === 'uppercase' ? selectedText.toUpperCase() : selectedText.toLowerCase();
             range.deleteContents();
-            range.insertNode(document.createTextNode(newText));
+            range.insertNode(iframe.contentWindow.document.createTextNode(newText));
             onAction();
         }
     };
@@ -130,11 +132,16 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
 
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!iframeDoc) return;
+    
+    let currentActiveElement: HTMLElement | null = null;
 
     const handleSelectionChange = () => {
         const selection = iframeDoc?.getSelection();
-        if(selection && !selection.isCollapsed && iframeDoc?.activeElement?.hasAttribute('contenteditable')) {
-            setActiveEditor(iframeDoc.activeElement as HTMLElement);
+        if (selection && !selection.isCollapsed && currentActiveElement && currentActiveElement.hasAttribute('contenteditable')) {
+            setActiveEditor(currentActiveElement);
+        } else if (currentActiveElement) {
+             // Keep toolbar if focused, even if selection is collapsed
+             setActiveEditor(currentActiveElement);
         } else {
             setActiveEditor(null);
         }
@@ -151,10 +158,12 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
                   handleInlineEdit(componentId, propName, el.innerHTML);
               }
               setActiveEditor(null);
+              currentActiveElement = null;
           };
 
           const handleFocus = () => {
-              // setActiveEditor(el); // Don't activate on focus, only on selection
+              setActiveEditor(el);
+              currentActiveElement = el;
           };
           
           el.addEventListener('blur', handleBlur);
@@ -170,9 +179,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     return () => {
       if (iframeDoc) {
           iframeDoc.removeEventListener('selectionchange', handleSelectionChange);
-      }
-      if (iframe) {
-        // Find a way to remove blur/focus listeners if needed, though they get cleaned up with the iframe reload
       }
     };
   }, [previewHtmlCode, handleInlineEdit]);

@@ -2110,4 +2110,5 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;
+};

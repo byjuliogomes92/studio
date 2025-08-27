@@ -1,6 +1,7 @@
 
 
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
+import { getFormSubmissionScript } from './ssjs-templates';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -844,131 +845,6 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
     `;
 };
 
-const getAmpscriptProcessingBlock = (pageState: CloudPage): string => {
-    const formComponent = pageState.components.find(c => c.type === 'Form');
-    if (!formComponent) return '';
-
-    const fields = formComponent.props.fields as Record<string, FormFieldConfig> || {};
-    const customFields = formComponent.props.customFields as CustomFormField[] || [];
-    
-    // Build a list of all enabled fields
-    const enabledFields: { deField: string, formField: string, isCheckbox?: boolean, isDate?: boolean }[] = [];
-    if (fields.name?.enabled) enabledFields.push({ deField: 'NOME', formField: 'NOME' });
-    if (fields.email?.enabled) enabledFields.push({ deField: 'EMAIL', formField: 'EMAIL' });
-    if (fields.phone?.enabled) enabledFields.push({ deField: 'TELEFONE', formField: 'TELEFONE' });
-    if (fields.cpf?.enabled) enabledFields.push({ deField: 'CPF', formField: 'CPF' });
-    if (fields.city?.enabled) enabledFields.push({ deField: 'CIDADE', formField: 'CIDADE' });
-    if (fields.birthdate?.enabled) enabledFields.push({ deField: 'DATANASCIMENTO', formField: 'DATANASCIMENTO', isDate: true });
-    if (fields.optin?.enabled) enabledFields.push({ deField: 'OPTIN', formField: 'OPTIN', isCheckbox: true });
-
-    customFields.forEach(field => {
-        enabledFields.push({ 
-            deField: field.name, 
-            formField: field.name, 
-            isCheckbox: field.type === 'checkbox',
-            isDate: field.type === 'date'
-        });
-    });
-
-    if (pageState.components.some(c => c.type === 'NPS')) {
-        enabledFields.push({ deField: 'NPS_SCORE', formField: 'NPS_SCORE' });
-        enabledFields.push({ deField: 'NPS_DATE', formField: 'NPS_DATE', isDate: true });
-    }
-
-    pageState.components.forEach(c => {
-        if (c.abTestEnabled) {
-            const fieldName = `VARIANTE_${c.id.toUpperCase()}`;
-            enabledFields.push({ deField: fieldName, formField: fieldName });
-        }
-    });
-
-    if (enabledFields.length === 0) return '';
-    
-    // Generate the SSJS
-    const varDeclarations = enabledFields.map(f => `var ${f.deField.toLowerCase()} = Request.GetFormField("${f.formField}");`).join('\n            ');
-    
-    const specialHandling = enabledFields.map(f => {
-        if (f.isCheckbox) {
-            return `if (${f.deField.toLowerCase()} == "" || ${f.deField.toLowerCase()} == null) { ${f.deField.toLowerCase()} = "False"; } else if (${f.deField.toLowerCase()} == "on" || ${f.deField.toLowerCase()} == "true" || ${f.deField.toLowerCase()} == "True") { ${f.deField.toLowerCase()} = "True"; }`;
-        }
-        if (f.formField === 'NPS_DATE') {
-            return `var nps_date = Now(1);`;
-        }
-        return null;
-    }).filter(Boolean).join('\n            ');
-    
-    const rowDataObjectFields = enabledFields.map(f => `"${f.deField}": ${f.deField.toLowerCase()}`).join(',\n                        ');
-    const rowDataObject = `var rowData = {\n                        ${rowDataObjectFields}\n                    };`;
-
-    const lookupKey = fields.email?.enabled ? "EMAIL" : (fields.cpf?.enabled ? "CPF" : "");
-
-    return `
-<script runat="server">
-    Platform.Load("Core", "1.1.1");
-    var debug = false;
-    try {
-        if (Request.Method == "POST") {
-            var deIdentifier = Request.GetFormField("__de");
-            var deMethod = Request.GetFormField("__de_method");
-            var redirectUrl = Request.GetFormField("__successUrl");
-            var showThanks = false;
-
-            ${varDeclarations}
-            ${specialHandling}
-
-            if (debug) {
-                Write("<br><b>--- DEBUG ---</b><br>");
-                ${enabledFields.map(f => `Write("${f.deField}: " + ${f.deField.toLowerCase()} + "<br>");`).join('\n                ')}
-            }
-
-            if (deIdentifier != null && deIdentifier != "") {
-                var de;
-                if (deMethod == "name") {
-                    var deList = DataExtension.Retrieve({Property:"Name",SimpleOperator:"equals",Value:deIdentifier});
-                    if (deList && deList.length > 0) {
-                        de = DataExtension.Init(deList[0].CustomerKey);
-                    }
-                } else {
-                    de = DataExtension.Init(deIdentifier);
-                }
-
-                if (de) {
-                    ${rowDataObject}
-
-                    var updateKey = ${lookupKey ? `"${lookupKey}"` : '""'};
-                    var updateValue = ${lookupKey ? `${lookupKey.toLowerCase()}` : '""'};
-                    
-                    if (updateKey != "" && updateValue != null && updateValue != "") {
-                        var existing = de.Rows.Lookup([updateKey], [updateValue]);
-                        if (existing && existing.length > 0) {
-                            de.Rows.Update(rowData, [updateKey], [updateValue]);
-                            if (debug) { Write("<br><b>Status:</b> Registro atualizado."); }
-                        } else {
-                            de.Rows.Add(rowData);
-                            if (debug) { Write("<br><b>Status:</b> Novo registro inserido."); }
-                        }
-                    } else {
-                        de.Rows.Add(rowData);
-                        if (debug) { Write("<br><b>Status:</b> Novo registro inserido (sem chave de atualização)."); }
-                    }
-                    showThanks = true;
-                }
-            }
-
-            if (showThanks && redirectUrl && !debug) {
-                Platform.Response.Redirect(redirectUrl);
-            } else if (showThanks) {
-                Variable.SetValue("@showThanks", "true");
-            }
-        }
-    } catch (e) {
-        if (debug) {
-            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
-        }
-    }
-</script>
-`;
-}
 
 const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
     const security = pageState.meta.security;
@@ -1360,7 +1236,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const security = getSecurityScripts(pageState);
   
-  const ssjsBlock = isForPreview ? '' : getAmpscriptProcessingBlock(pageState);
+  const ssjsBlock = isForPreview ? '' : getFormSubmissionScript(pageState);
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');

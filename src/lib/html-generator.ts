@@ -1323,7 +1323,7 @@ ${setStatements}
 `;
 }
 
-export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false): string => {
+export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string => {
   const { id, styles, components, meta, cookieBanner } = pageState;
   
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
@@ -1344,8 +1344,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState, isForPreview);
   
-  // Add the tracking pixel only when not in preview mode.
-  const trackingPixel = isForPreview ? '' : `<img src="/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
+  const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
 

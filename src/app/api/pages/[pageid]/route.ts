@@ -35,12 +35,15 @@ export async function GET(
         return new NextResponse('Esta página expirou.', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
-    // The previous logic for `isPreview` was flawed.
-    // The most reliable way to track views is to log every hit to this endpoint,
-    // as it's primarily called by the MC proxy. Previews from the editor will be handled separately if needed.
-    // logPageView(pageData, request.headers).catch(console.error);
+    // Asynchronously log the page view without waiting for it to complete.
+    logPageView(pageData, request.headers).catch(console.error);
 
-    const htmlContent = generateHtml(pageData, false);
+    // Construct the base URL from the request to ensure it works in any environment
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const host = request.headers.get('host');
+    const baseUrl = `${protocol}://${host}`;
+
+    const htmlContent = generateHtml(pageData, false, baseUrl);
 
     return new NextResponse(htmlContent, {
       status: 200,

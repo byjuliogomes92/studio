@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -9,7 +10,7 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage, addTemplate, updateUserProgress } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,6 +20,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ComponentSettings } from "./component-settings";
+import { ScrollArea } from "../ui/scroll-area";
+
 
 interface CloudPageForgeProps {
   pageId: string;
@@ -82,6 +87,9 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState) || pageName !== savedPageState?.name;
+  
+  const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId);
+
 
   useEffect(() => {
     if (authLoading) {
@@ -455,7 +463,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       </header>
       <div className="flex flex-grow overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="flex-grow">
-            <ResizablePanel defaultSize={35} minSize={20}>
+            <ResizablePanel defaultSize={25} minSize={20}>
                 <aside className="h-full bg-card/20">
                     <SettingsPanel
                         pageState={pageState}
@@ -464,12 +472,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         setSelectedComponentId={setSelectedComponentId}
                         pageName={pageName}
                         setPageName={setPageName}
-                        onComponentChange={handleComponentChange}
                     />
                 </aside>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={65}>
+            <ResizablePanel defaultSize={75}>
                 <main className="flex-grow h-full">
                     <MainPanel 
                         pageState={pageState} 
@@ -480,11 +487,34 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+
+       <Sheet open={!!selectedComponentId} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
+            <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col">
+                {selectedComponent && (
+                    <>
+                    <SheetHeader className="p-6">
+                        <SheetTitle className="flex items-center gap-2">
+                            <Settings className="h-5 w-5" />
+                            Configurações de {selectedComponent.type}
+                        </SheetTitle>
+                        <SheetDescription>
+                            Ajuste as propriedades do componente selecionado.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <ScrollArea className="flex-grow">
+                        <div className="px-6 pb-6">
+                             <ComponentSettings
+                                key={selectedComponent.id}
+                                component={selectedComponent}
+                                onComponentChange={handleComponentChange}
+                            />
+                        </div>
+                    </ScrollArea>
+                    </>
+                )}
+            </SheetContent>
+        </Sheet>
     </div>
     </>
   );
 }
-
-    
-
-    

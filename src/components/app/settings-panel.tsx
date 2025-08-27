@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ComponentSettings } from "./component-settings";
 import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -44,7 +43,6 @@ interface SettingsPanelProps {
   setSelectedComponentId: Dispatch<SetStateAction<string | null>>;
   pageName: string;
   setPageName: Dispatch<SetStateAction<string>>;
-  onComponentChange: (id: string, newProps: Partial<PageComponent>) => void;
 }
 
 const componentIcons: Record<ComponentType, React.ElementType> = {
@@ -139,7 +137,7 @@ function ComponentItem({
 }: {
   component: PageComponent;
   selectedComponentId: string | null;
-  setSelectedComponentId: (id: string) => void;
+  setSelectedComponentId: (id: string | null) => void;
   removeComponent: (id: string) => void;
   dndAttributes?: any;
   dndListeners?: any;
@@ -147,6 +145,14 @@ function ComponentItem({
 }) {
   const Icon = componentIcons[component.type] || Text;
   const isContainer = component.type === 'Columns';
+
+  const handleSelect = () => {
+    if (selectedComponentId === component.id) {
+        setSelectedComponentId(null);
+    } else {
+        setSelectedComponentId(component.id);
+    }
+  }
 
   const content = (
       <div className={cn(
@@ -160,7 +166,7 @@ function ComponentItem({
             <Button
                 variant={selectedComponentId === component.id ? "secondary" : "ghost"}
                 className="flex-grow justify-start h-8 min-w-0 px-2"
-                onClick={() => setSelectedComponentId(component.id)}
+                onClick={handleSelect}
             >
                 <div className="flex items-center gap-2 truncate">
                   <Icon className="h-4 w-4 flex-shrink-0" />
@@ -197,7 +203,6 @@ export function SettingsPanel({
   setSelectedComponentId,
   pageName,
   setPageName,
-  onComponentChange,
 }: SettingsPanelProps) {
 
   const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
@@ -560,7 +565,6 @@ export function SettingsPanel({
     });
   };
 
-  const selectedComponent = pageState.components.find((c) => c.id === selectedComponentId);
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
   const security = pageState.meta.security || { type: 'none' };
@@ -569,7 +573,7 @@ export function SettingsPanel({
         if (!date) return '';
         const d = date.toDate ? date.toDate() : new Date(date);
         const pad = (num: number) => num.toString().padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getMinutes())}`;
     };
 
 
@@ -777,23 +781,6 @@ export function SettingsPanel({
                 <AddComponentDialog onAddComponent={(type) => addComponent(type)} />
               </AccordionContent>
             </AccordionItem>
-
-            {selectedComponent && (
-              <AccordionItem value="component-settings">
-                <AccordionTrigger>
-                  <div className="flex items-center gap-2">
-                    <Code className="h-4 w-4" />
-                    <span>Configurações de {selectedComponent.type}</span>
-                  </div>
-                 </AccordionTrigger>
-                <AccordionContent className="pt-2">
-                  <ComponentSettings
-                    component={selectedComponent}
-                    onComponentChange={onComponentChange}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            )}
 
             <AccordionItem value="ampscript">
                 <AccordionTrigger>

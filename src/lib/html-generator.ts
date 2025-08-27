@@ -1,5 +1,5 @@
 
-import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType } from './types';
+import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -27,11 +27,15 @@ const renderField = (
     dataType: string, 
     placeholder: string,
     conditionalLogic: any,
+    prefill: boolean,
     required: boolean = true
   ): string => {
     const conditionalAttrs = conditionalLogic
       ? `data-conditional-on="${conditionalLogic.field}" data-conditional-value="${conditionalLogic.value}"`
       : '';
+    
+    // The AMPScript variable name will be based on the field's 'name' property
+    const prefillValue = prefill ? ` value="%%=v(@${name})=%%"` : '';
   
     return `
       <div class="input-wrapper" id="wrapper-${id}" style="display: ${conditionalLogic ? 'none' : 'block'};" ${conditionalAttrs}>
@@ -41,6 +45,7 @@ const renderField = (
           name="${name}" 
           placeholder="${placeholder}" 
           ${required ? 'required="required"' : ''}
+          ${prefillValue}
         >
         <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
       </div>
@@ -76,9 +81,9 @@ const renderField = (
       `;
   };
   
-  const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, required: boolean = false): string => {
+  const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, prefill: boolean, required: boolean = false): string => {
       const cities = citiesString.split('\n').filter(city => city.trim() !== '');
-      const options = cities.map(city => `<option value="${city}">${city}</option>`).join('');
+      const options = cities.map(city => `<option value="${city}">%%[ IF @CIDADE == "${city}" THEN]%%selected%%[ENDIF]%%${city}</option>`).join('');
       const conditionalAttrs = conditionalLogic
         ? `data-conditional-on="${conditionalLogic.field}" data-conditional-value="${conditionalLogic.value}"`
         : '';
@@ -633,16 +638,16 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                    <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
   
                    <div class="row">
-                    ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional) : ''}
-                    ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional) : ''}
+                    ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
+                    ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional, !!fields.email.prefillFromUrl) : ''}
                    </div>
                    <div class="row">
-                    ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional) : ''}
-                    ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional) : ''}
+                    ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional, !!fields.phone.prefillFromUrl) : ''}
+                    ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional, !!fields.cpf.prefillFromUrl) : ''}
                    </div>
                    <div class="row">
-                    ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, false) : ''}
-                    ${fields.city?.enabled ? renderCityDropdown(cities, fields.city.conditional, false) : ''}
+                    ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, false) : ''}
+                    ${fields.city?.enabled ? renderCityDropdown(cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
                    </div>
                    
                    <div class="custom-fields-wrapper">
@@ -1274,6 +1279,32 @@ const getClientSideScripts = (pageState: CloudPage) => {
     `;
 }
 
+const getPrefillAmpscript = (pageState: CloudPage): string => {
+    const formComponent = pageState.components.find(c => c.type === 'Form');
+    if (!formComponent) return '';
+
+    const fieldsToPrefill: {name: string, param: string}[] = [];
+    const fields = formComponent.props.fields as Record<string, FormFieldConfig>;
+
+    if (fields?.name?.prefillFromUrl) fieldsToPrefill.push({name: 'NOME', param: 'nome'});
+    if (fields?.email?.prefillFromUrl) fieldsToPrefill.push({name: 'EMAIL', param: 'email'});
+    if (fields?.phone?.prefillFromUrl) fieldsToPrefill.push({name: 'TELEFONE', param: 'telefone'});
+    if (fields?.cpf?.prefillFromUrl) fieldsToPrefill.push({name: 'CPF', param: 'cpf'});
+    if (fields?.birthdate?.prefillFromUrl) fieldsToPrefill.push({name: 'DATANASCIMENTO', param: 'datanascimento'});
+    if (fields?.city?.prefillFromUrl) fieldsToPrefill.push({name: 'CIDADE', param: 'cidade'});
+
+    if (fieldsToPrefill.length === 0) return '';
+
+    const varDeclarations = fieldsToPrefill.map(f => `@${f.name}`).join(', ');
+    const setStatements = fieldsToPrefill.map(f => `SET @${f.name} = RequestParameter("${f.param}")`).join('\n');
+
+    return `
+/* --- Prefill from URL Parameters --- */
+VAR ${varDeclarations}
+${setStatements}
+`;
+}
+
 export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false): string => {
   const { id, styles, components, meta, cookieBanner } = pageState;
   
@@ -1298,12 +1329,15 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   // Add the tracking pixel only when not in preview mode.
   const trackingPixel = isForPreview ? '' : `<img src="/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
 
+  const prefillAmpscript = getPrefillAmpscript(pageState);
+
   // Use TreatAsContentArea for better performance and to avoid script injection issues
   return `%%[ 
     VAR @showThanks, @status
     SET @showThanks = "false" 
     ${meta.customAmpscript || ''}
     ${security.amscript}
+    ${prefillAmpscript}
 ]%%${ssjsBlock}<!DOCTYPE html>
 <html>
 <head>

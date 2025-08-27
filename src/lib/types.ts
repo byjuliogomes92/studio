@@ -34,6 +34,7 @@ export interface FormFieldConditional {
 export interface FormFieldConfig {
     enabled: boolean;
     conditional: FormFieldConditional | null;
+    prefillFromUrl?: boolean;
 }
 
 export type CustomFormFieldType = 'text' | 'number' | 'date' | 'checkbox';

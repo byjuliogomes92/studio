@@ -37,13 +37,13 @@ interface ComponentSettingsProps {
   onComponentChange: (id: string, newProps: Partial<PageComponent>) => void;
 }
 
-const formFields: {id: keyof PageComponent['props']['fields'], label: string}[] = [
-    { id: 'name', label: 'Nome' },
-    { id: 'email', label: 'Email' },
-    { id: 'phone', label: 'Telefone' },
-    { id: 'cpf', label: 'CPF' },
-    { id: 'city', label: 'Cidades' },
-    { id: 'birthdate', label: 'Data de Nascimento' },
+const formFields: {id: keyof PageComponent['props']['fields'], label: string, urlParam: string}[] = [
+    { id: 'name', label: 'Nome', urlParam: 'nome' },
+    { id: 'email', label: 'Email', urlParam: 'email' },
+    { id: 'phone', label: 'Telefone', urlParam: 'telefone' },
+    { id: 'cpf', label: 'CPF', urlParam: 'cpf' },
+    { id: 'city', label: 'Cidades', urlParam: 'cidade' },
+    { id: 'birthdate', label: 'Data de Nascimento', urlParam: 'datanascimento' },
 ];
 
 const lucideIcons = [
@@ -837,7 +837,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
             const handleFieldChange = (fieldId: string, property: keyof FormFieldConfig, value: any) => {
               const newFields = produce(fieldsConfig, (draft) => {
                 if (typeof draft[fieldId] !== 'object' || draft[fieldId] === null) {
-                    draft[fieldId] = { enabled: false, conditional: null };
+                    draft[fieldId] = { enabled: false, conditional: null, prefillFromUrl: false };
                 }
                 (draft[fieldId] as any)[property] = value;
               });
@@ -871,42 +871,61 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                             onCheckedChange={(checked) => handleFieldChange(field.id, 'enabled', checked)}
                           />
                         </div>
-                        {fieldsConfig[field.id]?.enabled && index > 0 && (
-                          <div className="space-y-3 pt-3 border-t">
-                            <div className="flex items-center justify-between">
-                               <Label htmlFor={`cond-${field.id}`} className="text-xs">Lógica Condicional</Label>
-                                <Switch
-                                    id={`cond-${field.id}`}
-                                    checked={!!fieldsConfig[field.id]?.conditional}
-                                    onCheckedChange={(checked) => handleFieldChange(field.id, 'conditional', checked ? { field: '', value: '' } : null)}
-                                />
-                            </div>
-                            {fieldsConfig[field.id]?.conditional && (
-                                <div className="space-y-2 text-xs">
-                                     <Label>Exibir se:</Label>
-                                     <Select 
-                                        value={fieldsConfig[field.id]?.conditional?.field}
-                                        onValueChange={(value) => handleConditionalChange(field.id, 'field', value)}
-                                     >
-                                        <SelectTrigger className="h-8">
-                                            <SelectValue placeholder="Selecione um campo..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {enabledFields
-                                                .filter(f => f.id !== field.id)
-                                                .map(f => <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>)
-                                            }
-                                        </SelectContent>
-                                     </Select>
-                                     <Input 
-                                        placeholder="Tiver o valor..."
-                                        className="h-8"
-                                        value={fieldsConfig[field.id]?.conditional?.value || ''}
-                                        onChange={(e) => handleConditionalChange(field.id, 'value', e.target.value)}
-                                     />
+
+                        {fieldsConfig[field.id]?.enabled && (
+                            <div className="space-y-3 pt-3 border-t">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor={`prefill-${field.id}`} className="text-xs flex items-center gap-1.5">
+                                        Preencher via URL
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><HelpCircle className="h-3 w-3"/></TooltipTrigger>
+                                            <TooltipContent><p>Use o parâmetro `?{field.urlParam}=valor`</p></TooltipContent>
+                                        </Tooltip>
+                                    </Label>
+                                    <Switch
+                                        id={`prefill-${field.id}`}
+                                        checked={fieldsConfig[field.id]?.prefillFromUrl || false}
+                                        onCheckedChange={(checked) => handleFieldChange(field.id, 'prefillFromUrl', checked)}
+                                    />
                                 </div>
-                            )}
-                          </div>
+                                {index > 0 && (
+                                <div className="space-y-3 pt-3 border-t">
+                                    <div className="flex items-center justify-between">
+                                       <Label htmlFor={`cond-${field.id}`} className="text-xs">Lógica Condicional</Label>
+                                        <Switch
+                                            id={`cond-${field.id}`}
+                                            checked={!!fieldsConfig[field.id]?.conditional}
+                                            onCheckedChange={(checked) => handleFieldChange(field.id, 'conditional', checked ? { field: '', value: '' } : null)}
+                                        />
+                                    </div>
+                                    {fieldsConfig[field.id]?.conditional && (
+                                        <div className="space-y-2 text-xs">
+                                             <Label>Exibir se:</Label>
+                                             <Select 
+                                                value={fieldsConfig[field.id]?.conditional?.field}
+                                                onValueChange={(value) => handleConditionalChange(field.id, 'field', value)}
+                                             >
+                                                <SelectTrigger className="h-8">
+                                                    <SelectValue placeholder="Selecione um campo..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {enabledFields
+                                                        .filter(f => f.id !== field.id)
+                                                        .map(f => <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>)
+                                                    }
+                                                </SelectContent>
+                                             </Select>
+                                             <Input 
+                                                placeholder="Tiver o valor..."
+                                                className="h-8"
+                                                value={fieldsConfig[field.id]?.conditional?.value || ''}
+                                                onChange={(e) => handleConditionalChange(field.id, 'value', e.target.value)}
+                                             />
+                                        </div>
+                                    )}
+                                  </div>
+                                )}
+                            </div>
                         )}
                       </div>
                     ))}
@@ -1500,5 +1519,3 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
-
-    

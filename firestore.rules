@@ -12,7 +12,8 @@ service cloud.firestore {
     }
 
     match /pages/{pageId} {
-      allow read: if true;
+      // A leitura pública é tratada pela rota da API que verifica as datas de publicação/expiração.
+      allow read: if true; 
       allow write: if isOwner(request.resource.data.userId);
     }
     
@@ -27,10 +28,18 @@ service cloud.firestore {
     }
     
     match /pageViews/{viewId} {
-      // Allow anyone to create a page view (triggered by the public API route).
+      // Permite que qualquer um crie uma visualização de página (acionado pela rota pública da API).
       allow create: if true;
       
-      // Allow a user to read page views only if they own the page being referenced.
+      // Permite que um usuário leia as visualizações de página apenas se ele for o proprietário da página referenciada.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages/$(resource.data.pageId)).data.userId == request.auth.uid;
+    }
+
+    match /formSubmissions/{submissionId} {
+      // Permite que qualquer um crie uma submissão de formulário (acionado pela rota pública da API).
+      allow create: if true;
+
+      // Permite que um usuário leia as submissões apenas se ele for o proprietário da página referenciada.
       allow read: if request.auth != null && get(/databases/$(database)/documents/pages/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
   }

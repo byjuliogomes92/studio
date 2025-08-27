@@ -636,9 +636,11 @@ export function SettingsPanel({
         <div className="p-4 space-y-6">
           <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full">
             <AccordionItem value="page-settings">
-              <AccordionTrigger className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span>Configurações da Página</span>
+              <AccordionTrigger>
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span>Configurações da Página</span>
+                </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div className="space-y-2">
@@ -669,9 +671,11 @@ export function SettingsPanel({
             </AccordionItem>
             
             <AccordionItem value="components">
-              <AccordionTrigger className="flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4" />
-                <span>Componentes</span>
+              <AccordionTrigger>
+                 <div className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  <span>Componentes</span>
+                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <DndContext 
@@ -691,9 +695,11 @@ export function SettingsPanel({
 
             {selectedComponent && (
               <AccordionItem value="component-settings">
-                <AccordionTrigger className="flex items-center gap-2">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
                     <Code className="h-4 w-4" />
                     <span>Configurações de {selectedComponent.type}</span>
+                  </div>
                  </AccordionTrigger>
                 <AccordionContent className="pt-2">
                   <ComponentSettings
@@ -705,9 +711,11 @@ export function SettingsPanel({
             )}
 
             <AccordionItem value="styles">
-              <AccordionTrigger className="flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                <span>Estilos Globais</span>
+              <AccordionTrigger>
+                <div className="flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  <span>Estilos Globais</span>
+                </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div className="space-y-2">
@@ -784,9 +792,11 @@ export function SettingsPanel({
             </AccordionItem>
             
             <AccordionItem value="meta">
-              <AccordionTrigger className="flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                <span>Configurações, SEO & Pixels</span>
+              <AccordionTrigger>
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  <span>Configurações, SEO & Pixels</span>
+                </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div className="space-y-2">
@@ -917,9 +927,11 @@ export function SettingsPanel({
             </AccordionItem>
 
              <AccordionItem value="ampscript">
-                <AccordionTrigger className="flex items-center gap-2">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4" />
                     <span>AMPScript Personalizado</span>
+                  </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
                     <div className="space-y-2">
@@ -970,9 +982,11 @@ SET @name = AttributeValue("FirstName")
             </AccordionItem>
 
             <AccordionItem value="cookie-banner">
-                <AccordionTrigger className="flex items-center gap-2">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
                     <Cookie className="h-4 w-4"/>
                     <span>Banner de Cookies</span>
+                  </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
                     <div className="flex items-center justify-between">
@@ -1010,9 +1024,11 @@ SET @name = AttributeValue("FirstName")
             </AccordionItem>
 
             <AccordionItem value="security">
-                <AccordionTrigger className="flex items-center gap-2">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
                     <Lock className="h-4 w-4" />
                     <span>Segurança & Acesso</span>
+                  </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
                      <div className="space-y-2">
@@ -1061,9 +1077,11 @@ SET @name = AttributeValue("FirstName")
             </AccordionItem>
 
             <AccordionItem value="scheduling">
-                <AccordionTrigger className="flex items-center gap-2">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
                     <CalendarClock className="h-4 w-4" />
                     <span>Agendamento</span>
+                  </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
                     <div className="flex items-center justify-between">

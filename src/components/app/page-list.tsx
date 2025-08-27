@@ -4,10 +4,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Brand, Project, CloudPage, Template, PageView } from "@/lib/types";
+import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -44,7 +44,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Table,
@@ -55,7 +54,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
-import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject, getPageViews } from "@/lib/firestore";
+import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject, getPageViews, getFormSubmissions } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -94,20 +93,33 @@ interface MovePageDialogProps {
   currentProjectId: string;
 }
 
-function AnalyticsDashboard({ pageId }: { pageId: string }) {
+function AnalyticsDashboard({ page }: { page: CloudPage }) {
     const [views, setViews] = useState<PageView[]>([]);
+    const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     
     const fetchAnalyticsData = useCallback(() => {
         setIsRefreshing(true);
-        getPageViews(pageId)
-            .then(setViews)
+        const hasForm = page.components.some(c => c.type === 'Form');
+        
+        const promises = [getPageViews(page.id)];
+        if (hasForm) {
+            promises.push(getFormSubmissions(page.id) as any);
+        }
+
+        Promise.all(promises)
+            .then(([pageViews, formSubmissions]) => {
+                setViews(pageViews);
+                if (formSubmissions) {
+                    setSubmissions(formSubmissions);
+                }
+            })
             .finally(() => {
                 setLoading(false);
                 setIsRefreshing(false);
             });
-    }, [pageId]);
+    }, [page]);
 
     useEffect(() => {
         setLoading(true);
@@ -119,6 +131,27 @@ function AnalyticsDashboard({ pageId }: { pageId: string }) {
         const countries = new Set(views.map(v => v.country).filter(Boolean));
         return Array.from(countries);
     }, [views]);
+    
+    const downloadCSV = () => {
+        if (submissions.length === 0) return;
+
+        const headers = Object.keys(submissions[0].formData);
+        const csvRows = [
+            headers.join(','),
+            ...submissions.map(row => 
+                headers.map(header => JSON.stringify(row.formData[header] || '', (key, value) => value === null ? '' : value)).join(',')
+            )
+        ];
+
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join('\r\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `submissions_${page.id}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     if (loading) {
         return <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -132,53 +165,97 @@ function AnalyticsDashboard({ pageId }: { pageId: string }) {
                     Atualizar Dados
                 </Button>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total de Visualizações</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{totalViews}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Países Únicos</CardTitle>
-                        <Globe className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{uniqueCountries.length}</div>
-                    </CardContent>
-                </Card>
-            </div>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Acessos Recentes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                     <div className="relative w-full overflow-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Data</TableHead>
-                                    <TableHead>País</TableHead>
-                                    <TableHead>Cidade</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {views.slice(0, 10).map(view => (
-                                    <TableRow key={view.id}>
-                                        <TableCell>{view.timestamp?.toDate ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
-                                        <TableCell>{view.country || 'N/A'}</TableCell>
-                                        <TableCell>{view.city || 'N/A'}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                     </div>
-                </CardContent>
-            </Card>
+            <Tabs defaultValue="views">
+                <TabsList>
+                    <TabsTrigger value="views">Visualizações</TabsTrigger>
+                    {page.components.some(c => c.type === 'Form') && <TabsTrigger value="submissions">Submissões</TabsTrigger>}
+                </TabsList>
+                <TabsContent value="views" className="mt-4">
+                    <div className="grid gap-4 md:grid-cols-3 mb-6">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total de Visualizações</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{totalViews}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Países Únicos</CardTitle>
+                                <Globe className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{uniqueCountries.length}</div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Acessos Recentes</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="relative w-full overflow-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Data</TableHead>
+                                            <TableHead>País</TableHead>
+                                            <TableHead>Cidade</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {views.slice(0, 10).map(view => (
+                                            <TableRow key={view.id}>
+                                                <TableCell>{view.timestamp?.toDate ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
+                                                <TableCell>{view.country || 'N/A'}</TableCell>
+                                                <TableCell>{view.city || 'N/A'}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                             </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                {page.components.some(c => c.type === 'Form') && (
+                    <TabsContent value="submissions" className="mt-4">
+                        <Card>
+                             <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle>Submissões do Formulário</CardTitle>
+                                    <DialogDescription>{submissions.length} registros encontrados.</DialogDescription>
+                                </div>
+                                <Button onClick={downloadCSV} disabled={submissions.length === 0}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Exportar CSV
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="relative w-full overflow-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Data</TableHead>
+                                                 {submissions.length > 0 && Object.keys(submissions[0].formData).map(key => <TableHead key={key}>{key}</TableHead>)}
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {submissions.map(submission => (
+                                                <TableRow key={submission.id}>
+                                                    <TableCell>{submission.timestamp?.toDate ? format(submission.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
+                                                    {Object.keys(submissions[0].formData).map(key => <TableCell key={key}>{submission.formData[key]}</TableCell>)}
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
+            </Tabs>
         </div>
     );
 }
@@ -278,6 +355,7 @@ export function PageList({ projectId }: PageListProps) {
   const [pageToNavigate, setPageToNavigate] = useState<string | null>(null);
 
   const selectedPageId = searchParams.get('page');
+  const selectedPage = useMemo(() => pages.find(p => p.id === selectedPageId), [pages, selectedPageId]);
 
 
   const fetchProjectData = async () => {
@@ -687,7 +765,7 @@ export function PageList({ projectId }: PageListProps) {
                             ))}
                         </SelectContent>
                     </Select>
-                     {selectedPageId && <AnalyticsDashboard pageId={selectedPageId} />}
+                     {selectedPage && <AnalyticsDashboard page={selectedPage} />}
                 </TabsContent>
             </Tabs>
         </main>
@@ -711,5 +789,3 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
-
-

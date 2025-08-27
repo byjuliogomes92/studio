@@ -1,4 +1,5 @@
 
+
 export type ComponentType =
   | 'Header'
   | 'Banner'
@@ -162,4 +163,11 @@ export interface PageView {
   country?: string;
   city?: string;
   userAgent?: string;
+}
+
+export interface FormSubmission {
+    id?: string;
+    pageId: string;
+    timestamp: any;
+    formData: { [key: string]: any };
 }

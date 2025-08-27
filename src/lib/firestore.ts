@@ -2,7 +2,7 @@
 
 import { getDb } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc } from "firebase/firestore";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -292,6 +292,35 @@ const getPageViews = async (pageId: string): Promise<PageView[]> => {
 };
 
 
+const logFormSubmission = async (pageId: string, formData: { [key: string]: any }): Promise<void> => {
+    const db = getDbInstance();
+
+    const submissionData: Omit<FormSubmission, 'id'> = {
+        pageId,
+        formData,
+        timestamp: serverTimestamp(),
+    };
+
+    try {
+        await addDoc(collection(db, 'formSubmissions'), submissionData);
+    } catch (e) {
+        console.error("Failed to log form submission:", e);
+        // We don't re-throw, as this is a background/backup task.
+    }
+};
+
+const getFormSubmissions = async (pageId: string): Promise<FormSubmission[]> => {
+    const db = getDbInstance();
+    const q = query(
+        collection(db, 'formSubmissions'),
+        where('pageId', '==', pageId),
+        orderBy('timestamp', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FormSubmission));
+};
+
+
 export {
     addProject,
     updateProject,
@@ -314,4 +343,6 @@ export {
     updateUserProgress,
     logPageView,
     getPageViews,
+    logFormSubmission,
+    getFormSubmissions,
 };

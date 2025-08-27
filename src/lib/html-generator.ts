@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType } from './types';
 
 
@@ -617,7 +618,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
 
         const formHtml = `
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-              <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
+              <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%" data-page-id="${pageState.id}">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
                    <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
@@ -1100,6 +1101,29 @@ const getClientSideScripts = () => {
       return valid;
     }
 
+    async function backupSubmission(form) {
+        const pageId = form.dataset.pageId;
+        if (!pageId) return;
+
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => {
+            if (!key.startsWith('__')) { // Don't backup private fields
+                data[key] = value;
+            }
+        });
+        
+        try {
+            await fetch(\`/api/submit/\${pageId}\`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+        } catch (error) {
+            console.error('Failed to backup form submission:', error);
+        }
+    }
+
     function setupSubmitButton() {
         document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
             const submitButton = form.querySelector('button[type="submit"]');
@@ -1128,6 +1152,9 @@ const getClientSideScripts = () => {
                      const loader = submitButton.querySelector('.button-loader');
                      if (textSpan) textSpan.style.opacity = '0';
                      if (loader) loader.style.display = 'block';
+                     
+                     // Backup submission in the background
+                     backupSubmission(form);
                    }
                 }
             });

@@ -664,6 +664,40 @@ export function SettingsPanel({
                 </div>
               </AccordionContent>
             </AccordionItem>
+            
+            <AccordionItem value="components">
+              <AccordionTrigger>Componentes</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <DndContext 
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                    <SortableContext items={pageState.components.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-2">
+                          {renderComponents(null)}
+                      </div>
+                    </SortableContext>
+                </DndContext>
+                <AddComponentDialog onAddComponent={(type) => addComponent(type)} />
+              </AccordionContent>
+            </AccordionItem>
+
+            {selectedComponent && (
+              <AccordionItem value="component-settings">
+                <AccordionTrigger className="flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    <span>Configurações de {selectedComponent.type}</span>
+                 </AccordionTrigger>
+                <AccordionContent className="pt-2">
+                  <ComponentSettings
+                    component={selectedComponent}
+                    onComponentChange={onComponentChange}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
             <AccordionItem value="styles">
               <AccordionTrigger>Estilos Globais</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
@@ -739,127 +773,7 @@ export function SettingsPanel({
                 </div>
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="components">
-              <AccordionTrigger>Componentes</AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <DndContext 
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                    <SortableContext items={pageState.components.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-2">
-                          {renderComponents(null)}
-                      </div>
-                    </SortableContext>
-                </DndContext>
-                <AddComponentDialog onAddComponent={(type) => addComponent(type)} />
-              </AccordionContent>
-            </AccordionItem>
-            {selectedComponent && (
-              <AccordionItem value="component-settings">
-                <AccordionTrigger className="flex items-center gap-2">
-                    <Code className="h-4 w-4" />
-                    <span>Configurações de {selectedComponent.type}</span>
-                 </AccordionTrigger>
-                <AccordionContent className="pt-2">
-                  <ComponentSettings
-                    component={selectedComponent}
-                    onComponentChange={onComponentChange}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            )}
-             <AccordionItem value="scheduling">
-                <AccordionTrigger className="flex items-center gap-2">
-                    <CalendarClock className="h-4 w-4" />
-                    <span>Agendamento</span>
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="scheduling-enabled">Ativar Agendamento</Label>
-                        <Switch
-                            id="scheduling-enabled"
-                            checked={isSchedulingEnabled}
-                            onCheckedChange={toggleScheduling}
-                        />
-                    </div>
-                    {isSchedulingEnabled && (
-                        <div className="space-y-4 pt-4 border-t">
-                            <div className="space-y-2">
-                                <Label htmlFor="publish-date">Data de Publicação</Label>
-                                <Input
-                                    id="publish-date"
-                                    type="datetime-local"
-                                    value={toDatetimeLocal(pageState.publishDate)}
-                                    onChange={(e) => handleScheduleChange('publishDate', e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="expiry-date">Data de Expiração</Label>
-                                <Input
-                                    id="expiry-date"
-                                    type="datetime-local"
-                                    value={toDatetimeLocal(pageState.expiryDate)}
-                                    onChange={(e) => handleScheduleChange('expiryDate', e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    )}
-                </AccordionContent>
-            </AccordionItem>
-             <AccordionItem value="ampscript">
-                <AccordionTrigger className="flex items-center gap-2">
-                    <Zap className="h-4 w-4" />
-                    <span>AMPScript Personalizado</span>
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-1.5">
-                           <div className="flex items-center gap-1.5">
-                                <Label htmlFor="custom-ampscript">Código AMPScript</Label>
-                                <Tooltip>
-                                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                                    <TooltipContent>
-                                        <div className="max-w-xs">
-                                            <p>Adicione seu código AMPScript aqui. Ele será executado no topo da página.</p>
-                                            <p className="mt-2"><b>Exemplo:</b></p>
-                                            <pre className="text-xs bg-muted p-2 rounded-md mt-1">
-                                                {`%%[
-VAR @name
-SET @name = AttributeValue("FirstName")
-]%%`}
-                                            </pre>
-                                            <p className="mt-2">Então use `%%=v(@name)=%%` no HTML de um componente.</p>
-                                        </div>
-                                    </TooltipContent>
-                                </Tooltip>
-                           </div>
-                           <Dialog open={isAmpscriptDialogOpen} onOpenChange={setIsAmpscriptDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        <Bot className="mr-2 h-4 w-4" />
-                                        Adicionar Automação
-                                    </Button>
-                                </DialogTrigger>
-                                <AmpscriptSnippetDialog 
-                                    currentCode={pageState.meta.customAmpscript || ''}
-                                    onCodeChange={handleAmpscriptChange}
-                                    onClose={() => setIsAmpscriptDialogOpen(false)}
-                                />
-                           </Dialog>
-                        </div>
-                        <Textarea 
-                            id="custom-ampscript"
-                            value={pageState.meta.customAmpscript || ''}
-                            onChange={(e) => handleMetaChange('customAmpscript', e.target.value)}
-                            placeholder={'%%[ \n\n ]%%'}
-                            rows={10}
-                            className="font-mono text-xs"
-                        />
-                    </div>
-                </AccordionContent>
-            </AccordionItem>
+            
             <AccordionItem value="meta">
               <AccordionTrigger>Configurações, SEO & Pixels</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
@@ -989,7 +903,99 @@ SET @name = AttributeValue("FirstName")
                 </div>
               </AccordionContent>
             </AccordionItem>
-             <AccordionItem value="security">
+
+             <AccordionItem value="ampscript">
+                <AccordionTrigger className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    <span>AMPScript Personalizado</span>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-1.5">
+                           <div className="flex items-center gap-1.5">
+                                <Label htmlFor="custom-ampscript">Código AMPScript</Label>
+                                <Tooltip>
+                                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                                    <TooltipContent>
+                                        <div className="max-w-xs">
+                                            <p>Adicione seu código AMPScript aqui. Ele será executado no topo da página.</p>
+                                            <p className="mt-2"><b>Exemplo:</b></p>
+                                            <pre className="text-xs bg-muted p-2 rounded-md mt-1">
+                                                {`%%[
+VAR @name
+SET @name = AttributeValue("FirstName")
+]%%`}
+                                            </pre>
+                                            <p className="mt-2">Então use `%%=v(@name)=%%` no HTML de um componente.</p>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                           </div>
+                           <Dialog open={isAmpscriptDialogOpen} onOpenChange={setIsAmpscriptDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Bot className="mr-2 h-4 w-4" />
+                                        Adicionar Automação
+                                    </Button>
+                                </DialogTrigger>
+                                <AmpscriptSnippetDialog 
+                                    currentCode={pageState.meta.customAmpscript || ''}
+                                    onCodeChange={handleAmpscriptChange}
+                                    onClose={() => setIsAmpscriptDialogOpen(false)}
+                                />
+                           </Dialog>
+                        </div>
+                        <Textarea 
+                            id="custom-ampscript"
+                            value={pageState.meta.customAmpscript || ''}
+                            onChange={(e) => handleMetaChange('customAmpscript', e.target.value)}
+                            placeholder={'%%[ \n\n ]%%'}
+                            rows={10}
+                            className="font-mono text-xs"
+                        />
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="cookie-banner">
+                <AccordionTrigger>Banner de Cookies</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="cookie-enabled" className="flex items-center gap-2">
+                            <Cookie className="h-4 w-4"/>
+                            Ativar Banner de Cookies
+                        </Label>
+                        <Switch
+                            id="cookie-enabled"
+                            checked={cookieBanner?.enabled || false}
+                            onCheckedChange={(checked) => handleCookieBannerChange('enabled', checked)}
+                        />
+                    </div>
+                    {cookieBanner?.enabled && (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="cookie-text">Texto do Banner</Label>
+                                <Textarea
+                                    id="cookie-text"
+                                    value={cookieBanner.text}
+                                    onChange={(e) => handleCookieBannerChange('text', e.target.value)}
+                                    rows={5}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cookie-button-text">Texto do Botão</Label>
+                                <Input
+                                    id="cookie-button-text"
+                                    value={cookieBanner.buttonText}
+                                    onChange={(e) => handleCookieBannerChange('buttonText', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="security">
                 <AccordionTrigger>Segurança & Acesso</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
                      <div className="space-y-2">
@@ -1036,43 +1042,46 @@ SET @name = AttributeValue("FirstName")
 
                 </AccordionContent>
             </AccordionItem>
-             <AccordionItem value="cookie-banner">
-                <AccordionTrigger>Banner de Cookies</AccordionTrigger>
+
+            <AccordionItem value="scheduling">
+                <AccordionTrigger className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4" />
+                    <span>Agendamento</span>
+                </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
                     <div className="flex items-center justify-between">
-                        <Label htmlFor="cookie-enabled" className="flex items-center gap-2">
-                            <Cookie className="h-4 w-4"/>
-                            Ativar Banner de Cookies
-                        </Label>
+                        <Label htmlFor="scheduling-enabled">Ativar Agendamento</Label>
                         <Switch
-                            id="cookie-enabled"
-                            checked={cookieBanner?.enabled || false}
-                            onCheckedChange={(checked) => handleCookieBannerChange('enabled', checked)}
+                            id="scheduling-enabled"
+                            checked={isSchedulingEnabled}
+                            onCheckedChange={toggleScheduling}
                         />
                     </div>
-                    {cookieBanner?.enabled && (
-                        <div className="space-y-4">
+                    {isSchedulingEnabled && (
+                        <div className="space-y-4 pt-4 border-t">
                             <div className="space-y-2">
-                                <Label htmlFor="cookie-text">Texto do Banner</Label>
-                                <Textarea
-                                    id="cookie-text"
-                                    value={cookieBanner.text}
-                                    onChange={(e) => handleCookieBannerChange('text', e.target.value)}
-                                    rows={5}
+                                <Label htmlFor="publish-date">Data de Publicação</Label>
+                                <Input
+                                    id="publish-date"
+                                    type="datetime-local"
+                                    value={toDatetimeLocal(pageState.publishDate)}
+                                    onChange={(e) => handleScheduleChange('publishDate', e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="cookie-button-text">Texto do Botão</Label>
+                                <Label htmlFor="expiry-date">Data de Expiração</Label>
                                 <Input
-                                    id="cookie-button-text"
-                                    value={cookieBanner.buttonText}
-                                    onChange={(e) => handleCookieBannerChange('buttonText', e.target.value)}
+                                    id="expiry-date"
+                                    type="datetime-local"
+                                    value={toDatetimeLocal(pageState.expiryDate)}
+                                    onChange={(e) => handleScheduleChange('expiryDate', e.target.value)}
                                 />
                             </div>
                         </div>
                     )}
                 </AccordionContent>
             </AccordionItem>
+
           </Accordion>
         </div>
       </TooltipProvider>

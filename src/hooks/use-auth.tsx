@@ -10,6 +10,7 @@ import { Logo } from '@/components/icons';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isGoogleAuthEnabled: boolean;
   login: (email: string, password: string) => Promise<any>;
   signup: (email: string, password: string) => Promise<any>;
   loginWithGoogle: () => Promise<any>;
@@ -24,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [auth, setAuth] = useState<Auth | null>(null);
+  const [isGoogleAuthEnabled, setIsGoogleAuthEnabled] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -31,6 +33,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window !== 'undefined') {
       const authInstance = getAuth(app);
       setAuth(authInstance);
+
+      // Check if the current hostname is the production one.
+      setIsGoogleAuthEnabled(window.location.hostname === 'cloudpagestudio.vercel.app');
 
       const unsubscribe = onAuthStateChanged(authInstance, (user) => {
         setUser(user);
@@ -62,6 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loginWithGoogle = () => {
     if (!auth) return Promise.reject(new Error("Firebase Auth not initialized"));
+    if (!isGoogleAuthEnabled) return Promise.reject(new Error("Google Auth is not enabled for this domain."));
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider);
   };
@@ -75,6 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     loading,
+    isGoogleAuthEnabled,
     login,
     signup,
     loginWithGoogle,

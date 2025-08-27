@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { Logo } from "@/components/icons";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -46,7 +47,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, isGoogleAuthEnabled } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -84,6 +85,19 @@ export default function LoginPage() {
         setIsLoading(false);
     }
   }
+
+  const googleButton = (
+    <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || !isGoogleAuthEnabled}>
+        {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+            <>
+                <GoogleIcon className="mr-2 h-5 w-5" />
+                Login com Google
+            </>
+        )}
+    </Button>
+  );
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
@@ -137,16 +151,18 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
-                {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <>
-                        <GoogleIcon className="mr-2 h-5 w-5" />
-                        Login com Google
-                    </>
-                )}
-            </Button>
+            {isGoogleAuthEnabled ? googleButton : (
+              <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-full">{googleButton}</div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Disponível no ambiente de produção.</p>
+                    </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
 
           <div className="mt-4 text-center text-sm">

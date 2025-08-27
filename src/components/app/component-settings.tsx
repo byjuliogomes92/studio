@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { produce } from 'immer';
 import { generateText } from "@/ai/flows/text-generator";
 import { useToast } from "@/hooks/use-toast";
+import Lottie from 'lottie-react';
 import {
   Dialog,
   DialogContent,
@@ -440,6 +441,39 @@ function CustomFieldsManager({ fields, onPropChange }: { fields: CustomFormField
         </div>
     );
 }
+
+const animationUrls = {
+    confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
+    success: 'https://assets3.lottiefiles.com/packages/lf20_jbrw3h.json',
+    rocket: 'https://assets6.lottiefiles.com/packages/lf20_p8mar2.json',
+};
+
+function AnimationPreview({ animation }: { animation: keyof typeof animationUrls | 'none' | '' }) {
+    const [animationData, setAnimationData] = useState(null);
+
+    useEffect(() => {
+        if (animation && animationUrls[animation as keyof typeof animationUrls]) {
+            fetch(animationUrls[animation as keyof typeof animationUrls])
+                .then(response => response.json())
+                .then(data => setAnimationData(data));
+        } else {
+            setAnimationData(null);
+        }
+    }, [animation]);
+
+    if (!animationData) {
+        return null;
+    }
+
+    return (
+        <div className="mt-4 p-4 border rounded-md bg-muted/40 flex justify-center items-center">
+            <div className="w-32 h-32">
+                 <Lottie animationData={animationData} loop={true} />
+            </div>
+        </div>
+    );
+}
+
 
 const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
     switch (type) {
@@ -977,7 +1011,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </div>
                         <div className="space-y-2">
                             <Label>Ícone</Label>
-                            <Select value={props.buttonProps?.icon || 'none'} onValueChange={(value) => onSubPropChange('buttonProps', 'icon', value === 'none' ? '' : value)}>
+                            <Select value={props.buttonProps?.icon || 'none'} onValueChange={(value) => onSubPropChange('buttonProps', 'icon', value)}>
                                 <SelectTrigger><SelectValue placeholder="Sem ícone"/></SelectTrigger>
                                 <SelectContent>
                                     {lucideIcons.map(icon => <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>)}
@@ -1053,6 +1087,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                       <SelectItem value="rocket">Foguete</SelectItem>
                     </SelectContent>
                   </Select>
+                  <AnimationPreview animation={props.thankYouAnimation || 'none'} />
                 </div>
               </div>
             );

@@ -618,18 +618,6 @@ export function SettingsPanel({
     });
   };
 
-  const tracking = pageState.meta.tracking;
-  const cookieBanner = pageState.cookieBanner;
-  const security = pageState.meta.security || { type: 'none' };
-  
-    const toDatetimeLocal = (date: any) => {
-        if (!date) return '';
-        const d = date.toDate ? date.toDate() : new Date(date);
-        const pad = (num: number) => num.toString().padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
-
-
   const renderComponents = (parentId: string | null) => {
     const componentsToRender = pageState.components
       .filter(c => c.parentId === parentId)
@@ -691,6 +679,18 @@ export function SettingsPanel({
     );
   };
 
+  const tracking = pageState.meta.tracking;
+  const cookieBanner = pageState.cookieBanner;
+  const security = pageState.meta.security || { type: 'none' };
+  
+    const toDatetimeLocal = (date: any) => {
+        if (!date) return '';
+        const d = date.toDate ? date.toDate() : new Date(date);
+        const pad = (num: number) => num.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+
     return (
     <ScrollArea className="h-full">
       <TooltipProvider>
@@ -724,7 +724,7 @@ export function SettingsPanel({
                     </div>
                   <div className="flex flex-wrap items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
                       {(pageState.tags || []).map(tag => (
-                        <Badge key={tag} variant="tag" className={cn(getTagColor(tag))}>
+                        <div key={tag} className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold", getTagColor(tag))}>
                           {tag}
                           <button
                             onClick={() => removeTag(tag)}
@@ -732,7 +732,7 @@ export function SettingsPanel({
                           >
                             <X className="h-3 w-3" />
                           </button>
-                        </Badge>
+                        </div>
                       ))}
                       <Input
                         id="page-tags-input"

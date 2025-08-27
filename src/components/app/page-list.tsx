@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -62,7 +61,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { format } from 'date-fns';
 import { CreatePageFromTemplateDialog } from "./create-page-from-template-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PageListProps {
   projectId: string;
@@ -226,7 +225,7 @@ function AnalyticsDashboard({ page }: { page: CloudPage }) {
                              <CardHeader className="flex flex-row items-center justify-between">
                                 <div>
                                     <CardTitle>Submissões do Formulário</CardTitle>
-                                    <DialogDescription>{submissions.length} registros encontrados.</DialogDescription>
+                                    <CardDescription>{submissions.length} registros encontrados.</CardDescription>
                                 </div>
                                 <Button onClick={downloadCSV} disabled={submissions.length === 0}>
                                     <Download className="mr-2 h-4 w-4" />
@@ -790,3 +789,5 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
+    

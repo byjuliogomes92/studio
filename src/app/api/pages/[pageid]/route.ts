@@ -22,9 +22,9 @@ export async function GET(
       return new NextResponse('Page not found', { status: 404 });
     }
     
-    // The previous logic for `isPreview` was flawed because the Marketing Cloud
-    // HTTPGet function does not forward URL parameters. We will now log every hit
-    // to this endpoint. Previews from the editor will be handled separately.
+    // The previous logic for `isPreview` was flawed.
+    // The most reliable way to track views is to log every hit to this endpoint,
+    // as it's primarily called by the MC proxy. Previews from the editor will be handled separately if needed.
     logPageView(pageData, request.headers).catch(console.error);
 
     const htmlContent = generateHtml(pageData, false);

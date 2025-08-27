@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig } from "@/lib/types";
@@ -900,7 +898,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                             <Select value={props.buttonProps?.icon || ''} onValueChange={(value) => onSubPropChange('buttonProps', 'icon', value)}>
                                 <SelectTrigger><SelectValue placeholder="Sem ícone"/></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Sem ícone</SelectItem>
+                                    <SelectItem value="none">Sem ícone</SelectItem>
                                     {lucideIcons.map(icon => <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
@@ -1359,4 +1357,5 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
   )
 }
 
+    
     

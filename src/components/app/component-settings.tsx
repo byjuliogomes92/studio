@@ -665,6 +665,33 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </SelectContent>
                     </Select>
                 </div>
+                <Separator />
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="conditional-display" className="font-semibold">Exibição Condicional</Label>
+                        <Switch
+                            id="conditional-display"
+                            checked={props.conditionalDisplay?.enabled || false}
+                            onCheckedChange={(checked) => onSubPropChange('conditionalDisplay', 'enabled', checked)}
+                        />
+                    </div>
+                    {props.conditionalDisplay?.enabled && (
+                        <div className="space-y-2">
+                            <Label htmlFor="conditional-trigger">Gatilho de Exibição</Label>
+                            <Select 
+                                value={props.conditionalDisplay?.trigger || 'form_submission'}
+                                onValueChange={(value) => onSubPropChange('conditionalDisplay', 'trigger', value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="form_submission">Após envio de formulário</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                </div>
             </div>
         );
         case "Form": {

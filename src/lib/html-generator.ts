@@ -188,14 +188,21 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         return `<div style="height: ${component.props.height || 20}px; ${styleString}"></div>`;
     case 'Button':
          return `<div style="text-align: ${component.props.align || 'center'}; ${styleString}"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
-    case 'DownloadButton':
-        const { text = 'Download', fileUrl = '', fileName = '', align = 'center' } = component.props;
+    case 'DownloadButton': {
+        const { text = 'Download', fileUrl = '', fileName = '', align = 'center', conditionalDisplay } = component.props;
+        const containerId = `download-container-${component.id}`;
         const buttonId = `download-btn-${component.id}`;
+        
+        const isConditional = conditionalDisplay?.enabled && conditionalDisplay?.trigger === 'form_submission';
+        const containerStyle = isConditional ? 'display: none;' : '';
+
         return `
-            <div style="text-align: ${align}; ${styleString}">
-                <button id="${buttonId}" class="custom-button">${text}</button>
-                <div id="progress-container-${component.id}" class="progress-container" style="display: none;">
-                    <div id="progress-bar-${component.id}" class="progress-bar"></div>
+            <div id="${containerId}" class="download-component-container" style="${containerStyle}">
+                <div style="text-align: ${align}; ${styleString}">
+                    <button id="${buttonId}" class="custom-button">${text}</button>
+                    <div id="progress-container-${component.id}" class="progress-container" style="display: none;">
+                        <div id="progress-bar-${component.id}" class="progress-bar"></div>
+                    </div>
                 </div>
             </div>
             <script>
@@ -272,6 +279,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                 });
             })();
             </script>`;
+    }
     case 'Accordion': {
         const items = component.props.items || [];
         const itemsHtml = items
@@ -1091,6 +1099,14 @@ const getClientSideScripts = () => {
         });
     }
 
+    function handleSuccessfulFormSubmission() {
+        // Show conditional download buttons
+        document.querySelectorAll('.download-component-container[style*="display: none"]').forEach(container => {
+             // A simple check to see if it's conditional. Could be made more robust with data-attributes.
+            container.style.display = 'block';
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
         if (loader) {
@@ -1099,12 +1115,14 @@ const getClientSideScripts = () => {
             }, 2000);
         }
 
-        if ("%%=v(@showThanks)=%%" == "true" && document.querySelector('.form-container')) {
-            var formId = document.querySelector('.form-container').id.replace('form-wrapper-', '');
-            var formWrapper = document.getElementById('form-wrapper-' + formId);
-            var thanksMessage = document.getElementById('thank-you-message-' + formId);
-            if(formWrapper) formWrapper.style.display = 'none';
-            if(thanksMessage) thanksMessage.style.display = 'block';
+        if ("%%=v(@showThanks)=%%" == "true") {
+             document.querySelectorAll('.form-container').forEach(formWrapper => {
+                formWrapper.style.display = 'none';
+             });
+             document.querySelectorAll('.thank-you-message').forEach(thanksMsg => {
+                thanksMsg.style.display = 'block';
+             });
+             handleSuccessfulFormSubmission();
         }
         
         const phoneInput = document.getElementById('TELEFONE');

@@ -40,11 +40,11 @@ interface CreatePageFromTemplateDialogProps {
 
 const platforms = [
     { id: 'sfmc', name: 'Salesforce Marketing Cloud', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg', enabled: true },
-    { id: 'hubspot', name: 'Hubspot', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQaiGdt7Tc8yPQBNLCziu42svnD5P_67RkA6A&s', enabled: false },
-    { id: 'rdstation', name: 'RD Station', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTyMOGMo3Bd9ZCr9q33wU9FD1_FtS016e0-8g&s', enabled: false },
+    { id: 'hubspot', name: 'Hubspot', logo: 'https://cronic.com.br/wp-content/uploads/2021/11/hubspot.png', enabled: false },
+    { id: 'rdstation', name: 'RD Station', logo: 'https://gleybionycamargo.com.br/wp-content/uploads/2022/10/logo-rd-branca.png', enabled: false },
     { id: 'braze', name: 'Braze', logo: 'https://cdn.prod.website-files.com/616f0a7a027baab453433911/680fe9f825f815d39843558e_Braze_Logo_Light%20(1).svg', enabled: false },
     { id: 'klaviyo', name: 'Klaviyo', logo: 'https://cdn.prod.website-files.com/616f0a7a027baab453433911/657263261463fe4fc816b96e_klaviyo-logo-horizontal-white.svg', enabled: false },
-    { id: 'web', name: 'Web', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSuuObIRXCvsvQMnRSbbcIpN8wygJdigtopCg&s', enabled: false },
+    { id: 'web', name: 'Web', logo: 'https://cdn.worldvectorlogo.com/logos/internet-3.svg', enabled: false },
 ];
 
 const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {

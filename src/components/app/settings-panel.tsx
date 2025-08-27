@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -34,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { cn } from "@/lib/utils";
 import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
 import { Dialog, DialogTrigger } from "../ui/dialog";
+import { Badge } from "../ui/badge";
 
 
 interface SettingsPanelProps {
@@ -83,6 +84,24 @@ const googleFonts = [
     "Nunito",
     "Merriweather",
 ];
+
+const tagColors = [
+  'bg-blue-100 text-blue-800 border-blue-400',
+  'bg-green-100 text-green-800 border-green-400',
+  'bg-yellow-100 text-yellow-800 border-yellow-400',
+  'bg-purple-100 text-purple-800 border-purple-400',
+  'bg-pink-100 text-pink-800 border-pink-400',
+  'bg-red-100 text-red-800 border-red-400',
+  'bg-indigo-100 text-indigo-800 border-indigo-400',
+];
+
+const getTagColor = (tag: string) => {
+    let hash = 0;
+    for (let i = 0; i < tag.length; i++) {
+        hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return tagColors[Math.abs(hash) % tagColors.length];
+};
 
 function SortableItem({ component, children }: { component: PageComponent; children: React.ReactNode }) {
   const {
@@ -207,6 +226,7 @@ export function SettingsPanel({
 
   const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
   const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState.publishDate || !!pageState.expiryDate);
+  const [tagInput, setTagInput] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -215,9 +235,25 @@ export function SettingsPanel({
     })
   );
   
-  const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
-    setPageState(prev => prev ? ({ ...prev, tags }) : null);
+  const handleTagChange = (newTags: string[]) => {
+    setPageState(prev => (prev ? { ...prev, tags: newTags } : null));
+  };
+  
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ',' || e.key === 'Enter') {
+      e.preventDefault();
+      const newTag = tagInput.trim();
+      if (newTag && !pageState.tags?.includes(newTag)) {
+        handleTagChange([...(pageState.tags || []), newTag]);
+      }
+      setTagInput('');
+    } else if (e.key === 'Backspace' && tagInput === '' && pageState.tags?.length) {
+      handleTagChange(pageState.tags.slice(0, -1));
+    }
+  };
+  
+  const removeTag = (tagToRemove: string) => {
+    handleTagChange((pageState.tags || []).filter(tag => tag !== tagToRemove));
   };
 
   const handleStyleChange = (prop: keyof CloudPage["styles"], value: string) => {
@@ -683,15 +719,30 @@ export function SettingsPanel({
                         <Label htmlFor="page-tags">Tags</Label>
                         <Tooltip>
                             <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                            <TooltipContent><p>Separe as tags por vírgulas (ex: Brasil, Latam, CF).</p></TooltipContent>
+                            <TooltipContent><p>Use vírgula ou Enter para adicionar tags.</p></TooltipContent>
                         </Tooltip>
                     </div>
-                  <Input
-                    id="page-tags"
-                    value={(pageState.tags || []).join(', ')}
-                    onChange={handleTagChange}
-                    placeholder="Ex: Brasil, Latam, CF"
-                  />
+                  <div className="flex flex-wrap items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
+                      {(pageState.tags || []).map(tag => (
+                        <Badge key={tag} variant="tag" className={cn(getTagColor(tag))}>
+                          {tag}
+                          <button
+                            onClick={() => removeTag(tag)}
+                            className="ml-1 rounded-full p-0.5 hover:bg-black/10"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                      <Input
+                        id="page-tags-input"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={handleTagInputKeyDown}
+                        placeholder={pageState.tags?.length ? '' : "Ex: Brasil, Latam"}
+                        className="h-auto flex-1 border-none bg-transparent p-0 shadow-none focus-visible:ring-0"
+                      />
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>

@@ -599,8 +599,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         
         const animationUrls = {
             confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
-            success: 'https://assets3.lottiefiles.com/packages/lf20_jbrw3h.json',
-            rocket: 'https://assets6.lottiefiles.com/packages/lf20_p8mar2.json',
         };
         const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
 
@@ -2060,4 +2058,4 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
+`

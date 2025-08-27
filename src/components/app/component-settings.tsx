@@ -444,8 +444,6 @@ function CustomFieldsManager({ fields, onPropChange }: { fields: CustomFormField
 
 const animationUrls = {
     confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
-    success: 'https://assets3.lottiefiles.com/packages/lf20_jbrw3h.json',
-    rocket: 'https://assets6.lottiefiles.com/packages/lf20_p8mar2.json',
 };
 
 function AnimationPreview({ animation }: { animation: keyof typeof animationUrls | 'none' | '' }) {
@@ -1092,8 +1090,6 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     <SelectContent>
                       <SelectItem value="none">Nenhuma</SelectItem>
                       <SelectItem value="confetti">Confete</SelectItem>
-                      <SelectItem value="success">Sucesso (Checkmark)</SelectItem>
-                      <SelectItem value="rocket">Foguete</SelectItem>
                     </SelectContent>
                   </Select>
                   <AnimationPreview animation={props.thankYouAnimation || 'none'} />

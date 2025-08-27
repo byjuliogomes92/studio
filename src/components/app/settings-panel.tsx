@@ -149,42 +149,42 @@ function ComponentItem({
 
   const content = (
       <div className={cn(
-        "flex items-center gap-1 group bg-card p-1 rounded-md border", 
-        isContainer && "flex-col items-stretch"
+        "group bg-card p-1 rounded-md border",
+        isContainer ? "flex flex-col items-stretch gap-1.5" : "flex items-center gap-1"
       )}>
-          <div className="flex items-center w-full">
-            <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8">
+          <div className="flex items-center min-w-0"> {/* Allow shrinking */}
+            <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8 flex-shrink-0">
                 <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
             </Button>
             <Button
                 variant={selectedComponentId === component.id ? "secondary" : "ghost"}
-                className="flex-grow justify-start h-8"
+                className="flex-grow justify-start h-8 min-w-0 px-2"
                 onClick={() => setSelectedComponentId(component.id)}
             >
-                <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                <span className="truncate">{component.type}</span>
-                {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
+                <div className="flex items-center gap-2 truncate">
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{component.type}</span>
+                  {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />}
                 </div>
             </Button>
             <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-destructive/80 hover:text-destructive opacity-0 group-hover:opacity-100"
+                className="h-8 w-8 text-destructive/80 hover:text-destructive opacity-0 group-hover:opacity-100 flex-shrink-0"
                 onClick={() => removeComponent(component.id)}
             >
                 <Trash2 className="h-4 w-4" />
             </Button>
           </div>
           {isContainer && children && (
-            <div className="w-full pl-1">
+            <div className="w-full">
                 {children}
             </div>
           )}
       </div>
   );
 
-  return isContainer ? <div className="bg-background/50 p-1.5 rounded-lg border-l-4 border-transparent">{content}</div> : content;
+  return isContainer ? <div className="bg-background/50 p-1.5 rounded-lg border-l-2 border-transparent">{content}</div> : content;
 }
 
 

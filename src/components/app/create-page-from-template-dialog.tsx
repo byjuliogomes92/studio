@@ -389,8 +389,9 @@ export function CreatePageFromTemplateDialog({
                                         key={platform.id}
                                         htmlFor={`platform-${platform.id}`}
                                         className={cn(
-                                            "flex flex-col items-center justify-center gap-2 border-2 rounded-lg p-3 cursor-pointer hover:border-primary has-[:checked]:border-primary",
-                                            !platform.enabled && "cursor-not-allowed"
+                                            "flex flex-col items-center justify-center gap-2 border-2 rounded-lg p-3 transition-all",
+                                            platform.enabled ? "cursor-pointer hover:border-primary" : "cursor-not-allowed",
+                                            selectedPlatform === platform.id && "border-primary"
                                         )}
                                     >
                                         <RadioGroupItem value={platform.id} id={`platform-${platform.id}`} className="sr-only" disabled={!platform.enabled} />
@@ -400,7 +401,6 @@ export function CreatePageFromTemplateDialog({
                                           className={cn(
                                             "h-10 object-contain transition-opacity",
                                             selectedPlatform === platform.id ? "opacity-100" : "opacity-40",
-                                            platform.enabled && "group-hover:opacity-100",
                                             !platform.enabled && "opacity-20"
                                           )}
                                         />

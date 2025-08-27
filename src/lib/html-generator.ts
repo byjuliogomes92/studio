@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType } from './types';
 
 
@@ -595,9 +594,21 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage, buttonProps = {}, customFields = [] } = component.props;
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
         const { meta } = pageState;
-        const thankYouHtml = `<div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">${thankYouMessage}</div>`;
+        
+        const animationUrls = {
+            confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
+            success: 'https://assets3.lottiefiles.com/packages/lf20_jbrw3h.json',
+            rocket: 'https://assets6.lottiefiles.com/packages/lf20_p8mar2.json',
+        };
+        const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
+
+        const thankYouHtml = `
+            <div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none; text-align: center;">
+                ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
+                <div class="thank-you-text">${thankYouMessage || ''}</div>
+            </div>`;
         
         const lucideIconSvgs: Record<string, string> = {
             none: '',
@@ -964,8 +975,12 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
     return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
 }
 
-const getClientSideScripts = () => {
+const getClientSideScripts = (pageState: CloudPage) => {
+    const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
+    const lottieScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
+
     return `
+    ${lottieScript}
     <script>
     function setupAccordions() {
         document.querySelectorAll('.accordion-container').forEach(container => {
@@ -1211,6 +1226,11 @@ const getClientSideScripts = () => {
              // A simple check to see if it's conditional. Could be made more robust with data-attributes.
             container.style.display = 'block';
         });
+
+        // Play Lottie animation if it exists
+        document.querySelectorAll('lottie-player[id^="lottie-animation-"]').forEach(player => {
+            player.play();
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -1264,7 +1284,7 @@ export const generateHtml = (pageState: CloudPage, isForPreview: boolean = false
   const security = getSecurityScripts(pageState);
   
   const ssjsBlock = isForPreview ? '' : getAmpscriptProcessingBlock(pageState);
-  const clientSideScripts = getClientSideScripts();
+  const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
   const whatsAppComponent = components.find(c => c.type === 'WhatsApp');

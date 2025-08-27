@@ -1034,6 +1034,26 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
                   />
                 </div>
+                
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Animação de Agradecimento</Label>
+                  <Select
+                    value={props.thankYouAnimation || 'none'}
+                    onValueChange={(value) => onPropChange('thankYouAnimation', value === 'none' ? '' : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sem animação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhuma</SelectItem>
+                      <SelectItem value="confetti">Confete</SelectItem>
+                      <SelectItem value="success">Sucesso (Checkmark)</SelectItem>
+                      <SelectItem value="rocket">Foguete</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             );
           }
@@ -1440,6 +1460,3 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
-
-    
-    

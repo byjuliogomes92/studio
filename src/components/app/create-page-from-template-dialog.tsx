@@ -394,7 +394,16 @@ export function CreatePageFromTemplateDialog({
                                         )}
                                     >
                                         <RadioGroupItem value={platform.id} id={`platform-${platform.id}`} className="sr-only" disabled={!platform.enabled} />
-                                        <img src={platform.logo} alt={platform.name} className="h-10 object-contain" />
+                                        <img 
+                                          src={platform.logo} 
+                                          alt={platform.name} 
+                                          className={cn(
+                                            "h-10 object-contain transition-all",
+                                            "invert brightness-50 contrast-200",
+                                            "group-hover:filter-none",
+                                            "has-[:checked]:filter-none"
+                                          )}
+                                        />
                                         <span className="text-xs text-center">{platform.name}</span>
                                     </Label>
                                 );
@@ -406,7 +415,7 @@ export function CreatePageFromTemplateDialog({
                                 return (
                                     <Tooltip key={platform.id}>
                                         <TooltipTrigger asChild>
-                                            {content}
+                                            <div className="cursor-not-allowed w-full">{content}</div>
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>Em breve</p>

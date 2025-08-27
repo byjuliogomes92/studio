@@ -148,19 +148,22 @@ function ComponentItem({
   const isContainer = component.type === 'Columns';
 
   const content = (
-      <div className={cn("flex items-center gap-1 group bg-card p-1 rounded-md border", isContainer && "flex-col")}>
+      <div className={cn(
+        "flex items-center gap-1 group bg-card p-1 rounded-md border", 
+        isContainer && "flex-col items-stretch"
+      )}>
           <div className="flex items-center w-full">
             <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8">
                 <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
             </Button>
             <Button
                 variant={selectedComponentId === component.id ? "secondary" : "ghost"}
-                className="flex-grow justify-start"
+                className="flex-grow justify-start h-8"
                 onClick={() => setSelectedComponentId(component.id)}
             >
                 <div className="flex items-center gap-2">
                 <Icon className="h-4 w-4" />
-                <span>{component.type}</span>
+                <span className="truncate">{component.type}</span>
                 {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
                 </div>
             </Button>
@@ -174,14 +177,14 @@ function ComponentItem({
             </Button>
           </div>
           {isContainer && children && (
-            <div className="w-full pl-2 pr-1 pb-1">
+            <div className="w-full pl-1">
                 {children}
             </div>
           )}
       </div>
   );
 
-  return isContainer ? <div className="bg-background/50 p-2 rounded-lg border">{content}</div> : content;
+  return isContainer ? <div className="bg-background/50 p-1.5 rounded-lg border-l-4 border-transparent">{content}</div> : content;
 }
 
 
@@ -582,7 +585,7 @@ export function SettingsPanel({
               setSelectedComponentId={setSelectedComponentId}
               removeComponent={removeComponent}
             >
-              <div className={cn("grid gap-2", `grid-cols-${columnCount}`)} style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
+              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
                   {Array.from({ length: columnCount }, (_, i) => (
                     <ColumnDropzone key={i} id={`${component.id}-${i}`}>
                       {renderColumnContent(component.id, i)}

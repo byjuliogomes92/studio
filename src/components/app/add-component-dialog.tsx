@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -38,11 +40,12 @@ import {
   Building2,
   GalleryThumbnails,
   Newspaper,
-  LayoutTemplate,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Label } from "../ui/label";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 type BlockType = 'product-showcase' | 'simple-gallery' | 'news-section';
 
@@ -104,7 +107,7 @@ const blockList: {
 }[] = [
     {
         name: "Vitrine de Produto",
-        description: "Imagem, título, descrição e botão. Ideal para um produto.",
+        description: "Estrutura para exibir 1, 2 ou 3 produtos com imagem e preços.",
         type: "product-showcase",
         icon: Building2,
     },
@@ -122,6 +125,64 @@ const blockList: {
     }
 ]
 
+function ProductShowcaseConfigDialog({ onConfirm }: { onConfirm: (columnCount: number) => void }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [columnCount, setColumnCount] = useState<string>("2");
+
+    const handleConfirm = () => {
+        onConfirm(Number(columnCount));
+        setIsOpen(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <div className="border rounded-lg p-4 flex flex-col items-start gap-3 hover:bg-accent/50 hover:border-primary cursor-pointer">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-md bg-muted">
+                            <Building2 className="h-6 w-6 text-primary" />
+                        </div>
+                        <h3 className="font-semibold text-base">Vitrine de Produto</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Estrutura para exibir 1, 2 ou 3 produtos com imagem e preços.</p>
+                </div>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Configurar Vitrine de Produtos</DialogTitle>
+                    <DialogDescription>
+                        Escolha quantos produtos você quer exibir por linha.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label>Número de produtos por linha</Label>
+                    <RadioGroup
+                        value={columnCount}
+                        onValueChange={setColumnCount}
+                        className="mt-2 grid grid-cols-3 gap-4"
+                    >
+                        {[1, 2, 3].map(count => (
+                             <Label
+                                key={count}
+                                htmlFor={`products-${count}`}
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                            >
+                                <RadioGroupItem value={String(count)} id={`products-${count}`} className="sr-only" />
+                                <span className="text-2xl font-bold">{count}</span>
+                                <span className="text-sm text-muted-foreground">Produto{count > 1 ? 's' : ''}</span>
+                            </Label>
+                        ))}
+                    </RadioGroup>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleConfirm}>Adicionar Bloco</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 interface AddComponentDialogProps {
   onAddComponent: (typeOrBlock: ComponentType | PageComponent[]) => void;
 }
@@ -134,20 +195,27 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
     setIsOpen(false);
   };
   
-  const handleBlockClick = (type: BlockType) => {
+  const handleBlockClick = (type: BlockType, columnCount: number = 3) => {
     let componentsToAdd: PageComponent[] = [];
     const baseId = Date.now();
     
     switch(type) {
         case 'product-showcase': {
             const parentId = `cols-${baseId}`;
-            componentsToAdd = [
-                { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { alignItems: 'center' } }, order: 0, parentId: null, column: 0 },
-                { id: `img-${baseId}`, type: 'Image', props: { src: 'https://placehold.co/600x600.png' }, order: 0, parentId, column: 0 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Nome do Produto' }, order: 0, parentId, column: 1 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Descreva seu produto aqui. Fale sobre os benefícios, ingredientes e o que o torna especial.' }, order: 1, parentId, column: 1 },
-                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Comprar Agora', href: '#', align: 'left' }, order: 2, parentId, column: 1 },
-            ];
+             componentsToAdd = [
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Nossos Produtos', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: null, column: 0 },
+                { id: parentId, type: 'Columns', props: { columnCount, styles: { gap: '1.5rem', alignItems: 'stretch' } }, order: 1, parentId: null, column: 0 },
+             ];
+              for(let i=0; i<columnCount; i++) {
+                 componentsToAdd.push(
+                    { id: `img-${baseId}-${i}`, type: 'Image', props: { src: `https://placehold.co/400x400.png` }, order: 0, parentId, column: i },
+                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', props: { text: `Nome do Produto ${i+1}`, styles: { fontSize: '1.2rem', marginTop: '1rem' } }, order: 1, parentId, column: i },
+                    { id: `para-${baseId}-${i}`, type: 'Paragraph', props: { text: `Breve descrição do produto.` }, order: 2, parentId, column: i },
+                    { id: `price-old-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 99,90`, styles: { textDecoration: 'line-through', color: '#9CA3AF' } }, order: 3, parentId, column: i },
+                    { id: `price-new-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 79,90`, styles: { fontWeight: 'bold', fontSize: '1.25rem' } }, order: 4, parentId, column: i },
+                    { id: `btn-${baseId}-${i}`, type: 'Button', props: { text: 'Comprar', href: '#', align: 'left' }, order: 5, parentId, column: i },
+                 );
+             }
             break;
         }
         case 'simple-gallery': {
@@ -250,7 +318,8 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             </TabsContent>
              <TabsContent value="blocos">
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-                    {blockList.map((block) => {
+                    <ProductShowcaseConfigDialog onConfirm={(columnCount) => handleBlockClick('product-showcase', columnCount)} />
+                    {blockList.filter(b => b.type !== 'product-showcase').map((block) => {
                         const Icon = block.icon;
                         return (
                              <div key={block.type} className="border rounded-lg p-4 flex flex-col items-start gap-3 hover:bg-accent/50 hover:border-primary cursor-pointer" onClick={() => handleBlockClick(block.type)}>

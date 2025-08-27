@@ -132,39 +132,41 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
   
     const iframeDoc = iframe.contentWindow.document;
     
-    const updateActiveEditor = () => {
+    const handleSelectionChange = () => {
         const selection = iframeDoc.getSelection();
         if (selection && selection.rangeCount > 0) {
-            let node = selection.focusNode;
-            if (node) {
-                // Find the parent element with contenteditable
-                let editor = (node.nodeType === Node.ELEMENT_NODE ? node : node.parentNode) as HTMLElement | null;
-                while (editor && editor.contentEditable !== 'true') {
-                    editor = editor.parentElement;
-                }
+            const range = selection.getRangeAt(0);
+            const parentElement = range.startContainer.parentElement;
 
-                if(editor) {
-                    setActiveEditor(editor);
-                    return;
-                }
+            if (parentElement?.isContentEditable) {
+                // If there's a selection or just a caret inside an editable element
+                setActiveEditor(parentElement);
+                return;
             }
         }
         setActiveEditor(null);
     };
 
-    const handleLoad = () => {
-        iframeDoc.addEventListener('click', updateActiveEditor, true);
-        iframeDoc.addEventListener('selectionchange', updateActiveEditor, true);
-        iframeDoc.addEventListener('focusout', (e) => {
-            const editor = e.target as HTMLElement;
-            if (editor.hasAttribute('contenteditable')) {
-                const componentId = editor.dataset.componentId;
-                const propName = editor.dataset.propName;
-                if(componentId && propName) {
-                    handleInlineEdit(componentId, propName, editor.innerHTML);
-                }
+    const handleBlur = (e: FocusEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.hasAttribute('contenteditable')) {
+            const componentId = target.dataset.componentId;
+            const propName = target.dataset.propName;
+            if (componentId && propName) {
+                handleInlineEdit(componentId, propName, target.innerHTML);
             }
-        }, true);
+        }
+        // Check if the focus is moving outside the iframe before hiding the toolbar
+        setTimeout(() => {
+            if (iframeDoc.activeElement === iframeDoc.body || iframeDoc.activeElement === null) {
+                setActiveEditor(null);
+            }
+        }, 100);
+    };
+
+    const handleLoad = () => {
+        iframeDoc.addEventListener('selectionchange', handleSelectionChange);
+        iframeDoc.body.addEventListener('blur', handleBlur, true); // Use capture phase
     }
   
     iframe.addEventListener('load', handleLoad);
@@ -173,8 +175,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     return () => {
         iframe.removeEventListener('load', handleLoad);
         if (iframe.contentWindow) {
-            iframe.contentWindow.document.removeEventListener('click', updateActiveEditor, true);
-            iframe.contentWindow.document.removeEventListener('selectionchange', updateActiveEditor, true);
+            iframe.contentWindow.document.removeEventListener('selectionchange', handleSelectionChange);
+            iframe.contentWindow.document.body.removeEventListener('blur', handleBlur, true);
         }
     };
   }, [previewHtmlCode, handleInlineEdit]);
@@ -350,9 +352,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
         isOpen={isHowToUseOpen}
         onOpenChange={setIsHowToUseOpen}
         pageState={pageState}
+        onDataExtensionKeyChange={onDataExtensionKeyChange}
       />
     </>
   );
 }
-
-    

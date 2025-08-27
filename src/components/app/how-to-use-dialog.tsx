@@ -18,11 +18,15 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import type { CloudPage, CustomFormField, CustomFormFieldType } from "@/lib/types";
+import { Label } from '../ui/label';
+import { Input } from '../ui/input';
+import { cn } from '@/lib/utils';
 
 interface HowToUseDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   pageState: CloudPage;
+  onDataExtensionKeyChange: (newKey: string) => void;
 }
 
 interface DeField {
@@ -99,10 +103,11 @@ const generateDeFields = (page: CloudPage): DeField[] => {
 };
 
 
-export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDialogProps) {
+export function HowToUseDialog({ isOpen, onOpenChange, pageState, onDataExtensionKeyChange }: HowToUseDialogProps) {
   const { toast } = useToast();
   const [pageUrl, setPageUrl] = useState('');
   const deFields = generateDeFields(pageState);
+  const deKeyIsMissing = !pageState.meta.dataExtensionKey || pageState.meta.dataExtensionKey === 'CHANGE-ME';
 
   useEffect(() => {
     // This ensures the URL is constructed only on the client-side where `window.location` is available.
@@ -164,8 +169,19 @@ export function HowToUseDialog({ isOpen, onOpenChange, pageState }: HowToUseDial
 
             <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Passo 2: Configure sua Data Extension</h3>
-                <p className="text-sm text-muted-foreground">
-                    Crie uma Data Extension no Marketing Cloud com o Identificador (Nome ou Chave Externa) <strong>{pageState.meta.dataExtensionKey || '[NÃO DEFINIDO]'}</strong>. Use os seguintes campos para garantir que todos os dados da sua página sejam salvos corretamente:
+                <div className={cn("p-4 rounded-lg space-y-2", deKeyIsMissing ? "bg-yellow-100/50 border border-yellow-300" : "bg-muted/30")}>
+                    <Label htmlFor="de-key-input">Identificador da Data Extension (Nome ou Chave Externa)</Label>
+                    <p className="text-xs text-muted-foreground">Este nome deve ser exatamente igual ao do Marketing Cloud.</p>
+                     <Input 
+                        id="de-key-input"
+                        value={pageState.meta.dataExtensionKey === 'CHANGE-ME' ? '' : pageState.meta.dataExtensionKey}
+                        onChange={(e) => onDataExtensionKeyChange(e.target.value)}
+                        placeholder="Insira o Nome ou Chave da DE aqui"
+                        className={cn(deKeyIsMissing ? "border-yellow-500 bg-white" : "")}
+                     />
+                </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                    Crie uma Data Extension com o Identificador acima e use os seguintes campos para garantir que todos os dados sejam salvos corretamente:
                 </p>
                  <div className="relative w-full overflow-auto">
                     <Table>

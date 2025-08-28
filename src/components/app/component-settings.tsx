@@ -1557,5 +1557,3 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
-
-    

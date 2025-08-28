@@ -417,7 +417,12 @@ export function SettingsPanel({
                           placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
                           consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
                           buttonText: 'Finalizar',
-                          dataBinding: ''
+                          buttonAlign: 'center',
+                          submission: {
+                            type: 'message',
+                            message: '<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>',
+                            url: '',
+                          }
                       };
                       break;
                   case 'Countdown':

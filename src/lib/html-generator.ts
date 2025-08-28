@@ -601,7 +601,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage, thankYouAnimation, buttonProps = {}, customFields = [], submissionAction = 'message', redirectUrl = '' } = component.props;
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, submission, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
         const { meta } = pageState;
         
         const animationUrls = {
@@ -612,7 +612,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const thankYouHtml = `
             <div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none; text-align: center;">
                 ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
-                <div class="thank-you-text">${thankYouMessage || ''}</div>
+                <div class="thank-you-text">${submission?.message || ''}</div>
             </div>`;
         
         const lucideIconSvgs: Record<string, string> = {
@@ -637,7 +637,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
               <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%" data-page-id="${pageState.id}">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                   <input type="hidden" name="__successUrl" value="${submissionAction === 'redirect' ? redirectUrl : ''}">
+                   <input type="hidden" name="__successUrl" value="${submission?.type === 'redirect' ? submission.url : ''}">
   
                    <div class="row">
                     ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
@@ -2015,5 +2015,3 @@ ${clientSideScripts}
 </body>
 </html>`
 }
-
-    

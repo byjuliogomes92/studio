@@ -825,6 +825,12 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
         );
         case "Form": {
             const fieldsConfig: Record<string, FormFieldConfig> = {};
+            const submission = props.submission || { type: 'message', message: '', url: '' };
+
+            const handleSubmissionChange = (prop: string, value: any) => {
+                const newSubmission = { ...submission, [prop]: value };
+                onPropChange('submission', newSubmission);
+            };
 
             // Ensure all form fields are objects for backward compatibility
             for (const fieldKey of Object.keys(props.fields || {})) {
@@ -1075,9 +1081,9 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
           
                 <div className="space-y-4">
                     <h4 className="font-semibold">Ação Após Envio</h4>
-                     <RadioGroup 
-                        value={props.submissionAction || 'message'} 
-                        onValueChange={(value) => onPropChange('submissionAction', value)}
+                    <RadioGroup 
+                        value={submission.type || 'message'}
+                        onValueChange={(value) => handleSubmissionChange('type', value)}
                         className="grid grid-cols-2 gap-4"
                     >
                         <div>
@@ -1094,10 +1100,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </div>
                     </RadioGroup>
                     
-                    {(props.submissionAction || 'message') === 'message' && (
+                    {submission.type === 'message' && (
                         <div className="space-y-2">
                             <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
-                            <Tooltip>
+                             <Tooltip>
                                 <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
                                 <TooltipContent>
                                     <div className="max-w-xs">
@@ -1110,21 +1116,21 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                             </Tooltip>
                             <Textarea
                                 id="form-thank-you"
-                                value={props.thankYouMessage || ''}
-                                onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
+                                value={submission.message || ''}
+                                onChange={(e) => handleSubmissionChange('message', e.target.value)}
                                 rows={8}
                                 placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
                             />
                         </div>
                     )}
-
-                    {props.submissionAction === 'redirect' && (
+                    
+                    {submission.type === 'redirect' && (
                         <div className="space-y-2">
                             <Label htmlFor="form-redirect-url">URL de Redirecionamento</Label>
                             <Input
                                 id="form-redirect-url"
-                                value={props.redirectUrl || ''}
-                                onChange={(e) => onPropChange('redirectUrl', e.target.value)}
+                                value={submission.url || ''}
+                                onChange={(e) => handleSubmissionChange('url', e.target.value)}
                                 placeholder="https://exemplo.com/obrigado"
                             />
                         </div>

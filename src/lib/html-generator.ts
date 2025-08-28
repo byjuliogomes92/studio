@@ -601,7 +601,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, submission, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, submission, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
         const { meta } = pageState;
         
         const animationUrls = {
@@ -651,7 +651,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                    </div>
                    <div class="row">
                     ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, false) : ''}
-                    ${fields.city?.enabled ? renderCityDropdown(cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
+                    ${fields.city?.enabled ? renderCityDropdown(component.props.cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
                    </div>
                    
                    <div class="custom-fields-wrapper">
@@ -2015,4 +2015,5 @@ ${clientSideScripts}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>
+</html>`;
+}

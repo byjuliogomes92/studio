@@ -633,7 +633,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
 
         const formHtml = `
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-             %%[ IF @showThanks != "true" THEN ]%%
+              %%[ IF @showThanks != "true" THEN ]%%
               <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
@@ -680,9 +680,9 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                       </button>
                   </div>
               </form>
-             %%[ ELSE ]%%
+              %%[ ELSE ]%%
                 ${thankYouHtml}
-             %%[ ENDIF ]%%
+              %%[ ENDIF ]%%
           </div>
         `;
         return formHtml;
@@ -2005,8 +2005,8 @@ ${trackingScripts}
 ${clientSideScripts}
 </head>
 <body>
-${initialAmpscript}
 ${ssjsBlock}
+${initialAmpscript}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
@@ -2029,3 +2029,5 @@ ${ssjsBlock}
   %%[ ENDIF ]%%
 </body>
 </html>
+`;
+}

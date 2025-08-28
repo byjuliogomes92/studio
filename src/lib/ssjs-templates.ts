@@ -112,25 +112,18 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                 ${customDebugLines}
                 ${npsDebugLine}
             }
+            
+            var hasEmail = typeof email !== 'undefined' && email != null && email != "";
 
-            if (email != null && email != "" && deKey != null && deKey != "") {
+            if (hasEmail && deKey != null && deKey != "") {
                 var de = DataExtension.Init(deKey);
-                
-                de.Rows.Add({
-                    ${deFieldsString}
-                });
-                
-                showThanks = true;
-            } else if (nome != null && nome != "" && deKey != null && deKey != "") {
-                /* Fallback for forms without email but with name */
-                 var de = DataExtension.Init(deKey);
                 de.Rows.Add({
                     ${deFieldsString}
                 });
                 showThanks = true;
             }
 
-            if (showThanks && redirectUrl && !debug) {
+            if (showThanks && redirectUrl && redirectUrl.length > 0 && !debug) {
                 Platform.Response.Redirect(redirectUrl);
             } else if (showThanks) {
                 Variable.SetValue("@showThanks", "true");
@@ -139,6 +132,8 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     } catch (e) {
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
+        } else {
+            Variable.SetValue("@showThanks", "true");
         }
     }
 </script>`;

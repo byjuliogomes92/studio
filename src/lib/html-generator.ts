@@ -1,7 +1,6 @@
 
 
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
-import { getFormSubmissionScript } from './ssjs-templates';
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
@@ -1050,16 +1049,16 @@ const getClientSideScripts = (pageState: CloudPage) => {
             
             // Setup button loader
             if (submitButton && !submitButton.querySelector('.button-loader')) {
-                const buttonTextContent = submitButton.querySelector('span')?.textContent || submitButton.textContent;
-                submitButton.innerHTML = '';
+                const buttonContent = submitButton.innerHTML;
                 
                 const buttonText = document.createElement('span');
                 buttonText.className = 'button-text';
-                buttonText.textContent = buttonTextContent;
+                buttonText.innerHTML = buttonContent;
                 
                 const buttonLoader = document.createElement('div');
                 buttonLoader.className = 'button-loader';
 
+                submitButton.innerHTML = '';
                 submitButton.appendChild(buttonText);
                 submitButton.appendChild(buttonLoader);
             }
@@ -1117,6 +1116,23 @@ const getClientSideScripts = (pageState: CloudPage) => {
         });
     }
 
+    function handleThankYouMessage() {
+        // This variable is set by server-side AMPScript
+        var showThanks = "%%=v(@showThanks)=%%";
+        if (showThanks === "true" && document.querySelector('.form-container')) {
+            var formId = document.querySelector('.form-container').id.replace('form-wrapper-', '');
+            var formWrapper = document.getElementById('form-wrapper-' + formId);
+            var thanksMessage = document.getElementById('thank-you-message-' + formId);
+            if(formWrapper) formWrapper.style.display = 'none';
+            if(thanksMessage) thanksMessage.style.display = 'block';
+            
+            const lottiePlayer = document.getElementById('lottie-animation-' + formId);
+            if (lottiePlayer) {
+              setTimeout(() => lottiePlayer.play(), 100);
+            }
+        }
+    }
+
 
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
@@ -1125,19 +1141,8 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 loader.style.display = 'none';
             }, 2000);
         }
-
-        // Show thank you message logic, moved here to ensure it runs after DOM is ready
-        if ("%%=v(@showThanks)=%%" == "true" && document.querySelector('.form-container')) {
-            var formId = document.querySelector('.form-container').id.replace('form-wrapper-', '');
-            var formWrapper = document.getElementById('form-wrapper-' + formId);
-            var thanksMessage = document.getElementById('thank-you-message-' + formId);
-            if(formWrapper) formWrapper.style.display = 'none';
-            if(thanksMessage) thanksMessage.style.display = 'block';
-            const lottiePlayer = document.getElementById('lottie-animation-' + formId);
-            if (lottiePlayer) {
-              setTimeout(() => lottiePlayer.play(), 100);
-            }
-        }
+        
+        handleThankYouMessage();
         
         const phoneInput = document.getElementById('TELEFONE');
         if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
@@ -1199,7 +1204,54 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const security = getSecurityScripts(pageState);
   
-  const ssjsBlock = isForPreview ? '' : getFormSubmissionScript(pageState);
+  const ssjsBlock = isForPreview ? '' : `
+<script runat="server">
+    Platform.Load("Core", "1.1.1");
+    var debug = false; 
+
+    try {
+        if (Request.Method == "POST") {
+            var deKey = Request.GetFormField("__de");
+            var redirectUrl = Request.GetFormField("__successUrl");
+            var showThanks = false;
+            
+            var nome = Request.GetFormField("NOME");
+            var email = Request.GetFormField("EMAIL");
+            var telefone = Request.GetFormField("TELEFONE");
+            var cpf = Request.GetFormField("CPF");
+            var optin = Request.GetFormField("OPTIN");
+
+            if (optin == "" || optin == null) {
+                optin = "False";
+            } else if (optin == "on") {
+                optin = "True";
+            }
+
+            if ((email != null && email != "") && deKey != null && deKey != "") {
+                 var de = DataExtension.Init(deKey);
+                 de.Rows.Add({
+                    "NOME": nome,
+                    "EMAIL": email,
+                    "TELEFONE": telefone,
+                    "CPF": cpf,
+                    "OPTIN": optin
+                 });
+                showThanks = true;
+            }
+
+            if (showThanks && redirectUrl && redirectUrl.length > 0 && !debug) {
+                Platform.Response.Redirect(redirectUrl);
+            } else if (showThanks) {
+                Variable.SetValue("@showThanks", "true");
+            }
+        }
+    } catch (e) {
+        if (debug) {
+            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
+        }
+    }
+</script>
+`;
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');

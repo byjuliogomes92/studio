@@ -1,8 +1,6 @@
 
 
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
-import { getFormSubmissionScript } from './ssjs-templates';
-
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
@@ -601,7 +599,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, submission, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
         const { meta } = pageState;
         
         const animationUrls = {
@@ -632,11 +630,11 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
             : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
         
-        const redirectUrl = submission?.url || '';
+        const redirectUrl = submission?.url || meta.redirectUrl ||'';
 
         const formHtml = `
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-              <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%" data-page-id="${pageState.id}">
+              <form id="form-${component.id}" data-page-id="${pageState.id}" data-component-id="${component.id}" data-redirect-url="${redirectUrl}">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
                    <input type="hidden" name="__successUrl" value="${redirectUrl}">
@@ -1021,11 +1019,10 @@ const getClientSideScripts = (pageState: CloudPage) => {
     
     function validateForm(form) {
       let valid = true;
+      form.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
       const requiredInputs = form.querySelectorAll('input[required], select[required]');
 
       requiredInputs.forEach(input => {
-          const errorId = 'error-' + (input.name || input.id).toLowerCase();
-          const error = form.querySelector('#' + errorId);
           let isInvalid = false;
           
           if(input.type === 'checkbox') {
@@ -1034,42 +1031,23 @@ const getClientSideScripts = (pageState: CloudPage) => {
               isInvalid = input.value.trim() === '';
           }
 
-          if (isInvalid && error) {
-              error.style.display = 'block';
+          if (isInvalid) {
+              const errorId = 'error-' + (input.name || input.id).toLowerCase();
+              const error = form.querySelector('#' + errorId);
+              if (error) {
+                error.style.display = 'block';
+              }
               valid = false;
-          } else if (error) {
-              error.style.display = 'none';
           }
       });
       return valid;
     }
 
-    async function backupSubmission(form) {
-        const pageId = form.dataset.pageId;
-        if (!pageId) return;
-
-        const formData = new FormData(form);
-        const data = {};
-        formData.forEach((value, key) => {
-            if (!key.startsWith('__')) { // Don't backup private fields
-                data[key] = value;
-            }
-        });
-        
-        try {
-            await fetch(\`/api/submit/\${pageId}\`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-        } catch (error) {
-            console.error('Failed to backup form submission:', error);
-        }
-    }
-
-    function setupSubmitButton() {
-        document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
+    function setupForms() {
+        document.querySelectorAll('form[id^="form-"]').forEach(form => {
             const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Setup button loader
             if (submitButton && !submitButton.querySelector('.button-loader')) {
                 const buttonTextContent = submitButton.querySelector('span')?.textContent || submitButton.textContent;
                 submitButton.innerHTML = '';
@@ -1084,24 +1062,69 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 submitButton.appendChild(buttonText);
                 submitButton.appendChild(buttonLoader);
             }
-            
-            form.addEventListener('submit', function(e) {
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
                 if (!validateForm(form)) {
-                    e.preventDefault();
-                } else {
-                   if (submitButton) {
-                     submitButton.disabled = true;
-                     const textSpan = submitButton.querySelector('.button-text');
-                     const loader = submitButton.querySelector('.button-loader');
-                     if (textSpan) textSpan.style.opacity = '0';
-                     if (loader) loader.style.display = 'block';
-                     
-                     // Backup submission in the background
-                     backupSubmission(form);
-                   }
+                    return;
+                }
+                
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    const textSpan = submitButton.querySelector('.button-text');
+                    const loader = submitButton.querySelector('.button-loader');
+                    if (textSpan) textSpan.style.opacity = '0';
+                    if (loader) loader.style.display = 'block';
+                }
+
+                const pageId = form.dataset.pageId;
+                const componentId = form.dataset.componentId;
+                const redirectUrl = form.dataset.redirectUrl;
+                const formDataObj = Object.fromEntries(new FormData(form));
+
+                try {
+                    // Main submission to API
+                    await fetch(\`/api/submit/\${pageId}\`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formDataObj),
+                    });
+
+                    // Legacy submission to SFMC for DE processing
+                    const sfmcForm = document.createElement('form');
+                    sfmcForm.method = 'post';
+                    sfmcForm.action = '%%=RequestParameter(\"PAGEURL\")=%%';
+                    for (const key in formDataObj) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = formDataObj[key];
+                        sfmcForm.appendChild(input);
+                    }
+                    document.body.appendChild(sfmcForm);
+                    // sfmcForm.submit(); // This would cause a redirect. We are handling it client-side.
+
+                } catch (error) {
+                    console.error('Submission failed:', error);
+                    alert('Houve um erro ao enviar seus dados. Tente novamente.');
+                } finally {
+                     if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    } else {
+                        const formWrapper = document.getElementById('form-wrapper-' + componentId);
+                        const thankYouMessage = document.getElementById('thank-you-message-' + componentId);
+                        if(formWrapper) formWrapper.style.display = 'none';
+                        if(thankYouMessage) thankYouMessage.style.display = 'block';
+
+                        const lottiePlayer = document.getElementById('lottie-animation-' + componentId);
+                        if (lottiePlayer && typeof lottiePlayer.play === 'function') {
+                            lottiePlayer.play();
+                        }
+                    }
                 }
             });
-
+            
+            // Enable/disable button logic
             if (submitButton?.hasAttribute('disabled')) {
                 const requiredInputs = Array.from(form.querySelectorAll('[required]'));
                 const checkFormValidity = () => {
@@ -1112,43 +1135,25 @@ const getClientSideScripts = (pageState: CloudPage) => {
                     submitButton.disabled = !allValid;
                 };
                 requiredInputs.forEach(input => input.addEventListener('input', checkFormValidity));
-                checkFormValidity(); // Initial check
+                checkFormValidity();
             }
         });
     }
 
-    function handleSuccessfulFormSubmission() {
-        // Show conditional download buttons
-        document.querySelectorAll('.download-component-container[style*="display: none"]').forEach(container => {
-             // A simple check to see if it's conditional. Could be made more robust with data-attributes.
-            container.style.display = 'block';
-        });
-
-        // Play Lottie animation if it exists
-        document.querySelectorAll('lottie-player[id^="lottie-animation-"]').forEach(player => {
-            player.play();
-        });
-    }
-
     function handleConditionalFields() {
-        const forms = document.querySelectorAll('form[id^="smartcapture-form-"]');
-        forms.forEach(form => {
+        document.querySelectorAll('form[id^="form-"]').forEach(form => {
             const conditionalFields = form.querySelectorAll('[data-conditional-on]');
             
             const checkConditions = () => {
                 conditionalFields.forEach(field => {
                     const dependsOnName = field.dataset.conditionalOn;
                     const dependsOnValue = field.dataset.conditionalValue;
-                    const triggerField = form.querySelector(\`[name="\${dependsOnName}"]\`);
+                    const triggerField = form.querySelector(\`[id="\${dependsOnName.toUpperCase()}"]\`);
                     
                     if(triggerField) {
-                        if (triggerField.value === dependsOnValue) {
-                            field.style.display = 'block';
-                            field.querySelectorAll('input, select').forEach(i => i.required = true);
-                        } else {
-                            field.style.display = 'none';
-                            field.querySelectorAll('input, select').forEach(i => i.required = false);
-                        }
+                        const shouldBeVisible = triggerField.value === dependsOnValue;
+                        field.style.display = shouldBeVisible ? 'block' : 'none';
+                        field.querySelectorAll('input, select').forEach(i => i.required = shouldBeVisible);
                     }
                 });
             }
@@ -1166,16 +1171,6 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 loader.style.display = 'none';
             }, 2000);
         }
-
-        if ("%%=v(@showThanks)=%%" == "true") {
-             document.querySelectorAll('div[id^="form-wrapper-"]').forEach(formWrapper => {
-                formWrapper.style.display = 'none';
-             });
-             document.querySelectorAll('div[id^="thank-you-message-"]').forEach(thanksMsg => {
-                thanksMsg.style.display = 'block';
-             });
-             handleSuccessfulFormSubmission();
-        }
         
         const phoneInput = document.getElementById('TELEFONE');
         if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
@@ -1192,7 +1187,7 @@ const getClientSideScripts = (pageState: CloudPage) => {
             emailInput.addEventListener('blur', function() { validateEmail(this); });
         }
         
-        setupSubmitButton();
+        setupForms();
         setupAccordions();
         setupTabs();
         setSocialIconStyles();
@@ -1237,7 +1232,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const security = getSecurityScripts(pageState);
   
-  const ssjsBlock = isForPreview ? '' : getFormSubmissionScript(pageState);
+  const ssjsBlock = isForPreview ? '' : ''; // SSJS processing is removed for async forms
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
@@ -2015,5 +2010,6 @@ ${clientSideScripts}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`;
+</html>`
 }
+

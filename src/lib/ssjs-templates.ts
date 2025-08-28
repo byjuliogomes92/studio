@@ -2,6 +2,8 @@
 
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
 
+// This function is now mostly a fallback or for specific AMPScript processing if needed.
+// The main submission logic is handled client-side via API.
 export function getFormSubmissionScript(pageState: CloudPage): string {
     const formComponent = pageState.components.find(c => c.type === 'Form');
     if (!formComponent) {
@@ -80,76 +82,19 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
 <script runat="server">
     Platform.Load("Core", "1.1.1");
     var debug = false;
+    // This script now primarily serves as a backup or for specific server-side processing,
+    // as the main submission is handled via the /api/submit endpoint.
     try {
         if (Request.Method == "POST") {
-            var deIdentifier = Request.GetFormField("__de");
-            var deMethod = Request.GetFormField("__de_method");
-            var redirectUrl = Request.GetFormField("__successUrl");
-            var showThanks = false;
-
-            ${varDeclarations}
-
-            ${specialHandling}
-
-            if (debug) {
-                Write("<br><b>--- DEBUG ---</b><br>");
-                ${debugWrites}
-            }
-
-            if (deIdentifier != null && deIdentifier != "") {
-                var de;
-                if (deMethod == "name") {
-                    var deList = DataExtension.Retrieve({Property:"Name",SimpleOperator:"equals",Value:deIdentifier});
-                    if (deList && deList.length > 0) {
-                        de = DataExtension.Init(deList[0].CustomerKey);
-                    }
-                } else {
-                    de = DataExtension.Init(deIdentifier);
-                }
-
-                if (de) {
-                    var rowData = {
-                        ${rowDataFields}
-                    };
-
-                    var updateKey = "${lookupKey}";
-                    var updateValue = ${lookupKey ? lookupVar : '""'};
-                    
-                    if (updateKey != "" && updateValue != null && updateValue != "") {
-                        var existing = de.Rows.Lookup([updateKey], [updateValue]);
-                        if (existing && existing.length > 0) {
-                            de.Rows.Update(rowData, [updateKey], [updateValue]);
-                            if (debug) { Write("<br><b>Status:</b> Registro atualizado."); }
-                        } else {
-                            de.Rows.Add(rowData);
-                            if (debug) { Write("<br><b>Status:</b> Novo registro inserido."); }
-                        }
-                    } else {
-                        de.Rows.Add(rowData);
-                        if (debug) { Write("<br><b>Status:</b> Novo registro inserido (sem chave de atualização)."); }
-                    }
-                    
-                    if (!redirectUrl || redirectUrl == "") {
-                       showThanks = true;
-                    }
-                }
-            }
-
-            if (showThanks == false && redirectUrl && redirectUrl != "" && !debug) {
-                Platform.Response.Redirect(redirectUrl);
-            } else if (showThanks) {
-                Variable.SetValue("@showThanks", "true");
-            }
+            // Minimal processing for AMPScript fallback if needed
         }
     } catch (e) {
         if (debug) {
-            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
-        } else {
-             // Fallback to showing thanks message on error to avoid blank pages
-            Variable.SetValue("@showThanks", "true");
+            Write("<br><b>--- SSJS Fallback Error ---</b><br>" + Stringify(e));
         }
     }
 </script>
 `;
     return scriptTemplate;
   }
+

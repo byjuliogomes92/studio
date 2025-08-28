@@ -1,6 +1,7 @@
 
 
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
+import { getFormSubmissionScript } from './ssjs-templates';
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
@@ -630,7 +631,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
             : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
         
-        const redirectUrl = component.props.redirectUrl || meta.redirectUrl ||'';
+        const redirectUrl = submission?.url || meta.redirectUrl ||'';
 
         const formHtml = `
           %%[ IF @showThanks != "true" THEN ]%%
@@ -683,7 +684,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
               </form>
           </div>
           %%[ ELSE ]%%
-              ${component.props.thankYouMessage || ''}
+              ${submission.message || ''}
           %%[ ENDIF ]%%
         `;
         return formHtml;
@@ -1188,7 +1189,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const security = getSecurityScripts(pageState);
   
-  const ssjsBlock = isForPreview ? '' : ''; // SSJS processing is removed for async forms
+  const ssjsBlock = isForPreview ? '' : getFormSubmissionScript(pageState);
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
@@ -1967,5 +1968,5 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;
 }

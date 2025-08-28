@@ -630,11 +630,12 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
             : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
         
-        const redirectUrl = submission?.url || meta.redirectUrl ||'';
+        const redirectUrl = component.props.redirectUrl || meta.redirectUrl ||'';
 
         const formHtml = `
+          %%[ IF @showThanks != "true" THEN ]%%
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-              <form id="form-${component.id}" data-page-id="${pageState.id}" data-component-id="${component.id}" data-redirect-url="${redirectUrl}">
+              <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
                    <input type="hidden" name="__successUrl" value="${redirectUrl}">
@@ -680,8 +681,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                       </button>
                   </div>
               </form>
-              ${thankYouHtml}
           </div>
+          %%[ ELSE ]%%
+              ${component.props.thankYouMessage || ''}
+          %%[ ENDIF ]%%
         `;
         return formHtml;
       }
@@ -1044,7 +1047,7 @@ const getClientSideScripts = (pageState: CloudPage) => {
     }
 
     function setupForms() {
-        document.querySelectorAll('form[id^="form-"]').forEach(form => {
+        document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
             const submitButton = form.querySelector('button[type="submit"]');
             
             // Setup button loader
@@ -1063,64 +1066,17 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 submitButton.appendChild(buttonLoader);
             }
 
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
+            form.addEventListener('submit', function(e) {
                 if (!validateForm(form)) {
+                    e.preventDefault();
                     return;
                 }
-                
                 if (submitButton) {
                     submitButton.disabled = true;
                     const textSpan = submitButton.querySelector('.button-text');
                     const loader = submitButton.querySelector('.button-loader');
                     if (textSpan) textSpan.style.opacity = '0';
                     if (loader) loader.style.display = 'block';
-                }
-
-                const pageId = form.dataset.pageId;
-                const componentId = form.dataset.componentId;
-                const redirectUrl = form.dataset.redirectUrl;
-                const formDataObj = Object.fromEntries(new FormData(form));
-
-                try {
-                    // Main submission to API
-                    await fetch(\`/api/submit/\${pageId}\`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formDataObj),
-                    });
-
-                    // Legacy submission to SFMC for DE processing
-                    const sfmcForm = document.createElement('form');
-                    sfmcForm.method = 'post';
-                    sfmcForm.action = '%%=RequestParameter(\"PAGEURL\")=%%';
-                    for (const key in formDataObj) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = key;
-                        input.value = formDataObj[key];
-                        sfmcForm.appendChild(input);
-                    }
-                    document.body.appendChild(sfmcForm);
-                    // sfmcForm.submit(); // This would cause a redirect. We are handling it client-side.
-
-                } catch (error) {
-                    console.error('Submission failed:', error);
-                    alert('Houve um erro ao enviar seus dados. Tente novamente.');
-                } finally {
-                     if (redirectUrl) {
-                        window.location.href = redirectUrl;
-                    } else {
-                        const formWrapper = document.getElementById('form-wrapper-' + componentId);
-                        const thankYouMessage = document.getElementById('thank-you-message-' + componentId);
-                        if(formWrapper) formWrapper.style.display = 'none';
-                        if(thankYouMessage) thankYouMessage.style.display = 'block';
-
-                        const lottiePlayer = document.getElementById('lottie-animation-' + componentId);
-                        if (lottiePlayer && typeof lottiePlayer.play === 'function') {
-                            lottiePlayer.play();
-                        }
-                    }
                 }
             });
             
@@ -1141,7 +1097,7 @@ const getClientSideScripts = (pageState: CloudPage) => {
     }
 
     function handleConditionalFields() {
-        document.querySelectorAll('form[id^="form-"]').forEach(form => {
+        document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
             const conditionalFields = form.querySelectorAll('[data-conditional-on]');
             
             const checkConditions = () => {
@@ -2010,6 +1966,6 @@ ${clientSideScripts}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`
+</html>
+`
 }
-

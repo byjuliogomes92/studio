@@ -1093,8 +1093,8 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                             </Label>
                         </div>
                     </RadioGroup>
-
-                    {submissionAction === 'redirect' ? (
+                    
+                    {submissionAction === 'redirect' && (
                          <div className="space-y-2">
                             <Label htmlFor="form-redirect-url">URL de Redirecionamento</Label>
                             <Input
@@ -1104,7 +1104,9 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                                 placeholder="https://exemplo.com/obrigado"
                             />
                         </div>
-                    ) : (
+                    )}
+                    
+                    {submissionAction === 'message' && (
                         <div className="space-y-2">
                             <div className="flex items-center gap-1.5">
                                 <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>

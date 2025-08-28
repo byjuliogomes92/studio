@@ -153,5 +153,3 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
 `;
     return scriptTemplate;
   }
-
-    

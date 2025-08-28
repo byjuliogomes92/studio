@@ -2015,5 +2015,4 @@ ${clientSideScripts}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`
-}
+</html>

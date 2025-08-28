@@ -1138,7 +1138,7 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 conditionalFields.forEach(field => {
                     const dependsOnName = field.dataset.conditionalOn;
                     const dependsOnValue = field.dataset.conditionalValue;
-                    const triggerField = form.querySelector(`[name="${dependsOnName}"]`);
+                    const triggerField = form.querySelector(`[name="\${dependsOnName}"]`);
                     
                     if(triggerField) {
                         if (triggerField.value === dependsOnValue) {
@@ -1199,7 +1199,7 @@ const getClientSideScripts = (pageState: CloudPage) => {
     });
 </script>
     `;
-}
+};
 
 const getPrefillAmpscript = (pageState: CloudPage): string => {
     const formComponent = pageState.components.find(c => c.type === 'Form');
@@ -2012,6 +2012,5 @@ ${clientSideScripts}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>
-
-    
+</html>`;
+}

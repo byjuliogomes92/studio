@@ -858,8 +858,6 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
           
             const enabledFields = formFields.filter(f => fieldsConfig[f.id]?.enabled);
             
-            const submissionAction = props.submissionAction || 'message';
-          
             return (
               <div className="space-y-4">
                 <div>
@@ -1078,7 +1076,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 <div className="space-y-4">
                     <h4 className="font-semibold">Ação Após Envio</h4>
                      <RadioGroup 
-                        value={submissionAction} 
+                        value={props.submissionAction || 'message'} 
                         onValueChange={(value) => onPropChange('submissionAction', value)}
                         className="grid grid-cols-2 gap-4"
                     >
@@ -1096,7 +1094,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </div>
                     </RadioGroup>
                     
-                    {submissionAction === 'message' && (
+                    {(props.submissionAction || 'message') === 'message' && (
                         <div className="space-y-2">
                             <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
                             <Tooltip>
@@ -1120,7 +1118,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </div>
                     )}
 
-                    {submissionAction === 'redirect' && (
+                    {props.submissionAction === 'redirect' && (
                         <div className="space-y-2">
                             <Label htmlFor="form-redirect-url">URL de Redirecionamento</Label>
                             <Input
@@ -1557,7 +1555,3 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
-
-    
-
-    

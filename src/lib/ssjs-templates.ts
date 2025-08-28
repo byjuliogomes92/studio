@@ -110,7 +110,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                 }
             }
 
-            if (showThanks && redirectUrl && !debug) {
+            if (showThanks && redirectUrl != "" && !debug) {
                 Platform.Response.Redirect(redirectUrl);
             } else if (showThanks) {
                 Variable.SetValue("@showThanks", "true");

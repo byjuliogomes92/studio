@@ -1129,6 +1129,35 @@ const getClientSideScripts = (pageState: CloudPage) => {
         });
     }
 
+    function handleConditionalFields() {
+        const forms = document.querySelectorAll('form[id^="smartcapture-form-"]');
+        forms.forEach(form => {
+            const conditionalFields = form.querySelectorAll('[data-conditional-on]');
+            
+            const checkConditions = () => {
+                conditionalFields.forEach(field => {
+                    const dependsOnName = field.dataset.conditionalOn;
+                    const dependsOnValue = field.dataset.conditionalValue;
+                    const triggerField = form.querySelector(`[name="${dependsOnName}"]`);
+                    
+                    if(triggerField) {
+                        if (triggerField.value === dependsOnValue) {
+                            field.style.display = 'block';
+                            field.querySelectorAll('input, select').forEach(i => i.required = true);
+                        } else {
+                            field.style.display = 'none';
+                            field.querySelectorAll('input, select').forEach(i => i.required = false);
+                        }
+                    }
+                });
+            }
+
+            form.addEventListener('input', checkConditions);
+            checkConditions(); // Initial check on load
+        });
+    }
+
+
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
         if (loader) {
@@ -1984,5 +2013,5 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;
 }

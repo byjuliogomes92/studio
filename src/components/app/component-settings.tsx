@@ -1077,7 +1077,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
           
                 <div className="space-y-4">
                     <h4 className="font-semibold">Ação Após Envio</h4>
-                    <RadioGroup 
+                     <RadioGroup 
                         value={submissionAction} 
                         onValueChange={(value) => onPropChange('submissionAction', value)}
                         className="grid grid-cols-2 gap-4"
@@ -1552,5 +1552,7 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
+
+    
 
     

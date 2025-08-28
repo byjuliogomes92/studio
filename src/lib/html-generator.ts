@@ -594,7 +594,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
         return `
             <a href="${href}" target="_blank" class="whatsapp-float-btn ${position}" aria-label="Fale conosco no WhatsApp">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0-0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
             </a>`;
     }
     case 'Form': {
@@ -619,7 +619,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
             'plus': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
             'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
-            'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+            'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0-0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
             'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
         };
         
@@ -631,7 +631,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         
         const redirectUrl = submission?.url || meta.redirectUrl ||'';
 
-        const formHtml = `
+        return `
             %%[ IF @showThanks != "true" THEN ]%%
             <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
                 <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
@@ -686,7 +686,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                 ${thankYouHtml}
             %%[ ENDIF ]%%
         `;
-        return formHtml;
       }
     case 'Footer':
       return `
@@ -1263,14 +1262,17 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const initialAmpscript = `%%[ 
-  VAR @showThanks
-  IF EMPTY(RequestParameter("__isPost")) THEN
-    SET @showThanks = "false"
-  ENDIF
-
-  ${meta.customAmpscript || ''}
-  ${security.amscript}
-  ${prefillAmpscript || ''}
+    VAR @showThanks
+    
+    /* Apenas define @showThanks como "false" no carregamento inicial da página (GET).
+       Em uma submissão (POST), esta variável não será reiniciada. */
+    IF EMPTY(RequestParameter("__isPost")) THEN
+      SET @showThanks = "false"
+    ENDIF
+    
+    ${meta.customAmpscript || ''}
+    ${security.amscript}
+    ${prefillAmpscript || ''}
 ]%%`;
 
   // Use TreatAsContentArea for better performance and to avoid script injection issues
@@ -2030,5 +2032,5 @@ ${ssjsBlock}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;
 }

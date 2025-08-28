@@ -7,9 +7,9 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         return '';
     }
 
-    // Since we are now using a static script for reliability, we list out all possible fields
-    // This script will attempt to get all of them, and if they don't exist in the form, they will just be empty.
-    
+    // This script now dynamically collects all form fields and ignores control fields.
+    // It is robust and adapts to the fields configured in the form component.
+
     const allStandardFields = ['NOME', 'EMAIL', 'TELEFONE', 'CPF', 'CIDADE', 'DATANASCIMENTO', 'OPTIN'];
     const customFields = (formComponent.props.customFields as CustomFormField[] || []);
     const hasNPS = pageState.components.some(c => c.type === 'NPS');
@@ -23,58 +23,47 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     try {
         if (Request.Method == "POST") {
             var deKey = Request.GetFormField("__de");
+            var deMethod = Request.GetFormField("__de_method");
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
-
-            // --- Standard Fields ---
-            var nome = Request.GetFormField("NOME");
-            var email = Request.GetFormField("EMAIL");
-            var telefone = Request.GetFormField("TELEFONE");
-            var cpf = Request.GetFormField("CPF");
-            var cidade = Request.GetFormField("CIDADE");
-            var datanascimento = Request.GetFormField("DATANASCIMENTO");
-            var optin = Request.GetFormField("OPTIN");
-
-            // --- Custom Fields ---
-            ${customFields.map(f => `var ${f.name.toLowerCase()} = Request.GetFormField("${f.name}");`).join('\n            ')}
-
-            // --- Other system fields ---
-            ${hasNPS ? 'var nps_score = Request.GetFormField("NPS_SCORE");\n            var nps_date = null;' : ''}
-            ${abTestComponents.map(c => `var variante_${c.id.toLowerCase()} = Request.GetFormField("VARIANTE_${c.id.toUpperCase()}");`).join('\n            ')}
-
-
-            if (optin == "" || optin == null) {
-                optin = "False";
-            } else if (optin == "on") {
-                optin = "True";
-            }
             
-            ${hasNPS ? 'if (nps_score != "" && nps_score != null) { nps_date = Now(1); }' : ''}
+            var controlFields = ["__de", "__de_method", "__successUrl", "__isPost"];
+            var deFields = {};
+            var formFields = Request.GetFormFields();
 
-
-            if (email != null && email != "" && deKey != null && deKey != "") {
-                var de = DataExtension.Init(deKey);
-                var deFields = {};
-                if (nome) deFields.NOME = nome;
-                if (email) deFields.EMAIL = email;
-                if (telefone) deFields.TELEFONE = telefone;
-                if (cpf) deFields.CPF = cpf;
-                if (cidade) deFields.CIDADE = cidade;
-                if (datanascimento) deFields.DATANASCIMENTO = datanascimento;
-                if (optin) deFields.OPTIN = optin;
-
-                ${customFields.map(f => `if (${f.name.toLowerCase()}) deFields.${f.name} = ${f.name.toLowerCase()};`).join('\n                ')}
-
-                ${hasNPS ? 'if (nps_score) deFields.NPS_SCORE = nps_score;\n                if (nps_date) deFields.NPS_DATE = nps_date;' : ''}
-                
-                ${abTestComponents.map(c => `if (variante_${c.id.toLowerCase()}) deFields.VARIANTE_${c.id.toUpperCase()} = variante_${c.id.toLowerCase()};`).join('\n                ')}
-                
-                var existing = de.Rows.Lookup(["EMAIL"], [email]);
-                if (existing.length > 0) {
-                   de.Rows.Update(deFields, ["EMAIL"], [email]);
-                } else {
-                   de.Rows.Add(deFields);
+            for (var key in formFields) {
+                var isControlField = false;
+                for (var i = 0; i < controlFields.length; i++) {
+                    if (key.toLowerCase() == controlFields[i].toLowerCase()) {
+                        isControlField = true;
+                        break;
+                    }
                 }
+
+                if (!isControlField) {
+                    var value = formFields[key];
+                    if (key.toUpperCase() == 'OPTIN') {
+                        value = (value == "on" ? "True" : "False");
+                    }
+                    deFields[key] = value;
+                }
+            }
+
+            if (deFields["EMAIL"] != null && deFields["EMAIL"] != "" && deKey != null && deKey != "") {
+                 var de;
+                 if (deMethod == 'name') {
+                    de = DataExtension.Init(deKey);
+                 } else {
+                    de = DataExtension.Init(deKey); // Default to key
+                 }
+                 
+                 var existing = de.Rows.Lookup(["EMAIL"], [deFields["EMAIL"]]);
+
+                 if (existing.length > 0) {
+                    de.Rows.Update(deFields, ["EMAIL"], [deFields["EMAIL"]]);
+                 } else {
+                    de.Rows.Add(deFields);
+                 }
 
                 showThanks = true;
             }
@@ -86,6 +75,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             }
         }
     } catch (e) {
+        Variable.SetValue("@errorMessage", Stringify(e));
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
         } else {
@@ -97,3 +87,4 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
 `;
     return ssjs;
 }
+

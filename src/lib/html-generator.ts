@@ -904,10 +904,9 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 
 const getClientSideScripts = (pageState: CloudPage) => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
-    const lottiePlayerScriptTag = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
+    const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
 
-    return `
-    ${lottiePlayerScriptTag}
+    const script = `
     <script>
     function setupAccordions() {
         document.querySelectorAll('.accordion-container').forEach(container => {
@@ -1138,7 +1137,7 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 conditionalFields.forEach(field => {
                     const dependsOnName = field.dataset.conditionalOn;
                     const dependsOnValue = field.dataset.conditionalValue;
-                    const triggerField = form.querySelector(`[name="\${dependsOnName}"]`);
+                    const triggerField = form.querySelector(\`[name="\${dependsOnName}"]\`);
                     
                     if(triggerField) {
                         if (triggerField.value === dependsOnValue) {
@@ -1199,6 +1198,8 @@ const getClientSideScripts = (pageState: CloudPage) => {
     });
 </script>
     `;
+
+    return `${lottiePlayerScript}${script}`;
 };
 
 const getPrefillAmpscript = (pageState: CloudPage): string => {

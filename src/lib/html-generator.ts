@@ -24,7 +24,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
 
 const renderField = (
     id: string, 
-    name: string, 
+    fieldName: string, 
     type: string, 
     dataType: string, 
     placeholder: string,
@@ -37,19 +37,19 @@ const renderField = (
       : '';
     
     // The AMPScript variable name will be based on the field's 'name' property
-    const prefillValue = prefill ? ` value="%%=v(@${name})=%%"` : '';
+    const prefillValue = prefill ? ` value="%%=v(@${fieldName})=%%"` : '';
   
     return `
       <div class="input-wrapper" id="wrapper-${id}" style="display: ${conditionalLogic ? 'none' : 'block'};" ${conditionalAttrs}>
         <input 
           type="${type}" 
-          id="${name}" 
-          name="${name}" 
+          id="${fieldName}" 
+          name="${fieldName}" 
           placeholder="${placeholder}" 
           ${required ? 'required="required"' : ''}
           ${prefillValue}
         >
-        <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
+        <div class="error-message" id="error-${fieldName.toLowerCase()}">Por favor, preencha este campo.</div>
       </div>
     `;
   };
@@ -904,10 +904,10 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 
 const getClientSideScripts = (pageState: CloudPage) => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
-    const lottieScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
+    const lottiePlayerScriptTag = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
 
     return `
-    ${lottieScript}
+    ${lottiePlayerScriptTag}
     <script>
     function setupAccordions() {
         document.querySelectorAll('.accordion-container').forEach(container => {
@@ -2013,5 +2013,5 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
-}
+
+    

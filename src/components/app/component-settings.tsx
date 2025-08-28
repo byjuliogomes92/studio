@@ -856,6 +856,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
             };
           
             const enabledFields = formFields.filter(f => fieldsConfig[f.id]?.enabled);
+            const submissionAction = props.submissionAction || 'message';
           
             return (
               <div className="space-y-4">
@@ -1075,7 +1076,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 <div className="space-y-4">
                     <h4 className="font-semibold">Ação Após Envio</h4>
                     <RadioGroup 
-                        value={props.submissionAction || 'message'} 
+                        value={submissionAction} 
                         onValueChange={(value) => onPropChange('submissionAction', value)}
                         className="grid grid-cols-2 gap-4"
                     >
@@ -1093,7 +1094,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </div>
                     </RadioGroup>
 
-                    {(props.submissionAction === 'redirect') && (
+                    {submissionAction === 'redirect' ? (
                          <div className="space-y-2">
                             <Label htmlFor="form-redirect-url">URL de Redirecionamento</Label>
                             <Input
@@ -1103,9 +1104,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                                 placeholder="https://exemplo.com/obrigado"
                             />
                         </div>
-                    )}
-                    
-                    {(props.submissionAction === 'message' || !props.submissionAction) && (
+                    ) : (
                         <div className="space-y-2">
                             <div className="flex items-center gap-1.5">
                                 <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>

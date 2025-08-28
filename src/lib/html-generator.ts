@@ -1116,37 +1116,6 @@ const getClientSideScripts = (pageState: CloudPage) => {
         });
     }
 
-    function handleConditionalFields() {
-        const form = document.querySelector('form[id^="smartcapture-form-"]');
-        if (!form) return;
-    
-        const controllerFields = new Map();
-    
-        form.querySelectorAll('[data-conditional-on]').forEach(dependentField => {
-            const controllerId = dependentField.dataset.conditionalOn;
-            if (!controllerFields.has(controllerId)) {
-                controllerFields.set(controllerId, form.querySelector(\`[id="\${controllerId.toUpperCase()}"]\`));
-            }
-        });
-
-        controllerFields.forEach((controller, controllerId) => {
-            if (controller) {
-                controller.addEventListener('change', () => {
-                    const currentValue = controller.value;
-                    form.querySelectorAll(\`[data-conditional-on="\${controllerId}"]\`).forEach(dependentField => {
-                        if (dependentField.dataset.conditionalValue === currentValue) {
-                            dependentField.style.display = 'block';
-                        } else {
-                            dependentField.style.display = 'none';
-                        }
-                    });
-                });
-                // Trigger change on load to set initial state
-                controller.dispatchEvent(new Event('change'));
-            }
-        });
-    }
-
     function handleSuccessfulFormSubmission() {
         // Show conditional download buttons
         document.querySelectorAll('.download-component-container[style*="display: none"]').forEach(container => {
@@ -1169,10 +1138,10 @@ const getClientSideScripts = (pageState: CloudPage) => {
         }
 
         if ("%%=v(@showThanks)=%%" == "true") {
-             document.querySelectorAll('.form-container').forEach(formWrapper => {
+             document.querySelectorAll('div[id^="form-wrapper-"]').forEach(formWrapper => {
                 formWrapper.style.display = 'none';
              });
-             document.querySelectorAll('.thank-you-message').forEach(thanksMsg => {
+             document.querySelectorAll('div[id^="thank-you-message-"]').forEach(thanksMsg => {
                 thanksMsg.style.display = 'block';
              });
              handleSuccessfulFormSubmission();
@@ -2015,5 +1984,5 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
+`
 }

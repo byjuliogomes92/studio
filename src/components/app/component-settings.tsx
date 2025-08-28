@@ -1096,36 +1096,41 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </div>
                     </RadioGroup>
                     
-                    <div className={cn("space-y-2", submissionAction !== 'message' && 'hidden')}>
-                        <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
-                         <Tooltip>
-                            <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
-                            <TooltipContent>
-                                <div className="max-w-xs">
-                                <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
-                                <p className="mt-2">Ex. de variável: `<h2>Obrigado, %%NOME%%!</h2>`.</p>
-                                <p className="mt-1">Ex. de botão: `<a href="https://..." class="custom-button">Clique Aqui</a>`.</p>
-                                <p className="mt-1">Variáveis disponíveis: `%%NOME%%`, `%%EMAIL%%`, e os nomes dos seus campos personalizados.</p>
-                                </div>
-                            </TooltipContent>
-                        </Tooltip>
-                        <Textarea
-                            id="form-thank-you"
-                            value={props.thankYouMessage || ''}
-                            onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
-                            rows={8}
-                            placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
-                        />
-                    </div>
-                    <div className={cn("space-y-2", submissionAction !== 'redirect' && 'hidden')}>
-                        <Label htmlFor="form-redirect-url">URL de Redirecionamento</Label>
-                        <Input
-                            id="form-redirect-url"
-                            value={props.redirectUrl || ''}
-                            onChange={(e) => onPropChange('redirectUrl', e.target.value)}
-                            placeholder="https://exemplo.com/obrigado"
-                        />
-                    </div>
+                    {submissionAction === 'message' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
+                            <Tooltip>
+                                <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                                <TooltipContent>
+                                    <div className="max-w-xs">
+                                    <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
+                                    <p className="mt-2">Ex. de variável: `<h2>Obrigado, %%NOME%%!</h2>`.</p>
+                                    <p className="mt-1">Ex. de botão: `<a href="https://..." class="custom-button">Clique Aqui</a>`.</p>
+                                    <p className="mt-1">Variáveis disponíveis: `%%NOME%%`, `%%EMAIL%%`, e os nomes dos seus campos personalizados.</p>
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Textarea
+                                id="form-thank-you"
+                                value={props.thankYouMessage || ''}
+                                onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
+                                rows={8}
+                                placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
+                            />
+                        </div>
+                    )}
+
+                    {submissionAction === 'redirect' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="form-redirect-url">URL de Redirecionamento</Label>
+                            <Input
+                                id="form-redirect-url"
+                                value={props.redirectUrl || ''}
+                                onChange={(e) => onPropChange('redirectUrl', e.target.value)}
+                                placeholder="https://exemplo.com/obrigado"
+                            />
+                        </div>
+                    )}
                 </div>
                 
                 <Separator />

@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -608,7 +607,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
 
         const thankYouHtml = `
-            <div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none; text-align: center;">
+            <div class="thank-you-message">
                 ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
                 <div class="thank-you-text">${submission?.message || ''}</div>
             </div>`;
@@ -634,6 +633,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
 
         const formHtml = `
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
+             %%[ IF @showThanks != "true" THEN ]%%
               <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
@@ -680,8 +680,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                       </button>
                   </div>
               </form>
+             %%[ ELSE ]%%
+                ${thankYouHtml}
+             %%[ ENDIF ]%%
           </div>
-          ${thankYouHtml}
         `;
         return formHtml;
       }
@@ -1116,20 +1118,13 @@ const getClientSideScripts = (pageState: CloudPage) => {
         });
     }
 
-    function handleThankYouMessage() {
-        // This variable is set by server-side AMPScript
-        var showThanks = "%%=v(@showThanks)=%%";
-        if (showThanks === "true" && document.querySelector('.form-container')) {
-            var formId = document.querySelector('.form-container').id.replace('form-wrapper-', '');
-            var formWrapper = document.getElementById('form-wrapper-' + formId);
-            var thanksMessage = document.getElementById('thank-you-message-' + formId);
-            if(formWrapper) formWrapper.style.display = 'none';
-            if(thanksMessage) thanksMessage.style.display = 'block';
-            
-            const lottiePlayer = document.getElementById('lottie-animation-' + formId);
-            if (lottiePlayer) {
-              setTimeout(() => lottiePlayer.play(), 100);
-            }
+    function handleThankYouLottie() {
+        const formComponent = document.querySelector('[id^="form-wrapper-"]');
+        if (!formComponent) return;
+        const formId = formComponent.id.replace('form-wrapper-', '');
+        const lottiePlayer = document.getElementById('lottie-animation-' + formId);
+        if (lottiePlayer) {
+          setTimeout(() => lottiePlayer.play(), 100);
         }
     }
 
@@ -1142,7 +1137,7 @@ const getClientSideScripts = (pageState: CloudPage) => {
             }, 2000);
         }
         
-        handleThankYouMessage();
+        handleThankYouLottie();
         
         const phoneInput = document.getElementById('TELEFONE');
         if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
@@ -2034,5 +2029,3 @@ ${ssjsBlock}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
-}

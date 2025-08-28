@@ -607,7 +607,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
 
         const thankYouHtml = `
-            <div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">
+            <div class="thank-you-message">
                 ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
                 <div class="thank-you-text">${submission?.message || ''}</div>
             </div>`;
@@ -632,55 +632,59 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const redirectUrl = submission?.url || meta.redirectUrl ||'';
 
         const formHtml = `
-          <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-              <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
-                   <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
-                   <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                   <input type="hidden" name="__successUrl" value="${redirectUrl}">
-  
-                   <div class="row">
-                    ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
-                    ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional, !!fields.email.prefillFromUrl) : ''}
-                   </div>
-                   <div class="row">
-                    ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional, !!fields.phone.prefillFromUrl) : ''}
-                    ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional, !!fields.cpf.prefillFromUrl) : ''}
-                   </div>
-                   <div class="row">
-                    ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, false) : ''}
-                    ${fields.city?.enabled ? renderCityDropdown(component.props.cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
-                   </div>
-                   
-                   <div class="custom-fields-wrapper">
-                    ${customFields.map(renderCustomField).join('\n')}
-                   </div>
-             
-                  ${fields.optin?.enabled ? `
-                  <div class="consent" id="wrapper-optin" style="display: ${fields.optin.conditional ? 'none' : 'flex'}" ${fields.optin.conditional ? `data-conditional-on="${fields.optin.conditional.field}" data-conditional-value="${fields.optin.conditional.value}"` : ''}>
-                      <input type="checkbox" id="OPTIN" name="OPTIN" value="on" required="required">
-                      <label for="OPTIN">
-                          ${consentText || 'Quero receber novidades e promoções...'}
-                      </label>
-                    <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
-                  </div>
-                  ` : ''}
-                  <div class="form-submit-wrapper" style="text-align: ${buttonAlign || 'center'};">
-                      <button type="submit"
-                        class="form-submit-button"
-                        style="
-                            background-color: ${buttonProps.bgColor || 'var(--theme-color)'};
-                            color: ${buttonProps.textColor || '#FFFFFF'};
-                        "
-                        onmouseover="this.style.backgroundColor='${buttonProps.hoverBgColor || 'var(--theme-color-hover)'}'"
-                        onmouseout="this.style.backgroundColor='${buttonProps.bgColor || 'var(--theme-color)'}'"
-                        ${buttonProps.enableWhenValid ? 'disabled' : ''}
-                      >
-                          ${buttonContent}
-                      </button>
-                  </div>
-              </form>
-              ${thankYouHtml}
-          </div>
+            %%[ IF @showThanks != "true" THEN ]%%
+            <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
+                <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
+                     <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
+                     <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
+                     <input type="hidden" name="__successUrl" value="${redirectUrl}">
+                     <input type="hidden" name="__isPost" value="true">
+    
+                     <div class="row">
+                      ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
+                      ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional, !!fields.email.prefillFromUrl) : ''}
+                     </div>
+                     <div class="row">
+                      ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional, !!fields.phone.prefillFromUrl) : ''}
+                      ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional, !!fields.cpf.prefillFromUrl) : ''}
+                     </div>
+                     <div class="row">
+                      ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, false) : ''}
+                      ${fields.city?.enabled ? renderCityDropdown(component.props.cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
+                     </div>
+                     
+                     <div class="custom-fields-wrapper">
+                      ${customFields.map(renderCustomField).join('\n')}
+                     </div>
+               
+                    ${fields.optin?.enabled ? `
+                    <div class="consent" id="wrapper-optin" style="display: ${fields.optin.conditional ? 'none' : 'flex'}" ${fields.optin.conditional ? `data-conditional-on="${fields.optin.conditional.field}" data-conditional-value="${fields.optin.conditional.value}"` : ''}>
+                        <input type="checkbox" id="OPTIN" name="OPTIN" value="on" required="required">
+                        <label for="OPTIN">
+                            ${consentText || 'Quero receber novidades e promoções...'}
+                        </label>
+                      <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
+                    </div>
+                    ` : ''}
+                    <div class="form-submit-wrapper" style="text-align: ${buttonAlign || 'center'};">
+                        <button type="submit"
+                          class="form-submit-button"
+                          style="
+                              background-color: ${buttonProps.bgColor || 'var(--theme-color)'};
+                              color: ${buttonProps.textColor || '#FFFFFF'};
+                          "
+                          onmouseover="this.style.backgroundColor='${buttonProps.hoverBgColor || 'var(--theme-color-hover)'}'"
+                          onmouseout="this.style.backgroundColor='${buttonProps.bgColor || 'var(--theme-color)'}'"
+                          ${buttonProps.enableWhenValid ? 'disabled' : ''}
+                        >
+                            ${buttonContent}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            %%[ ELSE ]%%
+                ${thankYouHtml}
+            %%[ ENDIF ]%%
         `;
         return formHtml;
       }
@@ -1115,24 +1119,6 @@ const getClientSideScripts = (pageState: CloudPage) => {
         });
     }
 
-    function handleThankYouState() {
-        var showThanks = "%%=v(@showThanks)=%%";
-        if (showThanks === "true") {
-            document.querySelectorAll('[id^="form-wrapper-"]').forEach(function(formWrapper) {
-                var form = formWrapper.querySelector('form');
-                var thankYou = formWrapper.querySelector('.thank-you-message');
-                if (form) form.style.display = 'none';
-                if (thankYou) thankYou.style.display = 'block';
-                
-                var lottiePlayer = thankYou.querySelector('lottie-player');
-                if (lottiePlayer) {
-                    setTimeout(() => lottiePlayer.play(), 100);
-                }
-            });
-        }
-    }
-
-
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
         if (loader) {
@@ -1140,8 +1126,6 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 loader.style.display = 'none';
             }, 2000);
         }
-        
-        handleThankYouState();
         
         const phoneInput = document.getElementById('TELEFONE');
         if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
@@ -1211,30 +1195,38 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     try {
         if (Request.Method == "POST") {
             var deKey = Request.GetFormField("__de");
+            var deMethod = Request.GetFormField("__de_method");
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
             
-            var nome = Request.GetFormField("NOME");
             var email = Request.GetFormField("EMAIL");
-            var telefone = Request.GetFormField("TELEFONE");
-            var cpf = Request.GetFormField("CPF");
-            var optin = Request.GetFormField("OPTIN");
 
-            if (optin == "" || optin == null) {
-                optin = "False";
-            } else if (optin == "on") {
-                optin = "True";
-            }
+            if (email != null && email != "" && deKey != null && deKey != "") {
+                 var de;
+                 if (deMethod == 'name') {
+                    de = DataExtension.Init(deKey);
+                 } else {
+                    de = DataExtension.Init(deKey); // Fallback to key
+                 }
 
-            if ((email != null && email != "") && deKey != null && deKey != "") {
-                 var de = DataExtension.Init(deKey);
-                 de.Rows.Add({
-                    "NOME": nome,
-                    "EMAIL": email,
-                    "TELEFONE": telefone,
-                    "CPF": cpf,
-                    "OPTIN": optin
-                 });
+                 var deFields = {};
+                 var formFields = Request.GetFormFields();
+                 for (var key in formFields) {
+                    if (key.indexOf("__") != 0) { // ignore system fields
+                       deFields[key] = formFields[key];
+                    }
+                 }
+                 
+                 var existing = de.Rows.Lookup(["EMAIL"], [email]);
+                 if (existing.length > 0) {
+                    de.Rows.Update(deFields, ["EMAIL"], [email]);
+                 } else {
+                    de.Rows.Add(deFields);
+                 }
+
+                // Also log to backup Firestore collection
+                HTTP.Post("https://cloudpagestudio.vercel.app/api/submit/${id}", "application/json", Stringify(deFields));
+
                 showThanks = true;
             }
 
@@ -1247,6 +1239,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     } catch (e) {
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
+        } else {
+            Variable.SetValue("@showThanks", "true");
         }
     }
 </script>
@@ -1269,11 +1263,14 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const initialAmpscript = `%%[ 
-    VAR @showThanks, @status
-    SET @showThanks = "false" 
-    ${meta.customAmpscript || ''}
-    ${security.amscript}
-    ${prefillAmpscript || ''}
+  VAR @showThanks
+  IF EMPTY(RequestParameter("__isPost")) THEN
+    SET @showThanks = "false"
+  ENDIF
+
+  ${meta.customAmpscript || ''}
+  ${security.amscript}
+  ${prefillAmpscript || ''}
 ]%%`;
 
   // Use TreatAsContentArea for better performance and to avoid script injection issues

@@ -11,28 +11,27 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     const customFields = formComponent.props.customFields as CustomFormField[] || [];
     const allFields: { deField: string; varName: string; isCheckbox: boolean, isDate: boolean }[] = [];
   
-    if (fields.name?.enabled) allFields.push({ deField: 'NOME', varName: 'nome', isCheckbox: false, isDate: false });
-    if (fields.email?.enabled) allFields.push({ deField: 'EMAIL', varName: 'email', isCheckbox: false, isDate: false });
-    if (fields.phone?.enabled) allFields.push({ deField: 'TELEFONE', varName: 'telefone', isCheckbox: false, isDate: false });
-    if (fields.cpf?.enabled) allFields.push({ deField: 'CPF', varName: 'cpf', isCheckbox: false, isDate: false });
-    if (fields.city?.enabled) allFields.push({ deField: 'CIDADE', varName: 'cidade', isCheckbox: false, isDate: false });
-    if (fields.birthdate?.enabled) allFields.push({ deField: 'DATANASCIMENTO', varName: 'datanascimento', isCheckbox: false, isDate: true });
-    if (fields.optin?.enabled) allFields.push({ deField: 'OPTIN', varName: 'optin', isCheckbox: true, isDate: false });
+    if (fields.name?.enabled) allFields.push({ deField: 'NOME', varName: 'Nome', isCheckbox: false, isDate: false });
+    if (fields.email?.enabled) allFields.push({ deField: 'EMAIL', varName: 'Email', isCheckbox: false, isDate: false });
+    if (fields.phone?.enabled) allFields.push({ deField: 'TELEFONE', varName: 'Telefone', isCheckbox: false, isDate: false });
+    if (fields.cpf?.enabled) allFields.push({ deField: 'CPF', varName: 'Cpf', isCheckbox: false, isDate: false });
+    if (fields.city?.enabled) allFields.push({ deField: 'CIDADE', varName: 'Cidade', isCheckbox: false, isDate: false });
+    if (fields.birthdate?.enabled) allFields.push({ deField: 'DATANASCIMENTO', varName: 'Datanascimento', isCheckbox: false, isDate: true });
+    if (fields.optin?.enabled) allFields.push({ deField: 'OPTIN', varName: 'Optin', isCheckbox: true, isDate: false });
   
     customFields.forEach(field => {
-      // Sanitize custom field names to be valid SSJS variable names (e.g., replace spaces, hyphens)
-      const varName = field.name.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+      const varName = field.name.replace(/[^a-zA-Z0-9_]/g, '');
       allFields.push({ deField: field.name, varName: varName, isCheckbox: field.type === 'checkbox', isDate: field.type === 'date' });
     });
   
     // Add other potential fields
     if (pageState.components.some(c => c.type === 'NPS')) {
-      allFields.push({ deField: 'NPS_SCORE', varName: 'nps_score', isCheckbox: false, isDate: false });
-      allFields.push({ deField: 'NPS_DATE', varName: 'nps_date', isCheckbox: false, isDate: true });
+      allFields.push({ deField: 'NPS_SCORE', varName: 'Nps_score', isCheckbox: false, isDate: false });
+      allFields.push({ deField: 'NPS_DATE', varName: 'Nps_date', isCheckbox: false, isDate: true });
     }
     pageState.components.forEach(c => {
       if (c.abTestEnabled) {
-        const varName = `variante_${c.id.toUpperCase()}`.toLowerCase();
+        const varName = `Variante_${c.id.toUpperCase()}`;
         allFields.push({ deField: `VARIANTE_${c.id.toUpperCase()}`, varName: varName, isCheckbox: false, isDate: false });
       }
     });
@@ -43,8 +42,11 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         if (f.isCheckbox) {
           return `if (${f.varName} == "" || ${f.varName} == null) { ${f.varName} = "False"; } else if (${f.varName} == "on") { ${f.varName} = "True"; }`;
         }
-        if (f.isDate) {
+        if (f.isDate && f.varName !== 'Nps_date') {
              return `if (${f.varName} == "" || ${f.varName} == null) { ${f.varName} = Now(1); }`;
+        }
+        if (f.deField === 'NPS_DATE') {
+            return `var ${f.varName} = Now(1);`;
         }
         return null;
       })
@@ -54,9 +56,8 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     const debugWrites = allFields.map(f => `Write("${f.deField}: " + ${f.varName} + "<br>");`).join('\n                ');
     const rowDataFields = allFields.map(f => `"${f.deField}": ${f.varName}`).join(',\n                        ');
   
-    // Determine the lookup key, prioritizing Email
     const lookupKey = fields.email?.enabled ? 'EMAIL' : (fields.cpf?.enabled ? 'CPF' : '');
-    const lookupVar = fields.email?.enabled ? 'email' : (fields.cpf?.enabled ? 'cpf' : '');
+    const lookupVar = fields.email?.enabled ? 'Email' : (fields.cpf?.enabled ? 'Cpf' : '');
   
     const scriptTemplate = `
 <script runat="server">
@@ -124,7 +125,6 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
         } else {
-            // In case of a server error, you might want to still show a generic thank you or error on the page
             Variable.SetValue("@showThanks", "true");
         }
     }

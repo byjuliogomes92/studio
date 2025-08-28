@@ -601,7 +601,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, cities, thankYouMessage, thankYouAnimation, buttonProps = {}, customFields = [], submissionAction = 'message', redirectUrl = '' } = component.props;
         const { meta } = pageState;
         
         const animationUrls = {
@@ -637,7 +637,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
               <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%" data-page-id="${pageState.id}">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                   <input type="hidden" name="__successUrl" value="${meta.redirectUrl}">
+                   <input type="hidden" name="__successUrl" value="${submissionAction === 'redirect' ? redirectUrl : ''}">
   
                    <div class="row">
                     ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
@@ -2013,5 +2013,7 @@ ${clientSideScripts}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`;
+</html>`
 }
+
+    

@@ -31,6 +31,7 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -1071,28 +1072,64 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
           
                 <Separator />
           
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
-                      <TooltipContent>
-                        <div className="max-w-xs">
-                          <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
-                          <p className="mt-2">Ex. de variável: `<h2>Obrigado, %%NOME%%!</h2>`.</p>
-                          <p className="mt-1">Ex. de botão: `<a href="https://..." class="custom-button">Clique Aqui</a>`.</p>
-                          <p className="mt-1">Variáveis disponíveis: `%%NOME%%`, `%%EMAIL%%`, e os nomes dos seus campos personalizados.</p>
+                <div className="space-y-4">
+                    <h4 className="font-semibold">Ação Após Envio</h4>
+                    <RadioGroup 
+                        value={props.submissionAction || 'message'} 
+                        onValueChange={(value) => onPropChange('submissionAction', value)}
+                        className="grid grid-cols-2 gap-4"
+                    >
+                        <div>
+                            <RadioGroupItem value="message" id="action-message" className="peer sr-only" />
+                            <Label htmlFor="action-message" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                Exibir Mensagem
+                            </Label>
                         </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Textarea
-                    id="form-thank-you"
-                    value={props.thankYouMessage || ''}
-                    onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
-                    rows={8}
-                    placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
-                  />
+                        <div>
+                            <RadioGroupItem value="redirect" id="action-redirect" className="peer sr-only" />
+                            <Label htmlFor="action-redirect" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                Redirecionar
+                            </Label>
+                        </div>
+                    </RadioGroup>
+
+                    {(props.submissionAction === 'redirect') && (
+                         <div className="space-y-2">
+                            <Label htmlFor="form-redirect-url">URL de Redirecionamento</Label>
+                            <Input
+                                id="form-redirect-url"
+                                value={props.redirectUrl || ''}
+                                onChange={(e) => onPropChange('redirectUrl', e.target.value)}
+                                placeholder="https://exemplo.com/obrigado"
+                            />
+                        </div>
+                    )}
+                    
+                    {(props.submissionAction === 'message' || !props.submissionAction) && (
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
+                                <Tooltip>
+                                <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                                <TooltipContent>
+                                    <div className="max-w-xs">
+                                    <p>Esta mensagem aparecerá após o envio. Você pode usar HTML e variáveis dos campos.</p>
+                                    <p className="mt-2">Ex. de variável: `<h2>Obrigado, %%NOME%%!</h2>`.</p>
+                                    <p className="mt-1">Ex. de botão: `<a href="https://..." class="custom-button">Clique Aqui</a>`.</p>
+                                    <p className="mt-1">Variáveis disponíveis: `%%NOME%%`, `%%EMAIL%%`, e os nomes dos seus campos personalizados.</p>
+                                    </div>
+                                </TooltipContent>
+                                </Tooltip>
+                            </div>
+                            <Textarea
+                                id="form-thank-you"
+                                value={props.thankYouMessage || ''}
+                                onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
+                                rows={8}
+                                placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
+                            />
+                        </div>
+                    )}
                 </div>
                 
                 <Separator />
@@ -1519,3 +1556,5 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
+
+    

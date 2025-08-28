@@ -128,11 +128,14 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                         de.Rows.Add(rowData);
                         if (debug) { Write("<br><b>Status:</b> Novo registro inserido (sem chave de atualização)."); }
                     }
-                    showThanks = true;
+                    
+                    if (!redirectUrl || redirectUrl == "") {
+                       showThanks = true;
+                    }
                 }
             }
 
-            if (showThanks && redirectUrl && redirectUrl != "" && !debug) {
+            if (showThanks == false && redirectUrl && redirectUrl != "" && !debug) {
                 Platform.Response.Redirect(redirectUrl);
             } else if (showThanks) {
                 Variable.SetValue("@showThanks", "true");
@@ -142,6 +145,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
         } else {
+             // Fallback to showing thanks message on error to avoid blank pages
             Variable.SetValue("@showThanks", "true");
         }
     }
@@ -149,3 +153,5 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
 `;
     return scriptTemplate;
   }
+
+    

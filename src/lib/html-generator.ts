@@ -631,13 +631,15 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const buttonContent = buttonProps.iconPosition === 'right' 
             ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
             : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
+        
+        const redirectUrl = submission?.url || '';
 
         const formHtml = `
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
               <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%" data-page-id="${pageState.id}">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                   <input type="hidden" name="__successUrl" value="${submission?.type === 'redirect' ? submission.url : ''}">
+                   <input type="hidden" name="__successUrl" value="${redirectUrl}">
   
                    <div class="row">
                     ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}

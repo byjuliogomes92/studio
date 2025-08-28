@@ -84,7 +84,6 @@ export interface CloudPage {
     title: string;
     faviconUrl: string;
     loaderImageUrl: string;
-    redirectUrl: string;
     dataExtensionKey: string;
     dataExtensionTargetMethod?: 'key' | 'name';
     metaDescription: string;
@@ -133,7 +132,7 @@ export interface Template {
   icon?: string;
   styles: CloudPage['styles'];
   components: PageComponent[];
-  meta: Omit<CloudPage['meta'], 'dataExtensionKey' | 'redirectUrl' | 'tracking' | 'security'>;
+  meta: Omit<CloudPage['meta'], 'dataExtensionKey' | 'tracking' | 'security'>;
   cookieBanner?: CloudPage['cookieBanner'];
   createdBy: string; // UserID of the creator
   createdAt: any;

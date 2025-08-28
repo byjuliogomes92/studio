@@ -607,7 +607,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
 
         const thankYouHtml = `
-            <div class="thank-you-message">
+            <div id="thank-you-message-${component.id}" class="thank-you-message" style="display:none;">
                 ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
                 <div class="thank-you-text">${submission?.message || ''}</div>
             </div>`;
@@ -633,7 +633,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
 
         const formHtml = `
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-              %%[ IF @showThanks != "true" THEN ]%%
               <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
@@ -680,9 +679,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                       </button>
                   </div>
               </form>
-              %%[ ELSE ]%%
-                ${thankYouHtml}
-              %%[ ENDIF ]%%
+              ${thankYouHtml}
           </div>
         `;
         return formHtml;
@@ -1118,13 +1115,20 @@ const getClientSideScripts = (pageState: CloudPage) => {
         });
     }
 
-    function handleThankYouLottie() {
-        const formComponent = document.querySelector('[id^="form-wrapper-"]');
-        if (!formComponent) return;
-        const formId = formComponent.id.replace('form-wrapper-', '');
-        const lottiePlayer = document.getElementById('lottie-animation-' + formId);
-        if (lottiePlayer) {
-          setTimeout(() => lottiePlayer.play(), 100);
+    function handleThankYouState() {
+        var showThanks = "%%=v(@showThanks)=%%";
+        if (showThanks === "true") {
+            document.querySelectorAll('[id^="form-wrapper-"]').forEach(function(formWrapper) {
+                var form = formWrapper.querySelector('form');
+                var thankYou = formWrapper.querySelector('.thank-you-message');
+                if (form) form.style.display = 'none';
+                if (thankYou) thankYou.style.display = 'block';
+                
+                var lottiePlayer = thankYou.querySelector('lottie-player');
+                if (lottiePlayer) {
+                    setTimeout(() => lottiePlayer.play(), 100);
+                }
+            });
         }
     }
 
@@ -1137,7 +1141,7 @@ const getClientSideScripts = (pageState: CloudPage) => {
             }, 2000);
         }
         
-        handleThankYouLottie();
+        handleThankYouState();
         
         const phoneInput = document.getElementById('TELEFONE');
         if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
@@ -2005,8 +2009,8 @@ ${trackingScripts}
 ${clientSideScripts}
 </head>
 <body>
-${ssjsBlock}
 ${initialAmpscript}
+${ssjsBlock}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
@@ -2029,5 +2033,5 @@ ${initialAmpscript}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
+`
 }

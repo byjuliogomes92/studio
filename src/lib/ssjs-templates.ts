@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
 
 export function getFormSubmissionScript(pageState: CloudPage): string {
@@ -8,86 +7,15 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         return '';
     }
 
-    const standardFields = formComponent.props.fields as Record<string, FormFieldConfig> || {};
-    const customFields = formComponent.props.customFields as CustomFormField[] || [];
+    // Since we are now using a static script for reliability, we list out all possible fields
+    // This script will attempt to get all of them, and if they don't exist in the form, they will just be empty.
+    
+    const allStandardFields = ['NOME', 'EMAIL', 'TELEFONE', 'CPF', 'CIDADE', 'DATANASCIMENTO', 'OPTIN'];
+    const customFields = (formComponent.props.customFields as CustomFormField[] || []);
     const hasNPS = pageState.components.some(c => c.type === 'NPS');
-    const hasABTest = pageState.components.some(c => c.abTestEnabled);
+    const abTestComponents = pageState.components.filter(c => c.abTestEnabled);
 
-    const getFormFieldLines = Object.keys(standardFields)
-        .filter(key => standardFields[key]?.enabled)
-        .map(key => {
-            const fieldNameMap: { [key: string]: string } = {
-                name: 'NOME',
-                email: 'EMAIL',
-                phone: 'TELEFONE',
-                cpf: 'CPF',
-                city: 'CIDADE',
-                birthdate: 'DATANASCIMENTO',
-                optin: 'OPTIN'
-            };
-            return `var ${fieldNameMap[key].toLowerCase()} = Request.GetFormField("${fieldNameMap[key]}");`;
-        }).join('\n            ');
-
-    const getCustomFormFieldLines = customFields.map(field => {
-        return `var ${field.name.toLowerCase()} = Request.GetFormField("${field.name}");`;
-    }).join('\n            ');
-    
-    const getAbTestFieldLines = hasABTest ? pageState.components
-        .filter(c => c.abTestEnabled)
-        .map(c => `var variante_${c.id.toLowerCase()} = Request.GetFormField("VARIANTE_${c.id.toUpperCase()}");`)
-        .join('\n            ') : '';
-    
-    const npsLines = hasNPS ? `var nps_score = Request.GetFormField("NPS_SCORE");\n            var nps_date = null;` : '';
-
-
-    const handleOptinLine = standardFields.optin?.enabled ? `
-            if (optin == "" || optin == null) {
-                optin = "False";
-            } else if (optin == "on") {
-                optin = "True";
-            }` : '';
-
-    const handleNpsDateLine = hasNPS ? `
-             if (nps_score != "" && nps_score != null) {
-                nps_date = Now(1);
-            }` : '';
-
-
-    const debugLines = Object.keys(standardFields)
-        .filter(key => standardFields[key]?.enabled)
-        .map(key => `Write("${key.toUpperCase()}: " + ${key} + "<br>");`).join('\n                ');
-    
-    const customDebugLines = customFields.map(field => `Write("${field.name.toUpperCase()}: " + ${field.name.toLowerCase()} + "<br>");`).join('\n                ');
-    const npsDebugLine = hasNPS ? 'Write("NPS_SCORE: " + nps_score + "<br>");' : '';
-
-    
-    const deFields: string[] = [];
-    if (standardFields.name?.enabled) deFields.push('"NOME": nome');
-    if (standardFields.email?.enabled) deFields.push('"EMAIL": email');
-    if (standardFields.phone?.enabled) deFields.push('"TELEFONE": telefone');
-    if (standardFields.cpf?.enabled) deFields.push('"CPF": cpf');
-    if (standardFields.city?.enabled) deFields.push('"CIDADE": cidade');
-    if (standardFields.birthdate?.enabled) deFields.push('"DATANASCIMENTO": datanascimento');
-    if (standardFields.optin?.enabled) deFields.push('"OPTIN": optin');
-    
-    customFields.forEach(field => {
-        deFields.push(`"${field.name}": ${field.name.toLowerCase()}`);
-    });
-    
-    if (hasNPS) {
-        deFields.push('"NPS_SCORE": nps_score');
-        deFields.push('"NPS_DATE": nps_date');
-    }
-    
-    if (hasABTest) {
-        pageState.components.filter(c => c.abTestEnabled).forEach(c => {
-            deFields.push(`"VARIANTE_${c.id.toUpperCase()}": variante_${c.id.toLowerCase()}`);
-        });
-    }
-
-    const deFieldsString = deFields.join(',\n                            ');
-
-    return `
+    let ssjs = `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
     var debug = false; 
@@ -98,28 +26,56 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
 
-            ${getFormFieldLines}
-            ${getCustomFormFieldLines}
-            ${npsLines}
-            ${getAbTestFieldLines}
+            // --- Standard Fields ---
+            var nome = Request.GetFormField("NOME");
+            var email = Request.GetFormField("EMAIL");
+            var telefone = Request.GetFormField("TELEFONE");
+            var cpf = Request.GetFormField("CPF");
+            var cidade = Request.GetFormField("CIDADE");
+            var datanascimento = Request.GetFormField("DATANASCIMENTO");
+            var optin = Request.GetFormField("OPTIN");
 
-            ${handleOptinLine}
-            ${handleNpsDateLine}
+            // --- Custom Fields ---
+            ${customFields.map(f => `var ${f.name.toLowerCase()} = Request.GetFormField("${f.name}");`).join('\n            ')}
 
-            if (debug) {
-                Write("<br><b>--- DEBUG ---</b><br>");
-                ${debugLines}
-                ${customDebugLines}
-                ${npsDebugLine}
+            // --- Other system fields ---
+            ${hasNPS ? 'var nps_score = Request.GetFormField("NPS_SCORE");\n            var nps_date = null;' : ''}
+            ${abTestComponents.map(c => `var variante_${c.id.toLowerCase()} = Request.GetFormField("VARIANTE_${c.id.toUpperCase()}");`).join('\n            ')}
+
+
+            if (optin == "" || optin == null) {
+                optin = "False";
+            } else if (optin == "on") {
+                optin = "True";
             }
             
-            var hasEmail = typeof email !== 'undefined' && email != null && email != "";
+            ${hasNPS ? 'if (nps_score != "" && nps_score != null) { nps_date = Now(1); }' : ''}
 
-            if (hasEmail && deKey != null && deKey != "") {
+
+            if (email != null && email != "" && deKey != null && deKey != "") {
                 var de = DataExtension.Init(deKey);
-                de.Rows.Add({
-                    ${deFieldsString}
-                });
+                var deFields = {};
+                if (nome) deFields.NOME = nome;
+                if (email) deFields.EMAIL = email;
+                if (telefone) deFields.TELEFONE = telefone;
+                if (cpf) deFields.CPF = cpf;
+                if (cidade) deFields.CIDADE = cidade;
+                if (datanascimento) deFields.DATANASCIMENTO = datanascimento;
+                if (optin) deFields.OPTIN = optin;
+
+                ${customFields.map(f => `if (${f.name.toLowerCase()}) deFields.${f.name} = ${f.name.toLowerCase()};`).join('\n                ')}
+
+                ${hasNPS ? 'if (nps_score) deFields.NPS_SCORE = nps_score;\n                if (nps_date) deFields.NPS_DATE = nps_date;' : ''}
+                
+                ${abTestComponents.map(c => `if (variante_${c.id.toLowerCase()}) deFields.VARIANTE_${c.id.toUpperCase()} = variante_${c.id.toLowerCase()};`).join('\n                ')}
+                
+                var existing = de.Rows.Lookup(["EMAIL"], [email]);
+                if (existing.length > 0) {
+                   de.Rows.Update(deFields, ["EMAIL"], [email]);
+                } else {
+                   de.Rows.Add(deFields);
+                }
+
                 showThanks = true;
             }
 
@@ -133,8 +89,11 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
         } else {
+            /* Fallback to show thanks message on error to avoid user confusion */
             Variable.SetValue("@showThanks", "true");
         }
     }
-</script>`;
+</script>
+`;
+    return ssjs;
 }

@@ -634,7 +634,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const redirectUrl = submission?.url || meta.redirectUrl ||'';
 
         const formHtml = `
-          %%[ IF @showThanks != "true" THEN ]%%
           <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
               <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
@@ -683,9 +682,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                   </div>
               </form>
           </div>
-          %%[ ELSE ]%%
-              ${submission.message || ''}
-          %%[ ENDIF ]%%
+          ${thankYouHtml}
         `;
         return formHtml;
       }
@@ -1128,6 +1125,19 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 loader.style.display = 'none';
             }, 2000);
         }
+
+        // Show thank you message logic, moved here to ensure it runs after DOM is ready
+        if ("%%=v(@showThanks)=%%" == "true" && document.querySelector('.form-container')) {
+            var formId = document.querySelector('.form-container').id.replace('form-wrapper-', '');
+            var formWrapper = document.getElementById('form-wrapper-' + formId);
+            var thanksMessage = document.getElementById('thank-you-message-' + formId);
+            if(formWrapper) formWrapper.style.display = 'none';
+            if(thanksMessage) thanksMessage.style.display = 'block';
+            const lottiePlayer = document.getElementById('lottie-animation-' + formId);
+            if (lottiePlayer) {
+              setTimeout(() => lottiePlayer.play(), 100);
+            }
+        }
         
         const phoneInput = document.getElementById('TELEFONE');
         if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
@@ -1207,14 +1217,16 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
-  // Use TreatAsContentArea for better performance and to avoid script injection issues
-  return `%%[ 
+  const initialAmpscript = `%%[ 
     VAR @showThanks, @status
     SET @showThanks = "false" 
     ${meta.customAmpscript || ''}
     ${security.amscript}
     ${prefillAmpscript || ''}
-]%%${ssjsBlock}<!DOCTYPE html>
+]%%`;
+
+  // Use TreatAsContentArea for better performance and to avoid script injection issues
+  return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1946,6 +1958,8 @@ ${trackingScripts}
 ${clientSideScripts}
 </head>
 <body>
+${initialAmpscript}
+${ssjsBlock}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
@@ -1968,5 +1982,5 @@ ${clientSideScripts}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
+`
 }

@@ -35,51 +35,53 @@ export function OnboardingGuide({ objectives, onClose }: OnboardingGuideProps) {
       className="w-full"
     >
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between p-3">
           <div>
-            <CardTitle>Guia de Início Rápido</CardTitle>
-            <CardDescription>Complete estes passos para dominar a plataforma.</CardDescription>
+            <CardTitle className="text-base">Guia de Início Rápido</CardTitle>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0">
              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="h-7 w-7">
                   <ChevronUp className={cn("h-4 w-4", isOpen && "rotate-180")} />
                   <span className="sr-only">Minimizar</span>
                 </Button>
             </CollapsibleTrigger>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
                 <X className="h-4 w-4" />
                 <span className="sr-only">Fechar</span>
             </Button>
           </div>
         </CardHeader>
         <CollapsibleContent>
-            <CardContent>
-                <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                    <div className="w-full bg-muted rounded-full h-2.5">
+            <CardContent className="p-3 pt-0">
+                <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                     <span className="text-xs font-medium text-muted-foreground">
+                        {completedCount}/{totalCount}
+                    </span>
+                    <div className="w-full bg-muted rounded-full h-1.5">
                     <div
-                        className="bg-primary h-2.5 rounded-full transition-all duration-500"
+                        className="bg-primary h-1.5 rounded-full transition-all duration-500"
                         style={{ width: `${progressPercentage}%` }}
                     ></div>
                     </div>
-                    <span className="text-sm font-medium text-muted-foreground">
-                    {completedCount}/{totalCount}
-                    </span>
                 </div>
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                     {objectivesConfig.map((obj) => {
                     const isCompleted = objectives[obj.key as keyof OnboardingObjectives];
                     const Icon = obj.icon;
                     return (
-                        <li key={obj.key} className="flex items-center gap-3">
+                        <li key={obj.key} className="flex items-center gap-2">
                         {isCompleted ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
                         ) : (
-                            <Circle className="h-5 w-5 text-muted-foreground" />
+                            <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         )}
-                        <Icon className="h-5 w-5 text-muted-foreground" />
-                        <span className={isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'}>
+                        <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className={cn(
+                            "text-sm",
+                            isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
+                        )}>
                             {obj.label}
                         </span>
                         </li>

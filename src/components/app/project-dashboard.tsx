@@ -712,13 +712,6 @@ export function ProjectDashboard() {
             </div>
         </div>
         
-        {isOnboardingGuideOpen && userProgress && userProgress.objectives && Object.values(userProgress.objectives).some(v => !v) && (
-          <div className="mb-6">
-            <OnboardingGuide objectives={userProgress.objectives} onClose={closeOnboardingGuide} />
-          </div>
-        )}
-
-
         {filteredAndSortedProjects.length === 0 && !searchTerm ? (
           <div className="text-center py-16">
             <Folder size={48} className="mx-auto text-muted-foreground" />
@@ -862,6 +855,13 @@ export function ProjectDashboard() {
           </div>
         )}
       </main>
+
+      {/* Onboarding Guide */}
+      {isOnboardingGuideOpen && userProgress && userProgress.objectives && Object.values(userProgress.objectives).some(v => !v) && (
+          <div className="fixed bottom-4 right-4 w-full max-w-sm z-50">
+            <OnboardingGuide objectives={userProgress.objectives} onClose={closeOnboardingGuide} />
+          </div>
+        )}
 
       {/* Create Project Dialog */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>

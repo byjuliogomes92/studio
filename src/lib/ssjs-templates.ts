@@ -8,7 +8,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         return '';
     }
 
-    // This script is now more explicit and robust.
+    // Explicit and safe SSJS script based on the working solution.
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
@@ -17,10 +17,8 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     try {
         if (Request.Method == "POST") {
             var deKey = Request.GetFormField("__de");
-            var redirectUrl = Request.GetFormField("__successUrl");
-            var showThanks = false;
-
-            // 1. Explicitly capture expected fields
+            
+            // Explicitly capture all expected fields
             var nome = Request.GetFormField("NOME");
             var email = Request.GetFormField("EMAIL");
             var telefone = Request.GetFormField("TELEFONE");
@@ -30,16 +28,15 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             var optin = Request.GetFormField("OPTIN");
             var npsScore = Request.GetFormField("NPS_SCORE");
             
-            // 2. Set AMPScript variable for thank you message personalization
+            // Set AMPScript variable for thank you message personalization
             if (nome) {
                 Variable.SetValue("@NOME", nome);
             }
 
-            // 3. Only proceed if essential data is present
             if (deKey && deKey != "" && deKey != "CHANGE-ME" && email && email != "") {
                 var de = DataExtension.Init(deKey);
                 
-                // 4. Manually build the payload, checking for values
+                // Manually build the payload, checking for values
                 var deFields = {};
                 if (email) { deFields["EMAIL"] = email; }
                 if (nome) { deFields["NOME"] = nome; }
@@ -47,7 +44,9 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                 if (cpf) { deFields["CPF"] = cpf; }
                 if (cidade) { deFields["CIDADE"] = cidade; }
                 if (datanascimento) { deFields["DATANASCIMENTO"] = datanascimento; }
-                if (npsScore) { 
+                
+                // Handle NPS score only if it exists
+                if (npsScore && npsScore != "") { 
                     deFields["NPS_SCORE"] = npsScore;
                     deFields["NPS_DATE"] = Now(1);
                 }
@@ -59,20 +58,11 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                     deFields["OPTIN"] = "False";
                 }
                 
-                // 5. Use Rows.Add for robust insertion
-                var status = de.Rows.Add(deFields);
+                var status = de.Rows.Add([deFields]);
 
-                // If Add is successful, set the flag to show the thank you message
                 if (status == "OK") {
-                    showThanks = true;
+                    Variable.SetValue("@showThanks", "true");
                 }
-            }
-
-            if (showThanks && redirectUrl && !debug) {
-                Platform.Response.Redirect(redirectUrl);
-            } else if (showThanks) {
-                // 6. Signal success to AMPScript
-                Variable.SetValue("@showThanks", "true");
             }
         }
     } catch (e) {

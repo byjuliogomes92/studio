@@ -1,7 +1,5 @@
 
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
-import { getFormSubmissionScript } from './ssjs-templates';
-
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
@@ -541,17 +539,8 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'Form': {
         const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
         
-        const animationUrls = {
-            confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
-        };
-        const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
+        const thankYouMessage = submission.message || '<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>';
 
-        const thankYouHtml = `
-            <div class="thank-you-message">
-                ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
-                <div class="thank-you-text">%%=TreatAsContent(@thankYouMessage)=%%</div>
-            </div>`;
-        
         const lucideIconSvgs: Record<string, string> = {
             none: '',
             send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
@@ -570,7 +559,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
         
         return `
-            %%[ IF @showThanks != "true" THEN ]%%
+            %%[ IF @submissionStatus != "SUCCESS" THEN ]%%
             <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
                 <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                      <input type="hidden" name="__isPost" value="true">
@@ -612,7 +601,9 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                 </form>
             </div>
             %%[ ELSE ]%%
-                ${thankYouHtml}
+                <div class="thank-you-message">
+                    %%=TreatAsContent(@thankYouMessage)=%%
+                </div>
             %%[ ENDIF ]%%
         `;
       }
@@ -1108,10 +1099,59 @@ ${setStatements}
 `;
 }
 
+const getFormProcessingAmpscript = (pageState: CloudPage): string => {
+    const formComponent = pageState.components.find(c => c.type === 'Form');
+    if (!formComponent) return '';
+
+    const deKey = pageState.meta.dataExtensionKey;
+    const formFields = formComponent.props.fields || {};
+    const customFormFields = formComponent.props.customFields || [];
+
+    let varDeclarations = ['@submissionStatus', '@email', '@nome', '@cpf', '@telefone', '@optin'];
+    let requestParameters = [
+        'SET @email = RequestParameter("EMAIL")',
+        'SET @nome = RequestParameter("NOME")',
+        'SET @cpf = RequestParameter("CPF")',
+        'SET @telefone = RequestParameter("TELEFONE")',
+        'SET @optin = RequestParameter("OPTIN")'
+    ];
+    let upsertPairs = ['"EMAIL", @email'];
+
+    if (formFields.name?.enabled) upsertPairs.push('"NOME", @nome');
+    if (formFields.cpf?.enabled) upsertPairs.push('"CPF", @cpf');
+    if (formFields.phone?.enabled) upsertPairs.push('"TELEFONE", @telefone');
+    if (formFields.optin?.enabled) upsertPairs.push('"OPTIN", IIF(Empty(@optin), "false", "true")');
+
+    customFormFields.forEach((field: CustomFormField) => {
+        varDeclarations.push(`@${field.name}`);
+        requestParameters.push(`SET @${field.name} = RequestParameter("${field.name}")`);
+        upsertPairs.push(`"${field.name}", @${field.name}`);
+    });
+    
+    const thankYouMessage = formComponent.props.submission?.message || '<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>';
+
+    return `%%[
+    VAR ${varDeclarations.join(', ')}
+    SET @thankYouMessage = "${thankYouMessage.replace(/"/g, '""')}"
+
+    IF RequestParameter("submitted") == "true" THEN
+        ${requestParameters.join('\n        ')}
+        
+        IF NOT EMPTY(@email) THEN
+            UpsertData("${deKey}", 1, ${upsertPairs.join(', ')}, "CreatedDate", NOW())
+            SET @submissionStatus = "SUCCESS"
+        ELSE
+            SET @submissionStatus = "ERROR"
+        ENDIF
+    ENDIF
+]%%`;
+};
+
+
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string {
   const { id, styles, components, meta, cookieBanner } = pageState;
   
-  const ssjsScript = getFormSubmissionScript(pageState);
+  const formProcessingAmpscript = isForPreview ? '' : getFormProcessingAmpscript(pageState);
 
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
   
@@ -1135,14 +1175,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const initialAmpscript = `%%[ 
-    VAR @showThanks, @NOME
-    IF RequestParameter("__success") == "true" THEN
-        SET @showThanks = "true"
-        SET @NOME = RequestParameter("NOME")
-    ELSE
-        SET @showThanks = "false"
-    ENDIF
-
     ${meta.customAmpscript || ''}
     ${security.amscript}
     ${prefillAmpscript || ''}
@@ -1166,6 +1198,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 ${trackingScripts}
+${formProcessingAmpscript}
 <style>
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
@@ -1880,9 +1913,6 @@ ${trackingScripts}
 ${clientSideScripts}
 </head>
 <body>
-<script runat="server">
-  ${ssjsScript}
-</script>
 ${initialAmpscript}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
@@ -1906,4 +1936,3 @@ ${initialAmpscript}
   %%[ ENDIF ]%%
 </body>
 </html>`
-}

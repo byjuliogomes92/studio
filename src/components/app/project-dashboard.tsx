@@ -31,6 +31,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -440,10 +441,12 @@ export function ProjectDashboard() {
                                 Renomear
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => openDeleteModal(project)}>
-                                <Trash2 className="mr-2 h-4 w-4"/>
-                                Excluir
-                            </DropdownMenuItem>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); openDeleteModal(project); }}>
+                                    <Trash2 className="mr-2 h-4 w-4"/>
+                                    Excluir
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -489,10 +492,12 @@ export function ProjectDashboard() {
                                   Renomear
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive" onClick={() => openDeleteModal(project)}>
-                                  <Trash2 className="mr-2 h-4 w-4"/>
-                                  Excluir
-                              </DropdownMenuItem>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); openDeleteModal(project); }}>
+                                    <Trash2 className="mr-2 h-4 w-4"/>
+                                    Excluir
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
                           </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

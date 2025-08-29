@@ -611,7 +611,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const thankYouHtml = `
             <div class="thank-you-message">
                 ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
-                <div class="thank-you-text">${submission?.message || ''}</div>
+                <div class="thank-you-text">%%=TreatAsContent(@thankYouMessage)=%%</div>
             </div>`;
         
         const lucideIconSvgs: Record<string, string> = {
@@ -634,6 +634,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const redirectUrl = submission?.url || meta.redirectUrl ||'';
 
         return `
+            %%[ Set @thankYouMessage = "${submission?.message || 'Obrigado!'}" ]%%
             %%[ IF @showThanks != "true" THEN ]%%
             <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
                 <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
@@ -1208,7 +1209,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const initialAmpscript = `%%[ 
-    VAR @showThanks, @status
+    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
     ENDIF
@@ -1959,18 +1960,16 @@ ${ssjsScript}
   <div class="container">
     ${headerComponent ? renderComponent(headerComponent, pageState, isForPreview) : ''}
     ${bannerComponent ? renderComponent(bannerComponent, pageState, isForPreview) : ''}
-    %%[ IF @showThanks != "true" THEN ]%%
     <div class="content-wrapper">
+      %%[ IF @showThanks != "true" THEN ]%%
       ${mainComponents}
-    </div>
-    %%[ ELSE ]%%
-    <div class="content-wrapper">
+      %%[ ELSE ]%%
         <div class="thank-you-message">
             <h2>Obrigado!</h2>
             <p>Seus dados foram enviados com sucesso.</p>
         </div>
+      %%[ ENDIF ]%%
     </div>
-    %%[ ENDIF ]%%
     ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}
   </div>
 

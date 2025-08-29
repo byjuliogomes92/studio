@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
 
 export function getFormSubmissionScript(pageState: CloudPage): string {
@@ -36,8 +35,10 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             }
 
             // 2. Only proceed if the essential fields (DE Key and Email) are present
-            if (deKey && deKey != "" && deKey != "CHANGE-ME" && email && email != "") {
+            if (deKey && deKey != "" && deKey != "CHANGE-ME") {
                 
+                var de = DataExtension.Init(deKey);
+
                 // 3. Manually and safely build the payload object for the Data Extension
                 var deFields = {};
                 if (email) { deFields["EMAIL"] = email; }
@@ -54,23 +55,24 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                 }
                 
                 // Correctly handle the boolean value for the Opt-in checkbox
-                deFields["OPTIN"] = (optin == "on") ? "True" : "False";
+                if (optin) {
+                    deFields["OPTIN"] = (optin == "on") ? "True" : "False";
+                }
                 
                 // Add a creation date for the record
                 deFields["CreatedDate"] = Now(1);
 
-                // 4. Use the robust UpsertData function to add/update the record
-                // We use "EMAIL" as the key to find and update existing records.
-                var status = Platform.Function.UpsertData(deKey, ["EMAIL"], [email], Object.keys(deFields), Platform.Function.CreateObject("AttributeValue", deFields));
+                // 4. Use Rows.Add for direct insertion. This returns the number of rows added (1 if successful).
+                var status = de.Rows.Add(deFields);
                 
-                // 5. If the upsert is successful, set the flag to show the thank you message
-                if (status > 0) {
+                // 5. If the insert is successful, set the flag to show the thank you message
+                if (status == 1) {
                     Variable.SetValue("@showThanks", "true");
                 }
             }
         }
     } catch (e) {
-        // This will now only catch critical script errors, not silent data saving failures.
+        // This will now only catch critical script errors.
         if (debug) {
             Write("<br><b>--- SSJS ERROR ---</b><br>" + Stringify(e));
         }

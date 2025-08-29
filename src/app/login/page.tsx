@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -101,7 +101,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm relative">
         <CardHeader className="text-center">
           <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
           <CardTitle className="text-2xl">Login</CardTitle>
@@ -172,7 +172,15 @@ export default function LoginPage() {
             </Link>
           </div>
         </CardContent>
+         <div className="mt-6 text-center text-sm p-4">
+            <Link href="https://cloudpagestudio.vercel.app" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para a página inicial
+            </Link>
+          </div>
       </Card>
     </div>
   );
 }
+
+    

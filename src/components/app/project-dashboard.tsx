@@ -3,9 +3,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Project, CloudPage, UserProgress } from "@/lib/types";
+import type { Project, CloudPage, UserProgress, Template, PageView } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Palette, Smile, Menu, User } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
-import { addProject, deleteProject, getProjectsForUser, updateProject, getUserProgress, updateUserProgress } from "@/lib/firestore";
+import { addProject, deleteProject, getProjectsForUser, updateProject, getUserProgress, updateUserProgress, getTemplates, getPageViews } from "@/lib/firestore";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -93,6 +94,8 @@ export function ProjectDashboard() {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [pageViews, setPageViews] = useState<PageView[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
@@ -133,13 +136,23 @@ export function ProjectDashboard() {
       if (!user) return;
       setIsLoading(true);
       try {
-        const [{ projects, pages }, progress] = await Promise.all([
+        const [{ projects, pages }, progress, templates] = await Promise.all([
           getProjectsForUser(user.uid),
           getUserProgress(user.uid),
+          getTemplates(user.uid),
         ]);
         setProjects(projects);
         setPages(pages);
         setUserProgress(progress);
+        setTemplates(templates);
+
+        // Fetch views for all pages
+        if (pages.length > 0) {
+            const viewPromises = pages.map(page => getPageViews(page.id));
+            const viewsPerPagina = await Promise.all(viewPromises);
+            setPageViews(viewsPerPagina.flat());
+        }
+
       } catch (err) {
         console.error(err);
         toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os dados.' });
@@ -308,6 +321,25 @@ export function ProjectDashboard() {
       });
   }, [projects, pages, searchTerm, sortOption]);
 
+  const dashboardStats = useMemo(() => {
+    const now = new Date();
+    const activePages = pages.filter(page => {
+        const publishDate = page.publishDate?.toDate ? page.publishDate.toDate() : (page.publishDate ? new Date(page.publishDate) : null);
+        const expiryDate = page.expiryDate?.toDate ? page.expiryDate.toDate() : (page.expiryDate ? new Date(page.expiryDate) : null);
+        const isPublished = !publishDate || publishDate <= now;
+        const isNotExpired = !expiryDate || expiryDate > now;
+        return isPublished && isNotExpired;
+    });
+
+    return {
+        projectCount: projects.length,
+        pageCount: pages.length,
+        activePageCount: activePages.length,
+        templateCount: templates.length,
+        totalVisitors: pageViews.length,
+    }
+  }, [projects, pages, templates, pageViews]);
+
 
   if (isLoading || authLoading) {
     return (
@@ -412,7 +444,7 @@ export function ProjectDashboard() {
       )
     }
     
-    const userInitials = user.displayName?.split(' ').map(n => n[0]).join('') || user.email?.[0].toUpperCase() || 'U';
+    const userInitials = user?.displayName?.split(' ').map(n => n[0]).join('') || user?.email?.[0].toUpperCase() || 'U';
 
     return (
        <>
@@ -591,6 +623,66 @@ export function ProjectDashboard() {
       </header>
 
       <main className="p-4 md:p-6">
+        <div className="mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <Card className="xl:col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total de Projetos</CardTitle>
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{dashboardStats.projectCount}</div>
+                </CardContent>
+            </Card>
+            <Card className="xl:col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total de Páginas</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{dashboardStats.pageCount}</div>
+                </CardContent>
+            </Card>
+             <Card className="xl:col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Visitantes Únicos</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{dashboardStats.totalVisitors}</div>
+                </CardContent>
+            </Card>
+            <Card className="xl:col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Templates Criados</CardTitle>
+                    <Library className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{dashboardStats.templateCount}</div>
+                </CardContent>
+            </Card>
+             <Card className="xl:col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Páginas Ativas</CardTitle>
+                    <Link className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-green-500">{dashboardStats.activePageCount}</div>
+                </CardContent>
+            </Card>
+            <Card className="xl:col-span-1 bg-primary/5 border-primary/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-primary">Próximo Passo</CardTitle>
+                    <Target className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-base font-bold text-primary">
+                        {projects.length === 0 ? "Crie seu primeiro projeto!" : "Crie uma nova página"}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+
+
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             {renderSearch()}
             <div className="flex items-center gap-2">

@@ -1,6 +1,8 @@
 
 
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
+import { getFormSubmissionScript } from './ssjs-templates';
+
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
@@ -638,6 +640,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                    <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                    <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
                    <input type="hidden" name="__successUrl" value="${redirectUrl}">
+                   <input type="hidden" name="__isPost" value="true">
   
                    <div class="row">
                     ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
@@ -1200,58 +1203,12 @@ ${setStatements}
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string {
   const { id, styles, components, meta, cookieBanner } = pageState;
   
+  const ssjsScript = getFormSubmissionScript(pageState);
+
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
   
   const security = getSecurityScripts(pageState);
   
-  const ssjsBlock = isForPreview ? '' : `
-<script runat="server">
-    Platform.Load("Core", "1.1.1");
-    var debug = false; 
-
-    try {
-        if (Request.Method == "POST") {
-            var deKey = Request.GetFormField("__de");
-            var redirectUrl = Request.GetFormField("__successUrl");
-            var showThanks = false;
-            
-            var nome = Request.GetFormField("NOME");
-            var email = Request.GetFormField("EMAIL");
-            var telefone = Request.GetFormField("TELEFONE");
-            var cpf = Request.GetFormField("CPF");
-            var optin = Request.GetFormField("OPTIN");
-
-            if (optin == "" || optin == null) {
-                optin = "False";
-            } else if (optin == "on") {
-                optin = "True";
-            }
-
-            if ((email != null && email != "") && deKey != null && deKey != "") {
-                 var de = DataExtension.Init(deKey);
-                 de.Rows.Add({
-                    "NOME": nome,
-                    "EMAIL": email,
-                    "TELEFONE": telefone,
-                    "CPF": cpf,
-                    "OPTIN": optin
-                 });
-                showThanks = true;
-            }
-
-            if (showThanks && redirectUrl && redirectUrl.length > 0 && !debug) {
-                Platform.Response.Redirect(redirectUrl);
-            } else if (showThanks) {
-                Variable.SetValue("@showThanks", "true");
-            }
-        }
-    } catch (e) {
-        if (debug) {
-            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
-        }
-    }
-</script>
-`;
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
@@ -1271,7 +1228,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const initialAmpscript = `%%[ 
     VAR @showThanks, @status
-    SET @showThanks = "false" 
+    IF EMPTY(RequestParameter("__isPost")) THEN
+      SET @showThanks = "false"
+    ENDIF
     ${meta.customAmpscript || ''}
     ${security.amscript}
     ${prefillAmpscript || ''}
@@ -2011,18 +1970,27 @@ ${clientSideScripts}
 </head>
 <body>
 ${initialAmpscript}
-${ssjsBlock}
+${ssjsScript}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
   </div>
   ${stripeComponents}
-  <div class="container" style="display: block;">
+  <div class="container">
     ${headerComponent ? renderComponent(headerComponent, pageState, isForPreview) : ''}
     ${bannerComponent ? renderComponent(bannerComponent, pageState, isForPreview) : ''}
+    %%[ IF @showThanks != "true" THEN ]%%
     <div class="content-wrapper">
       ${mainComponents}
     </div>
+    %%[ ELSE ]%%
+    <div class="content-wrapper">
+        <div class="thank-you-message">
+            <h2>Obrigado!</h2>
+            <p>Seus dados foram enviados com sucesso.</p>
+        </div>
+    </div>
+    %%[ ENDIF ]%%
     ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}
   </div>
 
@@ -2034,5 +2002,5 @@ ${ssjsBlock}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;
 }

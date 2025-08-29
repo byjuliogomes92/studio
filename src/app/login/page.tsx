@@ -2,10 +2,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -100,17 +100,17 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
-      <Card className="w-full max-w-sm relative">
-        <CardHeader className="text-center">
-          <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Entre com seu email e senha para acessar seus projetos
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
+            <h1 className="text-3xl font-bold">Login</h1>
+            <p className="text-balance text-muted-foreground">
+              Entre com seu email e senha para acessar seus projetos
+            </p>
+          </div>
+          <div className="grid gap-4">
              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -125,15 +125,23 @@ export default function LoginPage() {
                 />
                 </div>
                 <div className="grid gap-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input 
-                    id="password" 
-                    type="password" 
-                    required 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                />
+                  <div className="flex items-center">
+                    <Label htmlFor="password">Senha</Label>
+                    <Link
+                      href="#"
+                      className="ml-auto inline-block text-sm underline"
+                    >
+                      Esqueceu sua senha?
+                    </Link>
+                  </div>
+                  <Input 
+                      id="password" 
+                      type="password" 
+                      required 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                  />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Login"}
@@ -171,16 +179,24 @@ export default function LoginPage() {
               Cadastre-se
             </Link>
           </div>
-        </CardContent>
-         <div className="mt-6 text-center text-sm p-4">
+           <div className="mt-6 text-center text-sm">
             <Link href="https://cloudpagestudio.vercel.app" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar para a página inicial
             </Link>
           </div>
-      </Card>
+        </div>
+      </div>
+      <div className="hidden bg-muted lg:block">
+        <Image
+          src="https://picsum.photos/1920/1080"
+          alt="Image"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          data-ai-hint="abstract office"
+        />
+      </div>
     </div>
   );
 }
-
-    

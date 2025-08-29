@@ -2,16 +2,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -107,86 +101,94 @@ export default function SignupPage() {
   );
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
-          <CardTitle className="text-2xl">Crie sua Conta</CardTitle>
-          <CardDescription>
-            É rápido e fácil. Comece a construir suas páginas agora mesmo no CloudPage Studio.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <form onSubmit={handleSignup} className="space-y-4">
-                <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                />
-                </div>
-                <div className="grid gap-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input 
-                    id="password" 
-                    type="password" 
-                    required 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Quero me Cadastrar"}
-                </Button>
-            </form>
-
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                    OU
-                    </span>
-                </div>
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
+       <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+            <div className="grid gap-2 text-center">
+                <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
+                <h1 className="text-3xl font-bold">Crie sua Conta</h1>
+                <p className="text-balance text-muted-foreground">
+                    É rápido e fácil. Comece a construir suas páginas agora mesmo no CloudPage Studio.
+                </p>
             </div>
-            
-            {isGoogleAuthEnabled ? googleButton : (
-              <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="w-full">{googleButton}</div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Disponível no ambiente de produção.</p>
-                    </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-          <div className="mt-4 text-center text-sm">
-            Já possui uma conta?{" "}
-            <Link href="/login" className="underline">
-              Fazer Login
-            </Link>
-          </div>
-        </CardContent>
-         <div className="mt-6 text-center text-sm p-4">
+            <div className="grid gap-4">
+                <form onSubmit={handleSignup} className="space-y-4">
+                    <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                        id="email"
+                        type="email"
+                        placeholder="m@example.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
+                    />
+                    </div>
+                    <div className="grid gap-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <Input 
+                        id="password" 
+                        type="password" 
+                        required 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={isLoading}
+                    />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Quero me Cadastrar"}
+                    </Button>
+                </form>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                        OU
+                        </span>
+                    </div>
+                </div>
+                
+                {isGoogleAuthEnabled ? googleButton : (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <div className="w-full">{googleButton}</div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>Disponível no ambiente de produção.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                )}
+            </div>
+            <div className="mt-4 text-center text-sm">
+                Já possui uma conta?{" "}
+                <Link href="/login" className="underline">
+                Fazer Login
+                </Link>
+            </div>
+             <div className="mt-6 text-center text-sm">
             <Link href="https://cloudpagestudio.vercel.app" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar para a página inicial
             </Link>
           </div>
-      </Card>
+        </div>
+      </div>
+      <div className="hidden bg-muted lg:block">
+        <Image
+          src="https://picsum.photos/1920/1080?grayscale"
+          alt="Image"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          data-ai-hint="abstract architecture"
+        />
+      </div>
     </div>
   );
 }
-
-    

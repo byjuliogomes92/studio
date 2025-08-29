@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
 
 export function getFormSubmissionScript(pageState: CloudPage): string {
@@ -27,6 +28,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             var cidade = Request.GetFormField("CIDADE");
             var datanascimento = Request.GetFormField("DATANASCIMENTO");
             var optin = Request.GetFormField("OPTIN");
+            var npsScore = Request.GetFormField("NPS_SCORE");
             
             // 2. Set AMPScript variable for thank you message personalization
             if (nome) {
@@ -45,6 +47,10 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                 if (cpf) { deFields["CPF"] = cpf; }
                 if (cidade) { deFields["CIDADE"] = cidade; }
                 if (datanascimento) { deFields["DATANASCIMENTO"] = datanascimento; }
+                if (npsScore) { 
+                    deFields["NPS_SCORE"] = npsScore;
+                    deFields["NPS_DATE"] = Now(1);
+                }
                 
                 // Handle checkbox value for Opt-in
                 if (optin == "on") {

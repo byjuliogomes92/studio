@@ -1977,5 +1977,3 @@ ${initialAmpscript}
 </body>
 </html>`
 }
-
-    

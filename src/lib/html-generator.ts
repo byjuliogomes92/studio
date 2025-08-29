@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 
@@ -575,7 +574,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
 
         return `
             %%[ Set @thankYouMessage = "${submission?.message?.replace(/"/g, '""') || 'Obrigado!'}" ]%%
-            %%[ IF @showThanks != "true" THEN ]%%
+            %%[ IF RequestParameter("__success") != "true" THEN ]%%
             <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
                 <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                      <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
@@ -1142,10 +1141,15 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const initialAmpscript = `%%[ 
-    VAR @showThanks, @status, @errorMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
+    /* AMPScript para processar o formulário. Não altere a menos que saiba o que está fazendo. */
+    VAR @showThanks, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
     
-    /* Sempre inicializa como 'false'. O SSJS irá alterar para 'true' em caso de sucesso. */
-    SET @showThanks = "false"
+    /* Esta variável é definida como 'true' pelo script do servidor APENAS se os dados forem salvos com sucesso. */
+    IF RequestParameter("__success") == "true" THEN
+        /* Se o servidor confirmou o sucesso, buscamos os dados para personalizar a mensagem de agradecimento. */
+        SET @showThanks = "true"
+        SET @NOME = RequestParameter("NOME")
+    ENDIF
 
     ${meta.customAmpscript || ''}
     ${security.amscript}
@@ -1897,13 +1901,7 @@ ${initialAmpscript}
     ${headerComponent ? renderComponent(headerComponent, pageState, isForPreview) : ''}
     ${bannerComponent ? renderComponent(bannerComponent, pageState, isForPreview) : ''}
     <div class="content-wrapper">
-      %%[ IF @showThanks != "true" THEN ]%%
-      ${mainComponents}
-      %%[ ELSE ]%%
-      <div class="thank-you-message">
-        %%=TreatAsContent(@thankYouMessage)=%%
-      </div>
-      %%[ ENDIF ]%%
+        ${mainComponents}
     </div>
     ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}
   </div>
@@ -1916,4 +1914,3 @@ ${initialAmpscript}
   %%[ ENDIF ]%%
 </body>
 </html>`
-}

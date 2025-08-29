@@ -2,60 +2,96 @@
 import type { CloudPage } from './types';
 
 export function getFormSubmissionScript(pageState: CloudPage): string {
-    // Este script foi ajustado para corresponder exatamente à Data Extension fornecida.
-    // Ele é robusto e só enviará os dados que realmente existem e foram preenchidos.
+    const { meta, components } = pageState;
+    const deKey = meta.dataExtensionKey;
+    const formComponent = components.find(c => c.type === 'Form');
+    const customFields = formComponent?.props.customFields || [];
+
+    // Build a list of all possible fields from the form configuration
+    const allFieldNames = ['EMAIL', 'NOME', 'CPF', 'TELEFONE', 'OPTIN'];
+    customFields.forEach((field: any) => {
+        allFieldNames.push(field.name);
+    });
+
+    // Generate SSJS code for capturing form fields
+    const fieldCaptures = allFieldNames.map(fieldName => {
+        return `var ${fieldName} = Request.GetFormField("${fieldName}");`;
+    }).join('\n        ');
+
+    // Generate SSJS code for building the payload object, only including fields that have a value
+    const payloadBuilder = allFieldNames.map(fieldName => {
+        return `if (${fieldName}) { newRow["${fieldName}"] = ${fieldName}; }`;
+    }).join('\n            ');
+    
+    // Specifically handle the boolean for OPTIN
+    const optinLogic = `
+            if (OPTIN == "on") {
+                newRow["OPTIN"] = true;
+            } else {
+                newRow["OPTIN"] = false;
+            }`;
+
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
-    
-    // Mantenha como 'false' em produção. Mude para 'true' apenas se precisar depurar.
+
     var debug = false; 
 
     try {
         if (Request.Method == "POST") {
-            // Captura os dados do formulário
-            var deKey = Request.GetFormField("__de");
-            var email = Request.GetFormField("EMAIL");
-            var nome = Request.GetFormField("NOME");
-            var telefone = Request.GetFormField("TELEFONE");
-            var cpf = Request.GetFormField("CPF");
-            var optin = Request.GetFormField("OPTIN");
+            var deKey = "${deKey}";
+            var honeypot = Request.GetFormField("honeypot");
 
-            // Apenas continua se a chave da DE e o email (chave primária) forem válidos
-            if (deKey && deKey != "" && deKey != "CHANGE-ME" && email && email != "") {
+            // Honeypot check for bots
+            if (honeypot != "") {
+                return;
+            }
+
+            var email = Request.GetFormField("EMAIL");
+
+            if (!deKey || deKey == "" || deKey == "CHANGE-ME" || !email || email == "") {
+                 if(debug) {
+                    Write("Debug: DE Key or Email is missing.");
+                 }
+                 return; // Stop processing if essential info is missing
+            }
+
+            // Dynamically capture all possible form fields
+            ${fieldCaptures}
+
+            var de = DataExtension.Init(deKey);
+            var newRow = {
+                "CreatedDate": new Date()
+            };
+
+            // Dynamically build the payload
+            ${payloadBuilder}
+            
+            // Handle boolean conversion for OPTIN
+            ${optinLogic}
+
+            var status = de.Rows.Add(newRow);
+
+            if (status == "OK") {
+                // Set AMPScript variable for thank you message
+                Variable.SetValue("@showThanks", "true");
                 
-                // Monta o payload de forma segura, adicionando APENAS os campos que foram preenchidos
-                var payload = {
-                    EMAIL: email
-                };
-                
-                if (nome && nome != "") { payload.NOME = nome; }
-                if (telefone && telefone != "") { payload.TELEFONE = telefone; }
-                if (cpf && cpf != "") { payload.CPF = cpf; }
-                if (optin == "on") { 
-                    payload.OPTIN = true;
-                } else {
-                    payload.OPTIN = false;
-                }
-                
-                // Usa UpsertData para inserir ou atualizar o registro na DE, usando EMAIL como chave
-                var result = Platform.Function.UpsertData(deKey, ["EMAIL"], [email], 
-                    Object.keys(payload), 
-                    Object.keys(payload).map(function(key) { return payload[key]; })
-                );
-                
-                // Se a inserção/atualização for bem-sucedida, sinaliza para mostrar a mensagem de agradecimento
-                if (result > 0) {
-                     Platform.Response.Redirect(Platform.Request.GetInfo().url + "?__success=true&NOME=" + nome);
-                }
+                // Pass form fields back to AMPScript for personalization
+                if (NOME) { Variable.SetValue("@NOME", NOME); }
+
+                // Redirect to the same page with a success parameter to prevent re-submission
+                var redirectURL = Platform.Request.GetInfo().url;
+                Redirect(redirectURL + "?__success=true&NOME=" + NOME);
+            } else {
+                 if(debug) {
+                    Write("Debug: Failed to add row. Status: " + status);
+                 }
             }
         }
     } catch (e) {
         if (debug) {
-            Write("<br><b>--- ERRO CRÍTICO NO SSJS ---</b><br>" + Stringify(e));
+            Write("Debug: An error occurred: " + Stringify(e));
         }
-        // Em caso de erro, redireciona para a própria página para evitar que o usuário veja uma página de erro do sistema
-        Platform.Response.Redirect(Platform.Request.GetInfo().url + "?__success=false");
     }
 </script>
 `;

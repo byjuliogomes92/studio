@@ -540,7 +540,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     }
     case 'Form': {
         const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
-        const { meta } = pageState;
         
         const animationUrls = {
             confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
@@ -570,17 +569,12 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
             : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
         
-        const redirectUrl = submission?.url || meta.redirectUrl ||'';
-
         return `
-            %%[ Set @thankYouMessage = "${submission?.message?.replace(/"/g, '""') || 'Obrigado!'}" ]%%
-            %%[ IF RequestParameter("__success") != "true" THEN ]%%
+            %%[ IF @showThanks != "true" THEN ]%%
             <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
                 <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
-                     <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
-                     <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                     <input type="hidden" name="__successUrl" value="${redirectUrl}">
                      <input type="hidden" name="__isPost" value="true">
+                     <div style="position:absolute; left:-5000px;" aria-hidden="true"><input type="text" name="honeypot" tabindex="-1" value=""></div>
     
                      <div class="row">
                       ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
@@ -1141,14 +1135,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const initialAmpscript = `%%[ 
-    /* AMPScript para processar o formulário. Não altere a menos que saiba o que está fazendo. */
-    VAR @showThanks, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
-    
-    /* Esta variável é definida como 'true' pelo script do servidor APENAS se os dados forem salvos com sucesso. */
+    VAR @showThanks, @NOME
     IF RequestParameter("__success") == "true" THEN
-        /* Se o servidor confirmou o sucesso, buscamos os dados para personalizar a mensagem de agradecimento. */
         SET @showThanks = "true"
         SET @NOME = RequestParameter("NOME")
+    ELSE
+        SET @showThanks = "false"
     ENDIF
 
     ${meta.customAmpscript || ''}

@@ -1,5 +1,6 @@
 
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
+import { getFormProcessingScript } from './ssjs-templates';
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
@@ -559,10 +560,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
         
         return `
-            %%[ IF @submissionStatus != "SUCCESS" THEN ]%%
+            %%[ IF @FormSubmitted != "true" THEN ]%%
             <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
                 <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
-                     <input type="hidden" name="__isPost" value="true">
+                     <input type="hidden" name="submitted" value="true">
                      <div style="position:absolute; left:-5000px;" aria-hidden="true"><input type="text" name="honeypot" tabindex="-1" value=""></div>
     
                      <div class="row">
@@ -602,7 +603,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </div>
             %%[ ELSE ]%%
                 <div class="thank-you-message">
-                    %%=TreatAsContent(@thankYouMessage)=%%
+                    ${thankYouMessage}
                 </div>
             %%[ ENDIF ]%%
         `;
@@ -1073,86 +1074,67 @@ const getClientSideScripts = (pageState: CloudPage) => {
     return `${lottiePlayerScript}${script}`;
 };
 
-const getPrefillAmpscript = (pageState: CloudPage): string => {
+const getAmpscriptProcessing = (pageState: CloudPage): string => {
     const formComponent = pageState.components.find(c => c.type === 'Form');
-    if (!formComponent) return '';
-
-    const fieldsToPrefill: {name: string, param: string}[] = [];
-    const fields = formComponent.props.fields as Record<string, FormFieldConfig>;
-
-    if (fields?.name?.prefillFromUrl) fieldsToPrefill.push({name: 'NOME', param: 'nome'});
-    if (fields?.email?.prefillFromUrl) fieldsToPrefill.push({name: 'EMAIL', param: 'email'});
-    if (fields?.phone?.prefillFromUrl) fieldsToPrefill.push({name: 'TELEFONE', param: 'telefone'});
-    if (fields?.cpf?.prefillFromUrl) fieldsToPrefill.push({name: 'CPF', param: 'cpf'});
-    if (fields?.birthdate?.prefillFromUrl) fieldsToPrefill.push({name: 'DATANASCIMENTO', param: 'datanascimento'});
-    if (fields?.city?.prefillFromUrl) fieldsToPrefill.push({name: 'CIDADE', param: 'cidade'});
-
-    if (fieldsToPrefill.length === 0) return '';
-
-    const varDeclarations = fieldsToPrefill.map(f => `@${f.name}`).join(', ');
-    const setStatements = fieldsToPrefill.map(f => `SET @${f.name} = RequestParameter("${f.param}")`).join('\n');
-
-    return `
-/* --- Prefill from URL Parameters --- */
-VAR ${varDeclarations}
-${setStatements}
-`;
-}
-
-const getFormProcessingAmpscript = (pageState: CloudPage): string => {
-    const formComponent = pageState.components.find(c => c.type === 'Form');
-    if (!formComponent) return '';
+    if (!formComponent || isForPreview) return '';
 
     const deKey = pageState.meta.dataExtensionKey;
-    const formFields = formComponent.props.fields || {};
-    const customFormFields = formComponent.props.customFields || [];
+    if (!deKey || deKey === 'CHANGE-ME') return '<!-- Data Extension Key not configured -->';
 
-    let varDeclarations = ['@submissionStatus', '@email', '@nome', '@cpf', '@telefone', '@optin'];
-    let requestParameters = [
-        'SET @email = RequestParameter("EMAIL")',
-        'SET @nome = RequestParameter("NOME")',
-        'SET @cpf = RequestParameter("CPF")',
-        'SET @telefone = RequestParameter("TELEFONE")',
-        'SET @optin = RequestParameter("OPTIN")'
-    ];
-    let upsertPairs = ['"EMAIL", @email'];
+    const fields = formComponent.props.fields || {};
+    const customFields = formComponent.props.customFields || [];
 
-    if (formFields.name?.enabled) upsertPairs.push('"NOME", @nome');
-    if (formFields.cpf?.enabled) upsertPairs.push('"CPF", @cpf');
-    if (formFields.phone?.enabled) upsertPairs.push('"TELEFONE", @telefone');
-    if (formFields.optin?.enabled) upsertPairs.push('"OPTIN", IIF(Empty(@optin), "false", "true")');
-
-    customFormFields.forEach((field: CustomFormField) => {
+    let varDeclarations = ['@FormSubmitted', '@NOME', '@EMAIL', '@CPF', '@TELEFONE', '@OPTIN'];
+    customFields.forEach((field: CustomFormField) => {
         varDeclarations.push(`@${field.name}`);
-        requestParameters.push(`SET @${field.name} = RequestParameter("${field.name}")`);
-        upsertPairs.push(`"${field.name}", @${field.name}`);
     });
     
+    let requestParameters = [
+        'SET @NOME = RequestParameter("NOME")',
+        'SET @EMAIL = RequestParameter("EMAIL")',
+        'SET @CPF = RequestParameter("CPF")',
+        'SET @TELEFONE = RequestParameter("TELEFONE")',
+        'SET @OPTIN = RequestParameter("OPTIN")'
+    ];
+    customFields.forEach((field: CustomFormField) => {
+        requestParameters.push(`SET @${field.name} = RequestParameter("${field.name}")`);
+    });
+
+    let upsertPairs: string[] = [];
+    if (fields.email?.enabled) upsertPairs.push('"EMAIL", @EMAIL');
+    if (fields.name?.enabled) upsertPairs.push('"NOME", @NOME');
+    if (fields.cpf?.enabled) upsertPairs.push('"CPF", @CPF');
+    if (fields.phone?.enabled) upsertPairs.push('"TELEFONE", @TELEFONE');
+    if (fields.optin?.enabled) upsertPairs.push('"OPTIN", IIF(Empty(@OPTIN), "false", "true")');
+    customFields.forEach((field: CustomFormField) => {
+        upsertPairs.push(`"${field.name}", @${field.name}`);
+    });
+
+    if (upsertPairs.length === 0) return '<!-- No fields configured for submission -->';
+    
     const thankYouMessage = formComponent.props.submission?.message || '<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>';
+    const personalizedThankYou = thankYouMessage.replace(/%%NOME%%/g, '%%=v(@NOME)=%%');
 
     return `%%[
     VAR ${varDeclarations.join(', ')}
-    SET @thankYouMessage = "${thankYouMessage.replace(/"/g, '""')}"
+    SET @FormSubmitted = "false"
 
     IF RequestParameter("submitted") == "true" THEN
         ${requestParameters.join('\n        ')}
         
-        IF NOT EMPTY(@email) THEN
-            UpsertData("${deKey}", 1, ${upsertPairs.join(', ')}, "CreatedDate", NOW())
-            SET @submissionStatus = "SUCCESS"
-        ELSE
-            SET @submissionStatus = "ERROR"
+        IF NOT EMPTY(@EMAIL) THEN
+            UpsertData("${deKey}", 1, "EMAIL", @EMAIL, ${upsertPairs.slice(1).join(', ')})
+            SET @FormSubmitted = "true"
         ENDIF
     ENDIF
 ]%%`;
-};
-
+}
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string {
   const { id, styles, components, meta, cookieBanner } = pageState;
   
-  const formProcessingAmpscript = isForPreview ? '' : getFormProcessingAmpscript(pageState);
-
+  const formProcessingScript = isForPreview ? '' : getFormProcessingScript(pageState);
+  
   const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
   
   const security = getSecurityScripts(pageState);
@@ -1172,9 +1154,19 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
 
-  const prefillAmpscript = getPrefillAmpscript(pageState);
+  const prefillAmpscript = ''; // Simplified, can be added back if needed
 
-  const initialAmpscript = `%%[ 
+  const amscriptLogic = getAmpscriptProcessing(pageState);
+
+  const initialAmpscript = isForPreview ? '' : `%%[ 
+    VAR @FormSubmitted
+    IF RequestParameter("submitted") == "true" THEN
+      SET @FormSubmitted = "true"
+    ELSE
+      SET @FormSubmitted = "false"
+    ENDIF
+
+    /* Custom AMPScript from settings */
     ${meta.customAmpscript || ''}
     ${security.amscript}
     ${prefillAmpscript || ''}
@@ -1198,7 +1190,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 ${trackingScripts}
-${formProcessingAmpscript}
+${formProcessingScript}
 <style>
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
@@ -1913,7 +1905,6 @@ ${formProcessingAmpscript}
 ${clientSideScripts}
 </head>
 <body>
-${initialAmpscript}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
@@ -1936,4 +1927,3 @@ ${initialAmpscript}
   %%[ ENDIF ]%%
 </body>
 </html>`
-}

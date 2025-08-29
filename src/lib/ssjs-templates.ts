@@ -8,17 +8,19 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         return '';
     }
 
-    // Explicit and safe SSJS script based on the working solution.
+    // This is a more robust, explicit, and debuggable version of the form submission script.
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
-    var debug = false;
+    
+    // Set to true to print error messages on the page for debugging
+    var debug = false; 
 
     try {
         if (Request.Method == "POST") {
             var deKey = Request.GetFormField("__de");
             
-            // Explicitly capture all expected fields
+            // 1. Explicitly capture all expected form fields
             var nome = Request.GetFormField("NOME");
             var email = Request.GetFormField("EMAIL");
             var telefone = Request.GetFormField("TELEFONE");
@@ -28,15 +30,15 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             var optin = Request.GetFormField("OPTIN");
             var npsScore = Request.GetFormField("NPS_SCORE");
             
-            // Set AMPScript variable for thank you message personalization
+            // Pass the subscriber's name to an AMPScript variable for the thank you message
             if (nome) {
                 Variable.SetValue("@NOME", nome);
             }
 
+            // 2. Only proceed if the essential fields (DE Key and Email) are present
             if (deKey && deKey != "" && deKey != "CHANGE-ME" && email && email != "") {
-                var de = DataExtension.Init(deKey);
                 
-                // Manually build the payload, checking for values
+                // 3. Manually and safely build the payload object for the Data Extension
                 var deFields = {};
                 if (email) { deFields["EMAIL"] = email; }
                 if (nome) { deFields["NOME"] = nome; }
@@ -45,31 +47,33 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                 if (cidade) { deFields["CIDADE"] = cidade; }
                 if (datanascimento) { deFields["DATANASCIMENTO"] = datanascimento; }
                 
-                // Handle NPS score only if it exists
+                // Handle NPS score only if it has a value
                 if (npsScore && npsScore != "") { 
                     deFields["NPS_SCORE"] = npsScore;
                     deFields["NPS_DATE"] = Now(1);
                 }
                 
-                // Handle checkbox value for Opt-in
-                if (optin == "on") {
-                    deFields["OPTIN"] = "True";
-                } else {
-                    deFields["OPTIN"] = "False";
-                }
+                // Correctly handle the boolean value for the Opt-in checkbox
+                deFields["OPTIN"] = (optin == "on") ? "True" : "False";
                 
-                var status = de.Rows.Add([deFields]);
+                // Add a creation date for the record
+                deFields["CreatedDate"] = Now(1);
 
-                if (status == "OK") {
+                // 4. Use the robust UpsertData function to add/update the record
+                // We use "EMAIL" as the key to find and update existing records.
+                var status = Platform.Function.UpsertData(deKey, ["EMAIL"], [email], Object.keys(deFields), Platform.Function.CreateObject("AttributeValue", deFields));
+                
+                // 5. If the upsert is successful, set the flag to show the thank you message
+                if (status > 0) {
                     Variable.SetValue("@showThanks", "true");
                 }
             }
         }
     } catch (e) {
+        // This will now only catch critical script errors, not silent data saving failures.
         if (debug) {
             Write("<br><b>--- SSJS ERROR ---</b><br>" + Stringify(e));
         }
-        Variable.SetValue("@errorMessage", Stringify(e));
     }
 </script>
 `;

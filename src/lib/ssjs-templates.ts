@@ -13,7 +13,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     Platform.Load("Core", "1.1.1");
     
     // Set to true to print error messages on the page for debugging
-    var debug = false; 
+    var debug = true; 
 
     try {
         if (Request.Method == "POST") {

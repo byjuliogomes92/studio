@@ -1212,9 +1212,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const initialAmpscript = `%%[ 
     VAR @showThanks, @status, @errorMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
     
-    IF EMPTY(RequestParameter("__isPost")) THEN
-      SET @showThanks = "false"
-    ENDIF
+    /* Sempre inicializa como 'false'. O SSJS irá alterar para 'true' em caso de sucesso. */
+    SET @showThanks = "false"
 
     ${meta.customAmpscript || ''}
     ${security.amscript}

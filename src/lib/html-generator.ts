@@ -1936,3 +1936,4 @@ ${initialAmpscript}
   %%[ ENDIF ]%%
 </body>
 </html>`
+}

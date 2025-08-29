@@ -452,14 +452,14 @@ export function ProjectDashboard() {
             <Library className="mr-2 h-4 w-4" />
             Templates
           </Button>
+          <Button onClick={openCreateModal}>
+              <Plus className="mr-2 h-4 w-4" /> Criar Projeto
+          </Button>
+          <Separator orientation="vertical" className="h-6 mx-2" />
           <div className="flex items-center gap-2">
-            <Button onClick={openCreateModal}>
-                <Plus className="mr-2 h-4 w-4" /> Criar Projeto
-            </Button>
-
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="relative">
+                <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -494,7 +494,6 @@ export function ProjectDashboard() {
                 </DropdownMenuContent>
             </DropdownMenu>
          </div>
-         <Separator orientation="vertical" className="h-6" />
           {user && (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -607,6 +606,14 @@ export function ProjectDashboard() {
 
     return searchInput;
   }
+  
+  const handleNextStepClick = () => {
+    if (projects.length === 0) {
+      openCreateModal();
+    } else {
+      router.push('/templates');
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -667,7 +674,7 @@ export function ProjectDashboard() {
                             <p className="text-xs text-green-700">Páginas Ativas</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20">
+                    <div className="flex items-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors" onClick={handleNextStepClick}>
                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
                             <Target className="h-5 w-5 text-primary" />
                         </div>

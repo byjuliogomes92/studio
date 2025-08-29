@@ -1,13 +1,9 @@
 
-import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
-export function getFormSubmissionScript(pageState: CloudPage): string {
-    const formComponent = pageState.components.find(c => c.type === 'Form');
-    if (!formComponent) {
-        return '';
-    }
+import type { CloudPage } from './types';
 
-    // This function now returns a static, robust template.
-    // The logic is handled inside the SSJS string itself.
+export function getFormSubmissionScript(pageState: CloudPage): string {
+    // This function returns a static, robust SSJS template.
+    // All logic is now self-contained within the SSJS string for maximum reliability.
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
@@ -16,77 +12,65 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     try {
         if (Request.Method == "POST") {
             var deKey = Request.GetFormField("__de");
-            var deMethod = Request.GetFormField("__de_method") || 'key';
+            var deMethod = Request.GetFormField("__de_method") || 'key'; // 'key' or 'name'
             var redirectUrl = Request.GetFormField("__successUrl");
-            
-            // MAPA: Mapeia o 'name' do campo do formulário para o nome da coluna na Data Extension
-            // IMPORTANTE: Ajuste as chaves (à direita) para corresponderem EXATAMENTE às suas colunas na DE.
-            var fieldMap = {
-                "NOME": "NOME",
-                "EMAIL": "EMAIL",
-                "TELEFONE": "TELEFONE",
-                "CPF": "CPF",
-                "CIDADE": "CIDADE",
-                "DATANASCIMENTO": "DATANASCIMENTO",
-                "OPTIN": "OPTIN",
-                "NPS_SCORE": "NPS_SCORE"
-                // Adicione aqui seus campos customizados, se necessário. Ex:
-                // "NOME_CAMPO_CUSTOMIZADO": "ColunaNaDEParaCustomizado"
-            };
+            var isPost = Request.GetFormField("__isPost");
+
+            if (!deKey || deKey == "CHANGE-ME") {
+                if(debug) Write("Data Extension key not provided or not configured.");
+                // Fail gracefully, show thank you message to not lose lead.
+                Variable.SetValue("@showThanks", "true");
+                return;
+            }
 
             var allFields = Request.GetFormFields();
             var payload = {};
-            var primaryKeyName = null;
-            var primaryKeyValue = null;
-            
+            var primaryKeyField = "EMAIL"; // Default Primary Key for Upsert
+            var primaryKeyValue = Request.GetFormField(primaryKeyField);
+            var controlFields = ["__DE", "__DE_METHOD", "__SUCCESSURL", "__ISPOST"];
+
             for (var i = 0; i < allFields.length; i++) {
-                var fieldName = allFields[i].Name;
+                var fieldName = allFields[i].Name.toUpperCase();
                 var fieldValue = allFields[i].Value;
 
-                // Usa o mapa para encontrar o nome correto da coluna na DE
-                var deColumnName = fieldMap[fieldName.toUpperCase()];
-
-                if (deColumnName) {
-                    // Trata o caso do checkbox Optin
-                    if (fieldName.toUpperCase() === 'OPTIN' && fieldValue === 'on') {
-                        payload[deColumnName] = 'True';
-                    } else {
-                        payload[deColumnName] = fieldValue;
-                    }
-                }
-
-                // Identifica a chave primária para o Upsert
-                if (fieldName.toUpperCase() === "EMAIL") {
-                    primaryKeyName = "EMAIL"; // Garante que a chave primária para o Upsert seja "EMAIL"
-                    primaryKeyValue = fieldValue;
-                }
-            }
-            
-            // Adiciona campos que não vêm diretamente do formulário mas devem ser calculados
-            // Apenas adiciona NPS_DATE se NPS_SCORE tiver sido enviado.
-            if (payload["NPS_SCORE"] != null && payload["NPS_SCORE"] != "") {
-                payload["NPS_DATE"] = Now(1);
-            } else {
-                // Remove NPS_SCORE do payload se estiver vazio para evitar erro no Upsert
-                delete payload["NPS_SCORE"];
-            }
-            
-            // Garante que o Opt-in tenha um valor 'False' se não for marcado
-            if (fieldMap["OPTIN"]) {
-                var optinExists = false;
-                for (var key in payload) {
-                    if (key.toUpperCase() == "OPTIN") {
-                        optinExists = true;
+                // Check if the field is a control field
+                var isControlField = false;
+                for (var j = 0; j < controlFields.length; j++) {
+                    if (fieldName == controlFields[j]) {
+                        isControlField = true;
                         break;
                     }
                 }
-                if (!optinExists) {
-                    payload["OPTIN"] = "False";
+
+                if (!isControlField) {
+                    // Handle Optin checkbox case
+                    if (fieldName === 'OPTIN' && fieldValue === 'on') {
+                        payload[fieldName] = 'True';
+                    } else {
+                        payload[fieldName] = fieldValue;
+                    }
                 }
             }
 
+            // Ensure OPTIN is set to 'False' if it wasn't submitted (unchecked)
+            // This requires the 'OPTIN' column to exist in the form component config.
+            if (payload["OPTIN"] === undefined) {
+                 // Check if opt-in was a potential field in the form at all.
+                 var formComponent = pageState.components.find(function(c) { return c.type === 'Form' && c.props.fields.optin && c.props.fields.optin.enabled; });
+                 if(formComponent) {
+                    payload["OPTIN"] = "False";
+                 }
+            }
+            
+            // Add NPS score and date if available
+            if (payload["NPS_SCORE"] != null && payload["NPS_SCORE"] != "") {
+                payload["NPS_DATE"] = Now(1);
+            } else {
+                delete payload["NPS_SCORE"];
+            }
 
-            if (deKey && primaryKeyName && primaryKeyValue) {
+            // Perform the Upsert operation
+            if (primaryKeyValue) {
                 var de;
                 if (deMethod === 'name') {
                     de = DataExtension.FromName(deKey);
@@ -94,25 +78,23 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                     de = DataExtension.Init(deKey);
                 }
                 
-                var status = de.Rows.Upsert(payload, [primaryKeyName]);
-
-                Variable.SetValue("@showThanks", "true");
-
-                if (redirectUrl && !debug) {
-                    Platform.Response.Redirect(redirectUrl);
-                }
+                var status = de.Rows.Upsert(payload, [primaryKeyField]);
             } else {
-                 if(debug) {
-                    Write("<br><b>Debug:</b> Chave da DE ou Chave Primária não encontrada. DE Key: " + deKey + ", PK Name: " + primaryKeyName + ", PK Value: " + primaryKeyValue);
-                 }
-                 Variable.SetValue("@showThanks", "true"); // Still show thanks to not lose lead
+                 if(debug) Write("Primary key value not found for field: " + primaryKeyField);
+            }
+
+            // Set AMPScript variable to show thank you message
+            Variable.SetValue("@showThanks", "true");
+
+            if (redirectUrl && !debug) {
+                Platform.Response.Redirect(redirectUrl);
             }
         }
     } catch (e) {
         if (debug) {
-            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
+            Write("<br><b>--- SSJS ERROR ---</b><br>" + Stringify(e));
         }
-        // In case of error, still show thanks to not lose the lead
+        // In case of any error, still show the thank you page to not lose the lead.
         Variable.SetValue("@showThanks", "true");
     }
 </script>

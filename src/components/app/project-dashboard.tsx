@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress, Template, PageView } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Eye } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
-import { addProject, deleteProject, getProjectsForUser, updateProject, getUserProgress, updateUserProgress, getTemplates, getPageViews } from "@/lib/firestore";
+import { addProject, deleteProject, getProjectsForUser, updateProject, getUserProgress, updateUserProgress, getTemplates } from "@/lib/firestore";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -95,7 +95,6 @@ export function ProjectDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [pageViews, setPageViews] = useState<PageView[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
@@ -145,13 +144,6 @@ export function ProjectDashboard() {
         setPages(pages);
         setUserProgress(progress);
         setTemplates(templates);
-
-        // Fetch views for all pages
-        if (pages.length > 0) {
-            const viewPromises = pages.map(page => getPageViews(page.id));
-            const viewsPerPagina = await Promise.all(viewPromises);
-            setPageViews(viewsPerPagina.flat());
-        }
 
       } catch (err) {
         console.error(err);
@@ -336,9 +328,8 @@ export function ProjectDashboard() {
         pageCount: pages.length,
         activePageCount: activePages.length,
         templateCount: templates.length,
-        totalVisitors: pageViews.length,
     }
-  }, [projects, pages, templates, pageViews]);
+  }, [projects, pages, templates]);
 
 
   if (isLoading || authLoading) {
@@ -636,7 +627,7 @@ export function ProjectDashboard() {
                     <CardTitle>Visão Geral</CardTitle>
                     <CardDescription>Resumo das suas atividades na plataforma.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
                         <Briefcase className="h-6 w-6 text-muted-foreground" />
                         <span className="text-2xl font-bold">{dashboardStats.projectCount}</span>
@@ -646,11 +637,6 @@ export function ProjectDashboard() {
                         <FileText className="h-6 w-6 text-muted-foreground" />
                         <span className="text-2xl font-bold">{dashboardStats.pageCount}</span>
                         <span className="text-xs text-muted-foreground">Páginas</span>
-                    </div>
-                     <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
-                        <Users className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-2xl font-bold">{dashboardStats.totalVisitors}</span>
-                        <span className="text-xs text-muted-foreground">Visitantes</span>
                     </div>
                     <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
                         <Library className="h-6 w-6 text-muted-foreground" />
@@ -747,10 +733,6 @@ export function ProjectDashboard() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <FileText className="h-4 w-4" />
                         <span>{project.pageCount} página(s)</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Eye className="h-4 w-4" />
-                        <span>{pageViews.filter(v => pages.some(p => p.projectId === project.id && p.id === v.pageId)).length}</span>
                     </div>
 
                     <DropdownMenu>
@@ -922,3 +904,5 @@ export function ProjectDashboard() {
     </div>
   );
 }
+
+    

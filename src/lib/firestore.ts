@@ -1,5 +1,4 @@
 
-
 import { getDb } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp } from "firebase/firestore";
 import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission } from "./types";
@@ -350,3 +349,5 @@ export {
     logFormSubmission,
     getFormSubmissions,
 };
+
+    

@@ -58,12 +58,13 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firstName || !lastName) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Por favor, preencha seu nome e sobrenome.' });
+        return;
+    }
     setIsLoading(true);
     try {
-      await signup(email, password);
-      // Here you would typically also save the first/last name to your user profile in Firestore
-      // For this example, we'll just log it.
-      console.log("New user:", firstName, lastName);
+      await signup(email, password, firstName, lastName);
       router.push("/");
     } catch (error: any) {
       console.error(error);

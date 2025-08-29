@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2, Home } from 'lucide-react';
+import { Loader2, Trash2, Home, RefreshCw } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,9 +24,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/icons';
 import { useRouter } from 'next/navigation';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function AccountPage() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -68,6 +69,9 @@ export default function AccountPage() {
       </div>
     );
   }
+  
+  const userInitials = user.displayName?.split(' ').map(n => n[0]).join('') || user.email?.[0].toUpperCase() || 'U';
+
 
   return (
     <>
@@ -98,10 +102,22 @@ export default function AccountPage() {
             <CardDescription>Suas informações pessoais. Para alterá-las, entre em contato com o suporte.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input id="name" value={user.displayName || 'Não definido'} disabled />
-            </div>
+             <div className="flex items-center gap-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar do usuário'} />
+                  <AvatarFallback>{userInitials}</AvatarFallback>
+                </Avatar>
+                <div className="flex-grow">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Nome</Label>
+                        <Input id="name" value={user.displayName || 'Não definido'} disabled />
+                    </div>
+                </div>
+                 <Button variant="outline" onClick={updateUserAvatar} disabled={isUpdatingAvatar}>
+                    {isUpdatingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    Gerar Novo Avatar
+                </Button>
+             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" value={user.email || ''} disabled />

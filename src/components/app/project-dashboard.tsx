@@ -49,6 +49,7 @@ import { OnboardingGuide } from "./onboarding-guide";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -410,6 +411,8 @@ export function ProjectDashboard() {
         </DropdownMenu>
       )
     }
+    
+    const userInitials = user.displayName?.split(' ').map(n => n[0]).join('') || user.email?.[0].toUpperCase() || 'U';
 
     return (
        <>
@@ -463,8 +466,11 @@ export function ProjectDashboard() {
           {user && (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="rounded-full">
-                        <User className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                         <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar do usuário'} />
+                            <AvatarFallback>{userInitials}</AvatarFallback>
+                        </Avatar>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

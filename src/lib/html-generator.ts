@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 
@@ -628,7 +629,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const redirectUrl = submission?.url || meta.redirectUrl ||'';
 
         return `
-            %%[ Set @thankYouMessage = "${submission?.message || 'Obrigado!'}" ]%%
+            %%[ Set @thankYouMessage = "${submission?.message?.replace(/"/g, '""') || 'Obrigado!'}" ]%%
             %%[ IF @showThanks != "true" THEN ]%%
             <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
                 <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
@@ -1206,10 +1207,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const initialAmpscript = `%%[ 
-    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
+    VAR @showThanks, @status, @errorMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
+    
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
     ENDIF
+
     ${meta.customAmpscript || ''}
     ${security.amscript}
     ${prefillAmpscript || ''}
@@ -1947,8 +1950,10 @@ ${trackingScripts}
 ${clientSideScripts}
 </head>
 <body>
+<script runat="server">
+  ${ssjsScript}
+</script>
 ${initialAmpscript}
-${ssjsScript}
   %%[ IF @isAuthenticated == true THEN ]%%
   <div id="loader">
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">

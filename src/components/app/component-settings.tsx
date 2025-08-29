@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType } from "@/lib/types";
@@ -1094,18 +1095,20 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
-                         <Tooltip>
-                            <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
-                            <TooltipContent>
-                                <div className="max-w-xs">
-                                <p>Esta mensagem aparecerá após o envio se a URL de redirecionamento não for preenchida. Você pode usar HTML e variáveis dos campos.</p>
-                                <p className="mt-2">Ex. de variável: `<h2>Obrigado, %%NOME%%!</h2>`.</p>
-                                <p className="mt-1">Ex. de botão: `<a href="https://..." class="custom-button">Clique Aqui</a>`.</p>
-                                <p className="mt-1">Variáveis disponíveis: `%%NOME%%`, `%%EMAIL%%`, e os nomes dos seus campos personalizados.</p>
-                                </div>
-                            </TooltipContent>
-                        </Tooltip>
+                        <div className="flex items-center gap-1.5">
+                            <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
+                            <Tooltip>
+                                <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
+                                <TooltipContent>
+                                    <div className="max-w-xs space-y-2">
+                                        <p>Use HTML e personalize com variáveis AMPScript.</p>
+                                        <p>Para usar o valor de um campo, use a sintaxe `%%=v(@NOME_DO_CAMPO)=%%`.</p>
+                                        <p>Exemplo: `&lt;h2&gt;Obrigado, %%=v(@NOME)=%%!&lt;/h2&gt;`.</p>
+                                        <p>Campos disponíveis: @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, e os nomes dos seus campos personalizados.</p>
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
                         <Textarea
                             id="form-thank-you"
                             value={props.submission?.message || ''}

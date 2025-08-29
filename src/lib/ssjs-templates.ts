@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
 
 export function getFormSubmissionScript(pageState: CloudPage): string {
@@ -18,10 +19,11 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     const setAmpscriptVarsLines: string[] = [];
 
     const processField = (formName: string, deName: string) => {
-        fieldVarDeclarations.push(formName.toLowerCase());
-        fieldCaptureLines.push(`var ${formName.toLowerCase()} = Request.GetFormField("${formName.toUpperCase()}");`);
-        deFields.push(`"${deName.toUpperCase()}": ${formName.toLowerCase()}`);
-        setAmpscriptVarsLines.push(`Variable.SetValue("@${deName.toUpperCase()}", ${formName.toLowerCase()});`);
+        const jsVar = deName.toLowerCase();
+        fieldVarDeclarations.push(jsVar);
+        fieldCaptureLines.push(`var ${jsVar} = Request.GetFormField("${formName.toUpperCase()}");`);
+        deFields.push(`"${deName.toUpperCase()}": ${jsVar}`);
+        setAmpscriptVarsLines.push(`Variable.SetValue("@${deName.toUpperCase()}", ${jsVar});`);
     };
 
     if (standardFields.name?.enabled) processField('NOME', 'NOME');
@@ -38,10 +40,11 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     }
     
     customFields.forEach(field => {
-        fieldVarDeclarations.push(field.name.toLowerCase());
-        fieldCaptureLines.push(`var ${field.name.toLowerCase()} = Request.GetFormField("${field.name}");`);
-        deFields.push(`"${field.name}": ${field.name.toLowerCase()}`);
-        setAmpscriptVarsLines.push(`Variable.SetValue("@${field.name}", ${field.name.toLowerCase()});`);
+        const jsVar = field.name.toLowerCase();
+        fieldVarDeclarations.push(jsVar);
+        fieldCaptureLines.push(`var ${jsVar} = Request.GetFormField("${field.name}");`);
+        deFields.push(`"${field.name}": ${jsVar}`);
+        setAmpscriptVarsLines.push(`Variable.SetValue("@${field.name}", ${jsVar});`);
     });
 
     abTestComponents.forEach(c => {
@@ -115,6 +118,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         if (debug) {
             Write("<br><b>--- SSJS ERROR ---</b><br>" + Stringify(e));
         }
+        Variable.SetValue("@errorMessage", Stringify(e));
     }
 </script>
 `;

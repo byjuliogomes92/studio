@@ -1189,44 +1189,58 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const ssjsBlock = isForPreview ? '' : `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
-    var debug = false; 
+    var debug = false;
 
     try {
         if (Request.Method == "POST") {
             var deKey = Request.GetFormField("__de");
-            var deMethod = Request.GetFormField("__de_method");
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
-            
+
+            var nome = Request.GetFormField("NOME");
             var email = Request.GetFormField("EMAIL");
+            var telefone = Request.GetFormField("TELEFONE");
+            var cpf = Request.GetFormField("CPF");
+            var optin = Request.GetFormField("OPTIN");
+
+            if (optin == "" || optin == null) {
+                optin = "False";
+            } else if (optin == "on") {
+                optin = "True";
+            }
 
             if (email != null && email != "" && deKey != null && deKey != "") {
-                 var de;
-                 if (deMethod == 'name') {
-                    de = DataExtension.Init(deKey);
-                 } else {
-                    de = DataExtension.Init(deKey); // Fallback to key
-                 }
+                var de = DataExtension.Init(deKey);
+                var existing = de.Rows.Lookup(["EMAIL"], [email]);
 
-                 var deFields = {};
-                 var formFields = Request.GetFormFields();
-                 for (var key in formFields) {
-                    if (key.indexOf("__") != 0) { // ignore system fields
-                       deFields[key] = formFields[key];
-                    }
-                 }
-                 
-                 var existing = de.Rows.Lookup(["EMAIL"], [email]);
-                 if (existing.length > 0) {
-                    de.Rows.Update(deFields, ["EMAIL"], [email]);
-                 } else {
-                    de.Rows.Add(deFields);
-                 }
+                var updateObject = {
+                    "NOME": nome,
+                    "TELEFONE": telefone,
+                    "CPF": cpf,
+                    "OPTIN": optin
+                };
 
-                // Also log to backup Firestore collection
-                HTTP.Post("https://cloudpagestudio.vercel.app/api/submit/${id}", "application/json", Stringify(deFields));
+                var insertObject = {
+                    ...updateObject,
+                    "EMAIL": email
+                };
 
+                if (existing.length > 0) {
+                    de.Rows.Update(updateObject, ["EMAIL"], [email]);
+                } else {
+                    de.Rows.Add([insertObject]);
+                }
+                
                 showThanks = true;
+            } else if (nome != null && nome != "" && deKey != null && deKey != "") {
+                var de = DataExtension.Init(deKey);
+                 de.Rows.Add({
+                    "NOME": nome,
+                    "TELEFONE": telefone,
+                    "CPF": cpf,
+                    "OPTIN": optin
+                 });
+                 showThanks = true;
             }
 
             if (showThanks && redirectUrl && redirectUrl.length > 0 && !debug) {
@@ -1238,9 +1252,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     } catch (e) {
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
-        } else {
-            Variable.SetValue("@showThanks", "true");
         }
+        Variable.SetValue("@showThanks", "true");
     }
 </script>
 `;
@@ -2032,5 +2045,5 @@ ${ssjsBlock}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
+`
 }

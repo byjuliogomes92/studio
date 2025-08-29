@@ -1969,10 +1969,9 @@ ${initialAmpscript}
       %%[ IF @showThanks != "true" THEN ]%%
       ${mainComponents}
       %%[ ELSE ]%%
-        <div class="thank-you-message">
-            <h2>Obrigado!</h2>
-            <p>Seus dados foram enviados com sucesso.</p>
-        </div>
+      <div class="thank-you-message">
+        %%=TreatAsContent(@thankYouMessage)=%%
+      </div>
       %%[ ENDIF ]%%
     </div>
     ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}

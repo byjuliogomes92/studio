@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -45,8 +46,11 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function SignupPage() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreesToTerms, setAgreesToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signup, loginWithGoogle, isGoogleAuthEnabled } = useAuth();
   const router = useRouter();
@@ -57,6 +61,9 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
       await signup(email, password);
+      // Here you would typically also save the first/last name to your user profile in Firestore
+      // For this example, we'll just log it.
+      console.log("New user:", firstName, lastName);
       router.push("/");
     } catch (error: any) {
       console.error(error);
@@ -103,16 +110,26 @@ export default function SignupPage() {
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
        <div className="flex items-center justify-center py-12">
-        <div className="mx-auto grid w-[350px] gap-6">
+        <div className="mx-auto grid w-[400px] gap-6">
             <div className="grid gap-2 text-center">
                 <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
                 <h1 className="text-3xl font-bold">Crie sua Conta</h1>
                 <p className="text-balance text-muted-foreground">
-                    É rápido e fácil. Comece a construir suas páginas agora mesmo no CloudPage Studio.
+                    É rápido e fácil. Comece a construir suas páginas agora mesmo.
                 </p>
             </div>
             <div className="grid gap-4">
                 <form onSubmit={handleSignup} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="first-name">Nome</Label>
+                            <Input id="first-name" placeholder="Seu nome" required disabled={isLoading} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="last-name">Sobrenome</Label>
+                            <Input id="last-name" placeholder="Seu sobrenome" required disabled={isLoading} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                        </div>
+                    </div>
                     <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -135,6 +152,20 @@ export default function SignupPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={isLoading}
                     />
+                    </div>
+                    <div className="items-top flex space-x-2">
+                        <Checkbox id="terms1" checked={agreesToTerms} onCheckedChange={(checked) => setAgreesToTerms(checked as boolean)} disabled={isLoading} />
+                        <div className="grid gap-1.5 leading-none">
+                            <label
+                            htmlFor="terms1"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                            Quero receber novidades e atualizações
+                            </label>
+                            <p className="text-sm text-muted-foreground">
+                            Você pode cancelar a inscrição a qualquer momento.
+                            </p>
+                        </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Quero me Cadastrar"}
@@ -181,7 +212,7 @@ export default function SignupPage() {
       </div>
       <div className="hidden bg-muted lg:block">
         <Image
-          src="https://picsum.photos/1920/1080?grayscale"
+          src="https://picsum.photos/1920/1080"
           alt="Image"
           width="1920"
           height="1080"

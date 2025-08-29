@@ -1,24 +1,82 @@
 
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
-
 export function getFormSubmissionScript(pageState: CloudPage): string {
     const formComponent = pageState.components.find(c => c.type === 'Form');
     if (!formComponent) {
         return '';
     }
 
-    // This script now dynamically collects all form fields and ignores control fields.
-    // It is robust and adapts to the fields configured in the form component.
-
-    const allStandardFields = ['NOME', 'EMAIL', 'TELEFONE', 'CPF', 'CIDADE', 'DATANASCIMENTO', 'OPTIN'];
-    const customFields = (formComponent.props.customFields as CustomFormField[] || []);
+    const standardFields = formComponent.props.fields as Record<string, FormFieldConfig> || {};
+    const customFields = formComponent.props.customFields as CustomFormField[] || [];
     const hasNPS = pageState.components.some(c => c.type === 'NPS');
-    const abTestComponents = pageState.components.filter(c => c.abTestEnabled);
+    const hasABTest = pageState.components.some(c => c.abTestEnabled);
+    const getFormFieldLines = Object.keys(standardFields)
+        .filter(key => standardFields[key]?.enabled)
+        .map(key => {
+            const fieldNameMap: { [key: string]: string } = {
+                name: 'NOME',
+                email: 'EMAIL',
+                phone: 'TELEFONE',
+                cpf: 'CPF',
+                city: 'CIDADE',
+                birthdate: 'DATANASCIMENTO',
+                optin: 'OPTIN'
+            };
+            return `var ${fieldNameMap[key].toLowerCase()} = Request.GetFormField("${fieldNameMap[key]}");`;
+        }).join('\n            ');
+    const getCustomFormFieldLines = customFields.map(field => {
+        return `var ${field.name.toLowerCase()} = Request.GetFormField("${field.name}");`;
+    }).join('\n            ');
+    const getAbTestFieldLines = hasABTest ? pageState.components
+        .filter(c => c.abTestEnabled)
+        .map(c => `var variante_${c.id.toLowerCase()} = Request.GetFormField("VARIANTE_${c.id.toUpperCase()}");`)
+        .join('\n            ') : '';
+    
+    const npsLines = hasNPS ? `var nps_score = Request.GetFormField("NPS_SCORE");\n            var nps_date = null;` : '';
+    const handleOptinLine = standardFields.optin?.enabled ? `
+            if (optin == "" || optin == null) {
+                optin = "False";
+            } else if (optin == "on") {
+                optin = "True";
+            }` : '';
+    const handleNpsDateLine = hasNPS ? `
+             if (nps_score != "" && nps_score != null) {
+                 nps_date = Now(1);
+             }` : '';
+    const debugLines = Object.keys(standardFields)
+        .filter(key => standardFields[key]?.enabled)
+        .map(key => `Write("${key.toUpperCase()}: " + ${key} + "<br>");`).join('\n                ');
+    const customDebugLines = customFields.map(field => `Write("${field.name.toUpperCase()}: " + ${field.name.toLowerCase()} + "<br>");`).join('\n                ');
+    const npsDebugLine = hasNPS ? 'Write("NPS_SCORE: " + nps_score + "<br>");' : '';
 
-    let ssjs = `
+    const deFields: string[] = [];
+    if (standardFields.name?.enabled) deFields.push('"NOME": nome');
+    if (standardFields.email?.enabled) deFields.push('"EMAIL": email');
+    if (standardFields.phone?.enabled) deFields.push('"TELEFONE": telefone');
+    if (standardFields.cpf?.enabled) deFields.push('"CPF": cpf');
+    if (standardFields.city?.enabled) deFields.push('"CIDADE": cidade');
+    if (standardFields.birthdate?.enabled) deFields.push('"DATANASCIMENTO": datanascimento');
+    if (standardFields.optin?.enabled) deFields.push('"OPTIN": optin');
+    customFields.forEach(field => {
+        deFields.push(`"${field.name}": ${field.name.toLowerCase()}`);
+    });
+
+    if (hasNPS) {
+        deFields.push('"NPS_SCORE": nps_score');
+        deFields.push('"NPS_DATE": nps_date');
+    }
+    
+    if (hasABTest) {
+        pageState.components.filter(c => c.abTestEnabled).forEach(c => {
+            deFields.push(`"VARIANTE_${c.id.toUpperCase()}": variante_${c.id.toLowerCase()}`);
+        });
+    }
+
+    const deFieldsString = deFields.join(',\n                            ');
+
+    return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
-    // Mude para 'true' para ver os logs de depuração na página
     var debug = false; 
 
     try {
@@ -26,79 +84,47 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             var deKey = Request.GetFormField("__de");
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
-            
-            // Lista de campos de controle que NÃO devem ir para a Data Extension
-            var controlFields = ["__de", "__de_method", "__successUrl", "__isPost"];
-            var deFields = {};
-            var formFields = Request.GetFormFields();
 
-            // 1. Coleta todos os campos do formulário dinamicamente
-            for (var key in formFields) {
-                var isControlField = false;
-                for (var i = 0; i < controlFields.length; i++) {
-                    if (key.toLowerCase() == controlFields[i].toLowerCase()) {
-                        isControlField = true;
-                        break;
-                    }
-                }
+            ${getFormFieldLines}
+            ${getCustomFormFieldLines}
+            ${npsLines}
+            ${getAbTestFieldLines}
 
-                if (!isControlField) {
-                    var value = formFields[key];
-                    // Converte o valor do checkbox 'optin' para o formato do SFMC
-                    if (key.toUpperCase() == 'OPTIN' && value == "on") {
-                        value = "True";
-                    }
-                    deFields[key] = value;
-                }
+            ${handleOptinLine}
+            ${handleNpsDateLine}
+
+            if (debug) {
+                Write("<br><b>--- DEBUG ---</b><br>");
+                ${debugLines}
+                ${customDebugLines}
+                ${npsDebugLine}
             }
-
-            // Garante que o Optin tenha um valor padrão se não for marcado
-            if (!deFields["OPTIN"]) {
-                deFields["OPTIN"] = "False";
-            }
-
-            var emailToLookup = deFields["EMAIL"];
-
-            // 2. Procede apenas se tivermos um email e uma chave de DE válidos
-            if (emailToLookup != null && emailToLookup != "" && deKey != null && deKey != "") {
+            if (email != null && email != "" && deKey != null && deKey != "") {
+                var de = DataExtension.Init(deKey);
+                
+                de.Rows.Add({
+                        ${deFieldsString}
+                });
+                showThanks = true;
+            } else if (nome != null && nome != "" && deKey != null && deKey != "") {
+                /* Fallback for forms without email but with name */
                  var de = DataExtension.Init(deKey);
-                 var existing = de.Rows.Lookup(["EMAIL"], [emailToLookup]);
-
-                 // 3. A LÓGICA CRUCIAL
-                 if (existing.length > 0) {
-                    // SE O REGISTRO EXISTE (UPDATE):
-                    // Removemos a chave primária do payload antes de atualizar.
-                    delete deFields["EMAIL"]; 
-                    
-                    de.Rows.Update(deFields, ["EMAIL"], [emailToLookup]);
-
-                 } else {
-                    // SE O REGISTRO É NOVO (ADD):
-                    // Mantemos o payload completo, incluindo o email.
-                    de.Rows.Add(deFields);
-                 }
-
+                de.Rows.Add({
+                        ${deFieldsString}
+                });
                 showThanks = true;
             }
 
-            // 4. Lógica de exibição da mensagem de agradecimento ou redirecionamento
-            if (showThanks && redirectUrl && redirectUrl.length > 0 && !debug) {
+            if (showThanks && redirectUrl && !debug) {
                 Platform.Response.Redirect(redirectUrl);
             } else if (showThanks) {
                 Variable.SetValue("@showThanks", "true");
             }
         }
     } catch (e) {
-        // Bloco de erro para ajudar na depuração
-        Variable.SetValue("@errorMessage", Stringify(e));
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
-        } else {
-            Variable.SetValue("@showThanks", "true");
         }
     }
-</script>
-`;
-    return ssjs;
+</script>`;
 }
-

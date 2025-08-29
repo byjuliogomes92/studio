@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import { OnboardingGuide } from "./onboarding-guide";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -381,10 +382,26 @@ export function ProjectDashboard() {
                  {unreadCount > 0 && <Badge className="ml-auto">{unreadCount}</Badge>}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </DropdownMenuItem>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Você será desconectado da sua conta.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={logout}>Sair</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -438,10 +455,27 @@ export function ProjectDashboard() {
                 </DropdownMenuContent>
             </DropdownMenu>
          </div>
+         <Separator orientation="vertical" className="h-6" />
           {user && (
-            <Button variant="outline" onClick={logout}>
-              <LogOut className="mr-2 h-4 w-4" /> Sair
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">
+                    <LogOut className="mr-2 h-4 w-4" /> Sair
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Você será desconectado da sua conta.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={logout}>Sair</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
        </>
     )
@@ -610,7 +644,7 @@ export function ProjectDashboard() {
                             <DropdownMenuSeparator />
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                <DropdownMenuItem className="text-destructive" onSelect={(e) => {e.preventDefault(); openDeleteModal(project)}}>
                                     <Trash2 className="mr-2 h-4 w-4"/>
                                     Excluir
                                 </DropdownMenuItem>
@@ -678,7 +712,7 @@ export function ProjectDashboard() {
                               <DropdownMenuSeparator />
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => {e.preventDefault(); openDeleteModal(project)}}>
                                         <Trash2 className="mr-2 h-4 w-4"/>
                                         Excluir
                                     </DropdownMenuItem>

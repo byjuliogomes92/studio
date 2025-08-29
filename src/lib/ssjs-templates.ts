@@ -1,9 +1,6 @@
 
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
 export function getFormSubmissionScript(pageState: CloudPage): string {
-<<<<<<< HEAD
-    // This script now combines the robust data handling with the correct state signaling for the thank you message.
-=======
     const formComponent = pageState.components.find(c => c.type === 'Form');
     if (!formComponent) {
         return '';
@@ -77,7 +74,6 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
 
     const deFieldsString = deFields.join(',\n                            ');
 
->>>>>>> fd42992d803e6100492b4e2b1983070cba8539ca
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
@@ -114,7 +110,6 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                     primaryKeyValue = fieldValue;
                 }
             }
-<<<<<<< HEAD
             
             // Add NPS score if component exists
             var npsScore = Request.GetFormField("NPS_SCORE");
@@ -150,27 +145,6 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                 var status = de.Rows.Upsert(payload, [primaryKeyName]);
 
                 // Signal to AMPScript that the submission was successful
-=======
-            if (email != null && email != "" && deKey != null && deKey != "") {
-                var de = DataExtension.Init(deKey);
-                
-                de.Rows.Add({
-                        ${deFieldsString}
-                });
-                showThanks = true;
-            } else if (nome != null && nome != "" && deKey != null && deKey != "") {
-                /* Fallback for forms without email but with name */
-                 var de = DataExtension.Init(deKey);
-                de.Rows.Add({
-                        ${deFieldsString}
-                });
-                showThanks = true;
-            }
-
-            if (showThanks && redirectUrl && !debug) {
-                Platform.Response.Redirect(redirectUrl);
-            } else if (showThanks) {
->>>>>>> fd42992d803e6100492b4e2b1983070cba8539ca
                 Variable.SetValue("@showThanks", "true");
 
                 if (redirectUrl && !debug) {
@@ -181,12 +155,9 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     } catch (e) {
         if (debug) {
             Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
-<<<<<<< HEAD
         } else {
             // In case of error, still show thanks to not lose the lead
              Variable.SetValue("@showThanks", "true");
-=======
->>>>>>> fd42992d803e6100492b4e2b1983070cba8539ca
         }
     }
 </script>`;

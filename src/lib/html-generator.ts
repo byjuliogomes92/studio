@@ -596,7 +596,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         const href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
         return `
             <a href="${href}" target="_blank" class="whatsapp-float-btn ${position}" aria-label="Fale conosco no WhatsApp">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0-0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
             </a>`;
     }
     case 'Form': {
@@ -621,7 +621,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
             'plus': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
             'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
-            'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0-0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+            'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
             'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
         };
         
@@ -633,59 +633,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         
         const redirectUrl = submission?.url || meta.redirectUrl ||'';
 
-<<<<<<< HEAD
-        const formHtml = `
-          <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
-              <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
-                   <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
-                   <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                   <input type="hidden" name="__successUrl" value="${redirectUrl}">
-                   <input type="hidden" name="__isPost" value="true">
-  
-                   <div class="row">
-                    ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
-                    ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional, !!fields.email.prefillFromUrl) : ''}
-                   </div>
-                   <div class="row">
-                    ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional, !!fields.phone.prefillFromUrl) : ''}
-                    ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional, !!fields.cpf.prefillFromUrl) : ''}
-                   </div>
-                   <div class="row">
-                    ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, false) : ''}
-                    ${fields.city?.enabled ? renderCityDropdown(component.props.cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
-                   </div>
-                   
-                   <div class="custom-fields-wrapper">
-                    ${customFields.map(renderCustomField).join('\n')}
-                   </div>
-             
-                  ${fields.optin?.enabled ? `
-                  <div class="consent" id="wrapper-optin" style="display: ${fields.optin.conditional ? 'none' : 'flex'}" ${fields.optin.conditional ? `data-conditional-on="${fields.optin.conditional.field}" data-conditional-value="${fields.optin.conditional.value}"` : ''}>
-                      <input type="checkbox" id="OPTIN" name="OPTIN" value="on" required="required">
-                      <label for="OPTIN">
-                          ${consentText || 'Quero receber novidades e promoções...'}
-                      </label>
-                    <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
-                  </div>
-                  ` : ''}
-                  <div class="form-submit-wrapper" style="text-align: ${buttonAlign || 'center'};">
-                      <button type="submit"
-                        class="form-submit-button"
-                        style="
-                            background-color: ${buttonProps.bgColor || 'var(--theme-color)'};
-                            color: ${buttonProps.textColor || '#FFFFFF'};
-                        "
-                        onmouseover="this.style.backgroundColor='${buttonProps.hoverBgColor || 'var(--theme-color-hover)'}'"
-                        onmouseout="this.style.backgroundColor='${buttonProps.bgColor || 'var(--theme-color)'}'"
-                        ${buttonProps.enableWhenValid ? 'disabled' : ''}
-                      >
-                          ${buttonContent}
-                      </button>
-                  </div>
-              </form>
-          </div>
-          ${thankYouHtml}
-=======
         return `
             %%[ IF @showThanks != "true" THEN ]%%
             <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
@@ -740,7 +687,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             %%[ ELSE ]%%
                 ${thankYouHtml}
             %%[ ENDIF ]%%
->>>>>>> fd42992d803e6100492b4e2b1983070cba8539ca
         `;
       }
     case 'Footer':
@@ -1244,80 +1190,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const security = getSecurityScripts(pageState);
   
-<<<<<<< HEAD
-=======
-  const ssjsBlock = isForPreview ? '' : `
-<script runat="server">
-    Platform.Load("Core", "1.1.1");
-    var debug = false;
-
-    try {
-        if (Request.Method == "POST") {
-            var deKey = Request.GetFormField("__de");
-            var redirectUrl = Request.GetFormField("__successUrl");
-            var showThanks = false;
-
-            var nome = Request.GetFormField("NOME");
-            var email = Request.GetFormField("EMAIL");
-            var telefone = Request.GetFormField("TELEFONE");
-            var cpf = Request.GetFormField("CPF");
-            var optin = Request.GetFormField("OPTIN");
-
-            if (optin == "" || optin == null) {
-                optin = "False";
-            } else if (optin == "on") {
-                optin = "True";
-            }
-
-            if (email != null && email != "" && deKey != null && deKey != "") {
-                var de = DataExtension.Init(deKey);
-                var existing = de.Rows.Lookup(["EMAIL"], [email]);
-
-                var updateObject = {
-                    "NOME": nome,
-                    "TELEFONE": telefone,
-                    "CPF": cpf,
-                    "OPTIN": optin
-                };
-
-                var insertObject = {
-                    ...updateObject,
-                    "EMAIL": email
-                };
-
-                if (existing.length > 0) {
-                    de.Rows.Update(updateObject, ["EMAIL"], [email]);
-                } else {
-                    de.Rows.Add([insertObject]);
-                }
-                
-                showThanks = true;
-            } else if (nome != null && nome != "" && deKey != null && deKey != "") {
-                var de = DataExtension.Init(deKey);
-                 de.Rows.Add({
-                    "NOME": nome,
-                    "TELEFONE": telefone,
-                    "CPF": cpf,
-                    "OPTIN": optin
-                 });
-                 showThanks = true;
-            }
-
-            if (showThanks && redirectUrl && redirectUrl.length > 0 && !debug) {
-                Platform.Response.Redirect(redirectUrl);
-            } else if (showThanks) {
-                Variable.SetValue("@showThanks", "true");
-            }
-        }
-    } catch (e) {
-        if (debug) {
-            Write("<br><b>--- ERRO ---</b><br>" + Stringify(e));
-        }
-        Variable.SetValue("@showThanks", "true");
-    }
-</script>
-`;
->>>>>>> fd42992d803e6100492b4e2b1983070cba8539ca
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
@@ -1336,27 +1208,15 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const initialAmpscript = `%%[ 
-<<<<<<< HEAD
     VAR @showThanks, @status
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
     ENDIF
-=======
-    VAR @showThanks
-    
-    /* Apenas define @showThanks como "false" no carregamento inicial da página (GET).
-       Em uma submissão (POST), esta variável não será reiniciada. */
-    IF EMPTY(RequestParameter("__isPost")) THEN
-      SET @showThanks = "false"
-    ENDIF
-    
->>>>>>> fd42992d803e6100492b4e2b1983070cba8539ca
     ${meta.customAmpscript || ''}
     ${security.amscript}
     ${prefillAmpscript || ''}
 ]%%`;
 
-  // Use TreatAsContentArea for better performance and to avoid script injection issues
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -2121,6 +1981,5 @@ ${ssjsScript}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>
-`;
+</html>`
 }

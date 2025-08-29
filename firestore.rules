@@ -1,49 +1,47 @@
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check ownership
+    
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Projects can be read, created, updated, and deleted only by the owner
     match /projects/{projectId} {
       allow read, update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
-    
-    // Pages can be read, created, updated, and deleted only by the owner
+
     match /pages/{pageId} {
-       allow read, update, delete: if isOwner(resource.data.userId);
-       allow create: if isOwner(request.resource.data.userId);
+      // A leitura pública é tratada pela rota da API que verifica as datas de publicação/expiração.
+      allow read: if true; 
+      allow write: if isOwner(request.resource.data.userId);
     }
     
-    // Templates can be read, created, updated, and deleted only by the owner
     match /templates/{templateId} {
-       allow read, update, delete: if isOwner(resource.data.createdBy);
-       allow create: if isOwner(request.resource.data.createdBy);
-    }
-    
-    // User progress can only be read and updated by the owner
-    match /userProgress/{userId} {
-        allow read, update: if isOwner(userId);
-        allow create: if request.auth.uid != null && request.resource.data.userId == request.auth.uid;
-    }
-    
-    // Page views and form submissions can be created by anyone (publicly)
-    // but should not be readable or updatable by clients to protect PII.
-    // Server-side logic will handle reading this data.
-    match /pageViews/{viewId} {
-      allow create: if true;
-      allow read, update, delete: if false; // Protect privacy
-    }
-    
-    match /formSubmissions/{submissionId} {
-      allow create: if true;
-      allow read, update, delete: if false; // Protect PII
+      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
+      allow create: if isOwner(request.resource.data.createdBy);
+      allow update, delete: if isOwner(resource.data.createdBy);
     }
 
+    match /userProgress/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    match /pageViews/{viewId} {
+      // Permite que qualquer um crie uma visualização de página (acionado pela rota pública da API).
+      allow create: if true;
+      
+      // Permite que um usuário leia as visualizações de página apenas se ele for o proprietário da página referenciada.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages/$(resource.data.pageId)).data.userId == request.auth.uid;
+    }
+
+    match /formSubmissions/{submissionId} {
+      // Permite que qualquer um crie uma submissão de formulário (acionado pela rota pública da API).
+      allow create: if true;
+
+      // Perme que um usuário leia as submissões apenas se ele for o proprietário da página referenciada.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages/$(resource.data.pageId)).data.userId == request.auth.uid;
+    }
   }
 }

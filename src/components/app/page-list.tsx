@@ -341,7 +341,7 @@ export function PageList({ projectId }: PageListProps) {
   const [project, setProject] = useState<Project | null>(null);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [pageToDelete, setPageToDelete] = useState<string | null>(null);
+  const [pageToDelete, setPageToDelete] = useState<CloudPage | null>(null);
   
   // Notifications state
   const [notifications, setNotifications] = useState([
@@ -398,8 +398,8 @@ export function PageList({ projectId }: PageListProps) {
   const handleDeletePage = async () => {
      if (!pageToDelete) return;
     try {
-      await deletePage(pageToDelete);
-      setPages(prev => prev.filter(p => p.id !== pageToDelete));
+      await deletePage(pageToDelete.id);
+      setPages(prev => prev.filter(p => p.id !== pageToDelete.id));
       toast({ title: "Página excluída!" });
     } catch (error) {
       toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a página." });
@@ -537,7 +537,7 @@ export function PageList({ projectId }: PageListProps) {
             <AlertDialogTrigger asChild>
                 <DropdownMenuItem 
                 className="text-destructive" 
-                onSelect={(e) => { e.preventDefault(); setPageToDelete(page.id); }}
+                onSelect={(e) => { e.preventDefault(); setPageToDelete(page); }}
                 >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Excluir
@@ -815,6 +815,21 @@ export function PageList({ projectId }: PageListProps) {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPageToNavigate(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={proceedToEditor}>Continuar Mesmo Assim</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!pageToDelete} onOpenChange={(open) => !open && setPageToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{pageToDelete?.name}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPageToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePage}>Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

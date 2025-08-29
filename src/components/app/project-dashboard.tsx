@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Palette, Smile } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,32 @@ interface EnrichedProject extends Project {
   updatedAt: Date;
 }
 
+const projectIcons = [
+    { name: "Folder", icon: Folder },
+    { name: "Briefcase", icon: Briefcase },
+    { name: "Target", icon: Target },
+    { name: "BarChart", icon: BarChart },
+    { name: "Calendar", icon: Calendar },
+    { name: "Users", icon: Users },
+    { name: "Smile", icon: Smile },
+];
+
+const projectColors = [
+    "#3b82f6", // blue-500
+    "#22c55e", // green-500
+    "#f97316", // orange-500
+    "#8b5cf6", // violet-500
+    "#ec4899", // pink-500
+    "#ef4444", // red-500
+    "#14b8a6", // teal-500
+    "#64748b", // slate-500
+];
+
+function ProjectIcon({ iconName, color, className }: { iconName?: string; color?: string, className?: string }) {
+    const Icon = projectIcons.find(i => i.name === iconName)?.icon || Folder;
+    return <Icon className={cn("h-10 w-10", className)} style={{ color: color || 'hsl(var(--primary))' }} />;
+}
+
 export function ProjectDashboard() {
   const router = useRouter();
   const { user, logout, loading: authLoading } = useAuth();
@@ -77,8 +103,11 @@ export function ProjectDashboard() {
   
   // State for project actions
   const [newProjectName, setNewProjectName] = useState("");
-  const [projectToRename, setProjectToRename] = useState<Project | null>(null);
+  const [selectedIcon, setSelectedIcon] = useState(projectIcons[0].name);
+  const [selectedColor, setSelectedColor] = useState(projectColors[0]);
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+
 
   // State for search, sort, and view
   const [searchTerm, setSearchTerm] = useState("");
@@ -129,9 +158,13 @@ export function ProjectDashboard() {
       return;
     }
     try {
-      const newProject = await addProject(newProjectName, user.uid);
+      const newProject = await addProject({
+        name: newProjectName, 
+        userId: user.uid, 
+        icon: selectedIcon, 
+        color: selectedColor
+      });
       setProjects(prev => [newProject, ...prev]);
-      setNewProjectName("");
       setIsCreateModalOpen(false);
       toast({ title: "Projeto criado!", description: `O projeto "${newProjectName}" foi criado.` });
       
@@ -150,21 +183,25 @@ export function ProjectDashboard() {
     }
   };
 
-  const handleRenameProject = async () => {
-    if (!projectToRename || newProjectName.trim() === "") {
+  const handleUpdateProject = async () => {
+    if (!projectToEdit || newProjectName.trim() === "") {
         toast({ variant: "destructive", title: "Erro", description: "O nome do projeto não pode ser vazio." });
         return;
     }
     try {
-        await updateProject(projectToRename.id, { name: newProjectName });
-        setProjects(prev => prev.map(p => p.id === projectToRename.id ? { ...p, name: newProjectName } : p));
-        toast({ title: "Projeto renomeado!" });
+        const updatedData = { 
+            name: newProjectName,
+            icon: selectedIcon,
+            color: selectedColor
+        };
+        await updateProject(projectToEdit.id, updatedData);
+        setProjects(prev => prev.map(p => p.id === projectToEdit.id ? { ...p, ...updatedData } : p));
+        toast({ title: "Projeto atualizado!" });
     } catch (error) {
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível renomear o projeto." });
     } finally {
         setIsRenameModalOpen(false);
-        setNewProjectName("");
-        setProjectToRename(null);
+        setProjectToEdit(null);
     }
   }
 
@@ -195,9 +232,18 @@ export function ProjectDashboard() {
     }
   };
   
+  const openCreateModal = () => {
+    setNewProjectName('');
+    setSelectedIcon(projectIcons[0].name);
+    setSelectedColor(projectColors[0]);
+    setIsCreateModalOpen(true);
+  }
+  
   const openRenameModal = (project: Project) => {
-    setProjectToRename(project);
+    setProjectToEdit(project);
     setNewProjectName(project.name);
+    setSelectedIcon(project.icon || projectIcons[0].name);
+    setSelectedColor(project.color || projectColors[0]);
     setIsRenameModalOpen(true);
   }
 
@@ -282,6 +328,35 @@ export function ProjectDashboard() {
   };
 
 
+  const renderProjectForm = () => (
+    <div className="space-y-4">
+        <div className="space-y-2">
+            <Label htmlFor="project-name">Nome do Projeto</Label>
+            <Input id="project-name" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Ex: Campanhas Trimestrais"/>
+        </div>
+        <div className="space-y-2">
+            <Label>Ícone</Label>
+            <div className="flex flex-wrap gap-2">
+                {projectIcons.map(({name, icon: Icon}) => (
+                    <Button key={name} variant="outline" size="icon" onClick={() => setSelectedIcon(name)} className={cn(selectedIcon === name && 'ring-2 ring-primary')}>
+                        <Icon className="h-5 w-5" />
+                    </Button>
+                ))}
+            </div>
+        </div>
+        <div className="space-y-2">
+            <Label>Cor</Label>
+            <div className="flex flex-wrap gap-2">
+                {projectColors.map(color => (
+                     <Button key={color} variant="outline" size="icon" onClick={() => setSelectedColor(color)} className={cn('p-0', selectedColor === color && 'ring-2 ring-primary')}>
+                        <div className="h-6 w-6 rounded-full" style={{ backgroundColor: color }} />
+                    </Button>
+                ))}
+            </div>
+        </div>
+    </div>
+  )
+
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
@@ -296,7 +371,7 @@ export function ProjectDashboard() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => setIsCreateModalOpen(true)}>
+          <Button onClick={openCreateModal}>
             <Plus className="mr-2 h-4 w-4" /> Criar Projeto
           </Button>
 
@@ -405,7 +480,7 @@ export function ProjectDashboard() {
             <Folder size={48} className="mx-auto text-muted-foreground" />
             <h2 className="mt-4 text-xl font-semibold">Nenhum projeto encontrado</h2>
             <p className="mt-2 text-muted-foreground">Projetos são como pastas para organizar suas páginas. Comece criando seu primeiro projeto.</p>
-            <Button onClick={() => setIsCreateModalOpen(true)} className="mt-6">
+            <Button onClick={openCreateModal} className="mt-6">
               <Plus className="mr-2 h-4 w-4" /> Criar Projeto
             </Button>
           </div>
@@ -417,7 +492,7 @@ export function ProjectDashboard() {
                 className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
               >
                 <div onClick={() => handleNavigateToProject(project.id)} className="cursor-pointer">
-                    <Folder className="h-10 w-10 text-primary mb-4" />
+                    <ProjectIcon iconName={project.icon} color={project.color} className="mb-4" />
                     <h3 className="font-semibold text-lg">{project.name}</h3>
                     <p className="text-sm text-muted-foreground mt-2">
                         Modificado em {format(project.updatedAt, 'dd/MM/yyyy')}
@@ -477,7 +552,10 @@ export function ProjectDashboard() {
               <TableBody>
                 {filteredAndSortedProjects.map((project) => (
                   <TableRow key={project.id} className="cursor-pointer" onClick={() => handleNavigateToProject(project.id)}>
-                    <TableCell className="font-medium">{project.name}</TableCell>
+                    <TableCell className="font-medium flex items-center gap-3">
+                      <ProjectIcon iconName={project.icon} color={project.color} className="h-6 w-6" />
+                      {project.name}
+                    </TableCell>
                     <TableCell>{project.pageCount}</TableCell>
                     <TableCell>{format(project.updatedAt, 'dd/MM/yyyy, HH:mm')}</TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -514,11 +592,10 @@ export function ProjectDashboard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Criar Novo Projeto</DialogTitle>
-            <DialogDescription>Dê um nome à sua nova pasta de projeto.</DialogDescription>
+            <DialogDescription>Dê um nome e personalize a sua nova pasta de projeto.</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="project-name">Nome do Projeto</Label>
-            <Input id="project-name" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} className="mt-2" placeholder="Ex: Campanhas Trimestrais"/>
+            {renderProjectForm()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancelar</Button>
@@ -531,16 +608,15 @@ export function ProjectDashboard() {
       <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Renomear Projeto</DialogTitle>
-            <DialogDescription>Digite o novo nome para o projeto "{projectToRename?.name}".</DialogDescription>
+            <DialogTitle>Editar Projeto</DialogTitle>
+            <DialogDescription>Altere o nome e a aparência do projeto "{projectToEdit?.name}".</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="rename-project-name">Novo Nome do Projeto</Label>
-            <Input id="rename-project-name" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} className="mt-2"/>
+            {renderProjectForm()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleRenameProject}>Salvar</Button>
+            <Button onClick={handleUpdateProject}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

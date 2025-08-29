@@ -15,22 +15,18 @@ const getDbInstance = (): Firestore => {
 
 // Projects
 
-const addProject = async (name: string, userId: string): Promise<Project> => {
+const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project> => {
     const db = getDbInstance();
     const newProjectData = {
-        name,
-        userId,
+        ...projectData,
         createdAt: serverTimestamp(),
     };
     const projectRef = await addDoc(collection(db, "projects"), newProjectData);
     
-    // Return a locally constructed project object to avoid issues with serverTimestamp being null initially.
-    // The client-side state will be correct, and subsequent reads will get the server-generated timestamp.
     return {
         id: projectRef.id,
-        name,
-        userId,
-        createdAt: Timestamp.now(), // Use client-side timestamp for the immediate return
+        ...projectData,
+        createdAt: Timestamp.now(), 
     };
 };
 

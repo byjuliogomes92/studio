@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Palette, Smile } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Palette, Smile, Menu } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +46,8 @@ import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { OnboardingGuide } from "./onboarding-guide";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Badge } from "../ui/badge";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -85,6 +87,8 @@ export function ProjectDashboard() {
   const router = useRouter();
   const { user, logout, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,6 +117,7 @@ export function ProjectDashboard() {
 
   // State for search, sort, and view
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
@@ -354,118 +359,180 @@ export function ProjectDashboard() {
             </div>
         </div>
     </div>
-  )
+  );
 
-  return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 font-semibold text-lg">
-            <Logo className="h-6 w-6 text-primary" />
-            <h1>Meus Projetos</h1>
-          </div>
+  const renderHeaderActions = () => {
+    if (isMobile) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Menu className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => router.push('/templates')}>
+              <Library className="mr-2 h-4 w-4" />
+              Templates
+            </DropdownMenuItem>
+             <DropdownMenuItem>
+                <Bell className="mr-2 h-4 w-4" />
+                Notificações
+                 {unreadCount > 0 && <Badge className="ml-auto">{unreadCount}</Badge>}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={logout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
+
+    return (
+       <>
           <Button variant="ghost" onClick={() => router.push('/templates')}>
             <Library className="mr-2 h-4 w-4" />
             Templates
           </Button>
-        </div>
-        <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-                <Button onClick={openCreateModal}>
-                    <Plus className="mr-2 h-4 w-4" /> Criar Projeto
+          <div className="flex items-center gap-2">
+            <Button onClick={openCreateModal}>
+                <Plus className="mr-2 h-4 w-4" /> Criar Projeto
+            </Button>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="relative">
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                    </span>
+                    )}
                 </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel className="flex justify-between items-center">
+                    Notificações
+                    {unreadCount > 0 && (
+                        <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
+                        <CheckCheck className="mr-1 h-3 w-3 inline-block" />
+                        Marcar todas como lidas
+                        </button>
+                    )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications.map(notification => (
+                    <DropdownMenuItem 
+                    key={notification.id} 
+                    onSelect={(e) => e.preventDefault()}
+                    onClick={() => handleNotificationClick(notification.id, notification.slug)}
+                    className="flex items-center gap-3 cursor-pointer"
+                    >
+                    {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
+                    <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
+                    </DropdownMenuItem>
+                ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+         </div>
+          {user && (
+            <Button variant="outline" onClick={logout}>
+              <LogOut className="mr-2 h-4 w-4" /> Sair
+            </Button>
+          )}
+       </>
+    )
+  }
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="relative">
-                        <Bell className="h-4 w-4" />
-                        {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                        </span>
-                        )}
-                    </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-80">
-                    <DropdownMenuLabel className="flex justify-between items-center">
-                        Notificações
-                        {unreadCount > 0 && (
-                            <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
-                            <CheckCheck className="mr-1 h-3 w-3 inline-block" />
-                            Marcar todas como lidas
-                            </button>
-                        )}
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {notifications.map(notification => (
-                        <DropdownMenuItem 
-                        key={notification.id} 
-                        onSelect={(e) => e.preventDefault()}
-                        onClick={() => handleNotificationClick(notification.id, notification.slug)}
-                        className="flex items-center gap-3 cursor-pointer"
-                        >
-                        {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
-                        <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
-                        </DropdownMenuItem>
+  const renderSearch = () => {
+    const searchInput = (
+         <Popover>
+            <PopoverTrigger asChild>
+              <div className={cn("relative w-full", isMobile ? "max-w-full" : "max-w-sm")}>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      placeholder="Buscar projetos..."
+                      className="pl-9"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && (
+                      <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                          onClick={() => setSearchTerm("")}
+                      >
+                          <X className="h-4 w-4" />
+                      </Button>
+                  )}
+              </div>
+            </PopoverTrigger>
+            {searchTerm && filteredAndSortedProjects.length > 0 && (
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                <Command>
+                  <CommandGroup>
+                    {filteredAndSortedProjects.map(project => (
+                      <CommandItem
+                        key={project.id}
+                        value={project.name}
+                        onSelect={() => handleNavigateToProject(project.id)}
+                        className="cursor-pointer"
+                      >
+                        <ProjectIcon iconName={project.icon} color={project.color} className="mr-2 h-4 w-4" />
+                        {project.name}
+                      </CommandItem>
                     ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            )}
+          </Popover>
+    );
 
-            {user && (
-                <Button variant="outline" onClick={logout}>
-                <LogOut className="mr-2 h-4 w-4" /> Sair
+    if (isMobile) {
+      return (
+        <div className="w-full">
+            {isSearchVisible ? (
+                <div className="flex items-center gap-2">
+                    {searchInput}
+                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)}>
+                        <X className="h-4 w-4"/>
+                    </Button>
+                </div>
+            ) : (
+                <Button variant="outline" onClick={() => setIsSearchVisible(true)} className="w-full justify-start">
+                    <Search className="mr-2 h-4 w-4"/>
+                    Buscar projetos...
                 </Button>
             )}
         </div>
+      )
+    }
+
+    return searchInput;
+  }
+
+  return (
+    <div className="min-h-screen">
+      <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b bg-card">
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 font-semibold text-lg">
+            <Logo className="h-6 w-6 text-primary" />
+            <h1 className="hidden md:block">Meus Projetos</h1>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 md:gap-4">
+          {renderHeaderActions()}
+        </div>
       </header>
 
-      <main className="p-6">
+      <main className="p-4 md:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Buscar projetos..."
-                        className="pl-9"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                            onClick={() => setSearchTerm("")}
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    )}
-                </div>
-              </PopoverTrigger>
-              {searchTerm && filteredAndSortedProjects.length > 0 && (
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                  <Command>
-                    <CommandGroup>
-                      {filteredAndSortedProjects.map(project => (
-                        <CommandItem
-                          key={project.id}
-                          value={project.name}
-                          onSelect={() => handleNavigateToProject(project.id)}
-                          className="cursor-pointer"
-                        >
-                          <ProjectIcon iconName={project.icon} color={project.color} className="mr-2 h-4 w-4" />
-                          {project.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              )}
-            </Popover>
-
+            {renderSearch()}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 rounded-md border bg-background p-1">
                 <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
@@ -479,7 +546,7 @@ export function ProjectDashboard() {
                   <DropdownMenuTrigger asChild>
                       <Button variant="outline">
                           <ArrowUpDown className="mr-2 h-4 w-4"/>
-                          Ordenar por
+                          <span className="hidden md:inline">Ordenar por</span>
                       </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>

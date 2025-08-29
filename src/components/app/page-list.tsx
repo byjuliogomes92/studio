@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -43,7 +43,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -359,6 +358,7 @@ export function PageList({ projectId }: PageListProps) {
   const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   
   // Mobile Warning Dialog
   const [isMobileWarningOpen, setIsMobileWarningOpen] = useState(false);
@@ -564,67 +564,160 @@ export function PageList({ projectId }: PageListProps) {
   );
 
 
+  const renderHeaderActions = () => {
+    if (isMobile) {
+      return (
+         <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Menu className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => {}}>
+                <Bell className="mr-2 h-4 w-4" />
+                Notificações
+                 {unreadCount > 0 && <Badge className="ml-auto">{unreadCount}</Badge>}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
+
+    return (
+       <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="relative">
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuLabel className="flex justify-between items-center">
+              Notificações
+              {unreadCount > 0 && (
+                <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
+                   <CheckCheck className="mr-1 h-3 w-3 inline-block" />
+                   Marcar todas como lidas
+                </button>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {notifications.map(notification => (
+               <DropdownMenuItem 
+                 key={notification.id} 
+                 onSelect={(e) => e.preventDefault()}
+                 onClick={() => handleNotificationClick(notification.id, notification.slug)}
+                 className="flex items-center gap-3 cursor-pointer"
+               >
+                {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
+                <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
+               </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+    )
+  }
+
+  const renderSearch = () => {
+    const searchInput = (
+         <Popover>
+            <PopoverTrigger asChild>
+              <div className={cn("relative w-full", isMobile ? "max-w-full" : "max-w-sm")}>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      placeholder="Buscar páginas..."
+                      className="pl-9"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && (
+                      <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                          onClick={() => setSearchTerm("")}
+                      >
+                          <X className="h-4 w-4" />
+                      </Button>
+                  )}
+              </div>
+            </PopoverTrigger>
+            {searchTerm && filteredAndSortedPages.length > 0 && (
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                  <Command>
+                      <CommandGroup>
+                          {filteredAndSortedPages.map(page => (
+                              <CommandItem
+                                  key={page.id}
+                                  value={page.name}
+                                  onSelect={() => handlePageClick(page.id)}
+                                  className="cursor-pointer"
+                              >
+                                  {page.name}
+                              </CommandItem>
+                          ))}
+                      </CommandGroup>
+                  </Command>
+              </PopoverContent>
+            )}
+          </Popover>
+    );
+
+    if (isMobile) {
+      return (
+        <div className="w-full">
+            {isSearchVisible ? (
+                <div className="flex items-center gap-2">
+                    {searchInput}
+                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)}>
+                        <X className="h-4 w-4"/>
+                    </Button>
+                </div>
+            ) : (
+                <Button variant="outline" onClick={() => setIsSearchVisible(true)} className="w-full justify-start">
+                    <Search className="mr-2 h-4 w-4"/>
+                    Buscar páginas...
+                </Button>
+            )}
+        </div>
+      )
+    }
+
+    return searchInput;
+  }
+
   return (
     <>
       <div className="min-h-screen bg-muted/40">
-        <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
-          <div className="flex items-center gap-4 text-lg font-semibold">
-            <h1 className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors" onClick={() => router.push('/')}>
+        <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b bg-card">
+          <div className="flex items-center gap-2 md:gap-4 text-lg font-semibold">
+            <h1 className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors text-base md:text-lg" onClick={() => router.push('/')}>
               Projetos
             </h1>
             <span className="text-muted-foreground">/</span>
-            <h2>{project.name}</h2>
+            <h2 className="text-base md:text-lg">{project.name}</h2>
           </div>
           <div className="flex items-center gap-2">
             <CreatePageFromTemplateDialog
                 projectId={projectId}
                 trigger={
                     <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Criar Página
+                        <Plus className="mr-2 h-4 w-4" /> {isMobile ? "Criar" : "Criar Página"}
                     </Button>
                 }
                 onPageCreated={() => fetchProjectData()}
             />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="relative">
-                  <Bell className="h-4 w-4" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                    </span>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel className="flex justify-between items-center">
-                  Notificações
-                  {unreadCount > 0 && (
-                    <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
-                       <CheckCheck className="mr-1 h-3 w-3 inline-block" />
-                       Marcar todas como lidas
-                    </button>
-                  )}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {notifications.map(notification => (
-                   <DropdownMenuItem 
-                     key={notification.id} 
-                     onSelect={(e) => e.preventDefault()}
-                     onClick={() => handleNotificationClick(notification.id, notification.slug)}
-                     className="flex items-center gap-3 cursor-pointer"
-                   >
-                    {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
-                    <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
-                   </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {renderHeaderActions()}
           </div>
         </header>
 
-        <main className="p-6">
+        <main className="p-4 md:p-6">
             <Tabs defaultValue="pages">
                 <TabsList className="mb-4">
                     <TabsTrigger value="pages">Páginas</TabsTrigger>
@@ -632,76 +725,52 @@ export function PageList({ projectId }: PageListProps) {
                 </TabsList>
                 <TabsContent value="pages">
                     <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <div className="relative w-full max-w-sm">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    placeholder="Buscar páginas..."
-                                    className="pl-9"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                                {searchTerm && (
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                                        onClick={() => setSearchTerm("")}
-                                    >
-                                        <X className="h-4 w-4" />
+                        {renderSearch()}
+                        <div className="flex items-center gap-2 flex-wrap justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium mr-2 hidden md:inline">Filtrar:</span>
+                                <div className="flex items-center gap-1 rounded-md border bg-background p-1">
+                                    <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
+                                        <LayoutGrid className="h-4 w-4"/>
                                     </Button>
-                                )}
+                                    <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
+                                        <List className="h-4 w-4"/>
+                                    </Button>
+                                </div>
                             </div>
-                          </PopoverTrigger>
-                          {searchTerm && filteredAndSortedPages.length > 0 && (
-                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                                <Command>
-                                    <CommandGroup>
-                                        {filteredAndSortedPages.map(page => (
-                                            <CommandItem
-                                                key={page.id}
-                                                value={page.name}
-                                                onSelect={() => handlePageClick(page.id)}
-                                                className="cursor-pointer"
-                                            >
-                                                {page.name}
-                                            </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                </Command>
-                            </PopoverContent>
-                          )}
-                        </Popover>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium mr-2 hidden md:inline">Filtrar:</span>
-                            <div className="flex items-center gap-1 rounded-md border bg-background p-1">
-                                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
-                                    <LayoutGrid className="h-4 w-4"/>
-                                </Button>
-                                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
-                                    <List className="h-4 w-4"/>
-                                </Button>
-                            </div>
-                            {allTags.map(tag => (
-                                <Badge 
-                                    key={tag}
-                                    onClick={() => setActiveTag(tag === activeTag ? null : tag)}
-                                    className={cn(
-                                        "cursor-pointer transition-all hover:brightness-110 border",
-                                        activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
-                                        getTagColor(tag)
-                                    )}
-                                >
-                                    {tag}
-                                </Badge>
-                            ))}
-                            {activeTag && (
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            )}
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <ArrowUpDown className="mr-2 h-4 w-4"/>
+                                        Ordenar por
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => setSortOption('updatedAt-desc')}>Última Modificação</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setSortOption('name-asc')}>Nome (A-Z)</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
+                    </div>
+                     <div className="mb-4 flex flex-wrap gap-2">
+                        {allTags.map(tag => (
+                            <Badge 
+                                key={tag}
+                                onClick={() => setActiveTag(tag === activeTag ? null : tag)}
+                                className={cn(
+                                    "cursor-pointer transition-all hover:brightness-110 border",
+                                    activeTag === tag ? 'ring-2 ring-primary ring-offset-2' : '',
+                                    getTagColor(tag)
+                                )}
+                            >
+                                {tag}
+                            </Badge>
+                        ))}
+                        {activeTag && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        )}
                     </div>
 
 
@@ -813,7 +882,7 @@ export function PageList({ projectId }: PageListProps) {
                 </TabsContent>
                 <TabsContent value="analytics">
                      <Select onValueChange={(pageId) => router.push(`/project/${projectId}?page=${pageId}`)} defaultValue={selectedPageId || ''}>
-                        <SelectTrigger className="w-[300px] mb-4">
+                        <SelectTrigger className="w-full md:w-[300px] mb-4">
                             <SelectValue placeholder="Selecione uma página para ver as análises" />
                         </SelectTrigger>
                         <SelectContent>

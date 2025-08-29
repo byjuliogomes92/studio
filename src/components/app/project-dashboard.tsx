@@ -50,7 +50,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -623,60 +623,60 @@ export function ProjectDashboard() {
       </header>
 
       <main className="p-4 md:p-6">
-        <div className="mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            <Card className="xl:col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Projetos</CardTitle>
-                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+        <div className="mb-6 grid gap-4 lg:grid-cols-5">
+            <Card className="lg:col-span-3">
+                 <CardHeader>
+                    <CardTitle>Visão Geral</CardTitle>
+                    <CardDescription>Resumo das suas atividades na plataforma.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{dashboardStats.projectCount}</div>
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
+                        <Briefcase className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-2xl font-bold">{dashboardStats.projectCount}</span>
+                        <span className="text-xs text-muted-foreground">Projetos</span>
+                    </div>
+                     <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
+                        <FileText className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-2xl font-bold">{dashboardStats.pageCount}</span>
+                        <span className="text-xs text-muted-foreground">Páginas</span>
+                    </div>
+                     <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
+                        <Users className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-2xl font-bold">{dashboardStats.totalVisitors}</span>
+                        <span className="text-xs text-muted-foreground">Visitantes</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
+                        <Library className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-2xl font-bold">{dashboardStats.templateCount}</span>
+                        <span className="text-xs text-muted-foreground">Templates</span>
+                    </div>
                 </CardContent>
             </Card>
-            <Card className="xl:col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Páginas</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
+            <Card className="lg:col-span-2">
+                 <CardHeader>
+                    <CardTitle>Status das Páginas</CardTitle>
+                     <CardDescription>Acompanhe suas páginas publicadas.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{dashboardStats.pageCount}</div>
-                </CardContent>
-            </Card>
-             <Card className="xl:col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Visitantes Únicos</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{dashboardStats.totalVisitors}</div>
-                </CardContent>
-            </Card>
-            <Card className="xl:col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Templates Criados</CardTitle>
-                    <Library className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{dashboardStats.templateCount}</div>
-                </CardContent>
-            </Card>
-             <Card className="xl:col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Páginas Ativas</CardTitle>
-                    <Link className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-green-500">{dashboardStats.activePageCount}</div>
-                </CardContent>
-            </Card>
-            <Card className="xl:col-span-1 bg-primary/5 border-primary/20">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-primary">Próximo Passo</CardTitle>
-                    <Target className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-base font-bold text-primary">
-                        {projects.length === 0 ? "Crie seu primeiro projeto!" : "Crie uma nova página"}
+                <CardContent className="grid grid-cols-2 gap-4">
+                   <div className="flex items-center gap-3 rounded-lg bg-green-500/10 p-4 border border-green-500/20">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20">
+                            <Link className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-bold text-green-600">{dashboardStats.activePageCount}</div>
+                            <p className="text-xs text-green-700">Páginas Ativas</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20">
+                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
+                            <Target className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                           <div className="text-lg font-bold text-primary">
+                                {projects.length === 0 ? "Crie um Projeto" : "Crie uma Página"}
+                            </div>
+                            <p className="text-xs text-primary/80">Próximo Passo</p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -747,6 +747,10 @@ export function ProjectDashboard() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <FileText className="h-4 w-4" />
                         <span>{project.pageCount} página(s)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Eye className="h-4 w-4" />
+                        <span>{pageViews.filter(v => pages.some(p => p.projectId === project.id && p.id === v.pageId)).length}</span>
                     </div>
 
                     <DropdownMenu>

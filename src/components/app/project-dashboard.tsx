@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -354,154 +355,221 @@ export function ProjectDashboard() {
   )
 
   return (
-    <AlertDialog onOpenChange={(open) => !open && setProjectToDelete(null)}>
-      <div className="min-h-screen">
-        <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 font-semibold text-lg">
-              <Logo className="h-6 w-6 text-primary" />
-              <h1>Meus Projetos</h1>
-            </div>
-            <Button variant="ghost" onClick={() => router.push('/templates')}>
-              <Library className="mr-2 h-4 w-4" />
-              Templates
-            </Button>
+    <div className="min-h-screen">
+      <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 font-semibold text-lg">
+            <Logo className="h-6 w-6 text-primary" />
+            <h1>Meus Projetos</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={openCreateModal}>
+          <Button variant="ghost" onClick={() => router.push('/templates')}>
+            <Library className="mr-2 h-4 w-4" />
+            Templates
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button onClick={openCreateModal}>
+            <Plus className="mr-2 h-4 w-4" /> Criar Projeto
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="relative">
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel className="flex justify-between items-center">
+                  Notificações
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
+                      <CheckCheck className="mr-1 h-3 w-3 inline-block" />
+                      Marcar todas como lidas
+                    </button>
+                  )}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {notifications.map(notification => (
+                <DropdownMenuItem 
+                  key={notification.id} 
+                  onSelect={(e) => e.preventDefault()}
+                  onClick={() => handleNotificationClick(notification.id, notification.slug)}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
+                  {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
+                  <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {user && (
+            <Button variant="outline" onClick={logout}>
+              <LogOut className="mr-2 h-4 w-4" /> Sair
+            </Button>
+          )}
+        </div>
+      </header>
+
+      <main className="p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar projetos..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setSearchTerm("")}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 rounded-md border bg-background p-1">
+                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
+                  <LayoutGrid className="h-4 w-4"/>
+                </Button>
+                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
+                  <List className="h-4 w-4"/>
+                </Button>
+              </div>
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                          <ArrowUpDown className="mr-2 h-4 w-4"/>
+                          Ordenar por
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setSortOption('updatedAt-desc')}>Última Modificação</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOption('name-asc')}>Nome (A-Z)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOption('name-desc')}>Nome (Z-A)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOption('createdAt-desc')}>Mais Recentes</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOption('createdAt-asc')}>Mais Antigos</DropdownMenuItem>
+                  </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+        </div>
+        
+        {isOnboardingGuideOpen && userProgress && userProgress.objectives && Object.values(userProgress.objectives).some(v => !v) && (
+          <div className="mb-6">
+            <OnboardingGuide objectives={userProgress.objectives} onClose={closeOnboardingGuide} />
+          </div>
+        )}
+
+
+        {filteredAndSortedProjects.length === 0 ? (
+          <div className="text-center py-16">
+            <Folder size={48} className="mx-auto text-muted-foreground" />
+            <h2 className="mt-4 text-xl font-semibold">Nenhum projeto encontrado</h2>
+            <p className="mt-2 text-muted-foreground">Projetos são como pastas para organizar suas páginas. Comece criando seu primeiro projeto.</p>
+            <Button onClick={openCreateModal} className="mt-6">
               <Plus className="mr-2 h-4 w-4" /> Criar Projeto
             </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="relative">
-                  <Bell className="h-4 w-4" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                    </span>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel className="flex justify-between items-center">
-                    Notificações
-                    {unreadCount > 0 && (
-                      <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
-                        <CheckCheck className="mr-1 h-3 w-3 inline-block" />
-                        Marcar todas como lidas
-                      </button>
-                    )}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {notifications.map(notification => (
-                  <DropdownMenuItem 
-                    key={notification.id} 
-                    onSelect={(e) => e.preventDefault()}
-                    onClick={() => handleNotificationClick(notification.id, notification.slug)}
-                    className="flex items-center gap-3 cursor-pointer"
-                  >
-                    {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
-                    <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {user && (
-              <Button variant="outline" onClick={logout}>
-                <LogOut className="mr-2 h-4 w-4" /> Sair
-              </Button>
-            )}
           </div>
-        </header>
-
-        <main className="p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-              <div className="relative w-full max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                      placeholder="Buscar projetos..."
-                      className="pl-9"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  {searchTerm && (
-                      <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                          onClick={() => setSearchTerm("")}
-                      >
-                          <X className="h-4 w-4" />
-                      </Button>
-                  )}
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 rounded-md border bg-background p-1">
-                  <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
-                    <LayoutGrid className="h-4 w-4"/>
-                  </Button>
-                  <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
-                    <List className="h-4 w-4"/>
-                  </Button>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredAndSortedProjects.map((project) => (
+              <div
+                key={project.id}
+                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div onClick={() => handleNavigateToProject(project.id)} className="cursor-pointer">
+                    <ProjectIcon iconName={project.icon} color={project.color} className="mb-4" />
+                    <h3 className="font-semibold text-lg">{project.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        Modificado em {format(project.updatedAt, 'dd/MM/yyyy')}
+                    </p>
                 </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                            <ArrowUpDown className="mr-2 h-4 w-4"/>
-                            Ordenar por
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => setSortOption('updatedAt-desc')}>Última Modificação</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSortOption('name-asc')}>Nome (A-Z)</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSortOption('name-desc')}>Nome (Z-A)</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSortOption('createdAt-desc')}>Mais Recentes</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSortOption('createdAt-asc')}>Mais Antigos</DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+
+                <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <FileText className="h-4 w-4" />
+                        <span>{project.pageCount} página(s)</span>
+                    </div>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => openRenameModal(project)}>
+                                Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                    <Trash2 className="mr-2 h-4 w-4"/>
+                                    Excluir
+                                </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta ação não pode ser desfeita. Isso excluirá permanentemente o projeto "{project.name}".
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteProject()}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
               </div>
+            ))}
           </div>
-          
-          {isOnboardingGuideOpen && userProgress && userProgress.objectives && Object.values(userProgress.objectives).some(v => !v) && (
-            <div className="mb-6">
-              <OnboardingGuide objectives={userProgress.objectives} onClose={closeOnboardingGuide} />
-            </div>
-          )}
-
-
-          {filteredAndSortedProjects.length === 0 ? (
-            <div className="text-center py-16">
-              <Folder size={48} className="mx-auto text-muted-foreground" />
-              <h2 className="mt-4 text-xl font-semibold">Nenhum projeto encontrado</h2>
-              <p className="mt-2 text-muted-foreground">Projetos são como pastas para organizar suas páginas. Comece criando seu primeiro projeto.</p>
-              <Button onClick={openCreateModal} className="mt-6">
-                <Plus className="mr-2 h-4 w-4" /> Criar Projeto
-              </Button>
-            </div>
-          ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredAndSortedProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div onClick={() => handleNavigateToProject(project.id)} className="cursor-pointer">
-                      <ProjectIcon iconName={project.icon} color={project.color} className="mb-4" />
-                      <h3 className="font-semibold text-lg">{project.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-2">
-                          Modificado em {format(project.updatedAt, 'dd/MM/yyyy')}
-                      </p>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <FileText className="h-4 w-4" />
-                          <span>{project.pageCount} página(s)</span>
-                      </div>
-
+        ) : (
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50%]" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      Nome do Projeto
+                      {getSortDirection('name') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
+                    </div>
+                  </TableHead>
+                  <TableHead>Páginas</TableHead>
+                  <TableHead onClick={() => handleSort('updatedAt')}>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      Última Modificação
+                      {getSortDirection('updatedAt') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedProjects.map((project) => (
+                  <TableRow key={project.id} className="cursor-pointer" onClick={() => handleNavigateToProject(project.id)}>
+                    <TableCell className="font-medium flex items-center gap-3">
+                      <ProjectIcon iconName={project.icon} color={project.color} className="h-6 w-6" />
+                      {project.name}
+                    </TableCell>
+                    <TableCell>{project.pageCount}</TableCell>
+                    <TableCell>{format(project.updatedAt, 'dd/MM/yyyy, HH:mm')}</TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -510,115 +578,76 @@ export function ProjectDashboard() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
                               <DropdownMenuItem onClick={() => openRenameModal(project)}>
-                                  Renomear
+                                  Editar
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); openDeleteModal(project); }}>
-                                      <Trash2 className="mr-2 h-4 w-4"/>
-                                      Excluir
-                                  </DropdownMenuItem>
-                              </AlertDialogTrigger>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                        <Trash2 className="mr-2 h-4 w-4"/>
+                                        Excluir
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta ação não pode ser desfeita. Isso excluirá permanentemente o projeto "{project.name}".
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteProject()}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                           </DropdownMenuContent>
                       </DropdownMenu>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50%]" onClick={() => handleSort('name')}>
-                      <div className="flex items-center gap-2 cursor-pointer">
-                        Nome do Projeto
-                        {getSortDirection('name') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
-                      </div>
-                    </TableHead>
-                    <TableHead>Páginas</TableHead>
-                    <TableHead onClick={() => handleSort('updatedAt')}>
-                      <div className="flex items-center gap-2 cursor-pointer">
-                        Última Modificação
-                        {getSortDirection('updatedAt') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAndSortedProjects.map((project) => (
-                    <TableRow key={project.id} className="cursor-pointer" onClick={() => handleNavigateToProject(project.id)}>
-                      <TableCell className="font-medium flex items-center gap-3">
-                        <ProjectIcon iconName={project.icon} color={project.color} className="h-6 w-6" />
-                        {project.name}
-                      </TableCell>
-                      <TableCell>{project.pageCount}</TableCell>
-                      <TableCell>{format(project.updatedAt, 'dd/MM/yyyy, HH:mm')}</TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onClick={() => openRenameModal(project)}>
-                                    Renomear
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); openDeleteModal(project); }}>
-                                      <Trash2 className="mr-2 h-4 w-4"/>
-                                      Excluir
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </main>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </main>
 
-        {/* Create Project Dialog */}
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Novo Projeto</DialogTitle>
-              <DialogDescription>Dê um nome e personalize a sua nova pasta de projeto.</DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              {renderProjectForm()}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleAddProject}>Criar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      {/* Create Project Dialog */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar Novo Projeto</DialogTitle>
+            <DialogDescription>Dê um nome e personalize a sua nova pasta de projeto.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {renderProjectForm()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleAddProject}>Criar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Rename Project Dialog */}
-        <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Editar Projeto</DialogTitle>
-              <DialogDescription>Altere o nome e a aparência do projeto "{projectToEdit?.name}".</DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              {renderProjectForm()}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleUpdateProject}>Salvar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      {/* Rename Project Dialog */}
+      <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Projeto</DialogTitle>
+            <DialogDescription>Altere o nome e a aparência do projeto "{projectToEdit?.name}".</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {renderProjectForm()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleUpdateProject}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Delete Project Alert Dialog */}
+      {/* Delete Project Alert Dialog */}
+      <AlertDialog>
         <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
@@ -631,7 +660,7 @@ export function ProjectDashboard() {
               <AlertDialogAction onClick={handleDeleteProject}>Excluir</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
-      </div>
-    </AlertDialog>
+      </AlertDialog>
+    </div>
   );
 }

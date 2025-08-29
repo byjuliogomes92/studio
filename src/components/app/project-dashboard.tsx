@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -60,6 +60,14 @@ export function ProjectDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Nova funcionalidade: Templates!', slug: 'criando-reutilizando-componentes-templates', read: false },
+    { id: 2, title: 'Melhoria no alinhamento de formulários.', slug: 'melhoria-alinhamento-formularios', read: true },
+    { id: 3, title: 'Bem-vindo ao CloudPage Studio!', slug: 'bem-vindo-cloudpage-studio', read: true },
+  ]);
+  const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
   // State for modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -201,6 +209,15 @@ export function ProjectDashboard() {
     setIsOnboardingGuideOpen(false);
     localStorage.setItem('onboardingGuideClosed', 'true');
   };
+  
+  const handleNotificationClick = (notificationId: number, slug: string) => {
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
+    window.open(`https://blog.cloudpagestudio.app/${slug}`, '_blank');
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
 
   const filteredAndSortedProjects = useMemo((): EnrichedProject[] => {
     return projects
@@ -286,18 +303,36 @@ export function ProjectDashboard() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="relative">
                 <Bell className="h-4 w-4" />
-                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                  </span>
+                )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel className="flex justify-between items-center">
+                  Notificações
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
+                       <CheckCheck className="mr-1 h-3 w-3 inline-block" />
+                       Marcar todas como lidas
+                    </button>
+                  )}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Nova funcionalidade: Templates!</DropdownMenuItem>
-              <DropdownMenuItem>Melhoria no alinhamento de formulários.</DropdownMenuItem>
-              <DropdownMenuItem>Bem-vindo ao CloudPage Studio!</DropdownMenuItem>
+              {notifications.map(notification => (
+                 <DropdownMenuItem 
+                   key={notification.id} 
+                   onSelect={(e) => e.preventDefault()}
+                   onClick={() => handleNotificationClick(notification.id, notification.slug)}
+                   className="flex items-center gap-3 cursor-pointer"
+                 >
+                  {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
+                  <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
+                 </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
 

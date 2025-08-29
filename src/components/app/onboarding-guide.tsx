@@ -78,6 +78,7 @@ export function OnboardingGuide({ objectives, onClose }: OnboardingGuideProps) {
                         ) : (
                             <Circle className="h-5 w-5 text-muted-foreground" />
                         )}
+                        <Icon className="h-5 w-5 text-muted-foreground" />
                         <span className={isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'}>
                             {obj.label}
                         </span>

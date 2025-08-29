@@ -7,7 +7,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         return '';
     }
 
-    // This script is now more robust and explicit.
+    // This script is now more explicit and robust.
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
@@ -19,7 +19,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
 
-            // Explicitly capture expected fields
+            // 1. Explicitly capture expected fields
             var nome = Request.GetFormField("NOME");
             var email = Request.GetFormField("EMAIL");
             var telefone = Request.GetFormField("TELEFONE");
@@ -28,16 +28,16 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             var datanascimento = Request.GetFormField("DATANASCIMENTO");
             var optin = Request.GetFormField("OPTIN");
             
-            // --- INÍCIO DA CORREÇÃO ---
-            // Torna o valor do campo NOME disponível para o AMPScript
+            // 2. Set AMPScript variable for thank you message personalization
             if (nome) {
                 Variable.SetValue("@NOME", nome);
             }
-            // --- FIM DA CORREÇÃO ---
 
+            // 3. Only proceed if essential data is present
             if (deKey && deKey != "" && deKey != "CHANGE-ME" && email && email != "") {
                 var de = DataExtension.Init(deKey);
                 
+                // 4. Manually build the payload, checking for values
                 var deFields = {};
                 if (email) { deFields["EMAIL"] = email; }
                 if (nome) { deFields["NOME"] = nome; }
@@ -53,6 +53,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                     deFields["OPTIN"] = "False";
                 }
                 
+                // 5. Use Rows.Add for robust insertion
                 var status = de.Rows.Add(deFields);
 
                 // If Add is successful, set the flag to show the thank you message
@@ -64,6 +65,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             if (showThanks && redirectUrl && !debug) {
                 Platform.Response.Redirect(redirectUrl);
             } else if (showThanks) {
+                // 6. Signal success to AMPScript
                 Variable.SetValue("@showThanks", "true");
             }
         }
@@ -71,6 +73,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         if (debug) {
             Write("<br><b>--- SSJS ERROR ---</b><br>" + Stringify(e));
         }
+        Variable.SetValue("@errorMessage", Stringify(e));
     }
 </script>
 `;

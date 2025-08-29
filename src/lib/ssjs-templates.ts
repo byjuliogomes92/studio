@@ -7,101 +7,57 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         return '';
     }
 
-    const standardFields = (formComponent.props.fields as Record<string, FormFieldConfig>) || {};
-    const customFields = (formComponent.props.customFields as CustomFormField[]) || [];
-    const abTestComponents = pageState.components.filter(c => c.abTestEnabled);
-
-    // --- Build the field capture strings ---
-    const fieldVarDeclarations: string[] = [];
-    const fieldCaptureLines: string[] = [];
-    const deFields: string[] = [];
-    const setAmpscriptVarsLines: string[] = [];
-
-    const processField = (formName: string, deName: string) => {
-        fieldVarDeclarations.push(formName.toLowerCase());
-        fieldCaptureLines.push(`var ${formName.toLowerCase()} = Request.GetFormField("${formName.toUpperCase()}");`);
-        deFields.push(`"${deName.toUpperCase()}": ${formName.toLowerCase()}`);
-        setAmpscriptVarsLines.push(`Variable.SetValue("@${deName.toUpperCase()}", ${formName.toLowerCase()});`);
-    };
-
-    if (standardFields.name?.enabled) processField('NOME', 'NOME');
-    if (standardFields.email?.enabled) processField('EMAIL', 'EMAIL');
-    if (standardFields.phone?.enabled) processField('TELEFONE', 'TELEFONE');
-    if (standardFields.cpf?.enabled) processField('CPF', 'CPF');
-    if (standardFields.city?.enabled) processField('CIDADE', 'CIDADE');
-    if (standardFields.birthdate?.enabled) processField('DATANASCIMENTO', 'DATANASCIMENTO');
-    
-    if (standardFields.optin?.enabled) {
-        fieldVarDeclarations.push('optin');
-        fieldCaptureLines.push('var optin = Request.GetFormField("OPTIN");');
-        deFields.push('"OPTIN": optin_boolean'); // Will use a processed boolean
-    }
-    
-    customFields.forEach(field => {
-        fieldVarDeclarations.push(field.name.toLowerCase());
-        fieldCaptureLines.push(`var ${field.name.toLowerCase()} = Request.GetFormField("${field.name}");`);
-        deFields.push(`"${field.name}": ${field.name.toLowerCase()}`);
-        setAmpscriptVarsLines.push(`Variable.SetValue("@${field.name}", ${field.name.toLowerCase()});`);
-    });
-
-    abTestComponents.forEach(c => {
-        const varName = `variante_${c.id.toLowerCase()}`;
-        const fieldName = `VARIANTE_${c.id.toUpperCase()}`;
-        fieldVarDeclarations.push(varName);
-        fieldCaptureLines.push(`var ${varName} = Request.GetFormField("${fieldName}");`);
-        deFields.push(`"${fieldName}": ${varName}`);
-    });
-    
-    const deFieldsString = deFields.join(',\n                        ');
-
+    // This script is now more robust and explicit.
     return `
 <script runat="server">
     Platform.Load("Core", "1.1.1");
-    var debug = false; 
+    var debug = false;
 
     try {
         if (Request.Method == "POST") {
             var deKey = Request.GetFormField("__de");
-            var deMethod = Request.GetFormField("__de_method") || 'key';
             var redirectUrl = Request.GetFormField("__successUrl");
             var showThanks = false;
 
-            // --- Explicitly capture all possible form fields ---
-            ${fieldVarDeclarations.length > 0 ? `var ${[...new Set(fieldVarDeclarations)].join(', ')};` : ''}
-            ${fieldCaptureLines.join('\n            ')}
-
-            // --- Logic for optional/boolean fields ---
-            var optin_boolean = false;
-            if (typeof optin !== 'undefined') {
-                if (optin == "on") {
-                   optin_boolean = true;
-                }
+            // Explicitly capture expected fields
+            var nome = Request.GetFormField("NOME");
+            var email = Request.GetFormField("EMAIL");
+            var telefone = Request.GetFormField("TELEFONE");
+            var cpf = Request.GetFormField("CPF");
+            var cidade = Request.GetFormField("CIDADE");
+            var datanascimento = Request.GetFormField("DATANASCIMENTO");
+            var optin = Request.GetFormField("OPTIN");
+            
+            // --- INÍCIO DA CORREÇÃO ---
+            // Torna o valor do campo NOME disponível para o AMPScript
+            if (nome) {
+                Variable.SetValue("@NOME", nome);
             }
+            // --- FIM DA CORREÇÃO ---
 
-            // --- Attempt to save data only if essential fields are present ---
             if (deKey && deKey != "" && deKey != "CHANGE-ME" && email && email != "") {
+                var de = DataExtension.Init(deKey);
                 
-                var de;
-                if (deMethod == 'name') {
-                    de = DataExtension.FromName(deKey);
+                var deFields = {};
+                if (email) { deFields["EMAIL"] = email; }
+                if (nome) { deFields["NOME"] = nome; }
+                if (telefone) { deFields["TELEFONE"] = telefone; }
+                if (cpf) { deFields["CPF"] = cpf; }
+                if (cidade) { deFields["CIDADE"] = cidade; }
+                if (datanascimento) { deFields["DATANASCIMENTO"] = datanascimento; }
+                
+                // Handle checkbox value for Opt-in
+                if (optin == "on") {
+                    deFields["OPTIN"] = "True";
                 } else {
-                    de = DataExtension.Init(deKey);
+                    deFields["OPTIN"] = "False";
                 }
                 
-                var status = de.Rows.Add({
-                        ${deFieldsString}
-                });
-                
-                // Set AMPScript variables for personalization on the thank you message
-                ${setAmpscriptVarsLines.join('\n                ')}
+                var status = de.Rows.Add(deFields);
 
-                showThanks = true;
-
-            } else {
-                if (debug) {
-                    Write("Debug: DE Key or Email field is missing. Data not saved.");
-                    Write("DE Key: " + deKey);
-                    Write("Email: " + email);
+                // If Add is successful, set the flag to show the thank you message
+                if (status == "OK") {
+                    showThanks = true;
                 }
             }
 

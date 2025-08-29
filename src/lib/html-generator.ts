@@ -607,12 +607,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
         };
         const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
-
-        const thankYouHtml = `
-            <div class="thank-you-message">
-                ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
-                <div class="thank-you-text">%%=TreatAsContent(@thankYouMessage)=%%</div>
-            </div>`;
         
         const lucideIconSvgs: Record<string, string> = {
             none: '',
@@ -686,7 +680,10 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                 </form>
             </div>
             %%[ ELSE ]%%
-                ${thankYouHtml}
+                <div class="thank-you-message">
+                    ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
+                    <div class="thank-you-text">%%=TreatAsContent(@thankYouMessage)=%%</div>
+                </div>
             %%[ ENDIF ]%%
         `;
       }
@@ -1961,14 +1958,7 @@ ${ssjsScript}
     ${headerComponent ? renderComponent(headerComponent, pageState, isForPreview) : ''}
     ${bannerComponent ? renderComponent(bannerComponent, pageState, isForPreview) : ''}
     <div class="content-wrapper">
-      %%[ IF @showThanks != "true" THEN ]%%
       ${mainComponents}
-      %%[ ELSE ]%%
-        <div class="thank-you-message">
-            <h2>Obrigado!</h2>
-            <p>Seus dados foram enviados com sucesso.</p>
-        </div>
-      %%[ ENDIF ]%%
     </div>
     ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}
   </div>
@@ -1982,3 +1972,5 @@ ${ssjsScript}
 </body>
 </html>`
 }
+
+    

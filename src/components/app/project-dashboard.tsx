@@ -34,6 +34,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandGroup, CommandItem, CommandEmpty } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -419,25 +421,49 @@ export function ProjectDashboard() {
 
       <main className="p-6">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Buscar projetos..."
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={() => setSearchTerm("")}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Buscar projetos..."
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                            onClick={() => setSearchTerm("")}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
+              </PopoverTrigger>
+              {searchTerm && filteredAndSortedProjects.length > 0 && (
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                  <Command>
+                    <CommandGroup>
+                      {filteredAndSortedProjects.map(project => (
+                        <CommandItem
+                          key={project.id}
+                          value={project.name}
+                          onSelect={() => handleNavigateToProject(project.id)}
+                          className="cursor-pointer"
+                        >
+                          <ProjectIcon iconName={project.icon} color={project.color} className="mr-2 h-4 w-4" />
+                          {project.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              )}
+            </Popover>
+
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 rounded-md border bg-background p-1">
                 <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
@@ -472,7 +498,7 @@ export function ProjectDashboard() {
         )}
 
 
-        {filteredAndSortedProjects.length === 0 ? (
+        {filteredAndSortedProjects.length === 0 && !searchTerm ? (
           <div className="text-center py-16">
             <Folder size={48} className="mx-auto text-muted-foreground" />
             <h2 className="mt-4 text-xl font-semibold">Nenhum projeto encontrado</h2>
@@ -647,7 +673,7 @@ export function ProjectDashboard() {
       </Dialog>
 
       {/* Delete Project Alert Dialog */}
-      <AlertDialog>
+      <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>

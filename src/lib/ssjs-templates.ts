@@ -23,15 +23,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             // IMPORTANTE: Ajuste as chaves (à direita) para corresponderem EXATAMENTE às suas colunas na DE.
             var fieldMap = {
                 "NOME": "NOME",
-                "EMAIL": "EMAIL",
-                "TELEFONE": "TELEFONE",
-                "CPF": "CPF",
-                "CIDADE": "CIDADE",
-                "DATANASCIMENTO": "DATANASCIMENTO",
-                "OPTIN": "OPTIN",
-                "NPS_SCORE": "NPS_SCORE"
-                // Adicione aqui seus campos customizados, se necessário. Ex:
-                // "NOME_CAMPO_CUSTOMIZADO": "ColunaNaDEParaCustomizado"
+                "EMAIL": "EMAIL"
             };
 
             var allFields = Request.GetFormFields();

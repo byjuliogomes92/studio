@@ -63,8 +63,12 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             }
             
             // Adiciona campos que não vêm diretamente do formulário mas devem ser calculados
+            // Apenas adiciona NPS_DATE se NPS_SCORE tiver sido enviado.
             if (payload["NPS_SCORE"] != null && payload["NPS_SCORE"] != "") {
                 payload["NPS_DATE"] = Now(1);
+            } else {
+                // Remove NPS_SCORE do payload se estiver vazio para evitar erro no Upsert
+                delete payload["NPS_SCORE"];
             }
             
             // Garante que o Opt-in tenha um valor 'False' se não for marcado
@@ -111,5 +115,6 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
         // In case of error, still show thanks to not lose the lead
         Variable.SetValue("@showThanks", "true");
     }
-</script>`;
+</script>
+`;
 }

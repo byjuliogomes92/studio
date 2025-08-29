@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -549,14 +549,12 @@ export function PageList({ projectId }: PageListProps) {
     <>
       <div className="min-h-screen bg-muted/40">
         <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.push('/')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-2 font-semibold text-lg">
-              <h1 className="text-muted-foreground">Projetos /</h1>
-              <h1>{project.name}</h1>
-            </div>
+          <div className="flex items-center gap-4 text-lg font-semibold">
+            <h1 className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors" onClick={() => router.push('/')}>
+              Projetos
+            </h1>
+            <span className="text-muted-foreground">/</span>
+            <h2>{project.name}</h2>
           </div>
           <div className="flex items-center gap-2">
             <CreatePageFromTemplateDialog
@@ -789,5 +787,3 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
-
-    

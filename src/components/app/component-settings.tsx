@@ -3,7 +3,7 @@
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType } from "@/lib/types";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,19 +34,20 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
+import { Badge } from "../ui/badge";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onComponentChange: (id: string, newProps: Partial<PageComponent>) => void;
 }
 
-const formFields: {id: keyof PageComponent['props']['fields'], label: string, urlParam: string}[] = [
-    { id: 'name', label: 'Nome', urlParam: 'nome' },
-    { id: 'email', label: 'Email', urlParam: 'email' },
-    { id: 'phone', label: 'Telefone', urlParam: 'telefone' },
-    { id: 'cpf', label: 'CPF', urlParam: 'cpf' },
-    { id: 'city', label: 'Cidades', urlParam: 'cidade' },
-    { id: 'birthdate', label: 'Data de Nascimento', urlParam: 'datanascimento' },
+const formFields: {id: keyof PageComponent['props']['fields'], label: string, urlParam: string, deName: string}[] = [
+    { id: 'name', label: 'Nome', urlParam: 'nome', deName: 'NOME' },
+    { id: 'email', label: 'Email', urlParam: 'email', deName: 'EMAIL' },
+    { id: 'phone', label: 'Telefone', urlParam: 'telefone', deName: 'TELEFONE' },
+    { id: 'cpf', label: 'CPF', urlParam: 'cpf', deName: 'CPF' },
+    { id: 'city', label: 'Cidades', urlParam: 'cidade', deName: 'CIDADE' },
+    { id: 'birthdate', label: 'Data de Nascimento', urlParam: 'datanascimento', deName: 'DATANASCIMENTO' },
 ];
 
 const lucideIcons = [
@@ -486,6 +487,52 @@ function AnimationPreview({ animation }: { animation: keyof typeof animationUrls
 
 
 const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
+    
+    // Create a ref for the thank you message textarea for cursor manipulation
+    const thankYouTextareaRef = useRef<HTMLTextAreaElement>(null);
+    
+    // Handle inserting AMPScript variable into textarea
+    const insertAmpscriptVar = (deName: string) => {
+        const textarea = thankYouTextareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const varToInsert = `%%=v(@${deName})=%%`;
+        const newText = text.substring(0, start) + varToInsert + text.substring(end);
+        
+        // This will trigger the onchange event
+        const newSubmission = { ...props.submission, message: newText };
+        onPropChange('submission', newSubmission);
+        
+        // Set cursor position after the inserted variable
+        setTimeout(() => {
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = start + varToInsert.length;
+        }, 0);
+    };
+
+    // Get active fields for personalization pills
+    const getActiveFormFields = () => {
+        if (type !== 'Form') return [];
+        const activeFields: { label: string, deName: string }[] = [];
+        
+        formFields.forEach(field => {
+            if (props.fields?.[field.id]?.enabled) {
+                activeFields.push({ label: field.label, deName: field.deName });
+            }
+        });
+
+        (props.customFields || []).forEach((field: CustomFormField) => {
+            activeFields.push({ label: field.label, deName: field.name });
+        });
+        
+        return activeFields;
+    }
+    
+    const activeFormFields = getActiveFormFields();
+
     switch (type) {
       case "Header":
         return (
@@ -1116,21 +1163,32 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                                 <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
                                 <TooltipContent>
                                     <div className="max-w-xs space-y-2">
-                                        <p>Use HTML e personalize com variáveis AMPScript.</p>
-                                        <p>Para usar o valor de um campo, use a sintaxe `%%=v(@NOME_DO_CAMPO)=%%`.</p>
+                                        <p>Use HTML e personalize com as pílulas abaixo.</p>
                                         <p>Exemplo: `&lt;h2&gt;Obrigado, %%=v(@NOME)=%%!&lt;/h2&gt;`.</p>
-                                        <p>Campos disponíveis: @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, e os nomes dos seus campos personalizados.</p>
                                     </div>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
                         <Textarea
                             id="form-thank-you"
+                            ref={thankYouTextareaRef}
                             value={props.submission?.message || ''}
                             onChange={(e) => handleSubmissionChange('message', e.target.value)}
                             rows={8}
                             placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
                         />
+                        <div className="flex flex-wrap gap-2 pt-2">
+                           {activeFormFields.map(field => (
+                               <Badge 
+                                  key={field.deName}
+                                  variant="secondary"
+                                  className="cursor-pointer hover:bg-primary/20"
+                                  onClick={() => insertAmpscriptVar(field.deName)}
+                               >
+                                  {field.label}
+                               </Badge>
+                           ))}
+                        </div>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="thank-you-align">Alinhamento da Mensagem</Label>

@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -337,7 +336,7 @@ function AnalyticsDashboard({ page }: AnalyticsDashboardProps) {
                                             {submissions.map(submission => (
                                                 <TableRow key={submission.id}>
                                                     <TableCell>{submission.timestamp?.toDate ? format(submission.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
-                                                    {Object.keys(submissions[0].formData).map(key => <TableCell key={key}>{submission.formData[key]}</TableCell>)}
+                                                    {submissions.length > 0 && Object.keys(submissions[0].formData).map(key => <TableCell key={key}>{submission.formData[key]}</TableCell>)}
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -456,6 +455,7 @@ export function PageList({ projectId }: PageListProps) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('pages');
   
   // Mobile Warning Dialog
   const [isMobileWarningOpen, setIsMobileWarningOpen] = useState(false);
@@ -465,7 +465,7 @@ export function PageList({ projectId }: PageListProps) {
   const selectedPage = useMemo(() => pages.find(p => p.id === selectedPageId), [pages, selectedPageId]);
 
 
-  const fetchProjectData = async () => {
+  const fetchProjectData = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
     try {
@@ -484,7 +484,7 @@ export function PageList({ projectId }: PageListProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectId, user, toast, router]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -492,8 +492,14 @@ export function PageList({ projectId }: PageListProps) {
     } else if (!authLoading && !user) {
         router.push('/login');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, user, authLoading, toast, router]);
+  }, [user, authLoading, fetchProjectData, router]);
+
+  // Effect to handle default analytics page selection
+  useEffect(() => {
+    if (activeTab === 'analytics' && pages.length > 0 && !selectedPageId) {
+      router.push(`/project/${projectId}?page=${pages[0].id}`, { scroll: false });
+    }
+  }, [activeTab, pages, selectedPageId, projectId, router]);
 
   const handleDeletePage = async () => {
      if (!pageToDelete) return;
@@ -866,7 +872,7 @@ export function PageList({ projectId }: PageListProps) {
         </header>
 
         <main className="p-4 md:p-6">
-            <Tabs defaultValue="pages">
+            <Tabs defaultValue="pages" value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-4">
                     <TabsTrigger value="pages">Páginas</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -978,7 +984,7 @@ export function PageList({ projectId }: PageListProps) {
                                             <Badge key={tag} className={cn('border text-xs', getTagColor(tag))}>{tag}</Badge>
                                         ))}
                                     </div>
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2">
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 flex items-center">
                                         {pageActions(page)}
                                     </div>
                                 </div>
@@ -1032,17 +1038,27 @@ export function PageList({ projectId }: PageListProps) {
                     )}
                 </TabsContent>
                 <TabsContent value="analytics">
-                     <Select onValueChange={(pageId) => router.push(`/project/${projectId}?page=${pageId}`)} defaultValue={selectedPageId || ''}>
-                        <SelectTrigger className="w-full md:w-[300px] mb-4">
-                            <SelectValue placeholder="Selecione uma página para ver as análises" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {pages.map(page => (
-                                <SelectItem key={page.id} value={page.id}>{page.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                     {selectedPage && <AnalyticsDashboard page={selectedPage} />}
+                    {pages.length > 0 ? (
+                        <>
+                            <Select onValueChange={(pageId) => router.push(`/project/${projectId}?page=${pageId}`)} value={selectedPageId || pages[0].id}>
+                                <SelectTrigger className="w-full md:w-[300px] mb-4">
+                                    <SelectValue placeholder="Selecione uma página para ver as análises" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {pages.map(page => (
+                                        <SelectItem key={page.id} value={page.id}>{page.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {selectedPage && <AnalyticsDashboard page={selectedPage} />}
+                        </>
+                    ) : (
+                         <div className="text-center py-16">
+                            <LineChart size={48} className="mx-auto text-muted-foreground" />
+                            <h2 className="mt-4 text-xl font-semibold">Sem dados para analisar</h2>
+                            <p className="mt-2 text-muted-foreground">Crie e publique sua primeira página para começar a coletar dados.</p>
+                         </div>
+                    )}
                 </TabsContent>
             </Tabs>
         </main>

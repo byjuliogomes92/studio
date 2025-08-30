@@ -51,6 +51,8 @@ export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]>
 
     const workspaceIds = memberSnapshots.docs.map(doc => doc.data().workspaceId);
     
+    if (workspaceIds.length === 0) return [];
+
     const workspacesQuery = query(collection(db, 'workspaces'), where('__name__', 'in', workspaceIds));
     const workspaceSnapshots = await getDocs(workspacesQuery);
     
@@ -81,15 +83,19 @@ const updateProject = async (projectId: string, data: Partial<Project>): Promise
 }
 
 const getProjectsForUser = async (workspaceId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
+    if (!workspaceId) {
+        return { projects: [], pages: [] };
+    }
     const db = getDbInstance();
     const projectsQuery = query(collection(db, "projects"), where("workspaceId", "==", workspaceId));
-    // Fetch from drafts to get the most recent page data for UI purposes (like page count)
     const pagesQuery = query(collection(db, "pages_drafts"), where("workspaceId", "==", workspaceId));
 
-    const projectSnapshot = await getDocs(projectsQuery);
+    const [projectSnapshot, pageSnapshot] = await Promise.all([
+        getDocs(projectsQuery),
+        getDocs(pagesQuery)
+    ]);
+    
     const projects = projectSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
-
-    const pageSnapshot = await getDocs(pagesQuery);
     const pages = pageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
 
     return { projects, pages };
@@ -314,6 +320,7 @@ export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>): Prom
 };
 
 export const getBrandsForUser = async (workspaceId: string): Promise<Brand[]> => {
+    if (!workspaceId) return [];
     const db = getDbInstance();
     const q = query(collection(db, 'brands'), where('workspaceId', '==', workspaceId), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);

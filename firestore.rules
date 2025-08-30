@@ -1,63 +1,67 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // Projects can be read in a list only if the query filters by the user's own ID.
-    // Individual project documents can be updated/deleted only by the owner.
-    match /projects/{projectId} {
-      allow read: if request.auth.uid != null;
-      allow create: if isOwner(request.resource.data.userId);
-      allow update, delete: if isOwner(resource.data.userId);
+    
+    function isMember(workspaceId) {
+      return exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
     }
     
-    // Brands follow the same pattern as projects.
+    match /workspaces/{workspaceId} {
+      allow read: if isMember(workspaceId);
+      allow create: if request.auth.uid == request.resource.data.ownerId;
+      allow update: if isMember(workspaceId) && get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId)).data.role in ['owner', 'admin'];
+    }
+
+    match /workspaceMembers/{membershipId} {
+        allow read: if request.auth.uid == resource.data.userId;
+        // Allow owners/admins of a workspace to create new memberships (invite)
+        allow create: if isMember(request.resource.data.workspaceId) && get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(request.resource.data.workspaceId)).data.role in ['owner', 'admin'];
+        // Allow owners/admins to delete members, but a user can also delete their own membership
+        allow delete: if (isMember(resource.data.workspaceId) && get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(resource.data.workspaceId)).data.role in ['owner', 'admin']) || request.auth.uid == resource.data.userId;
+    }
+
+    match /projects/{projectId} {
+      allow list, read: if isMember(resource.data.workspaceId);
+      allow create, update, delete: if isMember(request.resource.data.workspaceId);
+    }
+    
     match /brands/{brandId} {
-      allow read: if request.auth.uid != null;
-      allow create: if isOwner(request.resource.data.userId);
-      allow update, delete: if isOwner(resource.data.userId);
+        allow list, read: if isMember(resource.data.workspaceId);
+        allow create, update, delete: if isMember(request.resource.data.workspaceId);
     }
 
-    // Drafts are private and can only be accessed by their owner.
     match /pages_drafts/{pageId} {
-      allow read, write: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read, write: if isMember(request.resource.data.workspaceId);
     }
 
-    // Published pages are public to read, but only the owner can write (publish).
     match /pages_published/{pageId} {
       allow read: if true;
-      allow write: if isOwner(resource.data.userId);
+      allow write: if isMember(request.resource.data.workspaceId);
     }
 
-    // Default templates are public; custom templates are private to the creator.
     match /templates/{templateId} {
-      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
-      allow create: if isOwner(request.resource.data.createdBy);
-      allow update, delete: if isOwner(resource.data.createdBy);
+      // Default templates are public to read. Custom templates are private.
+      allow read: if resource.data.isDefault == true || isMember(resource.data.workspaceId);
+      // Anyone can create a template for their own workspace
+      allow create: if isMember(request.resource.data.workspaceId);
+      // Only the owner of a template can modify it
+      allow update, delete: if isMember(resource.data.workspaceId) && request.auth.uid == resource.data.createdBy;
     }
 
-    // A user can only access their own progress document.
     match /userProgress/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if request.auth.uid == userId;
     }
 
-    // Anyone can create analytics data.
-    // Only the owner of the page can read the associated analytics data.
     match /pageViews/{viewId} {
       allow create: if true;
-      allow read: if request.auth.uid != null 
-                    && get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.userId == request.auth.uid;
+      allow read: if true;
     }
 
     match /formSubmissions/{submissionId} {
       allow create: if true;
-      allow read: if request.auth.uid != null 
-                    && get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.userId == request.auth.uid;
+      allow read: if true;
     }
   }
 }

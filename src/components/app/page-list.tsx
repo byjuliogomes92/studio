@@ -44,7 +44,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -455,6 +454,7 @@ export function PageList({ projectId }: PageListProps) {
   const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activePlatform, setActivePlatform] = useState<string>("all");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('pages');
   
@@ -562,12 +562,18 @@ export function PageList({ projectId }: PageListProps) {
     return Array.from(tagsSet).sort();
   }, [pages]);
 
+  const availablePlatforms = useMemo(() => {
+    const platformIds = new Set(pages.map(page => page.platform).filter(Boolean));
+    return platforms.filter(p => platformIds.has(p.id));
+  }, [pages]);
+
   const filteredAndSortedPages = useMemo(() => {
     return pages
       .filter(page => {
           const matchesTag = activeTag ? (page.tags || []).includes(activeTag) : true;
           const matchesSearch = page.name.toLowerCase().includes(searchTerm.toLowerCase());
-          return matchesTag && matchesSearch;
+          const matchesPlatform = activePlatform === 'all' || page.platform === activePlatform;
+          return matchesTag && matchesSearch && matchesPlatform;
       })
       .sort((a, b) => {
         switch (sortOption) {
@@ -582,7 +588,7 @@ export function PageList({ projectId }: PageListProps) {
              return (a.updatedAt?.toDate() || 0) < (b.updatedAt?.toDate() || 0) ? 1 : -1;
         }
       });
-  }, [pages, activeTag, searchTerm, sortOption]);
+  }, [pages, activeTag, searchTerm, sortOption, activePlatform]);
   
   const getSortDirection = (column: 'name' | 'updatedAt') => {
     if (sortOption.startsWith(column)) {
@@ -621,8 +627,6 @@ export function PageList({ projectId }: PageListProps) {
   }
 
   const pageActions = (page: CloudPage) => (
-    <div className="flex items-center justify-end">
-        <QuickSnippetPopover pageId={page.id} />
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button
@@ -667,7 +671,6 @@ export function PageList({ projectId }: PageListProps) {
                 </AlertDialog>
             </DropdownMenuContent>
         </DropdownMenu>
-    </div>
   );
 
 
@@ -884,6 +887,17 @@ export function PageList({ projectId }: PageListProps) {
                         <div className="flex items-center gap-2 flex-wrap justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium mr-2 hidden md:inline">Filtrar:</span>
+                                <Select value={activePlatform} onValueChange={setActivePlatform}>
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Plataforma" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todas as Plataformas</SelectItem>
+                                        {availablePlatforms.map(p => (
+                                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <div className="flex items-center gap-1 rounded-md border bg-background p-1">
                                     <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
                                         <LayoutGrid className="h-4 w-4"/>
@@ -959,6 +973,7 @@ export function PageList({ projectId }: PageListProps) {
                                     <PlatformIcon platformId={page.platform} />
                                 </div>
                                 <div className="absolute top-1 right-1 z-10 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <QuickSnippetPopover pageId={page.id} />
                                     {pageActions(page)}
                                 </div>
                                 <div
@@ -1033,8 +1048,11 @@ export function PageList({ projectId }: PageListProps) {
                                     </div>
                                 </TableCell>
                                 <TableCell>{page.updatedAt?.toDate ? format(page.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
-                                <TableCell className="text-right">
-                                    {pageActions(page)}
+                                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center justify-end">
+                                      <QuickSnippetPopover pageId={page.id} />
+                                      {pageActions(page)}
+                                    </div>
                                 </TableCell>
                                 </TableRow>
                             ))}
@@ -1103,3 +1121,4 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+

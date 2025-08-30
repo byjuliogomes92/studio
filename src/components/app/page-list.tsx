@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart, Calendar, Smile } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -43,7 +43,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -90,6 +89,21 @@ const getTagColor = (tag: string) => {
     }
     return tagColors[Math.abs(hash) % tagColors.length];
 };
+
+const projectIcons = [
+    { name: "Folder", icon: Folder },
+    { name: "Briefcase", icon: Briefcase },
+    { name: "Target", icon: Target },
+    { name: "BarChart", icon: BarChart },
+    { name: "Calendar", icon: Calendar },
+    { name: "Users", icon: Users },
+    { name: "Smile", icon: Smile },
+];
+
+function ProjectIcon({ iconName, color, className }: { iconName?: string; color?: string, className?: string }) {
+    const Icon = projectIcons.find(i => i.name === iconName)?.icon || Folder;
+    return <Icon className={cn("h-6 w-6", className)} style={{ color: color || 'hsl(var(--primary))' }} />;
+}
 
 interface MovePageDialogProps {
   page: CloudPage;
@@ -758,7 +772,10 @@ export function PageList({ projectId }: PageListProps) {
               Projetos
             </h1>
             <span className="text-muted-foreground">/</span>
-            <h2 className="text-base md:text-lg">{project.name}</h2>
+             <div className="flex items-center gap-2">
+                <ProjectIcon iconName={project.icon} color={project.color} />
+                <h2 className="text-base md:text-lg">{project.name}</h2>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {renderHeaderActions()}

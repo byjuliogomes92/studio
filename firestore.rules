@@ -18,14 +18,15 @@ service cloud.firestore {
     }
 
     match /pages_drafts/{pageId} {
-      allow read, write: if isOwner(request.resource.data.userId);
+      allow read, write: if isOwner(get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
 
     match /pages_published/{pageId} {
       allow read: if true;
       allow write: if isOwner(request.resource.data.userId);
     }
-    
+
     match /templates/{templateId} {
       allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
       allow create: if isOwner(request.resource.data.createdBy);
@@ -37,18 +38,12 @@ service cloud.firestore {
     }
 
     match /pageViews/{viewId} {
-      // Allows anyone to create a page view (triggered by the public API route).
       allow create: if true;
-      
-      // Allows a user to read page views only if they own the referenced page.
       allow read: if request.auth != null && get(/databases/$(database)/documents/pages_drafts/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
 
     match /formSubmissions/{submissionId} {
-      // Allows anyone to create a form submission (triggered by the public API route).
       allow create: if true;
-
-      // Allows a user to read submissions only if they own the referenced page.
       allow read: if request.auth != null && get(/databases/$(database)/documents/pages_drafts/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
   }

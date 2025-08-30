@@ -70,7 +70,7 @@ const useHistoryState = <T>(initialState: T) => {
 export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, activeWorkspace } = useAuth();
   const { toast } = useToast();
 
   const [initialPageState, setInitialPageState] = useState<CloudPage | null>(null);
@@ -99,7 +99,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       setIsLoading(true);
       return;
     }
-    if (!user) {
+    if (!user || !activeWorkspace) {
       router.push('/login');
       return;
     }
@@ -109,7 +109,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       try {
         if (pageId !== "new") {
           let pageData = await getPage(pageId, 'drafts'); // Always edit the draft
-          if (pageData && pageData.userId === user.uid) {
+          
+          if (pageData && pageData.workspaceId === activeWorkspace.id) {
             pageData = produce(pageData, draft => {
               let maxOrder = -1;
               draft.components.forEach(c => {
@@ -172,7 +173,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         fetchPage();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageId, router, user, toast, authLoading, searchParams]);
+  }, [pageId, router, user, toast, authLoading, searchParams, activeWorkspace]);
   
   
   useEffect(() => {
@@ -303,7 +304,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       const finalPageState = { 
           ...pageState, 
           name: pageName,
-          userId: user.uid,
       };
       await updatePage(pageId, finalPageState);
       // After saving, update the saved state and reset history.
@@ -337,7 +337,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           const finalPageState = { 
               ...pageState, 
               name: pageName,
-              userId: user.uid,
           };
           // First, save any pending changes to the draft
           if (hasUnsavedChanges) {
@@ -367,7 +366,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   };
 
   const handleSaveAsTemplate = async () => {
-    if (!pageState || !user) return;
+    if (!pageState || !user || !activeWorkspace) return;
     if (!templateName.trim()) {
         toast({ variant: "destructive", title: "Erro", description: "O nome do template é obrigatório." });
         return;
@@ -375,11 +374,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     setIsSavingTemplate(true);
 
     try {
-        const { id, projectId, userId, createdAt, updatedAt, meta, ...restOfPage } = pageState;
+        const { id, projectId, createdAt, updatedAt, meta, ...restOfPage } = pageState;
         const { dataExtensionKey, redirectUrl, tracking, security, ...restOfMeta } = meta;
 
         const templateData: Omit<Template, 'id' | 'createdAt' | 'updatedAt'> = {
             ...restOfPage,
+            workspaceId: activeWorkspace.id,
             name: templateName,
             description: templateDescription,
             // @ts-ignore - brand is a legacy property for default templates

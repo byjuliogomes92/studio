@@ -47,7 +47,7 @@ const platforms = [
     { id: 'web', name: 'Web', Icon: Globe, enabled: false },
 ];
 
-const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand | null, platform: string): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
+const getInitialPage = (name: string, projectId: string, workspaceId: string, brand: Brand | null, platform: string): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
     
     const brandName = brand ? brand.name : 'Sem Marca';
     const brandId = brand ? brand.id : '';
@@ -63,7 +63,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
     return {
       name: name,
       projectId,
-      userId,
+      workspaceId,
       brandId: brandId,
       brandName: brandName,
       platform,
@@ -135,7 +135,7 @@ export function CreatePageFromTemplateDialog({
   const [isCreating, setIsCreating] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState('sfmc');
   
-  const { user } = useAuth();
+  const { user, activeWorkspace } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -149,16 +149,16 @@ export function CreatePageFromTemplateDialog({
   }, [templateId]);
   
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && user && activeWorkspace) {
         if (!templateId) {
-            getTemplates(user.uid).then(setUserTemplates);
+            getTemplates(activeWorkspace.id).then(setUserTemplates);
         }
         if (!projectId) {
-            getProjectsForUser(user.uid).then(({projects}) => setUserProjects(projects));
+            getProjectsForUser(activeWorkspace.id).then(({projects}) => setUserProjects(projects));
         }
-        getBrandsForUser(user.uid).then(setUserBrands);
+        getBrandsForUser(activeWorkspace.id).then(setUserBrands);
     }
-  }, [isOpen, user, templateId, projectId]);
+  }, [isOpen, user, templateId, projectId, activeWorkspace]);
 
   const resetState = () => {
     setIsOpen(false);
@@ -181,8 +181,8 @@ export function CreatePageFromTemplateDialog({
   };
 
   const handleConfirmCreatePage = async () => {
-    if (!user) {
-        toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado." });
+    if (!user || !activeWorkspace) {
+        toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado e em um workspace." });
         return;
     }
     if (!selectedProjectId) {
@@ -204,7 +204,7 @@ export function CreatePageFromTemplateDialog({
         const selectedBrand = userBrands.find(b => b.id === selectedBrandId) || null;
 
         if (selectedTemplate === 'blank') {
-            newPageData = getInitialPage(newPageName, selectedProjectId, user.uid, selectedBrand, selectedPlatform);
+            newPageData = getInitialPage(newPageName, selectedProjectId, activeWorkspace.id, selectedBrand, selectedPlatform);
         } else {
             let template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'> | null = null;
             if (selectedTemplateIsDefault) {
@@ -239,11 +239,11 @@ export function CreatePageFromTemplateDialog({
 
             newPageData = {
                 name: newPageName,
+                workspaceId: activeWorkspace.id,
                 brandId: selectedBrand.id,
                 brandName: selectedBrand.name,
                 platform: selectedPlatform,
                 projectId: selectedProjectId,
-                userId: user.uid,
                 tags: [],
                 styles: selectedBrand ? {
                     ...template.styles,

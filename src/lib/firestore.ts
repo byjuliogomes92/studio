@@ -63,7 +63,7 @@ export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]>
 
 // Projects
 
-const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project> => {
+export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project> => {
     const db = getDbInstance();
     const newProjectData = {
         ...projectData,
@@ -78,12 +78,12 @@ const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>): Promi
     };
 };
 
-const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {
+export const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {
     const db = getDbInstance();
     await updateDoc(doc(db, "projects", projectId), data);
 }
 
-const getProjectsForUser = async (workspaceId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
+export const getProjectsForUser = async (workspaceId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
     if (!workspaceId) {
         throw new Error("Workspace ID is required to fetch projects.");
     }
@@ -102,7 +102,7 @@ const getProjectsForUser = async (workspaceId: string): Promise<{ projects: Proj
     return { projects, pages };
 };
 
-const getProject = async (projectId: string): Promise<Project | null> => {
+export const getProject = async (projectId: string): Promise<Project | null> => {
     const db = getDbInstance();
     const docRef = doc(db, "projects", projectId);
     const docSnap = await getDoc(docRef);
@@ -110,7 +110,7 @@ const getProject = async (projectId: string): Promise<Project | null> => {
 };
 
 
-const deleteProject = async (projectId: string): Promise<void> => {
+export const deleteProject = async (projectId: string): Promise<void> => {
     const db = getDbInstance();
     const projectDocRef = doc(db, "projects", projectId);
     
@@ -136,7 +136,7 @@ const deleteProject = async (projectId: string): Promise<void> => {
 
 // Pages
 
-const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     const db = getDbInstance();
     const pageId = doc(collection(db, 'dummy_id_generator')).id; // Generate a unique ID
 
@@ -159,7 +159,7 @@ const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt
     return pageId;
 };
 
-const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
+export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
     // Only update the draft document
     const draftRef = doc(db, "pages_drafts", pageId);
@@ -169,7 +169,7 @@ const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise
     });
 };
 
-const publishPage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
+export const publishPage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
     const publishedRef = doc(db, "pages_published", pageId);
     // Overwrite the published document with the current draft data
@@ -180,7 +180,7 @@ const publishPage = async (pageId: string, pageData: Partial<CloudPage>): Promis
 };
 
 
-const getPage = async (pageId: string, version: 'drafts' | 'published' = 'drafts'): Promise<CloudPage | null> => {
+export const getPage = async (pageId: string, version: 'drafts' | 'published' = 'drafts'): Promise<CloudPage | null> => {
     const db = getDbInstance();
     const collectionName = version === 'drafts' ? 'pages_drafts' : 'pages_published';
     const docRef = doc(db, collectionName, pageId);
@@ -199,14 +199,19 @@ const getPage = async (pageId: string, version: 'drafts' | 'published' = 'drafts
     return page;
 };
 
-const getPagesForProject = async (projectId: string): Promise<CloudPage[]> => {
+export const getPagesForProject = async (projectId: string, workspaceId: string): Promise<CloudPage[]> => {
     const db = getDbInstance();
-    const q = query(collection(db, "pages_drafts"), where("projectId", "==", projectId), orderBy("updatedAt", "desc"));
+    const q = query(
+      collection(db, "pages_drafts"), 
+      where("projectId", "==", projectId),
+      where("workspaceId", "==", workspaceId),
+      orderBy("updatedAt", "desc")
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
 };
 
-const getProjectWithPages = async (projectId: string, workspaceId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
+export const getProjectWithPages = async (projectId: string, workspaceId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
     const db = getDbInstance();
     const projectRef = doc(db, 'projects', projectId);
     const projectDoc = await getDoc(projectRef);
@@ -216,23 +221,13 @@ const getProjectWithPages = async (projectId: string, workspaceId: string): Prom
     }
 
     const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
-
-    // Fetch from drafts as this represents the user's working set
-    const pagesQuery = query(
-        collection(db, 'pages_drafts'),
-        where('projectId', '==', projectId),
-        where('workspaceId', '==', workspaceId),
-        orderBy('updatedAt', 'desc')
-    );
-    
-    const pagesSnapshot = await getDocs(pagesQuery);
-    const pages = pagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
+    const pages = await getPagesForProject(projectId, workspaceId);
 
     return { project, pages };
 };
 
 
-const deletePage = async (pageId: string): Promise<void> => {
+export const deletePage = async (pageId: string): Promise<void> => {
     const db = getDbInstance();
     // Delete both the draft and the published version
     const draftRef = doc(db, "pages_drafts", pageId);
@@ -240,7 +235,7 @@ const deletePage = async (pageId: string): Promise<void> => {
     await Promise.all([deleteDoc(draftRef), deleteDoc(publishedRef)]);
 };
 
-const duplicatePage = async (pageId: string): Promise<CloudPage> => {
+export const duplicatePage = async (pageId: string): Promise<CloudPage> => {
     // Always duplicate from the draft version, as it's the most current state
     const originalPage = await getPage(pageId, 'drafts');
     if (!originalPage) {
@@ -263,7 +258,7 @@ const duplicatePage = async (pageId: string): Promise<CloudPage> => {
     return newPage;
 };
 
-const movePageToProject = async (pageId: string, newProjectId: string): Promise<void> => {
+export const movePageToProject = async (pageId: string, newProjectId: string): Promise<void> => {
     const db = getDbInstance();
     const draftRef = doc(db, 'pages_drafts', pageId);
     const publishedRef = doc(db, 'pages_published', pageId);
@@ -281,7 +276,7 @@ const movePageToProject = async (pageId: string, newProjectId: string): Promise<
 
 // Templates
 
-const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     const db = getDbInstance();
     const templateWithTimestamps = {
         ...templateData,
@@ -293,7 +288,7 @@ const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'up
 };
 
 
-const getTemplates = async (workspaceId: string): Promise<Template[]> => {
+export const getTemplates = async (workspaceId: string): Promise<Template[]> => {
     if (!workspaceId) return [];
     const db = getDbInstance();
     const templatesQuery = query(collection(db, "templates"), where("workspaceId", "==", workspaceId), orderBy("name", "asc"));
@@ -301,14 +296,14 @@ const getTemplates = async (workspaceId: string): Promise<Template[]> => {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Template));
 };
 
-const getTemplate = async (templateId: string): Promise<Template | null> => {
+export const getTemplate = async (templateId: string): Promise<Template | null> => {
     const db = getDbInstance();
     const docRef = doc(db, "templates", templateId);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Template : null;
 };
 
-const deleteTemplate = async (templateId: string): Promise<void> => {
+export const deleteTemplate = async (templateId: string): Promise<void> => {
     const db = getDbInstance();
     await deleteDoc(doc(db, "templates", templateId));
 };
@@ -349,7 +344,7 @@ export const deleteBrand = async (brandId: string): Promise<void> => {
 
 
 // User Progress (Onboarding)
-const getUserProgress = async (userId: string): Promise<UserProgress> => {
+export const getUserProgress = async (userId: string): Promise<UserProgress> => {
     const db = getDbInstance();
     const docRef = doc(db, "userProgress", userId);
     const docSnap = await getDoc(docRef);
@@ -374,7 +369,7 @@ const getUserProgress = async (userId: string): Promise<UserProgress> => {
     }
 };
 
-const updateUserProgress = async (userId: string, objective: keyof OnboardingObjectives): Promise<UserProgress> => {
+export const updateUserProgress = async (userId: string, objective: keyof OnboardingObjectives): Promise<UserProgress> => {
     const db = getDbInstance();
     const docRef = doc(db, "userProgress", userId);
     
@@ -401,7 +396,7 @@ const updateUserProgress = async (userId: string, objective: keyof OnboardingObj
 };
 
 // Analytics
-const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void> => {
+export const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void> => {
     const db = getDbInstance();
 
     const viewData: Omit<PageView, 'id'> = {
@@ -421,7 +416,7 @@ const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void>
     }
 };
 
-const getPageViews = async (pageId: string): Promise<PageView[]> => {
+export const getPageViews = async (pageId: string): Promise<PageView[]> => {
     const db = getDbInstance();
     const q = query(
         collection(db, 'pageViews'),
@@ -433,7 +428,7 @@ const getPageViews = async (pageId: string): Promise<PageView[]> => {
 };
 
 
-const logFormSubmission = async (pageId: string, formData: { [key: string]: any }): Promise<void> => {
+export const logFormSubmission = async (pageId: string, formData: { [key: string]: any }): Promise<void> => {
     const db = getDbInstance();
 
     const submissionData: Omit<FormSubmission, 'id'> = {
@@ -450,7 +445,7 @@ const logFormSubmission = async (pageId: string, formData: { [key: string]: any 
     }
 };
 
-const getFormSubmissions = async (pageId: string): Promise<FormSubmission[]> => {
+export const getFormSubmissions = async (pageId: string): Promise<FormSubmission[]> => {
     const db = getDbInstance();
     const q = query(
         collection(db, 'formSubmissions'),
@@ -459,32 +454,4 @@ const getFormSubmissions = async (pageId: string): Promise<FormSubmission[]> => 
     );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FormSubmission));
-};
-
-
-export {
-    addProject,
-    updateProject,
-    getProjectsForUser,
-    getProject,
-    deleteProject,
-    addPage,
-    updatePage,
-    publishPage,
-    getPage,
-    getPagesForProject,
-    getProjectWithPages,
-    deletePage,
-    duplicatePage,
-    movePageToProject,
-    addTemplate,
-    getTemplates,
-    getTemplate,
-    deleteTemplate,
-    getUserProgress,
-    updateUserProgress,
-    logPageView,
-    getPageViews,
-logFormSubmission,
-    getFormSubmissions,
 };

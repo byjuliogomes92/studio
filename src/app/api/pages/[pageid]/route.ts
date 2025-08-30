@@ -1,4 +1,5 @@
 
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getPage, logPageView } from '@/lib/firestore';
 import { generateHtml } from '@/lib/html-generator';
@@ -19,7 +20,8 @@ export async function GET(
     // Always serve the 'published' version of the page
     const pageData = await getPage(pageid, 'published');
 
-    if (!pageData) {
+    if (!pageData || !pageData.projectId || !pageData.workspaceId) {
+      // If the page doesn't exist or is missing crucial data, it's a 404
       return new NextResponse('Page not found', { status: 404 });
     }
 

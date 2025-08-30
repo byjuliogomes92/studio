@@ -140,9 +140,9 @@ export default function TemplatesPage() {
     };
 
     if (!authLoading) {
-      if (user) {
+      if (user && activeWorkspace) {
         fetchTemplates();
-      } else {
+      } else if (!user) {
         router.push('/login');
       }
     }
@@ -176,7 +176,7 @@ export default function TemplatesPage() {
 
   const filteredAndSortedTemplates = useMemo(() => {
     const combined = [
-        ...defaultTemplates.map(t => ({ ...t, id: t.name, isDefault: true, createdAt: new Date(), updatedAt: new Date() })),
+        ...defaultTemplates.map(t => ({ ...t, id: t.name, isDefault: true, workspaceId: '', createdAt: new Date(), updatedAt: new Date() })),
         ...userTemplates
     ];
     

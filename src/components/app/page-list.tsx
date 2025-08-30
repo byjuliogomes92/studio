@@ -957,10 +957,7 @@ export function PageList({ projectId }: PageListProps) {
                                         ))}
                                     </div>
                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2">
-                                        <div className="flex items-center">
-                                            <QuickSnippetPopover pageId={page.id} />
-                                            {pageActions(page)}
-                                        </div>
+                                        {pageActions(page)}
                                     </div>
                                 </div>
                             </div>

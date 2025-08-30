@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 
@@ -1969,7 +1970,6 @@ ${ssjsScript}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`
+</html>
+`
 }
-
-    

@@ -11,8 +11,10 @@ import {
   getDocs, 
   limit,
   doc,
-  setDoc 
+  setDoc,
+  writeBatch 
 } from 'firebase/firestore';
+import { app } from '@/lib/firebase'; // Importar a instância do app
 
 export default function DebugWorkspace() {
   const [results, setResults] = useState([]);
@@ -25,8 +27,10 @@ export default function DebugWorkspace() {
 
   const createWorkspaceForUser = async (userId) => {
     try {
-      const db = getFirestore();
+      const db = getFirestore(app);
       const workspaceId = `workspace_${userId}_${Date.now()}`;
+      
+      addResult(`Tentando criar workspace ${workspaceId}...`, 'info');
       
       // Criar workspace
       await setDoc(doc(db, 'workspaces', workspaceId), {
@@ -49,21 +53,26 @@ export default function DebugWorkspace() {
       
     } catch (error) {
       addResult(`❌ Erro ao criar workspace: ${error.message}`, 'error');
+      console.error(error);
       return null;
     }
   };
 
   const migrateOldDataToWorkspace = async (userId, targetWorkspaceId) => {
+    if (!userId || !targetWorkspaceId) {
+        addResult('❌ Faltando userId ou workspaceId para migração.', 'error');
+        return;
+    }
     addResult(`🔄 Iniciando migração de dados para workspace ${targetWorkspaceId}...`, 'info');
     
     try {
-      const db = getFirestore();
-      const collections = ['projects', 'brands', 'pages_drafts', 'templates'];
+      const db = getFirestore(app);
+      // Coleções a serem migradas, incluindo rascunhos e publicadas
+      const collectionsToMigrate = ['projects', 'brands', 'pages_drafts', 'pages_published', 'templates'];
       
-      for (const collectionName of collections) {
+      for (const collectionName of collectionsToMigrate) {
         addResult(`Migrando coleção: ${collectionName}`, 'info');
         
-        // Buscar documentos com userId
         const oldDocsQuery = query(
           collection(db, collectionName),
           where('userId', '==', userId)
@@ -74,31 +83,30 @@ export default function DebugWorkspace() {
         if (!oldDocsSnap.empty) {
           addResult(`  Encontrados ${oldDocsSnap.size} documentos para migrar`, 'info');
           
-          // Migrar cada documento
-          for (const docSnap of oldDocsSnap.docs) {
+          const batch = writeBatch(db);
+          
+          oldDocsSnap.docs.forEach(docSnap => {
             const data = docSnap.data();
             
-            // Criar nova versão com workspaceId
             const newData = {
               ...data,
               workspaceId: targetWorkspaceId,
               updatedAt: new Date()
             };
+            delete newData.userId; // Remove o campo antigo
             
-            // Remover userId
-            delete newData.userId;
-            
-            // Salvar documento atualizado
-            await setDoc(doc(db, collectionName, docSnap.id), newData);
-          }
-          
+            batch.set(doc(db, collectionName, docSnap.id), newData);
+          });
+
+          await batch.commit();
           addResult(`  ✅ Migrados ${oldDocsSnap.size} documentos da coleção ${collectionName}`, 'success');
         } else {
-          addResult(`  ℹ️ Nenhum documento encontrado em ${collectionName}`, 'info');
+          addResult(`  ℹ️ Nenhum documento antigo encontrado em ${collectionName}`, 'info');
         }
       }
       
       addResult('🎉 Migração concluída com sucesso!', 'success');
+      addResult('Por favor, recarregue a página principal para ver seus dados.', 'info');
       
     } catch (error) {
       addResult(`❌ Erro durante migração: ${error.message}`, 'error');
@@ -115,7 +123,7 @@ export default function DebugWorkspace() {
     addResult(`🔍 Iniciando diagnóstico para usuário: ${currentUser.uid}`, 'info');
     
     try {
-      const db = getFirestore();
+      const db = getFirestore(app);
 
       // 1. Verificar workspaces
       addResult('1. Verificando workspaces do usuário...', 'info');
@@ -127,7 +135,7 @@ export default function DebugWorkspace() {
       const membershipSnap = await getDocs(membershipQuery);
       
       if (membershipSnap.empty) {
-        addResult('❌ PROBLEMA: Usuário não pertence a nenhum workspace!', 'error');
+        addResult('⚠️ PROBLEMA: Usuário não pertence a nenhum workspace!', 'warning');
         
         // Verificar se há projetos antigos
         addResult('2. Verificando projetos antigos...', 'info');
@@ -147,55 +155,35 @@ export default function DebugWorkspace() {
             addResult(`  - Projeto: ${doc.id} (userId: ${data.userId})`, 'info');
           });
           
-          addResult('🔧 SOLUÇÃO NECESSÁRIA: Migrar dados para workspace', 'warning');
-          addResult('Clique no botão abaixo para criar workspace automaticamente', 'info');
+          addResult('🔧 SOLUÇÃO NECESSÁRIA: Criar workspace e depois migrar dados.', 'warning');
+          addResult('Clique no botão "Criar Novo Workspace" abaixo.', 'info');
         } else {
           addResult('ℹ️ Nenhum projeto antigo encontrado. Usuário novo?', 'info');
-          addResult('Clique no botão abaixo para criar seu primeiro workspace', 'info');
+          addResult('Clique no botão "Criar Novo Workspace" para começar.', 'info');
         }
         
-        return { needsWorkspace: true };
-      }
-      
-      // Se chegou aqui, tem workspaces
-      addResult(`✅ Encontrados ${membershipSnap.size} workspaces`, 'success');
-      
-      const workspaces = [];
-      for (const doc of membershipSnap.docs) {
-        const data = doc.data();
-        addResult(`  - Workspace: ${data.workspaceId} (Papel: ${data.role})`, 'success');
-        
-        // Verificar se o workspace existe
-        const workspaceDoc = await getDocs(query(
-          collection(db, 'workspaces'),
-          where('__name__', '==', data.workspaceId)
-        ));
-        
-        if (workspaceDoc.empty) {
-          addResult(`    ❌ PROBLEMA: Workspace ${data.workspaceId} não existe!`, 'error');
-        } else {
-          addResult(`    ✅ Workspace ${data.workspaceId} existe`, 'success');
-        }
-        
-        workspaces.push(data.workspaceId);
-      }
-      
-      // 3. Verificar projetos atuais
-      if (workspaces.length > 0) {
-        addResult('3. Verificando projetos atuais...', 'info');
-        
-        for (const workspaceId of workspaces) {
-          const projectsQuery = query(
+      } else { // Se chegou aqui, tem workspaces
+          addResult(`✅ Encontrado(s) ${membershipSnap.size} workspace(s)`, 'success');
+          const workspaceId = membershipSnap.docs[0].data().workspaceId;
+          addResult(`   Workspace ID: ${workspaceId}`, 'info');
+          
+           // Verificar se há projetos antigos
+          addResult('2. Verificando projetos antigos para migrar...', 'info');
+          const oldProjectsQuery = query(
             collection(db, 'projects'),
-            where('workspaceId', '==', workspaceId)
+            where('userId', '==', currentUser.uid),
+            limit(1)
           );
           
-          const projectsSnap = await getDocs(projectsQuery);
-          addResult(`  - Workspace ${workspaceId}: ${projectsSnap.size} projetos`, 'info');
-        }
+          const oldProjectsSnap = await getDocs(oldProjectsQuery);
+          if(!oldProjectsSnap.empty) {
+              addResult(`📋 Encontrados ${oldProjectsSnap.size} projeto(s) antigo(s).`, 'warning');
+              addResult('🔧 SOLUÇÃO NECESSÁRIA: Migrar dados para o workspace existente.', 'warning');
+              addResult('Clique no botão "Migrar Dados Antigos para Workspace".', 'info');
+          } else {
+              addResult('✅ Nenhum dado antigo para migrar.', 'success');
+          }
       }
-      
-      addResult('✅ Diagnóstico concluído! Se há workspaces, o problema pode estar nas regras do Firebase.', 'success');
       
     } catch (error) {
       addResult(`❌ Erro durante diagnóstico: ${error.message}`, 'error');
@@ -204,7 +192,7 @@ export default function DebugWorkspace() {
   };
 
   useEffect(() => {
-    const auth = getAuth();
+    const auth = getAuth(app);
     
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -222,12 +210,16 @@ export default function DebugWorkspace() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-6">🔧 Debug Workspace Firebase</h1>
+    <div className="max-w-4xl mx-auto p-8 font-sans">
+      <h1 className="text-2xl font-bold mb-6">🔧 Diagnóstico e Migração de Workspace</h1>
       
-      {user && (
+      {user ? (
         <div className="mb-4 p-4 bg-blue-50 rounded">
           <strong>Usuário logado:</strong> {user.email} ({user.uid})
+        </div>
+      ) : (
+         <div className="mb-4 p-4 bg-red-50 rounded text-red-700">
+          <strong>Nenhum usuário logado. Por favor, faça o login primeiro.</strong>
         </div>
       )}
       
@@ -251,24 +243,27 @@ export default function DebugWorkspace() {
         <div className="flex gap-4 flex-wrap">
           <button
             onClick={() => createWorkspaceForUser(user.uid)}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300"
           >
             🏗️ Criar Novo Workspace
           </button>
           
           <button
-            onClick={() => {
-              // Pegar primeiro workspace encontrado
-              const firstWorkspace = results.find(r => r.message.includes('Workspace: workspace_'))?.message.match(/workspace_\w+/)?.[0];
-              if (firstWorkspace) {
-                migrateOldDataToWorkspace(user.uid, firstWorkspace);
+            onClick={async () => {
+              const db = getFirestore(app);
+              const membershipQuery = query(collection(db, 'workspaceMembers'), where('userId', '==', user.uid), limit(1));
+              const membershipSnap = await getDocs(membershipQuery);
+
+              if (membershipSnap.empty) {
+                  addResult('❌ Nenhum workspace encontrado para migrar. Crie um primeiro.', 'error');
               } else {
-                addResult('❌ Nenhum workspace encontrado para migrar', 'error');
+                  const workspaceId = membershipSnap.docs[0].data().workspaceId;
+                  migrateOldDataToWorkspace(user.uid, workspaceId);
               }
             }}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300"
           >
-            🔄 Migrar Dados Antigos
+            🔄 Migrar Dados Antigos para Workspace
           </button>
           
           <button
@@ -283,13 +278,15 @@ export default function DebugWorkspace() {
         </div>
       )}
       
-      <div className="mt-8 p-4 bg-yellow-50 rounded">
-        <h3 className="font-bold mb-2">📝 Próximos Passos:</h3>
+      <div className="mt-8 p-4 bg-yellow-50 rounded border border-yellow-200">
+        <h3 className="font-bold mb-2">📝 Instruções:</h3>
         <ol className="list-decimal list-inside space-y-1 text-sm">
-          <li>Execute o diagnóstico para ver o problema</li>
-          <li>Se não houver workspace, clique em "Criar Workspace"</li>
-          <li>Se houver workspace mas ainda der erro, o problema está nas regras do Firebase</li>
-          <li>Delete esta página depois de resolver o problema</li>
+          <li>Aguarde o diagnóstico automático terminar.</li>
+          <li>Se aparecer a mensagem "Usuário não pertence a nenhum workspace", clique em "Criar Novo Workspace".</li>
+          <li>Após criar o workspace, clique em "Migrar Dados Antigos para Workspace".</li>
+          <li>Se o diagnóstico já mostrar um workspace, clique diretamente em "Migrar Dados Antigos para Workspace".</li>
+          <li>Após a migração, volte para a <a href="/" className="underline text-blue-600">página principal</a> e atualize a página. Seus dados devem aparecer.</li>
+          <li>Depois de resolver, você pode pedir para eu remover esta página de diagnóstico.</li>
         </ol>
       </div>
     </div>

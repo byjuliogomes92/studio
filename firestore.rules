@@ -3,71 +3,56 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isWorkspaceMember(workspaceId) {
-      return exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
+    // Helper function to check if the requesting user is the owner of a resource.
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    match /workspaces/{workspaceId} {
-      allow read: if isWorkspaceMember(workspaceId);
-      // Allow create for the createWorkspace function
-      allow create: if request.auth.uid == request.resource.data.ownerId;
-    }
-
-    match /workspaceMembers/{membershipId} {
-      // Users can read their own membership.
-      allow read: if request.auth.uid == split(membershipId, '_')[0];
-       // Allow owner to manage members
-      allow create, delete: if isWorkspaceMember(request.resource.data.workspaceId);
-    }
-
+    // Rules for projects collection
     match /projects/{projectId} {
-      // Allow list/query by workspaceId for authenticated members of that workspace
-      allow list: if isWorkspaceMember(request.query.resource.data.workspaceId);
-      // Allow get, update, delete for members of the specific project's workspace
-      allow get, update, delete: if isWorkspaceMember(resource.data.workspaceId);
-      // Allow create for members of the workspace
-      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow read, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
 
+    // Rules for brands collection
     match /brands/{brandId} {
-      // Allow list/query by workspaceId for authenticated members of that workspace
-      allow list: if isWorkspaceMember(request.query.resource.data.workspaceId);
-      // Allow get, update, delete for members of the specific brand's workspace
-      allow get, update, delete: if isWorkspaceMember(resource.data.workspaceId);
-      // Allow create for members of the workspace
-      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow read, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
-
+    
+    // Rules for draft pages
     match /pages_drafts/{pageId} {
-      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
-      allow get, update, delete: if isWorkspaceMember(resource.data.workspaceId);
-      // Allow list/query by workspaceId and projectId for members of that workspace
-      allow list: if isWorkspaceMember(request.query.resource.data.workspaceId);
+      allow read, write: if isOwner(request.resource.data.userId);
     }
-
+    
+    // Rules for published pages
     match /pages_published/{pageId} {
       allow read: if true;
-      allow create, update, delete: if isWorkspaceMember(resource.data.workspaceId);
+      allow write: if isOwner(request.resource.data.userId);
     }
 
+    // Rules for templates
     match /templates/{templateId} {
-      allow read: if resource.data.isDefault == true || isWorkspaceMember(get(/databases/$(database)/documents/users/$(resource.data.createdBy)).data.activeWorkspaceId);
-      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
-      allow update, delete: if isWorkspaceMember(get(/databases/$(database)/documents/users/$(resource.data.createdBy)).data.activeWorkspaceId);
+      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
+      allow create: if isOwner(request.resource.data.createdBy);
+      allow update, delete: if isOwner(resource.data.createdBy);
     }
 
+    // Rules for user progress
     match /userProgress/{userId} {
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
 
+    // Rules for page analytics (views)
     match /pageViews/{viewId} {
-      allow create: if true;
-      allow read: if true;
+      allow create: if true; // Allow public creation for tracking
+      allow read: if true;   // Allow public read
     }
 
+    // Rules for form analytics (submissions)
     match /formSubmissions/{submissionId} {
-      allow create: if true;
-      allow read: if true;
+      allow create: if true; // Allow public creation from forms
+      allow read: if true;   // Allow public read
     }
   }
 }

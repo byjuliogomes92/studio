@@ -963,11 +963,13 @@ export function PageList({ projectId }: PageListProps) {
                                         <div className="h-2 w-2/3 bg-muted rounded"></div>
                                     </div>
                                 </div>
+                                <div className="absolute top-2 right-2 bg-card/80 backdrop-blur-sm p-1.5 rounded-full">
+                                    <PlatformIcon platformId={page.platform} />
+                                </div>
                             <div className="p-4 flex-grow flex flex-col justify-between">
                                 <div>
                                     <div className="flex justify-between items-start">
-                                        <h3 className="font-semibold text-base leading-tight truncate pr-2 flex items-center gap-2" title={page.name}>
-                                            <PlatformIcon platformId={page.platform} />
+                                        <h3 className="font-semibold text-base leading-tight truncate pr-2" title={page.name}>
                                             {page.name}
                                         </h3>
                                         <Badge variant={page.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
@@ -984,7 +986,7 @@ export function PageList({ projectId }: PageListProps) {
                                             <Badge key={tag} className={cn('border text-xs', getTagColor(tag))}>{tag}</Badge>
                                         ))}
                                     </div>
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 flex items-center">
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-2 right-2 flex items-center">
                                         {pageActions(page)}
                                     </div>
                                 </div>

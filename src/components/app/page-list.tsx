@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -64,6 +64,8 @@ import { format } from 'date-fns';
 import { CreatePageFromTemplateDialog } from "./create-page-from-template-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Separator } from "../ui/separator";
 
 interface PageListProps {
   projectId: string;
@@ -338,7 +340,7 @@ function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogP
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [project, setProject] = useState<Project | null>(null);
@@ -585,43 +587,97 @@ export function PageList({ projectId }: PageListProps) {
       )
     }
 
+    const userInitials = user?.displayName?.split(' ').map(n => n[0]).join('') || user?.email?.[0].toUpperCase() || 'U';
+
     return (
-       <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="relative">
-              <Bell className="h-4 w-4" />
-              {unreadCount > 0 && (
+       <>
+        <CreatePageFromTemplateDialog
+            projectId={projectId}
+            trigger={
+                <Button>
+                    <Plus className="mr-2 h-4 w-4" /> Criar Página
+                </Button>
+            }
+            onPageCreated={() => fetchProjectData()}
+        />
+        <Separator orientation="vertical" className="h-6 mx-2" />
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
                 </span>
-              )}
+                )}
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel className="flex justify-between items-center">
-              Notificações
-              {unreadCount > 0 && (
+                Notificações
+                {unreadCount > 0 && (
                 <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
-                   <CheckCheck className="mr-1 h-3 w-3 inline-block" />
-                   Marcar todas como lidas
+                    <CheckCheck className="mr-1 h-3 w-3 inline-block" />
+                    Marcar todas como lidas
                 </button>
-              )}
+                )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {notifications.map(notification => (
-               <DropdownMenuItem 
-                 key={notification.id} 
-                 onSelect={(e) => e.preventDefault()}
-                 onClick={() => handleNotificationClick(notification.id, notification.slug)}
-                 className="flex items-center gap-3 cursor-pointer"
-               >
+                <DropdownMenuItem 
+                key={notification.id} 
+                onSelect={(e) => e.preventDefault()}
+                onClick={() => handleNotificationClick(notification.id, notification.slug)}
+                className="flex items-center gap-3 cursor-pointer"
+                >
                 {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
                 <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
-               </DropdownMenuItem>
+                </DropdownMenuItem>
             ))}
-          </DropdownMenuContent>
+            </DropdownMenuContent>
         </DropdownMenu>
+        {user && (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                         <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar do usuário'} />
+                            <AvatarFallback>{userInitials}</AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/account')}>
+                        <User className="mr-2 h-4 w-4" />
+                        Gerenciar Conta
+                    </DropdownMenuItem>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Sair
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                Você será desconectado da sua conta.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={logout} className="bg-destructive hover:bg-destructive/90">Sair</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        )}
+       </>
     )
   }
 
@@ -705,15 +761,6 @@ export function PageList({ projectId }: PageListProps) {
             <h2 className="text-base md:text-lg">{project.name}</h2>
           </div>
           <div className="flex items-center gap-2">
-            <CreatePageFromTemplateDialog
-                projectId={projectId}
-                trigger={
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> {isMobile ? "Criar" : "Criar Página"}
-                    </Button>
-                }
-                onPageCreated={() => fetchProjectData()}
-            />
             {renderHeaderActions()}
           </div>
         </header>

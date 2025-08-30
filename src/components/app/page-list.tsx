@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart, Calendar, Smile } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart, Calendar, Smile, Code } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -66,6 +66,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Separator } from "../ui/separator";
+import { Label } from "../ui/label";
 
 interface PageListProps {
   projectId: string;
@@ -106,19 +107,70 @@ function ProjectIcon({ iconName, color, className }: { iconName?: string; color?
     return <Icon className={cn("h-6 w-6", className)} style={{ color: color || 'hsl(var(--primary))' }} />;
 }
 
-interface MovePageDialogProps {
-  page: CloudPage;
-  onPageMoved: () => void;
-  currentProjectId: string;
+function QuickSnippetPopover({ pageId }: { pageId: string }) {
+    const { toast } = useToast();
+    const [pageUrl, setPageUrl] = useState('');
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setPageUrl(`${window.location.origin}/api/pages/${pageId}`);
+        }
+    }, [pageId]);
+
+    const snippet = `%%=TreatAsContentArea("CONTENT", HTTPGet("${pageUrl}", false, 0, @status))=%%`;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(snippet);
+        toast({ title: "Snippet copiado!" });
+    };
+
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                 <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 data-[state=open]:bg-muted"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <Code className="h-4 w-4" />
+                    <span className="sr-only">Copiar Snippet</span>
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" onClick={(e) => e.stopPropagation()}>
+                <div className="grid gap-4">
+                    <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Snippet de Publicação</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Cole este código em um bloco HTML na sua CloudPage.
+                        </p>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="snippet-text">AMPScript</Label>
+                        <Input id="snippet-text" value={snippet} readOnly className="h-auto p-2 font-mono text-xs"/>
+                        <Button onClick={handleCopy} size="sm">
+                            <Copy className="mr-2 h-4 w-4"/>
+                            Copiar
+                        </Button>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
 }
 
-function AnalyticsDashboard({ page }: { page: CloudPage }) {
+interface AnalyticsDashboardProps {
+  page: CloudPage;
+}
+
+function AnalyticsDashboard({ page }: AnalyticsDashboardProps) {
     const [views, setViews] = useState<PageView[]>([]);
     const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     
     const fetchAnalyticsData = useCallback(() => {
+        if (!page?.id) return;
         setIsRefreshing(true);
         const hasForm = page.components.some(c => c.type === 'Form');
         
@@ -277,6 +329,12 @@ function AnalyticsDashboard({ page }: { page: CloudPage }) {
             </Tabs>
         </div>
     );
+}
+
+interface MovePageDialogProps {
+  page: CloudPage;
+  onPageMoved: () => void;
+  currentProjectId: string;
 }
 
 function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogProps) {
@@ -535,50 +593,53 @@ export function PageList({ projectId }: PageListProps) {
   }
 
   const pageActions = (page: CloudPage) => (
-    <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 data-[state=open]:bg-muted"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <MoreVertical className="h-4 w-4" />
-                <span className="sr-only">Abrir menu</span>
-            </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
-            <DropdownMenuItem onClick={() => handleDuplicatePage(page.id)}>
-                <Copy className="mr-2 h-4 w-4" />
-                Duplicar
-            </DropdownMenuItem>
-            <MovePageDialog page={page} onPageMoved={() => fetchProjectData()} currentProjectId={projectId} />
-            <DropdownMenuSeparator />
-            <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
-            <AlertDialogTrigger asChild>
-                <DropdownMenuItem 
-                className="text-destructive" 
-                onSelect={(e) => { e.preventDefault(); setPageToDelete(page); }}
+    <div className="flex items-center justify-end">
+        <QuickSnippetPopover pageId={page.id} />
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 data-[state=open]:bg-muted"
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Excluir
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="sr-only">Abrir menu</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
+                <DropdownMenuItem onClick={() => handleDuplicatePage(page.id)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Duplicar
                 </DropdownMenuItem>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
-                </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-            </AlertDialog>
-        </DropdownMenuContent>
-    </DropdownMenu>
+                <MovePageDialog page={page} onPageMoved={() => fetchProjectData()} currentProjectId={projectId} />
+                <DropdownMenuSeparator />
+                <AlertDialog onOpenChange={(open) => !open && setPageToDelete(null)}>
+                <AlertDialogTrigger asChild>
+                    <DropdownMenuItem 
+                    className="text-destructive" 
+                    onSelect={(e) => { e.preventDefault(); setPageToDelete(page); }}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir
+                    </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{page.name}".
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeletePage() }}>Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    </div>
   );
 
 
@@ -896,8 +957,11 @@ export function PageList({ projectId }: PageListProps) {
                                         ))}
                                     </div>
                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2">
-                                    {pageActions(page)}
-                                </div>
+                                        <div className="flex items-center">
+                                            <QuickSnippetPopover pageId={page.id} />
+                                            {pageActions(page)}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             </div>

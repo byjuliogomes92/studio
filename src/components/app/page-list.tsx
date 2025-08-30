@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -443,7 +444,7 @@ export function PageList({ projectId }: PageListProps) {
   
   // Notifications state
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Nova funcionalidade: Templates!', slug: 'criando-reutilizando-componentes-templates', read: false },
+    { id: 1, title: 'Nova funcionalidade: Kits de Marca!', slug: 'kits-de-marca-consistencia-visual', read: false },
     { id: 2, title: 'Melhoria no alinhamento de formulários.', slug: 'melhoria-alinhamento-formularios', read: true },
     { id: 3, title: 'Bem-vindo ao CloudPage Studio!', slug: 'bem-vindo-cloudpage-studio', read: true },
   ]);
@@ -994,8 +995,8 @@ export function PageList({ projectId }: PageListProps) {
                                             <h3 className="font-semibold text-base leading-tight truncate pr-2" title={page.name}>
                                                 {page.name}
                                             </h3>
-                                            <Badge variant={page.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
-                                                {page.brand}
+                                            <Badge variant="outline" className="shrink-0 capitalize">
+                                                {page.brandName}
                                             </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground mt-1">
@@ -1121,4 +1122,5 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
 

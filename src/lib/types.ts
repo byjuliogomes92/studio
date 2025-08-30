@@ -26,7 +26,19 @@ export type ComponentType =
   | 'WhatsApp'
   | 'DownloadButton';
   
-export type Brand = 'Natura' | 'Avon';
+export interface Brand {
+  id: string;
+  userId: string;
+  name: string;
+  logoUrl: string;
+  faviconUrl: string;
+  loaderImageUrl: string;
+  themeColor: string;
+  themeColorHover: string;
+  fontFamily: string;
+  createdAt: any;
+}
+
 
 export interface FormFieldConditional {
     field: string;
@@ -69,7 +81,8 @@ export interface CloudPage {
   name: string;
   projectId: string;
   userId: string;
-  brand: Brand;
+  brandId: string;
+  brandName: string;
   platform?: string;
   tags?: string[];
   styles: {
@@ -130,7 +143,7 @@ export interface Project {
 export interface Template {
   id: string;
   name: string;
-  brand: Brand;
+  brand: 'Natura' | 'Avon'; // Legacy brand for default templates
   description?: string;
   icon?: string;
   styles: CloudPage['styles'];

@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress, Template, PageView } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -101,7 +102,7 @@ export function ProjectDashboard() {
 
   // Notifications state
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Nova funcionalidade: Templates!', slug: 'criando-reutilizando-componentes-templates', read: false },
+    { id: 1, title: 'Nova funcionalidade: Kits de Marca!', slug: 'kits-de-marca-consistencia-visual', read: false },
     { id: 2, title: 'Melhoria no alinhamento de formulários.', slug: 'melhoria-alinhamento-formularios', read: true },
     { id: 3, title: 'Bem-vindo ao CloudPage Studio!', slug: 'bem-vindo-cloudpage-studio', read: true },
   ]);
@@ -396,6 +397,10 @@ export function ProjectDashboard() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+             <DropdownMenuItem onClick={() => router.push('/brands')}>
+              <Palette className="mr-2 h-4 w-4" />
+              Marcas
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/templates')}>
               <Library className="mr-2 h-4 w-4" />
               Templates
@@ -439,6 +444,10 @@ export function ProjectDashboard() {
 
     return (
        <>
+          <Button variant="ghost" onClick={() => router.push('/brands')}>
+            <Palette className="mr-2 h-4 w-4" />
+            Marcas
+          </Button>
           <Button variant="ghost" onClick={() => router.push('/templates')}>
             <Library className="mr-2 h-4 w-4" />
             Templates

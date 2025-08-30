@@ -1,7 +1,7 @@
 
 import { getDb } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp } from "firebase/firestore";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -257,6 +257,39 @@ const getTemplate = async (templateId: string): Promise<Template | null> => {
 const deleteTemplate = async (templateId: string): Promise<void> => {
     const db = getDbInstance();
     await deleteDoc(doc(db, "templates", templateId));
+};
+
+// Brands
+export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>): Promise<Brand> => {
+    const db = getDbInstance();
+    const dataWithTimestamp = { ...brandData, createdAt: serverTimestamp() };
+    const docRef = await addDoc(collection(db, 'brands'), dataWithTimestamp);
+    return { ...brandData, id: docRef.id, createdAt: Timestamp.now() };
+};
+
+export const getBrandsForUser = async (userId: string): Promise<Brand[]> => {
+    const db = getDbInstance();
+    const q = query(collection(db, 'brands'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Brand));
+};
+
+export const getBrand = async (brandId: string): Promise<Brand | null> => {
+    const db = getDbInstance();
+    const docRef = doc(db, "brands", brandId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Brand : null;
+};
+
+export const updateBrand = async (brandId: string, data: Partial<Brand>): Promise<void> => {
+    const db = getDbInstance();
+    const brandRef = doc(db, 'brands', brandId);
+    await updateDoc(brandRef, data);
+};
+
+export const deleteBrand = async (brandId: string): Promise<void> => {
+    const db = getDbInstance();
+    await deleteDoc(doc(db, 'brands', brandId));
 };
 
 

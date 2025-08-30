@@ -9,7 +9,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
   {
     name: 'Lançamento de Produto',
     description: 'Um template elegante para anunciar um novo produto e capturar leads. Foco em imagem e formulário simples.',
-    brand: 'Natura', // Default brand, can be changed on page creation
+    brand: 'Natura', // Legacy brand, will be overridden by Brand Kit
     isDefault: true,
     icon: 'rocket',
     meta: {
@@ -22,8 +22,8 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     styles: {
         backgroundColor: '#FFFFFF',
         backgroundImage: '',
-        themeColor: '#D97706', // Amber 600
-        themeColorHover: '#B45309', // Amber 700
+        themeColor: '#D97706',
+        themeColorHover: '#B45309',
         fontFamily: 'Poppins',
         customCss: `
         .columns-container {
@@ -43,7 +43,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
         {
             id: 'header-launch',
             type: 'Header',
-            props: { logoUrl: '' }, // Will be set by brand selection
+            props: { logoUrl: '' },
             order: 0,
             parentId: null,
             column: 0,
@@ -119,7 +119,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
         {
             id: 'footer-launch',
             type: 'Footer',
-            props: {}, // Will be set by brand selection
+            props: {},
             order: 2,
             parentId: null,
             column: 0,

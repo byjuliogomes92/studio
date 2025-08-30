@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CloudPage, PageComponent, Template, OnboardingObjectives } from "@/lib/types";
+import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
@@ -12,7 +12,7 @@ import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updatePage, getPage, addTemplate, updateUserProgress, publishPage } from "@/lib/firestore";
+import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { produce } from "immer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -176,57 +176,65 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   
   
   useEffect(() => {
-    if (!pageState) return;
-  
-    const brand = pageState.brand;
-    const isAvon = brand === 'Avon';
-  
-    const naturaLogo = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png';
-    const naturaFavicon = 'https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.natura.com.br/&size=64';
-    const naturaLoader = 'https://arcgis.natura.com.br/portal/sharing/rest/content/items/32111ed7537b474db26ed253c721117a/data';
-  
-    const avonLogo = 'https://gkpb.com.br/wp-content/uploads/2021/01/novo-logo-avon-png.png';
-    const avonFavicon = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
-    const avonLoader = 'https://image.hello.natura.com/lib/fe3611717164077c741373/m/1/7b699e43-8471-4819-8c79-5dd747e5df47.png';
-  
-    setPageState(prev => {
-        if (!prev) return null;
-        let needsUpdate = false;
-        
-        const newLogo = isAvon ? avonLogo : naturaLogo;
-        const newFavicon = isAvon ? avonFavicon : naturaFavicon;
-        const newLoader = isAvon ? avonLoader : naturaLoader;
+    if (!pageState || !pageState.brandId) return;
 
-        // Use a deep copy to avoid direct state mutation
-        const newState = JSON.parse(JSON.stringify(prev));
+    const applyBrandStyles = (brand: Brand) => {
+        setPageState(prev => {
+            if (!prev) return null;
+            let needsUpdate = false;
+            
+            // Use a deep copy to avoid direct state mutation
+            const newState = JSON.parse(JSON.stringify(prev));
 
-        if (newState.meta.faviconUrl !== newFavicon || newState.meta.loaderImageUrl !== newLoader) {
-            needsUpdate = true;
-            newState.meta.faviconUrl = newFavicon;
-            newState.meta.loaderImageUrl = newLoader;
-        }
-        
-        const headerIndex = newState.components.findIndex((c: PageComponent) => c.type === 'Header');
-        if (headerIndex !== -1 && newState.components[headerIndex].props.logoUrl !== newLogo) {
-            needsUpdate = true;
-            newState.components[headerIndex].props.logoUrl = newLogo;
-        }
-
-        const footerIndex = newState.components.findIndex((c: PageComponent) => c.type === 'Footer');
-        if (footerIndex !== -1) {
-            const currentYear = new Date().getFullYear();
-            const newFooterText = `© ${currentYear} ${brand}. Todos os direitos reservados.`;
-            if (newState.components[footerIndex].props.footerText1 !== newFooterText) {
+            // Update meta info
+            if (newState.meta.faviconUrl !== brand.faviconUrl || newState.meta.loaderImageUrl !== brand.loaderImageUrl) {
                 needsUpdate = true;
-                newState.components[footerIndex].props.footerText1 = newFooterText;
+                newState.meta.faviconUrl = brand.faviconUrl;
+                newState.meta.loaderImageUrl = brand.loaderImageUrl;
             }
+
+            // Update global styles
+            if (
+                newState.styles.themeColor !== brand.themeColor ||
+                newState.styles.themeColorHover !== brand.themeColorHover ||
+                newState.styles.fontFamily !== brand.fontFamily
+            ) {
+                needsUpdate = true;
+                newState.styles.themeColor = brand.themeColor;
+                newState.styles.themeColorHover = brand.themeColorHover;
+                newState.styles.fontFamily = brand.fontFamily;
+            }
+            
+            // Update Header logo
+            const headerIndex = newState.components.findIndex((c: PageComponent) => c.type === 'Header');
+            if (headerIndex !== -1 && newState.components[headerIndex].props.logoUrl !== brand.logoUrl) {
+                needsUpdate = true;
+                newState.components[headerIndex].props.logoUrl = brand.logoUrl;
+            }
+
+            // Update Footer text
+            const footerIndex = newState.components.findIndex((c: PageComponent) => c.type === 'Footer');
+            if (footerIndex !== -1) {
+                const currentYear = new Date().getFullYear();
+                const newFooterText = `© ${currentYear} ${brand.name}. Todos os direitos reservados.`;
+                if (newState.components[footerIndex].props.footerText1 !== newFooterText) {
+                    needsUpdate = true;
+                    newState.components[footerIndex].props.footerText1 = newFooterText;
+                }
+            }
+            
+            return needsUpdate ? newState : prev;
+        });
+    }
+
+    getBrand(pageState.brandId).then(brand => {
+        if (brand) {
+            applyBrandStyles(brand);
         }
-        
-        // Only update state if there are actual changes
-        return needsUpdate ? newState : prev;
     });
 
-  }, [pageState?.brand, setPageState]);
+}, [pageState?.brandId, setPageState]);
+
   
   // Keyboard shortcut for Undo
   useEffect(() => {
@@ -304,6 +312,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       toast({ 
         title: "Rascunho salvo!",
         description: `Suas alterações na página "${pageName}" foram salvas.`,
+        action: (
+          <ToastAction altText="Como publicar?" onClick={() => setIsHowToUseOpen(true)}>
+            <Info className="mr-2 h-4 w-4" />
+            Como publicar?
+          </ToastAction>
+        ),
       });
 
       // Check onboarding progress after saving
@@ -368,6 +382,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             ...restOfPage,
             name: templateName,
             description: templateDescription,
+            // @ts-ignore - brand is a legacy property for default templates
+            brand: restOfPage.brandName, // Keep brand for reference if needed
             createdBy: user.uid,
             meta: restOfMeta,
         };

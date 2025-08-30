@@ -22,10 +22,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import type { Brand, Template, Project, CloudPage } from '@/lib/types';
-import { getTemplates, getTemplate, addPage, getProjectsForUser, updateUserProgress } from '@/lib/firestore';
+import { getTemplates, getTemplate, addPage, getProjectsForUser, updateUserProgress, getBrandsForUser } from '@/lib/firestore';
 import { defaultTemplates } from '@/lib/default-templates';
 import { cn } from '@/lib/utils';
-import { FileText, Globe, Loader2, Server } from 'lucide-react';
+import { FileText, Globe, Loader2, Server, Palette } from 'lucide-react';
 import { produce } from 'immer';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
@@ -48,55 +48,43 @@ const platforms = [
 ];
 
 const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand, platform: string): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
-    const isAvon = brand === 'Avon';
-  
-    const naturaTheme = {
-      backgroundColor: '#FFFFFF',
-      backgroundImage: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-bg.png',
-      themeColor: '#F4AB01',
-      themeColorHover: '#e9a000',
-      fontFamily: 'Roboto',
-      customCss: '',
-    };
-  
-    const avonTheme = {
-      backgroundColor: '#E4004B',
-      backgroundImage: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-bg.png',
-      themeColor: '#000000',
-      themeColorHover: '#333333',
-      fontFamily: 'Roboto',
-      customCss: '',
-    }
-    
     return {
       name: name,
       projectId,
       userId,
-      brand,
+      brandId: brand.id,
+      brandName: brand.name,
       platform,
       tags: ["Brasil"],
       meta: {
-        title: `${brand} - ${name}`,
-        faviconUrl: '', // Will be set by useEffect in CloudPageForge
-        loaderImageUrl: '', // Will be set by useEffect in CloudPageForge
-        redirectUrl: isAvon ? 'https://cloud.hello.avon.com/cadastroavonagradecimento' : 'https://www.natura.com.br/',
+        title: `${brand.name} - ${name}`,
+        faviconUrl: brand.faviconUrl,
+        loaderImageUrl: brand.loaderImageUrl,
+        redirectUrl: 'https://www.google.com',
         dataExtensionKey: 'CHANGE-ME',
-        metaDescription: `Página de campanha para ${brand}.`,
-        metaKeywords: `${brand.toLowerCase()}, campanha, beleza`,
+        metaDescription: `Página de campanha para ${brand.name}.`,
+        metaKeywords: `${brand.name.toLowerCase()}, campanha, beleza`,
         tracking: {
           ga4: { enabled: false, id: '' },
           meta: { enabled: false, id: '' },
           linkedin: { enabled: false, id: '' }
         }
       },
-      styles: isAvon ? avonTheme : naturaTheme,
+      styles: {
+        backgroundColor: '#FFFFFF',
+        backgroundImage: '',
+        themeColor: brand.themeColor,
+        themeColorHover: brand.themeColorHover,
+        fontFamily: brand.fontFamily,
+        customCss: '',
+      },
       cookieBanner: {
         enabled: true,
         text: 'Utilizamos cookies para garantir que você tenha a melhor experiência em nosso site. Ao continuar, você concorda com o uso de cookies.',
         buttonText: 'Aceitar',
       },
       components: [
-        { id: '1', type: 'Header', props: { logoUrl: '' } }, // Will be set by useEffect
+        { id: '1', type: 'Header', props: { logoUrl: brand.logoUrl } },
         { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },
         { id: 'c1', type: 'Title', props: { text: 'Título da Sua Campanha Aqui', styles: { textAlign: 'center' } } },
         { id: 'c2', type: 'Paragraph', props: { text: 'Este é um ótimo lugar para descrever sua campanha. Fale sobre os benefícios, os produtos em destaque e o que os clientes podem esperar.' } },
@@ -107,7 +95,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
           props: {
             fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
             placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', birthdate: 'Data de Nascimento' },
-            consentText: `Quero receber novidades e promoções da ${brand} e de outras empresas do Grupo Natura &Co...`,
+            consentText: `Quero receber novidades e promoções da ${brand.name} e de outras empresas do Grupo Natura &Co...`,
             buttonText: 'Finalizar',
             buttonAlign: 'center',
             thankYouMessage: `<h2>Obrigado, {{NOME}}!</h2><p>Recebemos suas informações com sucesso.</p>`,
@@ -118,7 +106,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
           id: '4', 
           type: 'Footer', 
           props: { 
-            footerText1: ``, // Will be set by useEffect
+            footerText1: `© ${new Date().getFullYear()} ${brand.name}. Todos os direitos reservados.`,
             footerText2: `...`,
             footerText3: `...`,
           } 
@@ -137,10 +125,11 @@ export function CreatePageFromTemplateDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [newPageName, setNewPageName] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState<Brand>("Natura");
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(projectId);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [userTemplates, setUserTemplates] = useState<Template[]>([]);
+  const [userBrands, setUserBrands] = useState<Brand[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(templateId || null);
   const [selectedTemplateIsDefault, setSelectedTemplateIsDefault] = useState<boolean>(!!isDefaultTemplate);
   const [isCreating, setIsCreating] = useState(false);
@@ -167,6 +156,7 @@ export function CreatePageFromTemplateDialog({
         if (!projectId) {
             getProjectsForUser(user.uid).then(({projects}) => setUserProjects(projects));
         }
+        getBrandsForUser(user.uid).then(setUserBrands);
     }
   }, [isOpen, user, templateId, projectId]);
 
@@ -174,7 +164,7 @@ export function CreatePageFromTemplateDialog({
     setIsOpen(false);
     setStep(templateId ? 2 : 1);
     setNewPageName("");
-    setSelectedBrand("Natura");
+    setSelectedBrandId(null);
     setSelectedProjectId(projectId);
     setSelectedTemplate(templateId || null);
     setSelectedTemplateIsDefault(!!isDefaultTemplate);
@@ -199,6 +189,10 @@ export function CreatePageFromTemplateDialog({
          toast({ variant: "destructive", title: "Erro", description: "Por favor, selecione um projeto." });
         return;
     }
+     if (!selectedBrandId) {
+        toast({ variant: "destructive", title: "Erro", description: "Por favor, selecione uma marca." });
+        return;
+    }
     if (newPageName.trim() === '') {
         toast({ variant: 'destructive', title: 'Erro', description: 'O nome da página não pode ser vazio.' });
         return;
@@ -207,6 +201,8 @@ export function CreatePageFromTemplateDialog({
 
     try {
         let newPageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
+        const selectedBrand = userBrands.find(b => b.id === selectedBrandId);
+        if (!selectedBrand) throw new Error("Marca selecionada não encontrada.");
 
         if (selectedTemplate === 'blank') {
             newPageData = getInitialPage(newPageName, selectedProjectId, user.uid, selectedBrand, selectedPlatform);
@@ -243,18 +239,26 @@ export function CreatePageFromTemplateDialog({
 
             newPageData = {
                 name: newPageName,
-                brand: selectedBrand,
+                brandId: selectedBrand.id,
+                brandName: selectedBrand.name,
                 platform: selectedPlatform,
                 projectId: selectedProjectId,
                 userId: user.uid,
                 tags: [],
-                styles: template.styles,
+                styles: selectedBrand ? {
+                    ...template.styles,
+                    themeColor: selectedBrand.themeColor,
+                    themeColorHover: selectedBrand.themeColorHover,
+                    fontFamily: selectedBrand.fontFamily,
+                } : template.styles,
                 components: newComponents,
                 cookieBanner: template.cookieBanner,
                 meta: {
                     ...template.meta,
-                    title: `${selectedBrand} - ${newPageName}`,
-                    redirectUrl: selectedBrand === 'Avon' ? 'https://cloud.hello.avon.com/cadastroavonagradecimento' : 'https://www.natura.com.br/',
+                    title: `${selectedBrand.name} - ${newPageName}`,
+                    faviconUrl: selectedBrand.faviconUrl,
+                    loaderImageUrl: selectedBrand.loaderImageUrl,
+                    redirectUrl: 'https://www.google.com',
                     dataExtensionKey: 'CHANGE-ME',
                     tracking: {
                       ga4: { enabled: false, id: '' },
@@ -370,16 +374,21 @@ export function CreatePageFromTemplateDialog({
                         )}
                         <div className="space-y-2">
                             <Label>Marca</Label>
-                            <RadioGroup defaultValue="Natura" value={selectedBrand} onValueChange={(value: Brand) => setSelectedBrand(value)} className="flex gap-4">
-                                <Label htmlFor="brand-natura" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                    <RadioGroupItem value="Natura" id="brand-natura" />
-                                    Natura
-                                </Label>
-                                <Label htmlFor="brand-avon" className="flex items-center gap-2 border rounded-md p-3 flex-1 cursor-pointer hover:bg-accent has-[:checked]:bg-accent has-[:checked]:border-primary">
-                                    <RadioGroupItem value="Avon" id="brand-avon" />
-                                    Avon
-                                </Label>
-                            </RadioGroup>
+                             <Select onValueChange={setSelectedBrandId} value={selectedBrandId || undefined}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um Kit de Marca..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {userBrands.map(brand => (
+                                    <SelectItem key={brand.id} value={brand.id}>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.themeColor }}></div>
+                                            {brand.name}
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                      <div className="space-y-2">

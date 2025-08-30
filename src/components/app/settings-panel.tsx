@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -150,6 +150,7 @@ function ComponentItem({
   selectedComponentId,
   setSelectedComponentId,
   removeComponent,
+  duplicateComponent,
   dndAttributes,
   dndListeners,
   children,
@@ -158,6 +159,7 @@ function ComponentItem({
   selectedComponentId: string | null;
   setSelectedComponentId: (id: string | null) => void;
   removeComponent: (id: string) => void;
+  duplicateComponent: (id: string) => void;
   dndAttributes?: any;
   dndListeners?: any;
   children?: React.ReactNode;
@@ -192,6 +194,14 @@ function ComponentItem({
                   <span className="truncate">{component.type}</span>
                   {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />}
                 </div>
+            </Button>
+             <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 flex-shrink-0"
+                onClick={() => duplicateComponent(component.id)}
+            >
+                <Copy className="h-4 w-4" />
             </Button>
             <Button
                 variant="ghost"
@@ -540,6 +550,70 @@ export function SettingsPanel({
     }
   };
 
+  const duplicateComponent = (componentId: string) => {
+    setPageState(prev => {
+        if (!prev) return null;
+
+        return produce(prev, draft => {
+            const idMap: { [key: string]: string } = {};
+
+            const duplicateRecursively = (originalCompId: string, newParentId: string | null = null): string => {
+                const originalComp = draft.components.find(c => c.id === originalCompId);
+                if (!originalComp) return '';
+
+                const newId = `${originalComp.type}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                idMap[originalCompId] = newId;
+
+                // Deep copy of props to avoid reference issues
+                const newProps = JSON.parse(JSON.stringify(originalComp.props));
+                
+                const duplicatedComp: PageComponent = {
+                    ...originalComp,
+                    id: newId,
+                    props: newProps,
+                    parentId: newParentId,
+                    // Order will be recalculated later
+                };
+                draft.components.push(duplicatedComp);
+
+                if (originalComp.type === 'Columns') {
+                    const children = draft.components.filter(c => c.parentId === originalCompId);
+                    children.forEach(child => {
+                        duplicateRecursively(child.id, newId);
+                    });
+                }
+                return newId;
+            };
+            
+            const originalComponent = draft.components.find(c => c.id === componentId);
+            if (!originalComponent) return;
+
+            const newMainComponentId = duplicateRecursively(componentId, originalComponent.parentId);
+            
+            // Reorder components
+            const allComponents = draft.components.filter(c => c.parentId === originalComponent.parentId);
+            const originalIndex = allComponents.findIndex(c => c.id === componentId);
+            
+            const newComponent = draft.components.find(c => c.id === newMainComponentId);
+            if (!newComponent) return;
+
+            // Move the new component to be right after the original
+            const componentToInsert = draft.components.splice(draft.components.findIndex(c => c.id === newComponent.id), 1)[0];
+            const finalOriginalIndex = draft.components.findIndex(c => c.id === componentId);
+            draft.components.splice(finalOriginalIndex + 1, 0, componentToInsert);
+
+            // Update order for all siblings
+            const siblings = draft.components.filter(c => c.parentId === originalComponent.parentId && c.column === originalComponent.column);
+            siblings.forEach((sibling, index) => {
+                const componentInDraft = draft.components.find(c => c.id === sibling.id);
+                if (componentInDraft) {
+                    componentInDraft.order = index;
+                }
+            });
+        });
+    });
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -661,6 +735,7 @@ export function SettingsPanel({
               selectedComponentId={selectedComponentId}
               setSelectedComponentId={setSelectedComponentId}
               removeComponent={removeComponent}
+              duplicateComponent={duplicateComponent}
             >
               <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
                   {Array.from({ length: columnCount }, (_, i) => (
@@ -680,6 +755,7 @@ export function SettingsPanel({
             selectedComponentId={selectedComponentId}
             setSelectedComponentId={setSelectedComponentId}
             removeComponent={removeComponent}
+            duplicateComponent={duplicateComponent}
           />
         </SortableItem>
       );
@@ -700,6 +776,7 @@ export function SettingsPanel({
                       selectedComponentId={selectedComponentId}
                       setSelectedComponentId={setSelectedComponentId}
                       removeComponent={removeComponent}
+                      duplicateComponent={duplicateComponent}
                     />
                 </SortableItem>
             ))}

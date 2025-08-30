@@ -542,84 +542,107 @@ export function SettingsPanel({
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
-    if (!over) return;
 
-    const activeId = active.id.toString();
-    const overId = over.id.toString();
-
-    if (activeId === overId) {
-      return;
+    if (!active || !over || active.id === over.id) {
+        return;
     }
 
-    setPageState(currentState => {
-      if (!currentState) return null;
+    setPageState((currentState) => {
+        if (!currentState) return null;
 
-      return produce(currentState, draft => {
-        const findComponent = (id: string) => draft.components.find(c => c.id === id);
-        const findComponentIndex = (id: string) => draft.components.findIndex(c => c.id === id);
+        return produce(currentState, (draft) => {
+            const findComponent = (id: string) => draft.components.find((c) => c.id === id);
+            const findComponentIndex = (id: string) => draft.components.findIndex((c) => c.id === id);
 
-        const activeComponent = findComponent(activeId);
-        if (!activeComponent) return;
+            const activeComponent = findComponent(active.id as string);
+            if (!activeComponent) return;
 
-        const overIsColumn = over.data.current?.isColumn;
-        
-        let newParentId: string | null = null;
-        let newColumnIndex: number = 0;
-        let overIndex: number;
+            const overId = over.id as string;
+            const overIsColumn = over.data.current?.isColumn;
 
-        if (overIsColumn) {
-            const overIdString = over.id.toString();
-            newParentId = overIdString.split('-')[0];
-            newColumnIndex = parseInt(overIdString.split('-')[1], 10);
-            
-            const siblingsInNewColumn = draft.components
-                .filter(c => c.parentId === newParentId && c.column === newColumnIndex)
-                .sort((a,b) => a.order - b.order);
-            
-            if (siblingsInNewColumn.length > 0) {
-                overIndex = findComponentIndex(siblingsInNewColumn[siblingsInNewColumn.length - 1].id);
+            let newParentId: string | null = null;
+            let newColumnIndex: number = 0;
+            let newIndex: number;
+
+            if (overIsColumn) {
+                // Dropping into a column
+                const [parentId, columnIndex] = overId.split('-');
+                newParentId = parentId;
+                newColumnIndex = parseInt(columnIndex, 10);
+                const siblings = draft.components.filter((c) => c.parentId === newParentId && c.column === newColumnIndex);
+                newIndex = siblings.length;
             } else {
-                 overIndex = findComponentIndex(newParentId)
-            }
-        } else {
-            const overComponent = findComponent(overId);
-            if (!overComponent) return;
-            newParentId = overComponent.parentId;
-            newColumnIndex = overComponent.column || 0;
-            overIndex = findComponentIndex(overId);
-        }
-
-        const activeIndex = findComponentIndex(activeId);
-        
-        draft.components[activeIndex].parentId = newParentId;
-        draft.components[activeIndex].column = newColumnIndex;
-        
-        const [movedComponent] = draft.components.splice(activeIndex, 1);
-        const correctedOverIndex = findComponentIndex(overId); 
-        draft.components.splice(correctedOverIndex, 0, movedComponent);
-
-        const allParentIds = [null, ...draft.components.filter(c => c.type === 'Columns').map(c => c.id)];
-        allParentIds.forEach(pId => {
-            const parentComponent = findComponent(pId as string);
-            const columnCount = parentComponent?.props.columnCount || 1;
-
-            for (let i = 0; i < columnCount; i++) {
-                const childrenInColumn = draft.components
-                    .filter(c => c.parentId === pId && (c.column || 0) === i)
-                    .sort((a, b) => {
-                        const posA = draft.components.findIndex(d => d.id === a.id);
-                        const posB = draft.components.findIndex(d => d.id === b.id);
-                        return posA - posB;
-                    });
+                // Dropping over another component
+                const overComponent = findComponent(overId);
+                if (!overComponent) return;
                 
-                childrenInColumn.forEach((child, index) => {
-                    const childInDraft = findComponent(child.id)!;
-                    childInDraft.order = index;
-                });
+                newParentId = overComponent.parentId;
+                newColumnIndex = overComponent.column || 0;
+                
+                // Find the index of the component we are dropping over *within its own group*
+                const siblings = draft.components
+                    .filter((c) => c.parentId === newParentId && c.column === newColumnIndex)
+                    .sort((a, b) => a.order - b.order);
+                const overComponentOrderIndex = siblings.findIndex(c => c.id === overId);
+                newIndex = overComponentOrderIndex;
             }
+            
+            // Update active component's parent and column
+            activeComponent.parentId = newParentId;
+            activeComponent.column = newColumnIndex;
+
+            // Reorder all affected components
+            const allParentIds = [null, ...draft.components.filter(c => c.type === 'Columns').map(c => c.id)];
+            
+            allParentIds.forEach(pId => {
+                const parentComponent = findComponent(pId as string);
+                const columnCount = parentComponent?.props.columnCount || 1;
+
+                for (let i = 0; i < columnCount; i++) {
+                    const childrenInColumn = draft.components
+                        .filter(c => c.parentId === pId && (c.column || 0) === i)
+                        .sort((a,b) => {
+                            const aIndex = findComponentIndex(a.id);
+                            const bIndex = findComponentIndex(b.id);
+                            
+                            // If we're in the new target column and we're dealing with the active component
+                            if (pId === newParentId && i === newColumnIndex) {
+                                if (a.id === active.id) return newIndex - bIndex;
+                                if (b.id === active.id) return aIndex - newIndex;
+                            }
+                            
+                            // For regular sorting, use current document order
+                            const originalAIndex = currentState.components.findIndex(c => c.id === a.id);
+                            const originalBIndex = currentState.components.findIndex(c => c.id === b.id);
+                            return originalAIndex - originalBIndex;
+                        });
+                    
+                    // After determining the order, move the active component if it belongs here
+                    if (pId === newParentId && i === newColumnIndex) {
+                         const activeIndexInCurrentArray = childrenInColumn.findIndex(c => c.id === active.id);
+                         if(activeIndexInCurrentArray > -1) {
+                            const [movedItem] = childrenInColumn.splice(activeIndexInCurrentArray, 1);
+                            childrenInColumn.splice(newIndex, 0, movedItem);
+                         } else if (activeComponent.parentId === pId && activeComponent.column === i) {
+                            // This means the active component is newly moved here
+                            childrenInColumn.splice(newIndex, 0, activeComponent);
+                         }
+                    }
+
+                    // Re-assign order property based on the new array order
+                    childrenInColumn.forEach((child, index) => {
+                        const childInDraft = findComponent(child.id)!;
+                        childInDraft.order = index;
+                    });
+                }
+            });
+            // Final re-sort of the main components array based on new order
+             draft.components.sort((a, b) => {
+                if (a.parentId !== b.parentId) return 0;
+                if (a.column !== b.column) return 0;
+                return a.order - b.order;
+            });
         });
-      });
     });
   };
 

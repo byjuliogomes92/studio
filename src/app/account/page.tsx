@@ -27,7 +27,7 @@ import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function AccountPage() {
-  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar } = useAuth();
+  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -121,6 +121,10 @@ export default function AccountPage() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" value={user.email || ''} disabled />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="workspace">Workspace Ativo</Label>
+              <Input id="workspace" value={activeWorkspace?.name || 'N/A'} disabled />
             </div>
           </CardContent>
         </Card>

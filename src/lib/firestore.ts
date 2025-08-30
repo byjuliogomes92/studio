@@ -1,7 +1,7 @@
 
 import { getDb } from "./firebase";
-import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp } from "firebase/firestore";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand } from "./types";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -9,6 +9,52 @@ const getDbInstance = (): Firestore => {
         throw new Error("Firestore is not initialized. This function should only be called on the client-side.");
     }
     return db;
+};
+
+
+// Workspaces
+export const createWorkspace = async (userId: string, userEmail: string, workspaceName: string): Promise<Workspace> => {
+    const db = getDbInstance();
+    const batch = writeBatch(db);
+
+    // Create the workspace
+    const workspaceRef = doc(collection(db, 'workspaces'));
+    const newWorkspace: Omit<Workspace, 'id'> = {
+        name: workspaceName,
+        ownerId: userId,
+        createdAt: serverTimestamp(),
+    };
+    batch.set(workspaceRef, newWorkspace);
+
+    // Create the owner as a member
+    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceRef.id}`);
+    const newMember: Omit<WorkspaceMember, 'id'> = {
+        userId,
+        email: userEmail,
+        workspaceId: workspaceRef.id,
+        role: 'owner',
+        createdAt: serverTimestamp(),
+    };
+    batch.set(memberRef, newMember);
+    
+    await batch.commit();
+
+    return { ...newWorkspace, id: workspaceRef.id, createdAt: Timestamp.now() } as Workspace;
+};
+
+export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]> => {
+    const db = getDbInstance();
+    const membersQuery = query(collection(db, 'workspaceMembers'), where('userId', '==', userId));
+    const memberSnapshots = await getDocs(membersQuery);
+    
+    if (memberSnapshots.empty) return [];
+
+    const workspaceIds = memberSnapshots.docs.map(doc => doc.data().workspaceId);
+    
+    const workspacesQuery = query(collection(db, 'workspaces'), where('__name__', 'in', workspaceIds));
+    const workspaceSnapshots = await getDocs(workspacesQuery);
+    
+    return workspaceSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Workspace));
 };
 
 
@@ -34,11 +80,11 @@ const updateProject = async (projectId: string, data: Partial<Project>): Promise
     await updateDoc(doc(db, "projects", projectId), data);
 }
 
-const getProjectsForUser = async (userId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
+const getProjectsForUser = async (workspaceId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
     const db = getDbInstance();
-    const projectsQuery = query(collection(db, "projects"), where("userId", "==", userId));
+    const projectsQuery = query(collection(db, "projects"), where("workspaceId", "==", workspaceId));
     // Fetch from drafts to get the most recent page data for UI purposes (like page count)
-    const pagesQuery = query(collection(db, "pages_drafts"), where("userId", "==", userId));
+    const pagesQuery = query(collection(db, "pages_drafts"), where("workspaceId", "==", workspaceId));
 
     const projectSnapshot = await getDocs(projectsQuery);
     const projects = projectSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
@@ -153,12 +199,12 @@ const getPagesForProject = async (projectId: string): Promise<CloudPage[]> => {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
 };
 
-const getProjectWithPages = async (projectId: string, userId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
+const getProjectWithPages = async (projectId: string, workspaceId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
     const db = getDbInstance();
     const projectRef = doc(db, 'projects', projectId);
     const projectDoc = await getDoc(projectRef);
 
-    if (!projectDoc.exists() || projectDoc.data().userId !== userId) {
+    if (!projectDoc.exists() || projectDoc.data().workspaceId !== workspaceId) {
         return null; // Project doesn't exist or user doesn't have access
     }
 
@@ -168,7 +214,7 @@ const getProjectWithPages = async (projectId: string, userId: string): Promise<{
     const pagesQuery = query(
         collection(db, 'pages_drafts'),
         where('projectId', '==', projectId),
-        where('userId', '==', userId),
+        where('workspaceId', '==', workspaceId),
         orderBy('updatedAt', 'desc')
     );
     
@@ -267,9 +313,9 @@ export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>): Prom
     return { ...brandData, id: docRef.id, createdAt: Timestamp.now() };
 };
 
-export const getBrandsForUser = async (userId: string): Promise<Brand[]> => {
+export const getBrandsForUser = async (workspaceId: string): Promise<Brand[]> => {
     const db = getDbInstance();
-    const q = query(collection(db, 'brands'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'brands'), where('workspaceId', '==', workspaceId), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Brand));
 };
@@ -352,7 +398,7 @@ const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void>
     const viewData: Omit<PageView, 'id'> = {
         pageId: pageData.id,
         projectId: pageData.projectId,
-        userId: pageData.userId,
+        workspaceId: pageData.workspaceId,
         timestamp: serverTimestamp(),
         country: headers.get('x-vercel-ip-country') || undefined,
         city: headers.get('x-vercel-ip-city') || undefined,
@@ -430,6 +476,6 @@ export {
     updateUserProgress,
     logPageView,
     getPageViews,
-    logFormSubmission,
+logFormSubmission,
     getFormSubmissions,
 };

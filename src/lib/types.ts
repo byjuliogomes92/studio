@@ -25,10 +25,28 @@ export type ComponentType =
   | 'Columns'
   | 'WhatsApp'
   | 'DownloadButton';
-  
+
+export interface Workspace {
+  id: string;
+  name: string;
+  ownerId: string;
+  createdAt: any;
+}
+
+export type WorkspaceMemberRole = 'owner' | 'admin' | 'editor' | 'viewer';
+
+export interface WorkspaceMember {
+  id: string; // usually ${userId}_${workspaceId}
+  userId: string;
+  workspaceId: string;
+  email: string;
+  role: WorkspaceMemberRole;
+  createdAt: any;
+}
+
 export interface Brand {
   id: string;
-  userId: string;
+  workspaceId: string;
   name: string;
   logoUrl: string;
   faviconUrl: string;
@@ -80,7 +98,7 @@ export interface CloudPage {
   id: string;
   name: string;
   projectId: string;
-  userId: string;
+  workspaceId: string;
   brandId: string;
   brandName: string;
   platform?: string;
@@ -132,7 +150,7 @@ export interface CloudPage {
 export interface Project {
     id: string;
     name: string;
-    userId: string;
+    workspaceId: string;
     icon?: string;
     color?: string;
     createdAt: Timestamp;
@@ -175,7 +193,7 @@ export interface PageView {
   id?: string;
   pageId: string;
   projectId: string;
-  userId: string;
+  workspaceId: string;
   timestamp: any;
   country?: string;
   city?: string;

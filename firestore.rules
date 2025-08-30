@@ -4,57 +4,83 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    // --- Helper Functions ---
+    function isUserAuthenticated() {
+      return request.auth != null;
     }
 
+    function isWorkspaceMember(workspaceId, role) {
+      return isUserAuthenticated() &&
+             exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId)) &&
+             (role == null || get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId)).data.role in role);
+    }
+
+    // --- Workspace Rules ---
+    match /workspaces/{workspaceId} {
+      allow read: if isWorkspaceMember(workspaceId, ['owner', 'admin', 'editor', 'viewer']);
+      allow create: if isUserAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isWorkspaceMember(workspaceId, ['owner', 'admin']);
+      allow delete: if isWorkspaceMember(workspaceId, ['owner']);
+    }
+
+    match /workspaceMembers/{memberId} {
+      // Allow user to read their own membership
+      allow read: if isUserAuthenticated() && request.auth.uid == resource.data.userId;
+      // Allow owner/admin of the workspace to create (invite) or delete (remove) members
+      allow create, delete: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin']);
+      // Allow owner/admin to update roles, but not their own if they are the only owner
+      allow update: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin']);
+    }
+
+    // --- Project Rules ---
     match /projects/{projectId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin', 'editor', 'viewer']);
+      allow create: if isWorkspaceMember(request.resource.data.workspaceId, ['owner', 'admin', 'editor']);
+      allow update, delete: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin']);
     }
-
+    
+    // --- Brand Rules ---
     match /brands/{brandId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin', 'editor', 'viewer']);
+      allow create: if isWorkspaceMember(request.resource.data.workspaceId, ['owner', 'admin', 'editor']);
+      allow update, delete: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin']);
     }
-
+    
+    // --- Page Rules ---
     match /pages_drafts/{pageId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin', 'editor', 'viewer']);
+      allow create: if isWorkspaceMember(request.resource.data.workspaceId, ['owner', 'admin', 'editor']);
+      allow update: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin', 'editor']);
+      allow delete: if isWorkspaceMember(resource.data.workspaceId, ['owner', 'admin']);
     }
 
     match /pages_published/{pageId} {
+      // Anyone can read a published page
       allow read: if true;
-      allow create: if isOwner(request.resource.data.userId);
-      allow update: if isOwner(resource.data.userId);
-      // Delete is handled by the main deletePage function which checks ownership on the draft.
-      allow delete: if request.auth != null; 
+      // Only members of the workspace can publish (write)
+      allow write: if isWorkspaceMember(request.resource.data.workspaceId, ['owner', 'admin', 'editor']);
     }
 
+    // --- Template Rules ---
     match /templates/{templateId} {
-      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
-      allow create: if isOwner(request.resource.data.createdBy);
-      allow update, delete: if isOwner(resource.data.createdBy);
+      // Any authenticated user can read a default template
+      allow read: if resource.data.isDefault == true || isWorkspaceMember(get(/databases/$(database)/documents/users/$(resource.data.createdBy)).data.workspaceId, ['owner', 'admin', 'editor', 'viewer']);
+      allow create: if isUserAuthenticated();
+      allow update, delete: if isUserAuthenticated() && resource.data.createdBy == request.auth.uid;
     }
 
+    // --- User Progress Rules ---
     match /userProgress/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isUserAuthenticated() && request.auth.uid == userId;
     }
 
+    // --- Analytics Rules (Public) ---
     match /pageViews/{viewId} {
-      // Allows anyone to create a page view (triggered by the public API route).
-      allow create: if true;
-      // Allows anyone to read page views.
-      allow read: if true;
+      allow create, read: if true;
     }
 
     match /formSubmissions/{submissionId} {
-      // Allows anyone to create a form submission (triggered by the public API route).
-      allow create: if true;
-      // Allows anyone to read form submissions.
-      allow read: if true;
+      allow create, read: if true;
     }
   }
 }
-
-    

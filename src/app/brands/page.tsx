@@ -36,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const googleFonts = ["Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Source Sans Pro", "Raleway", "Poppins", "Nunito", "Merriweather"];
 
-const initialBrandState: Omit<Brand, "id" | "userId" | "createdAt"> = {
+const initialBrandState: Omit<Brand, "id" | "workspaceId" | "createdAt"> = {
   name: "",
   logoUrl: "",
   faviconUrl: "",
@@ -48,7 +48,7 @@ const initialBrandState: Omit<Brand, "id" | "userId" | "createdAt"> = {
 
 export default function BrandsPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, activeWorkspace } = useAuth();
   const { toast } = useToast();
 
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -64,11 +64,15 @@ export default function BrandsPage() {
       router.push("/login");
       return;
     }
+    if (!activeWorkspace) {
+        setIsLoading(false);
+        return;
+    };
 
     const fetchBrands = async () => {
       setIsLoading(true);
       try {
-        const userBrands = await getBrandsForUser(user.uid);
+        const userBrands = await getBrandsForUser(activeWorkspace.id);
         setBrands(userBrands);
       } catch (error) {
         console.error("Failed to fetch brands:", error);
@@ -79,7 +83,7 @@ export default function BrandsPage() {
     };
 
     fetchBrands();
-  }, [user, authLoading, router, toast]);
+  }, [user, authLoading, router, toast, activeWorkspace]);
 
   const openModal = (brand: Partial<Brand> | null = null) => {
     setCurrentBrand(brand ? { ...brand } : { ...initialBrandState });
@@ -87,8 +91,8 @@ export default function BrandsPage() {
   };
 
   const handleSaveBrand = async () => {
-    if (!user || !currentBrand || !currentBrand.name) {
-      toast({ variant: "destructive", title: "Erro", description: "O nome da marca é obrigatório." });
+    if (!user || !currentBrand || !currentBrand.name || !activeWorkspace) {
+      toast({ variant: "destructive", title: "Erro", description: "O nome da marca e o workspace são obrigatórios." });
       return;
     }
     setIsSaving(true);
@@ -102,7 +106,7 @@ export default function BrandsPage() {
       } else {
         // Create new brand
         const newBrandData: Omit<Brand, "id" | "createdAt"> = {
-            userId: user.uid,
+            workspaceId: activeWorkspace.id,
             name: currentBrand.name,
             logoUrl: currentBrand.logoUrl || '',
             faviconUrl: currentBrand.faviconUrl || '',
@@ -157,7 +161,7 @@ export default function BrandsPage() {
                 <Home className="mr-2 h-4 w-4" />
                 Voltar aos Projetos
             </Button>
-            <Button onClick={() => openModal()}>
+            <Button onClick={() => openModal()} disabled={!activeWorkspace}>
                 <Plus className="mr-2 h-4 w-4" />
                 Criar Nova Marca
             </Button>

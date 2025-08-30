@@ -1,78 +1,77 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is a member of a specific workspace.
-    function isWorkspaceMember(workspaceId) {
-      return exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
+    // Helper Functions
+    function isUserAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
     }
 
-    // Workspaces can be created by any authenticated user.
-    // Reading/updating a workspace is restricted to its members.
+    function isMember(workspaceId) {
+      return isUserAuthenticated() && exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
+    }
+
+    function isOwner(workspaceId) {
+      let memberPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId);
+      return isMember(workspaceId) && get(memberPath).data.role == 'owner';
+    }
+
+    // Workspace and Member Rules
     match /workspaces/{workspaceId} {
-      allow read, update, delete: if isWorkspaceMember(workspaceId);
-      allow create: if request.auth.uid == request.resource.data.ownerId;
+      allow read: if isMember(workspaceId);
+      allow create: if isUserAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isOwner(workspaceId);
+      // Deletion might need special handling for sub-collections in the future.
+      allow delete: if isOwner(workspaceId);
     }
 
-    // Membership can be read by members of the workspace.
-    // Admins or owners of a workspace can manage memberships.
     match /workspaceMembers/{membershipId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId);
-      // Allow creation/deletion for admins/owners (simplified for now).
-      // A more robust rule would check the role of the user trying to write.
-      allow write: if isWorkspace_member(request.resource.data.workspaceId);
+      // Allow members to read their own membership.
+      allow read: if isUserAuthenticated() && request.auth.uid == resource.data.userId;
+      // Only owners can add/remove members from a workspace.
+      allow create, delete: if isOwner(request.resource.data.workspaceId);
     }
-    
-    // Projects, Brands, and Page Drafts are readable/listable by workspace members.
-    // Write operations are also restricted to workspace members.
+
+    // Resource Rules (Projects, Brands, Pages, etc.)
     match /projects/{projectId} {
-      allow read, write: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow read, update, delete: if isMember(resource.data.workspaceId);
+      allow create: if isMember(request.resource.data.workspaceId);
     }
 
     match /brands/{brandId} {
-      allow read, write: if isWorkspaceMember(request.resource.data.workspaceId);
-    }
-    
-    match /pages_drafts/{pageId} {
-      allow read, write: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow read, update, delete: if isMember(resource.data.workspaceId);
+      allow create: if isMember(request.resource.data.workspaceId);
     }
 
-    // Published pages are public to read.
-    // Only workspace members can publish (write) to this collection.
+    match /pages_drafts/{pageId} {
+      allow read, write: if isMember(resource.data.workspaceId);
+    }
+
     match /pages_published/{pageId} {
       allow read: if true;
-      allow write: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow write: if isMember(resource.data.workspaceId);
     }
 
-    // Templates can be read if they are default or created by the user.
-    // Users can only manage templates they created.
     match /templates/{templateId} {
-      allow read: if resource.data.isDefault == true || request.auth.uid == resource.data.createdBy;
-      allow create: if request.auth.uid == request.resource.data.createdBy;
-      allow update, delete: if request.auth.uid == resource.data.createdBy;
+      allow read, update, delete: if isMember(resource.data.workspaceId);
+      allow create: if isMember(request.resource.data.workspaceId);
     }
 
-    // User can only read/write their own progress document.
+    // User-specific Rules
     match /userProgress/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
 
-    // Page views and form submissions can be created by anyone (public pages).
-    // Reading them is restricted to workspace members of the page's workspace.
-    function getWorkspaceIdForPage(pageId) {
-      return get(/databases/$(database)/documents/pages_published/$(pageId)).data.workspaceId;
-    }
-
+    // Public Collection Rules
     match /pageViews/{viewId} {
       allow create: if true;
-      allow read: if isWorkspaceMember(getWorkspaceIdForPage(resource.data.pageId));
+      allow read: if true; // Public for now, can be restricted later.
     }
 
     match /formSubmissions/{submissionId} {
       allow create: if true;
-      allow read: if isWorkspaceMember(getWorkspaceIdForPage(resource.data.pageId));
+      allow read: if true; // Public for now, can be restricted later.
     }
   }
 }

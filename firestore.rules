@@ -2,7 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
@@ -11,10 +11,18 @@ service cloud.firestore {
       allow read, update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
+    
+    match /brands/{brandId} {
+      allow read, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+    }
 
-    match /pages/{pageId} {
-      // A leitura pública é tratada pela rota da API que verifica as datas de publicação/expiração.
-      allow read: if true; 
+    match /pages_drafts/{pageId} {
+      allow read, write: if isOwner(request.resource.data.userId);
+    }
+
+    match /pages_published/{pageId} {
+      allow read: if true;
       allow write: if isOwner(request.resource.data.userId);
     }
     
@@ -27,19 +35,21 @@ service cloud.firestore {
     match /userProgress/{userId} {
       allow read, write: if isOwner(userId);
     }
-    
+
     match /pageViews/{viewId} {
-      // Permite que qualquer um crie uma visualização de página (acionado pela rota pública da API).
+      // Allows anyone to create a page view (triggered by the public API route).
       allow create: if true;
       
-      // Permite que um usuário leia as visualizações de página apenas se ele for o proprietário da página referenciada.
-      allow read: if request.auth != null && get(/databases/$(database)/documents/pages/$(resource.data.pageId)).data.userId == request.auth.uid;
+      // Allows a user to read page views only if they own the referenced page.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages_drafts/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
 
     match /formSubmissions/{submissionId} {
-      // Permite que qualquer um crie uma submissão de formulário (acionado pela rota pública da API).
+      // Allows anyone to create a form submission (triggered by the public API route).
       allow create: if true;
-      allow read, update, delete: if false; // Protect PII
+
+      // Allows a user to read submissions only if they own the referenced page.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages_drafts/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
   }
 }

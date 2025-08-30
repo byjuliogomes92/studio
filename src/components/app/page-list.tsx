@@ -953,9 +953,17 @@ export function PageList({ projectId }: PageListProps) {
                             <div
                                 key={page.id}
                                 className="group relative flex flex-col bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"
-                                onClick={() => handlePageClick(page.id)}
                             >
-                                <div className="aspect-[4/3] w-full bg-muted/50 rounded-t-lg flex flex-col items-center justify-center p-4 overflow-hidden cursor-pointer">
+                                <div className="absolute top-2 left-2 z-10 bg-card/80 backdrop-blur-sm p-1.5 rounded-full">
+                                    <PlatformIcon platformId={page.platform} />
+                                </div>
+                                <div className="absolute top-1 right-1 z-10 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {pageActions(page)}
+                                </div>
+                                <div
+                                    className="aspect-[4/3] w-full bg-muted/50 rounded-t-lg flex flex-col items-center justify-center p-4 overflow-hidden cursor-pointer"
+                                    onClick={() => handlePageClick(page.id)}
+                                >
                                     <div className="w-full h-full border-2 border-dashed rounded-md flex flex-col p-2 gap-1.5 bg-background">
                                         <div className="h-4 w-1/3 bg-muted rounded"></div>
                                         <div className="h-2 w-full bg-muted rounded"></div>
@@ -963,10 +971,8 @@ export function PageList({ projectId }: PageListProps) {
                                         <div className="h-2 w-2/3 bg-muted rounded"></div>
                                     </div>
                                 </div>
-                                <div className="absolute top-2 left-2 bg-card/80 backdrop-blur-sm p-1.5 rounded-full">
-                                    <PlatformIcon platformId={page.platform} />
-                                </div>
-                                <div className="p-4 flex-grow flex flex-col justify-between">
+                                
+                                <div className="p-4 flex-grow flex flex-col justify-between" onClick={() => handlePageClick(page.id)}>
                                     <div>
                                         <div className="flex justify-between items-start">
                                             <h3 className="font-semibold text-base leading-tight truncate pr-2" title={page.name}>
@@ -976,18 +982,15 @@ export function PageList({ projectId }: PageListProps) {
                                                 {page.brand}
                                             </Badge>
                                         </div>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {page.updatedAt?.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : 'Recém-criado'}
-                                    </p>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            {page.updatedAt?.toDate ? `Editado em: ${new Date(page.updatedAt.toDate()).toLocaleDateString()}` : 'Recém-criado'}
+                                        </p>
                                     </div>
                                     <div className="mt-4 pt-4 border-t flex flex-wrap gap-2 items-center justify-between">
                                         <div className="flex flex-wrap gap-1">
                                             {(page.tags || []).map(tag => (
                                                 <Badge key={tag} className={cn('border text-xs', getTagColor(tag))}>{tag}</Badge>
                                             ))}
-                                        </div>
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-2 right-2 flex items-center">
-                                            {pageActions(page)}
                                         </div>
                                     </div>
                                 </div>

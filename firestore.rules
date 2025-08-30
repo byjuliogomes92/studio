@@ -11,26 +11,25 @@ service cloud.firestore {
       allow read, update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
-    
-    match /brands/{brandId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
-    }
 
     match /pages_drafts/{pageId} {
-      allow read, write: if isOwner(get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+        allow read, write: if isOwner(resource.data.userId);
     }
-
+    
     match /pages_published/{pageId} {
-      allow read: if true;
-      allow write: if isOwner(request.resource.data.userId);
+        allow read: if true;
+        allow write: if isOwner(request.resource.data.userId);
     }
 
     match /templates/{templateId} {
       allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
       allow create: if isOwner(request.resource.data.createdBy);
       allow update, delete: if isOwner(resource.data.createdBy);
+    }
+    
+    match /brands/{brandId} {
+        allow read, update, delete: if isOwner(resource.data.userId);
+        allow create: if isOwner(request.resource.data.userId);
     }
 
     match /userProgress/{userId} {
@@ -39,12 +38,13 @@ service cloud.firestore {
 
     match /pageViews/{viewId} {
       allow create: if true;
-      allow read: if request.auth != null && get(/databases/$(database)/documents/pages_drafts/$(resource.data.pageId)).data.userId == request.auth.uid;
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
 
     match /formSubmissions/{submissionId} {
       allow create: if true;
-      allow read: if request.auth != null && get(/databases/$(database)/documents/pages_drafts/$(resource.data.pageId)).data.userId == request.auth.uid;
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
+
   }
 }

@@ -47,23 +47,33 @@ const platforms = [
     { id: 'web', name: 'Web', Icon: Globe, enabled: false },
 ];
 
-const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand, platform: string): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
+const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand | null, platform: string): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
+    
+    const brandName = brand ? brand.name : 'Sem Marca';
+    const brandId = brand ? brand.id : '';
+    const themeColor = brand ? brand.themeColor : '#000000';
+    const themeColorHover = brand ? brand.themeColorHover : '#333333';
+    const fontFamily = brand ? brand.fontFamily : 'Roboto';
+    const faviconUrl = brand ? brand.faviconUrl : '';
+    const loaderImageUrl = brand ? brand.loaderImageUrl : '';
+    const logoUrl = brand ? brand.logoUrl : '';
+
     return {
       name: name,
       projectId,
       userId,
-      brandId: brand.id,
-      brandName: brand.name,
+      brandId: brandId,
+      brandName: brandName,
       platform,
-      tags: ["Brasil"],
+      tags: [],
       meta: {
-        title: `${brand.name} - ${name}`,
-        faviconUrl: brand.faviconUrl,
-        loaderImageUrl: brand.loaderImageUrl,
+        title: `${brandName} - ${name}`,
+        faviconUrl: faviconUrl,
+        loaderImageUrl: loaderImageUrl,
         redirectUrl: 'https://www.google.com',
         dataExtensionKey: 'CHANGE-ME',
-        metaDescription: `Página de campanha para ${brand.name}.`,
-        metaKeywords: `${brand.name.toLowerCase()}, campanha, beleza`,
+        metaDescription: `Página de campanha para ${brandName}.`,
+        metaKeywords: `${brandName.toLowerCase()}, campanha`,
         tracking: {
           ga4: { enabled: false, id: '' },
           meta: { enabled: false, id: '' },
@@ -73,9 +83,9 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
       styles: {
         backgroundColor: '#FFFFFF',
         backgroundImage: '',
-        themeColor: brand.themeColor,
-        themeColorHover: brand.themeColorHover,
-        fontFamily: brand.fontFamily,
+        themeColor: themeColor,
+        themeColorHover: themeColorHover,
+        fontFamily: fontFamily,
         customCss: '',
       },
       cookieBanner: {
@@ -83,35 +93,23 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
         text: 'Utilizamos cookies para garantir que você tenha a melhor experiência em nosso site. Ao continuar, você concorda com o uso de cookies.',
         buttonText: 'Aceitar',
       },
-      components: [
-        { id: '1', type: 'Header', props: { logoUrl: brand.logoUrl } },
-        { id: '2', type: 'Banner', props: { imageUrl: 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png' } },
-        { id: 'c1', type: 'Title', props: { text: 'Título da Sua Campanha Aqui', styles: { textAlign: 'center' } } },
-        { id: 'c2', type: 'Paragraph', props: { text: 'Este é um ótimo lugar para descrever sua campanha. Fale sobre os benefícios, os produtos em destaque e o que os clientes podem esperar.' } },
-        { id: 'c-button', type: 'Button', props: { text: 'Clique Aqui', href: '#', align: 'center' } },
-        { 
-          id: '3', 
-          type: 'Form', 
-          props: {
-            fields: { name: true, email: true, phone: true, cpf: true, city: false, birthdate: false, optin: true },
-            placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', birthdate: 'Data de Nascimento' },
-            consentText: `Quero receber novidades e promoções da ${brand.name} e de outras empresas do Grupo Natura &Co...`,
-            buttonText: 'Finalizar',
-            buttonAlign: 'center',
-            thankYouMessage: `<h2>Obrigado, {{NOME}}!</h2><p>Recebemos suas informações com sucesso.</p>`,
-            cities: 'São Paulo\nRio de Janeiro\nBelo Horizonte\nSalvador\nFortaleza\nCuritiba\nManaus\nRecife\nPorto Alegre\nBrasília',
-          } 
-        },
+      components: brand ? [
+        { id: '1', type: 'Header', props: { logoUrl: logoUrl }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
         { 
           id: '4', 
           type: 'Footer', 
           props: { 
-            footerText1: `© ${new Date().getFullYear()} ${brand.name}. Todos os direitos reservados.`,
+            footerText1: `© ${new Date().getFullYear()} ${brandName}. Todos os direitos reservados.`,
             footerText2: `...`,
             footerText3: `...`,
-          } 
+          }, 
+          order: 1,
+          parentId: null,
+          column: 0,
+          abTestEnabled: false,
+          abTestVariants: []
         },
-      ],
+      ] : [],
     }
 };
 
@@ -189,8 +187,8 @@ export function CreatePageFromTemplateDialog({
          toast({ variant: "destructive", title: "Erro", description: "Por favor, selecione um projeto." });
         return;
     }
-     if (!selectedBrandId) {
-        toast({ variant: "destructive", title: "Erro", description: "Por favor, selecione uma marca." });
+     if (!selectedBrandId && selectedTemplate !== 'blank') {
+        toast({ variant: "destructive", title: "Erro", description: "Por favor, selecione uma marca para este template." });
         return;
     }
     if (newPageName.trim() === '') {
@@ -201,8 +199,7 @@ export function CreatePageFromTemplateDialog({
 
     try {
         let newPageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
-        const selectedBrand = userBrands.find(b => b.id === selectedBrandId);
-        if (!selectedBrand) throw new Error("Marca selecionada não encontrada.");
+        const selectedBrand = userBrands.find(b => b.id === selectedBrandId) || null;
 
         if (selectedTemplate === 'blank') {
             newPageData = getInitialPage(newPageName, selectedProjectId, user.uid, selectedBrand, selectedPlatform);
@@ -215,6 +212,7 @@ export function CreatePageFromTemplateDialog({
             }
             
             if (!template) throw new Error("Template não encontrado.");
+            if (!selectedBrand) throw new Error("Marca selecionada não encontrada para este template.");
             
             const newComponents = produce(template.components, draft => {
                 const idMap: { [oldId: string]: string } = {};
@@ -374,11 +372,12 @@ export function CreatePageFromTemplateDialog({
                         )}
                         <div className="space-y-2">
                             <Label>Marca</Label>
-                             <Select onValueChange={setSelectedBrandId} value={selectedBrandId || undefined}>
+                             <Select onValueChange={(value) => setSelectedBrandId(value === 'none' ? null : value)} value={selectedBrandId || 'none'}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione um Kit de Marca..." />
                                 </SelectTrigger>
                                 <SelectContent>
+                                <SelectItem value="none">Nenhuma</SelectItem>
                                 {userBrands.map(brand => (
                                     <SelectItem key={brand.id} value={brand.id}>
                                         <div className="flex items-center gap-2">

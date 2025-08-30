@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -101,6 +102,26 @@ const projectIcons = [
     { name: "Users", icon: Users },
     { name: "Smile", icon: Smile },
 ];
+
+const platforms = [
+    { id: 'sfmc', name: 'Salesforce', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg' },
+    { id: 'hubspot', name: 'Hubspot', logo: 'https://cronic.com.br/wp-content/uploads/2021/11/hubspot.png' },
+    { id: 'rdstation', name: 'RD Station', logo: 'https://gleybionycamargo.com.br/wp-content/uploads/2022/10/logo-rd-branca.png' },
+    { id: 'braze', name: 'Braze', logo: 'https://cdn.prod.website-files.com/616f0a7a027baab453433911/680fe9f825f815d39843558e_Braze_Logo_Light%20(1).svg' },
+    { id: 'klaviyo', name: 'Klaviyo', logo: 'https://cdn.prod.website-files.com/616f0a7a027baab453433911/657263261463fe4fc816b96e_klaviyo-logo-horizontal-white.svg' },
+    { id: 'web', name: 'Web', Icon: Globe },
+];
+
+function PlatformIcon({ platformId }: { platformId?: string }) {
+    const platform = platforms.find(p => p.id === platformId) || platforms.find(p => p.id === 'sfmc'); // Default to SFMC
+    if (!platform) return null;
+
+    if (platform.Icon) {
+        return <platform.Icon className="h-4 w-4 text-muted-foreground" />;
+    }
+
+    return <img src={platform.logo} alt={platform.name} className="h-4 w-auto object-contain" />;
+}
 
 function ProjectIcon({ iconName, color, className }: { iconName?: string; color?: string, className?: string }) {
     const Icon = projectIcons.find(i => i.name === iconName)?.icon || Folder;
@@ -939,7 +960,8 @@ export function PageList({ projectId }: PageListProps) {
                             <div className="p-4 flex-grow flex flex-col justify-between">
                                 <div>
                                     <div className="flex justify-between items-start">
-                                        <h3 className="font-semibold text-base leading-tight truncate pr-2" title={page.name}>
+                                        <h3 className="font-semibold text-base leading-tight truncate pr-2 flex items-center gap-2" title={page.name}>
+                                            <PlatformIcon platformId={page.platform} />
                                             {page.name}
                                         </h3>
                                         <Badge variant={page.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
@@ -975,6 +997,7 @@ export function PageList({ projectId }: PageListProps) {
                                     {getSortDirection('name') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
                                 </div>
                                 </TableHead>
+                                <TableHead>Plataforma</TableHead>
                                 <TableHead>Tags</TableHead>
                                 <TableHead onClick={() => handleSort('updatedAt')}>
                                 <div className="flex items-center gap-2 cursor-pointer">
@@ -989,6 +1012,7 @@ export function PageList({ projectId }: PageListProps) {
                             {filteredAndSortedPages.map((page) => (
                                 <TableRow key={page.id} className="cursor-pointer" onClick={() => handlePageClick(page.id)}>
                                 <TableCell className="font-medium">{page.name}</TableCell>
+                                <TableCell><PlatformIcon platformId={page.platform} /></TableCell>
                                 <TableCell>
                                     <div className="flex flex-wrap gap-1">
                                     {(page.tags || []).map(tag => (

@@ -47,7 +47,7 @@ const platforms = [
     { id: 'web', name: 'Web', Icon: Globe, enabled: false },
 ];
 
-const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
+const getInitialPage = (name: string, projectId: string, userId: string, brand: Brand, platform: string): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
     const isAvon = brand === 'Avon';
   
     const naturaTheme = {
@@ -73,6 +73,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
       projectId,
       userId,
       brand,
+      platform,
       tags: ["Brasil"],
       meta: {
         title: `${brand} - ${name}`,
@@ -208,7 +209,7 @@ export function CreatePageFromTemplateDialog({
         let newPageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
 
         if (selectedTemplate === 'blank') {
-            newPageData = getInitialPage(newPageName, selectedProjectId, user.uid, selectedBrand);
+            newPageData = getInitialPage(newPageName, selectedProjectId, user.uid, selectedBrand, selectedPlatform);
         } else {
             let template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'> | null = null;
             if (selectedTemplateIsDefault) {
@@ -243,6 +244,7 @@ export function CreatePageFromTemplateDialog({
             newPageData = {
                 name: newPageName,
                 brand: selectedBrand,
+                platform: selectedPlatform,
                 projectId: selectedProjectId,
                 userId: user.uid,
                 tags: [],

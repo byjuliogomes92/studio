@@ -70,6 +70,7 @@ export interface CloudPage {
   projectId: string;
   userId: string;
   brand: Brand;
+  platform?: string;
   tags?: string[];
   styles: {
     backgroundColor: string;

@@ -1,4 +1,5 @@
 
+
 import { getDb } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
 import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember } from "./types";
@@ -84,7 +85,7 @@ const updateProject = async (projectId: string, data: Partial<Project>): Promise
 
 const getProjectsForUser = async (workspaceId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
     if (!workspaceId) {
-        return { projects: [], pages: [] };
+        throw new Error("Workspace ID is required to fetch projects.");
     }
     const db = getDbInstance();
     const projectsQuery = query(collection(db, "projects"), where("workspaceId", "==", workspaceId));
@@ -292,9 +293,10 @@ const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'up
 };
 
 
-const getTemplates = async (userId: string): Promise<Template[]> => {
+const getTemplates = async (workspaceId: string): Promise<Template[]> => {
+    if (!workspaceId) throw new Error("Workspace ID is required to fetch templates.");
     const db = getDbInstance();
-    const templatesQuery = query(collection(db, "templates"), where("createdBy", "==", userId), orderBy("name", "asc"));
+    const templatesQuery = query(collection(db, "templates"), where("workspaceId", "==", workspaceId), orderBy("name", "asc"));
     const querySnapshot = await getDocs(templatesQuery);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Template));
 };
@@ -486,3 +488,5 @@ export {
 logFormSubmission,
     getFormSubmissions,
 };
+
+    

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -74,7 +75,9 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
       },
       // Add other required CloudPage fields with default values
       projectId: 'preview',
-      userId: 'preview',
+      workspaceId: 'preview',
+      brandId: 'preview',
+      brandName: 'preview',
       tags: [],
       cookieBanner: template.cookieBanner,
       createdAt: new Date(),
@@ -108,7 +111,7 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
 
 export default function TemplatesPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, activeWorkspace } = useAuth();
   const { toast } = useToast();
   const [userTemplates, setUserTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -123,10 +126,10 @@ export default function TemplatesPage() {
 
   useEffect(() => {
     const fetchTemplates = async () => {
-      if (!user) return;
+      if (!user || !activeWorkspace) return;
       setIsLoading(true);
       try {
-        const fetchedTemplates = await getTemplates(user.uid);
+        const fetchedTemplates = await getTemplates(activeWorkspace.id);
         setUserTemplates(fetchedTemplates);
       } catch (err) {
         console.error(err);
@@ -143,7 +146,7 @@ export default function TemplatesPage() {
         router.push('/login');
       }
     }
-  }, [user, authLoading, toast, router]);
+  }, [user, authLoading, toast, router, activeWorkspace]);
 
   const handleDeleteTemplate = async () => {
     if (!templateToDelete || templateToDelete.isDefault) return;
@@ -439,3 +442,5 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+    

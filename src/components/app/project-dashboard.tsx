@@ -42,7 +42,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
-import { addProject, deleteProject, getProjectsForUser, updateProject, getUserProgress, updateUserProgress, getTemplates } from "@/lib/firestore";
+import { addProject, deleteProject, getProjectsForUser, updateProject, getUserProgress, getTemplates } from "@/lib/firestore";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -89,7 +89,7 @@ function ProjectIcon({ iconName, color, className }: { iconName?: string; color?
 
 export function ProjectDashboard() {
   const router = useRouter();
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, logout, loading: authLoading, activeWorkspace, workspaces, switchWorkspace } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -133,13 +133,13 @@ export function ProjectDashboard() {
     }
 
     const fetchInitialData = async () => {
-      if (!user) return;
+      if (!user || !activeWorkspace) return;
       setIsLoading(true);
       try {
         const [{ projects, pages }, progress, templates] = await Promise.all([
-          getProjectsForUser(user.uid),
+          getProjectsForUser(activeWorkspace.id),
           getUserProgress(user.uid),
-          getTemplates(user.uid),
+          getTemplates(activeWorkspace.id),
         ]);
         setProjects(projects);
         setPages(pages);
@@ -154,28 +154,26 @@ export function ProjectDashboard() {
       }
     };
 
-    if (!authLoading) {
-      if (user) {
+    if (!authLoading && user && activeWorkspace) {
         fetchInitialData();
-      } else {
+    } else if (!authLoading && !user) {
         router.push('/login');
-      }
     }
-  }, [user, authLoading, toast, router]);
+  }, [user, authLoading, toast, router, activeWorkspace]);
 
   const handleNavigateToProject = (projectId: string) => {
     router.push(`/project/${projectId}`);
   };
 
   const handleAddProject = async () => {
-    if (newProjectName.trim() === "" || !user) {
+    if (newProjectName.trim() === "" || !user || !activeWorkspace) {
       toast({ variant: "destructive", title: "Erro", description: "O nome do projeto não pode ser vazio." });
       return;
     }
     try {
       const newProject = await addProject({
         name: newProjectName, 
-        userId: user.uid, 
+        workspaceId: activeWorkspace.id, 
         icon: selectedIcon, 
         color: selectedColor
       });
@@ -333,7 +331,7 @@ export function ProjectDashboard() {
   }, [projects, pages, templates]);
 
 
-  if (isLoading || authLoading) {
+  if (isLoading || authLoading || !activeWorkspace) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Logo className="h-10 w-10 animate-spin text-primary" />

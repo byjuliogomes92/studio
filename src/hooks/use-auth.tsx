@@ -7,12 +7,17 @@ import { app } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
+import type { Workspace } from '@/lib/types';
+import { getWorkspacesForUser, createWorkspace } from '@/lib/firestore';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isGoogleAuthEnabled: boolean;
   isUpdatingAvatar: boolean;
+  activeWorkspace: Workspace | null;
+  workspaces: Workspace[];
+  switchWorkspace: (workspaceId: string) => void;
   login: (email: string, password: string) => Promise<any>;
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<any>;
   loginWithGoogle: () => Promise<any>;
@@ -22,7 +27,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const publicRoutes = ['/login', '/signup'];
+const publicRoutes = ['/login', '/signup', '/debug-workspace'];
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -30,6 +35,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [isGoogleAuthEnabled, setIsGoogleAuthEnabled] = useState(false);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -38,13 +46,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window !== 'undefined') {
       const authInstance = getAuth(app);
       setAuth(authInstance);
-
-      // Check if the current hostname is the production one.
       setIsGoogleAuthEnabled(window.location.hostname === 'cloudpagestudio.vercel.app');
 
-      const unsubscribe = onAuthStateChanged(authInstance, (user) => {
-        setUser(user);
-        setLoading(false);
+      const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
+        setUser(currentUser);
+        if (!currentUser) {
+            // Clear workspace state on logout
+            setWorkspaces([]);
+            setActiveWorkspace(null);
+            setLoading(false);
+        }
       });
 
       return () => unsubscribe();
@@ -54,11 +65,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // This effect should only run on the client side
+    if (user) {
+      getWorkspacesForUser(user.uid)
+        .then(async (userWorkspaces) => {
+          if (userWorkspaces.length > 0) {
+            setWorkspaces(userWorkspaces);
+            const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
+            const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
+            setActiveWorkspace(found || userWorkspaces[0]);
+          } else {
+            // If user has no workspaces, create a default one
+            try {
+              const newWorkspace = await createWorkspace(user.uid, user.email || 'Usuário', 'Meu Workspace');
+              setWorkspaces([newWorkspace]);
+              setActiveWorkspace(newWorkspace);
+            } catch (error) {
+              console.error("Failed to create default workspace:", error);
+              toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível criar seu workspace inicial.' });
+            }
+          }
+        })
+        .finally(() => setLoading(false));
+    } else {
+      // No user, not loading.
+      if (!publicRoutes.includes(pathname)) {
+        setLoading(false);
+      }
+    }
+  }, [user, toast]);
+
+  useEffect(() => {
+    // This effect should only run on the client side for route protection
     if (typeof window !== 'undefined' && !loading && !user && !publicRoutes.includes(pathname)) {
       router.push('/login');
     }
   }, [loading, user, router, pathname]);
+
+  const switchWorkspace = (workspaceId: string) => {
+    const newActiveWorkspace = workspaces.find(w => w.id === workspaceId);
+    if (newActiveWorkspace) {
+      setActiveWorkspace(newActiveWorkspace);
+      localStorage.setItem('activeWorkspaceId', workspaceId);
+    }
+  };
 
   const login = (email: string, password: string) => {
     if (!auth) return Promise.reject(new Error("Firebase Auth not initialized"));
@@ -74,7 +123,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         displayName: `${firstName} ${lastName}`,
         photoURL: avatarUrl
     });
-    // Manually update the user in the context to reflect the new profile data immediately
     setUser({ ...user, displayName: `${firstName} ${lastName}`, photoURL: avatarUrl });
     return userCredential;
   }
@@ -84,7 +132,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!isGoogleAuthEnabled) throw new Error("Google Auth is not enabled for this domain.");
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    // If the user is new and doesn't have a photoURL, generate one
     if (result.user && !result.user.photoURL) {
         const avatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${result.user.uid}`;
         await updateProfile(result.user, { photoURL: avatarUrl });
@@ -106,8 +153,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const newSeed = `${auth.currentUser.uid}-${Date.now()}`;
         const newAvatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${newSeed}`;
         await updateProfile(auth.currentUser, { photoURL: newAvatarUrl });
-        // The onAuthStateChanged listener will pick up the change and update the user state.
-        // For an immediate UI update, we can manually set it here as well.
         setUser({ ...auth.currentUser, photoURL: newAvatarUrl });
         toast({ title: "Avatar atualizado!", description: "Seu novo avatar foi salvo." });
     } catch (error: any) {
@@ -127,7 +172,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup,
     loginWithGoogle,
     logout,
-    updateUserAvatar
+    updateUserAvatar,
+    activeWorkspace,
+    workspaces,
+    switchWorkspace,
   };
 
   if (loading && !publicRoutes.includes(pathname)) {
@@ -148,3 +196,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    

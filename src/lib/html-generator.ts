@@ -600,7 +600,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
             </a>`;
     }
     case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
+        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, formAlign, thankYouAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
         const { meta } = pageState;
         
         const animationUrls = {
@@ -630,7 +630,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         return `
             %%[ Set @thankYouMessage = "${submission?.message || 'Obrigado!'}" ]%%
             %%[ IF @showThanks != "true" THEN ]%%
-            <div id="form-wrapper-${component.id}" class="form-container" style="${styleString}">
+            <div id="form-wrapper-${component.id}" class="form-container" style="text-align: ${formAlign || 'left'}; ${styleString}">
                 <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                      <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                      <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
@@ -680,7 +680,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                 </form>
             </div>
             %%[ ELSE ]%%
-                <div class="thank-you-message">
+                <div class="thank-you-message" style="text-align: ${thankYouAlign || 'center'};">
                     ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
                     <div class="thank-you-text">%%=TreatAsContent(@thankYouMessage)=%%</div>
                 </div>
@@ -1473,7 +1473,6 @@ ${trackingScripts}
     }
     
     .thank-you-message {
-      text-align: center;
       padding: 20px;
     }
 

@@ -1017,6 +1017,21 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 <Separator />
 
                 <div>
+                    <h4 className="font-semibold mb-4">Estilo do Formulário</h4>
+                    <div className="space-y-2">
+                        <Label htmlFor="form-align">Alinhamento do Formulário</Label>
+                         <Select value={props.formAlign || 'left'} onValueChange={(value) => onPropChange('formAlign', value)}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="left">Esquerda</SelectItem>
+                                <SelectItem value="center">Centro</SelectItem>
+                                <SelectItem value="right">Direita</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div>
                     <h4 className="font-semibold mb-4">Estilo do Botão de Envio</h4>
                     <div className="space-y-4">
                         <div className="space-y-2">
@@ -1116,6 +1131,17 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                             rows={8}
                             placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
                         />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="thank-you-align">Alinhamento da Mensagem</Label>
+                         <Select value={props.thankYouAlign || 'center'} onValueChange={(value) => onPropChange('thankYouAlign', value)}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="left">Esquerda</SelectItem>
+                                <SelectItem value="center">Centro</SelectItem>
+                                <SelectItem value="right">Direita</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
                 

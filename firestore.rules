@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -40,11 +39,7 @@ service cloud.firestore {
     match /formSubmissions/{submissionId} {
       // Permite que qualquer um crie uma submissão de formulário (acionado pela rota pública da API).
       allow create: if true;
-
-      // Permite que um usuário leia as submissões apenas se ele for o proprietário da página referenciada.
-      allow read: if request.auth != null && get(/databases/$(database)/documents/pages/$(resource.data.pageId)).data.userId == request.auth.uid;
+      allow read, update, delete: if false; // Protect PII
     }
   }
 }
-
-    

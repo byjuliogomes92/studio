@@ -1,3 +1,4 @@
+
 // app/debug-workspace/page.js - Debug page para workspace
 "use client";
 
@@ -67,8 +68,8 @@ export default function DebugWorkspace() {
     
     try {
       const db = getFirestore(app);
-      // Coleções a serem migradas, incluindo rascunhos e publicadas
-      const collectionsToMigrate = ['projects', 'brands', 'pages_drafts', 'pages_published', 'templates'];
+      // Coleções a serem migradas, incluindo a antiga 'pages' e as novas 'pages_drafts', 'pages_published'
+      const collectionsToMigrate = ['projects', 'brands', 'pages', 'pages_drafts', 'pages_published', 'templates'];
       
       for (const collectionName of collectionsToMigrate) {
         addResult(`Migrando coleção: ${collectionName}`, 'info');
@@ -95,7 +96,16 @@ export default function DebugWorkspace() {
             };
             delete newData.userId; // Remove o campo antigo
             
-            batch.set(doc(db, collectionName, docSnap.id), newData);
+            // Se a coleção for 'pages', migra para as novas coleções de rascunho e publicada
+            if (collectionName === 'pages') {
+                const draftRef = doc(db, 'pages_drafts', docSnap.id);
+                const publishedRef = doc(db, 'pages_published', docSnap.id);
+                batch.set(draftRef, newData);
+                batch.set(publishedRef, newData);
+                addResult(`   - Documento ${docSnap.id} será migrado para rascunhos e publicados.`, 'info');
+            } else {
+                 batch.set(doc(db, collectionName, docSnap.id), newData);
+            }
           });
 
           await batch.commit();
@@ -292,3 +302,5 @@ export default function DebugWorkspace() {
     </div>
   );
 }
+
+    

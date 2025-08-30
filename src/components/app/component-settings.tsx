@@ -1021,10 +1021,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                           <TooltipContent><p>Uma cidade por linha. Serão exibidas no dropdown.</p></TooltipContent>
                         </Tooltip>
                       </div>
-                      <Textarea
+                      <DebouncedTextInput
                         id="form-cities"
                         value={props.cities || ''}
-                        onChange={(e) => onPropChange('cities', e.target.value)}
+                        onBlur={(value) => onPropChange('cities', value)}
                         rows={6}
                       />
                     </div>
@@ -1051,10 +1051,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                           <TooltipContent><p>O texto legal para o consentimento do usuário. Suporta HTML.</p></TooltipContent>
                         </Tooltip>
                       </div>
-                      <Textarea
+                      <DebouncedTextInput
                         id="form-consent-text"
                         value={props.consentText || ""}
-                        onChange={(e) => onPropChange("consentText", e.target.value)}
+                        onBlur={(value) => onPropChange("consentText", value)}
                         rows={10}
                       />
                     </div>
@@ -1254,10 +1254,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="stripe-text">Texto da Tarja</Label>
-                        <Textarea
+                        <DebouncedTextInput
                             id="stripe-text"
                             value={props.text || ''}
-                            onChange={(e) => onPropChange('text', e.target.value)}
+                            onBlur={(value) => onPropChange('text', value)}
                             rows={3}
                         />
                     </div>
@@ -1307,10 +1307,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="nps-question">Pergunta Principal</Label>
-                        <Textarea
+                        <DebouncedTextInput
                             id="nps-question"
                             value={props.question || ''}
-                            onChange={(e) => onPropChange('question', e.target.value)}
+                            onBlur={(value) => onPropChange('question', value)}
                             rows={3}
                         />
                     </div>
@@ -1346,10 +1346,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="nps-thanks">Mensagem de Agradecimento</Label>
-                        <Textarea
+                        <DebouncedTextInput
                             id="nps-thanks"
                             value={props.thankYouMessage || ''}
-                            onChange={(e) => onPropChange('thankYouMessage', e.target.value)}
+                            onBlur={(value) => onPropChange('thankYouMessage', value)}
                             rows={3}
                         />
                     </div>
@@ -1369,10 +1369,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </TooltipContent>
                     </Tooltip>
                 </div>
-                <Textarea
+                <DebouncedTextInput
                     id="map-embed-url"
                     value={props.embedUrl || ""}
-                    onChange={(e) => onPropChange("embedUrl", e.target.value)}
+                    onBlur={(value) => onPropChange("embedUrl", value)}
                     rows={5}
                     placeholder='Cole aqui a URL do atributo "src" do iframe de incorporação do Google Maps'
                 />
@@ -1447,10 +1447,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="wa-message">Mensagem Padrão</Label>
-                    <Textarea
+                    <DebouncedTextInput
                         id="wa-message"
                         value={props.defaultMessage || ''}
-                        onChange={(e) => onPropChange('defaultMessage', e.target.value)}
+                        onBlur={(value) => onPropChange('defaultMessage', value)}
                         rows={4}
                     />
                 </div>

@@ -3,71 +3,78 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // Helper function to check if a user is a member of a given workspace.
     function isMember(workspaceId) {
       return exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
     }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    
+    // Helper function to check if a user is the owner of a given workspace.
+    function isOwner(workspaceId) {
+      let memberDoc = get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
+      return memberDoc.data.role == 'owner';
     }
 
-    // --- Collections ---
     match /workspaces/{workspaceId} {
       allow read: if isMember(workspaceId);
-      allow create: if isOwner(request.resource.data.ownerId);
-      allow update: if isMember(workspaceId); // More specific roles can be added later
+      allow create: if request.resource.data.ownerId == request.auth.uid;
+      allow update: if isOwner(workspaceId);
+      // Deletion rule might need to be more complex (e.g., only if empty)
+      allow delete: if isOwner(workspaceId);
     }
-
-    match /workspaceMembers/{membershipId} {
-      allow read: if request.auth.uid == resource.data.userId;
-      // Allow only the workspace owner to add/remove members
-      allow write: if get(/databases/$(database)/documents/workspaces/$(resource.data.workspaceId)).data.ownerId == request.auth.uid;
+    
+    match /workspaceMembers/{memberId} {
+        allow read, create: if request.auth.uid == request.resource.data.userId || isOwner(request.resource.data.workspaceId);
+        allow delete: if request.auth.uid == resource.data.userId || isOwner(resource.data.workspaceId);
+        // Role updates should only be done by owner, and owner cannot change their own role.
+        allow update: if isOwner(resource.data.workspaceId) && request.resource.data.role != 'owner';
     }
 
     match /projects/{projectId} {
-      // Allow read if user is a member of the workspace OR if they are the owner of old data (for migration)
-      allow read: if isMember(resource.data.workspaceId) || isOwner(resource.data.userId);
+      // Allow read if user is a member of the workspace OR if it's a legacy doc they own.
+      allow read: if (resource.data.workspaceId != null && isMember(resource.data.workspaceId)) || (resource.data.userId != null && resource.data.userId == request.auth.uid);
+      // Allow write only within a workspace the user is a member of.
       allow write: if isMember(request.resource.data.workspaceId);
     }
-    
+
     match /brands/{brandId} {
-      allow read: if isMember(resource.data.workspaceId) || isOwner(resource.data.userId);
-      allow write: if isMember(request.resource.data.workspaceId);
-    }
-
-    match /pages_drafts/{pageId} {
-      allow read: if isMember(resource.data.workspaceId) || isOwner(resource.data.userId);
-      allow write: if isMember(request.resource.data.workspaceId);
-    }
-
-    match /pages_published/{pageId} {
-      // Publicly readable for the live page
-      allow read: if true;
-      // Writable only by workspace members (publishing)
+      // Allow read if user is a member of the workspace OR if it's a legacy doc they own.
+      allow read: if (resource.data.workspaceId != null && isMember(resource.data.workspaceId)) || (resource.data.userId != null && resource.data.userId == request.auth.uid);
+      // Allow write only within a workspace the user is a member of.
       allow write: if isMember(request.resource.data.workspaceId);
     }
 
     match /templates/{templateId} {
-       // Allow read if template is default, or if user is member of the workspace that owns it, or if it's their old template
-      allow read: if resource.data.isDefault == true || isMember(resource.data.workspaceId) || isOwner(resource.data.createdBy);
-      allow write: if isMember(request.resource.data.workspaceId);
-    }
-    
-    match /userProgress/{userId} {
-      allow read, write: if isOwner(userId);
+        allow read: if (resource.data.isDefault == true) || (resource.data.workspaceId != null && isMember(resource.data.workspaceId)) || (resource.data.userId != null && resource.data.userId == request.auth.uid);
+        allow write: if isMember(request.resource.data.workspaceId);
     }
 
+    match /userProgress/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+    
+    // Drafts should be private to the workspace
+    match /pages_drafts/{pageId} {
+        allow read: if (resource.data.workspaceId != null && isMember(resource.data.workspaceId)) || (resource.data.userId != null && resource.data.userId == request.auth.uid);
+        allow write: if isMember(request.resource.data.workspaceId);
+    }
+
+    // Published pages can be read by anyone, but only written by workspace members
+    match /pages_published/{pageId} {
+        allow read: if true;
+        allow write: if isMember(request.resource.data.workspaceId);
+    }
+
+    // Analytics data can be created by anyone (public pages)
     match /pageViews/{viewId} {
       allow create: if true;
-      // Readable only by members of the workspace that owns the page.
-      allow read: if request.auth != null && isMember(get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId);
+      // Allow read only if the user is a member of the page's workspace
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId != null && isMember(get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId);
     }
 
     match /formSubmissions/{submissionId} {
       allow create: if true;
-       // Readable only by members of the workspace that owns the page.
-      allow read: if request.auth != null && isMember(get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId);
+       // Allow read only if the user is a member of the page's workspace
+      allow read: if request.auth != null && get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId != null && isMember(get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId);
     }
   }
 }

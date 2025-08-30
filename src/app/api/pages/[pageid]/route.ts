@@ -16,7 +16,8 @@ export async function GET(
   }
 
   try {
-    const pageData = await getPage(pageid);
+    // Always serve the 'published' version of the page
+    const pageData = await getPage(pageid, 'published');
 
     if (!pageData) {
       return new NextResponse('Page not found', { status: 404 });

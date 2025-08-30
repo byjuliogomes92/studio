@@ -16,9 +16,8 @@ export async function GET(
   }
 
   try {
-    // We fetch the page data to ensure the page exists and to pass it to the logging function.
-    // Correction: We only need the page data to pass to logPageView. Let's simplify this.
-    const pageData = await getPage(pageid);
+    // We fetch the published page data to ensure the page exists and to pass it to the logging function.
+    const pageData = await getPage(pageid, 'published');
     if (pageData) {
       // Asynchronously log the page view without waiting for it to complete.
       // This makes the pixel request super fast.

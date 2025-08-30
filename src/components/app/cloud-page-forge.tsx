@@ -10,9 +10,9 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updatePage, getPage, addTemplate, updateUserProgress } from "@/lib/firestore";
+import { updatePage, getPage, addTemplate, updateUserProgress, publishPage } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { produce } from "immer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -81,6 +81,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [pageName, setPageName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [isSaveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -107,7 +108,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       setIsLoading(true);
       try {
         if (pageId !== "new") {
-          let pageData = await getPage(pageId);
+          let pageData = await getPage(pageId, 'drafts'); // Always edit the draft
           if (pageData && pageData.userId === user.uid) {
             pageData = produce(pageData, draft => {
               let maxOrder = -1;
@@ -301,14 +302,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       setSavedPageState(finalPageState);
       resetState(finalPageState);
       toast({ 
-        title: "Página atualizada!",
-        description: `A página "${pageName}" foi salva com sucesso.`,
-        action: (
-          <ToastAction altText="Como publicar?" onClick={() => setIsHowToUseOpen(true)}>
-            <Info className="mr-2 h-4 w-4" />
-            Como Publicar?
-          </ToastAction>
-        ),
+        title: "Rascunho salvo!",
+        description: `Suas alterações na página "${pageName}" foram salvas.`,
       });
 
       // Check onboarding progress after saving
@@ -319,6 +314,42 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     } finally {
         setIsSaving(false);
     }
+  };
+
+  const handlePublish = async () => {
+      if (!pageState || !user) return;
+      setIsPublishing(true);
+      try {
+          const finalPageState = { 
+              ...pageState, 
+              name: pageName,
+              userId: user.uid,
+          };
+          // First, save any pending changes to the draft
+          if (hasUnsavedChanges) {
+              await updatePage(pageId, finalPageState);
+              setSavedPageState(finalPageState);
+              resetState(finalPageState);
+          }
+          // Now, publish the saved state to the live version
+          await publishPage(pageId, finalPageState);
+          
+          toast({
+              title: "Página publicada!",
+              description: `As alterações em "${pageName}" estão agora disponíveis publicamente.`,
+              action: (
+                <ToastAction altText="Como publicar?" onClick={() => setIsHowToUseOpen(true)}>
+                  <Info className="mr-2 h-4 w-4" />
+                  Ver URL
+                </ToastAction>
+              ),
+          });
+      } catch (error) {
+          toast({ variant: "destructive", title: "Erro ao publicar", description: "Não foi possível publicar a página." });
+          console.error("Publish error:", error);
+      } finally {
+          setIsPublishing(false);
+      }
   };
 
   const handleSaveAsTemplate = async () => {
@@ -466,9 +497,13 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges}>
+            <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} variant="secondary">
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isSaving ? 'Salvando...' : 'Salvar Página'}
+                {isSaving ? 'Salvando...' : 'Salvar Rascunho'}
+            </Button>
+             <Button onClick={handlePublish} disabled={isPublishing || isSaving}>
+                {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+                {isPublishing ? 'Publicando...' : 'Publicar'}
             </Button>
         </div>
       </header>

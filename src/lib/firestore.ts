@@ -37,7 +37,8 @@ const updateProject = async (projectId: string, data: Partial<Project>): Promise
 const getProjectsForUser = async (userId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
     const db = getDbInstance();
     const projectsQuery = query(collection(db, "projects"), where("userId", "==", userId));
-    const pagesQuery = query(collection(db, "pages"), where("userId", "==", userId));
+    // Fetch from drafts to get the most recent page data for UI purposes (like page count)
+    const pagesQuery = query(collection(db, "pages_drafts"), where("userId", "==", userId));
 
     const projectSnapshot = await getDocs(projectsQuery);
     const projects = projectSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
@@ -59,10 +60,20 @@ const getProject = async (projectId: string): Promise<Project | null> => {
 const deleteProject = async (projectId: string): Promise<void> => {
     const db = getDbInstance();
     const projectDocRef = doc(db, "projects", projectId);
-    // You might want to delete all pages within the project first
-    const pagesQuery = query(collection(db, "pages"), where("projectId", "==", projectId));
-    const pagesSnapshot = await getDocs(pagesQuery);
-    const deletePromises = pagesSnapshot.docs.map(pageDoc => deleteDoc(pageDoc.ref));
+    
+    // Delete all draft and published pages within the project
+    const draftPagesQuery = query(collection(db, "pages_drafts"), where("projectId", "==", projectId));
+    const publishedPagesQuery = query(collection(db, "pages_published"), where("projectId", "==", projectId));
+
+    const [draftsSnapshot, publishedSnapshot] = await Promise.all([
+        getDocs(draftPagesQuery),
+        getDocs(publishedPagesQuery)
+    ]);
+    
+    const deletePromises = [
+        ...draftsSnapshot.docs.map(pageDoc => deleteDoc(pageDoc.ref)),
+        ...publishedSnapshot.docs.map(pageDoc => deleteDoc(pageDoc.ref))
+    ];
     await Promise.all(deletePromises);
 
     // Now delete the project itself
@@ -74,30 +85,58 @@ const deleteProject = async (projectId: string): Promise<void> => {
 
 const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     const db = getDbInstance();
+    const pageId = doc(collection(db, 'dummy_id_generator')).id; // Generate a unique ID
+
     const pageWithTimestamps = {
       ...pageData,
+      id: pageId, // Add the ID to the data itself
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
-    const pageRef = await addDoc(collection(db, "pages"), pageWithTimestamps);
-    return pageRef.id;
+    
+    const draftRef = doc(db, "pages_drafts", pageId);
+    const publishedRef = doc(db, "pages_published", pageId);
+
+    // Create both draft and published documents simultaneously
+    await Promise.all([
+        setDoc(draftRef, pageWithTimestamps),
+        setDoc(publishedRef, pageWithTimestamps)
+    ]);
+
+    return pageId;
 };
 
 const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
-    await updateDoc(doc(db, "pages", pageId), {
+    // Only update the draft document
+    const draftRef = doc(db, "pages_drafts", pageId);
+    await updateDoc(draftRef, {
         ...pageData,
         updatedAt: serverTimestamp(),
     });
 };
 
-const getPage = async (pageId: string): Promise<CloudPage | null> => {
+const publishPage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
-    const docRef = doc(db, "pages", pageId);
+    const publishedRef = doc(db, "pages_published", pageId);
+    // Overwrite the published document with the current draft data
+    await setDoc(publishedRef, {
+        ...pageData,
+        updatedAt: serverTimestamp(), // Record the publish time
+    }, { merge: true });
+};
+
+
+const getPage = async (pageId: string, version: 'drafts' | 'published' = 'drafts'): Promise<CloudPage | null> => {
+    const db = getDbInstance();
+    const collectionName = version === 'drafts' ? 'pages_drafts' : 'pages_published';
+    const docRef = doc(db, collectionName, pageId);
     const docSnap = await getDoc(docRef);
+
     if (!docSnap.exists()) return null;
+
     const data = docSnap.data();
-    // Ensure timestamps are converted correctly, especially after being written by serverTimestamp
+    // Ensure timestamps are converted correctly
     const page = {
         id: docSnap.id,
         ...data,
@@ -109,7 +148,7 @@ const getPage = async (pageId: string): Promise<CloudPage | null> => {
 
 const getPagesForProject = async (projectId: string): Promise<CloudPage[]> => {
     const db = getDbInstance();
-    const q = query(collection(db, "pages"), where("projectId", "==", projectId), orderBy("updatedAt", "desc"));
+    const q = query(collection(db, "pages_drafts"), where("projectId", "==", projectId), orderBy("updatedAt", "desc"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
 };
@@ -125,8 +164,9 @@ const getProjectWithPages = async (projectId: string, userId: string): Promise<{
 
     const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
 
+    // Fetch from drafts as this represents the user's working set
     const pagesQuery = query(
-        collection(db, 'pages'),
+        collection(db, 'pages_drafts'),
         where('projectId', '==', projectId),
         where('userId', '==', userId),
         orderBy('updatedAt', 'desc')
@@ -141,11 +181,15 @@ const getProjectWithPages = async (projectId: string, userId: string): Promise<{
 
 const deletePage = async (pageId: string): Promise<void> => {
     const db = getDbInstance();
-    await deleteDoc(doc(db, "pages", pageId));
+    // Delete both the draft and the published version
+    const draftRef = doc(db, "pages_drafts", pageId);
+    const publishedRef = doc(db, "pages_published", pageId);
+    await Promise.all([deleteDoc(draftRef), deleteDoc(publishedRef)]);
 };
 
 const duplicatePage = async (pageId: string): Promise<CloudPage> => {
-    const originalPage = await getPage(pageId);
+    // Always duplicate from the draft version, as it's the most current state
+    const originalPage = await getPage(pageId, 'drafts');
     if (!originalPage) {
         throw new Error("Página original não encontrada.");
     }
@@ -158,7 +202,7 @@ const duplicatePage = async (pageId: string): Promise<CloudPage> => {
     
     const newPageId = await addPage(pageDataToCopy);
     
-    const newPage = await getPage(newPageId);
+    const newPage = await getPage(newPageId, 'drafts');
     if (!newPage) {
         throw new Error("Falha ao criar a duplicata da página.");
     }
@@ -168,11 +212,17 @@ const duplicatePage = async (pageId: string): Promise<CloudPage> => {
 
 const movePageToProject = async (pageId: string, newProjectId: string): Promise<void> => {
     const db = getDbInstance();
-    const pageRef = doc(db, 'pages', pageId);
-    await updateDoc(pageRef, {
+    const draftRef = doc(db, 'pages_drafts', pageId);
+    const publishedRef = doc(db, 'pages_published', pageId);
+    const updateData = {
         projectId: newProjectId,
         updatedAt: serverTimestamp()
-    });
+    };
+    // Update both documents
+    await Promise.all([
+        updateDoc(draftRef, updateData),
+        updateDoc(publishedRef, updateData)
+    ]);
 };
 
 
@@ -332,6 +382,7 @@ export {
     deleteProject,
     addPage,
     updatePage,
+    publishPage,
     getPage,
     getPagesForProject,
     getProjectWithPages,
@@ -349,5 +400,3 @@ export {
     logFormSubmission,
     getFormSubmissions,
 };
-
-    

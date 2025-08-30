@@ -10,7 +10,7 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage, addTemplate, updateUserProgress } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,6 +23,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ComponentSettings } from "./component-settings";
 import { ScrollArea } from "../ui/scroll-area";
+import { ToastAction } from "../ui/toast";
 
 
 interface CloudPageForgeProps {
@@ -84,6 +85,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [isSaveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
 
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState) || pageName !== savedPageState?.name;
@@ -298,7 +300,16 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       // After saving, update the saved state and reset history.
       setSavedPageState(finalPageState);
       resetState(finalPageState);
-      toast({ title: "Página atualizada!", description: `A página "${pageName}" foi salva com sucesso.` });
+      toast({ 
+        title: "Página atualizada!",
+        description: `A página "${pageName}" foi salva com sucesso.`,
+        action: (
+          <ToastAction altText="Como publicar?" onClick={() => setIsHowToUseOpen(true)}>
+            <Info className="mr-2 h-4 w-4" />
+            Como Publicar?
+          </ToastAction>
+        ),
+      });
 
       // Check onboarding progress after saving
       await checkOnboardingProgress(finalPageState);

@@ -3,60 +3,61 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check ownership
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Rules for Projects
+    // Projects can be read in a list only if the query filters by the user's own ID.
+    // Individual project documents can be updated/deleted only by the owner.
     match /projects/{projectId} {
-      allow list, get: if request.auth != null && request.auth.uid == request.query.filters.userId.string_value;
+      allow read: if request.auth.uid != null;
       allow create: if isOwner(request.resource.data.userId);
       allow update, delete: if isOwner(resource.data.userId);
     }
     
-    // Rules for Brands (Brand Kits)
+    // Brands follow the same pattern as projects.
     match /brands/{brandId} {
-      allow list, get: if request.auth != null && request.auth.uid == request.query.filters.userId.string_value;
+      allow read: if request.auth.uid != null;
       allow create: if isOwner(request.resource.data.userId);
       allow update, delete: if isOwner(resource.data.userId);
     }
 
-    // Rules for Draft pages (the ones users edit)
+    // Drafts are private and can only be accessed by their owner.
     match /pages_drafts/{pageId} {
-        allow list, get: if request.auth != null && request.auth.uid == request.query.filters.userId.string_value;
-        allow create, update, delete: if isOwner(request.resource.data.userId);
+      allow read, write: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
 
-    // Rules for Published pages (publicly accessible via API route)
+    // Published pages are public to read, but only the owner can write (publish).
     match /pages_published/{pageId} {
-        allow read: if true;
-        allow write: if isOwner(request.resource.data.userId);
+      allow read: if true;
+      allow write: if isOwner(resource.data.userId);
     }
 
-    // Rules for Templates
+    // Default templates are public; custom templates are private to the creator.
     match /templates/{templateId} {
-      allow get: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
-      allow list: if request.auth != null && request.auth.uid == request.query.filters.createdBy.string_value;
+      allow read: if resource.data.isDefault == true || isOwner(resource.data.createdBy);
       allow create: if isOwner(request.resource.data.createdBy);
       allow update, delete: if isOwner(resource.data.createdBy);
     }
-    
-    // Rules for User Onboarding Progress
+
+    // A user can only access their own progress document.
     match /userProgress/{userId} {
       allow read, write: if isOwner(userId);
     }
 
-    // --- Analytics Collections ---
-    // These are kept public for simplicity and to avoid permission errors
-    // from the public-facing API routes that log this data.
-
+    // Anyone can create analytics data.
+    // Only the owner of the page can read the associated analytics data.
     match /pageViews/{viewId} {
-      allow read, write: if true;
+      allow create: if true;
+      allow read: if request.auth.uid != null 
+                    && get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
 
     match /formSubmissions/{submissionId} {
-      allow read, write: if true;
+      allow create: if true;
+      allow read: if request.auth.uid != null 
+                    && get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.userId == request.auth.uid;
     }
   }
 }

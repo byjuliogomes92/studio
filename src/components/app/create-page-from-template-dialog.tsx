@@ -58,6 +58,8 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
     const loaderImageUrl = brand ? brand.loaderImageUrl : '';
     const logoUrl = brand ? brand.logoUrl : '';
 
+    const hasBrand = !!brand;
+
     return {
       name: name,
       projectId,
@@ -67,13 +69,13 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
       platform,
       tags: [],
       meta: {
-        title: `${brandName} - ${name}`,
+        title: `${name}`,
         faviconUrl: faviconUrl,
         loaderImageUrl: loaderImageUrl,
         redirectUrl: 'https://www.google.com',
         dataExtensionKey: 'CHANGE-ME',
-        metaDescription: `Página de campanha para ${brandName}.`,
-        metaKeywords: `${brandName.toLowerCase()}, campanha`,
+        metaDescription: `Página de campanha para ${name}.`,
+        metaKeywords: `campanha, ${name.toLowerCase()}`,
         tracking: {
           ga4: { enabled: false, id: '' },
           meta: { enabled: false, id: '' },
@@ -93,7 +95,7 @@ const getInitialPage = (name: string, projectId: string, userId: string, brand: 
         text: 'Utilizamos cookies para garantir que você tenha a melhor experiência em nosso site. Ao continuar, você concorda com o uso de cookies.',
         buttonText: 'Aceitar',
       },
-      components: brand ? [
+      components: hasBrand ? [
         { id: '1', type: 'Header', props: { logoUrl: logoUrl }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
         { 
           id: '4', 
@@ -454,5 +456,7 @@ export function CreatePageFromTemplateDialog({
     </Dialog>
   );
 }
+
+    
 
     

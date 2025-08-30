@@ -1,85 +1,72 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isWorkspaceMember(workspaceId) {
-      // Check if a user is a member of a given workspace.
-      return get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId)).data.role in ['owner', 'admin', 'editor', 'viewer'];
+      return exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
     }
 
-    function isWorkspaceEditor(workspaceId) {
-       // Check if a user has at least editor-level permissions in a workspace.
-      return get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId)).data.role in ['owner', 'admin', 'editor'];
-    }
-
-    function isWorkspaceAdmin(workspaceId) {
-       // Check if a user has at least admin-level permissions in a workspace.
-      return get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId)).data.role in ['owner', 'admin'];
-    }
-
-    // Workspaces
     match /workspaces/{workspaceId} {
       allow read: if isWorkspaceMember(workspaceId);
-      allow update: if isWorkspaceAdmin(workspaceId);
-      // allow delete: if isOwner... (future)
+      // Allow create for the createWorkspace function
+      allow create: if request.auth.uid == request.resource.data.ownerId;
     }
 
-    match /workspaceMembers/{memberId} {
-        allow read: if isWorkspaceMember(resource.data.workspaceId);
-        // allow create, delete: if isWorkspaceAdmin(resource.data.workspaceId) (future: for inviting users)
+    match /workspaceMembers/{membershipId} {
+      // Users can read their own membership.
+      allow read: if request.auth.uid == split(membershipId, '_')[0];
+       // Allow owner to manage members
+      allow create, delete: if isWorkspaceMember(request.resource.data.workspaceId);
     }
 
-    // Brands
-    match /brands/{brandId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId);
-      allow create: if isWorkspaceEditor(request.resource.data.workspaceId);
-      allow update, delete: if isWorkspaceEditor(resource.data.workspaceId);
-    }
-
-    // Projects
     match /projects/{projectId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId);
-      allow create: if isWorkspaceEditor(request.resource.data.workspaceId);
-      allow update, delete: if isWorkspaceEditor(resource.data.workspaceId);
+      // Allow list/query by workspaceId for authenticated members of that workspace
+      allow list: if isWorkspaceMember(request.query.resource.data.workspaceId);
+      // Allow get, update, delete for members of the specific project's workspace
+      allow get, update, delete: if isWorkspaceMember(resource.data.workspaceId);
+      // Allow create for members of the workspace
+      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
     }
 
-    // Pages
+    match /brands/{brandId} {
+      // Allow list/query by workspaceId for authenticated members of that workspace
+      allow list: if isWorkspaceMember(request.query.resource.data.workspaceId);
+      // Allow get, update, delete for members of the specific brand's workspace
+      allow get, update, delete: if isWorkspaceMember(resource.data.workspaceId);
+      // Allow create for members of the workspace
+      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
+    }
+
     match /pages_drafts/{pageId} {
-        allow create, update, delete: if isWorkspaceEditor(request.resource.data.workspaceId);
-        allow read: if isWorkspaceEditor(resource.data.workspaceId);
+      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow get, update, delete: if isWorkspaceMember(resource.data.workspaceId);
+      // Allow list/query by workspaceId and projectId for members of that workspace
+      allow list: if isWorkspaceMember(request.query.resource.data.workspaceId);
     }
 
     match /pages_published/{pageId} {
-        allow read: if true;
-        allow update: if isWorkspaceEditor(request.resource.data.workspaceId); // For publishing
+      allow read: if true;
+      allow create, update, delete: if isWorkspaceMember(resource.data.workspaceId);
     }
 
-    // Templates
     match /templates/{templateId} {
-      allow read: if resource.data.isDefault == true || isWorkspaceMember(resource.data.workspaceId);
-      allow create: if isWorkspaceEditor(request.resource.data.workspaceId);
-      allow update, delete: if isWorkspaceEditor(resource.data.workspaceId);
+      allow read: if resource.data.isDefault == true || isWorkspaceMember(get(/databases/$(database)/documents/users/$(resource.data.createdBy)).data.activeWorkspaceId);
+      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow update, delete: if isWorkspaceMember(get(/databases/$(database)/documents/users/$(resource.data.createdBy)).data.activeWorkspaceId);
     }
 
-    // User Progress
     match /userProgress/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
 
-    // Analytics
     match /pageViews/{viewId} {
-      // Allows anyone to create a page view (triggered by the public API route).
       allow create: if true;
-      // Allows anyone to read page views.
       allow read: if true;
     }
 
     match /formSubmissions/{submissionId} {
-      // Allows anyone to create a form submission (triggered by the public API route).
       allow create: if true;
-      // Allows anyone to read form submissions.
       allow read: if true;
     }
   }

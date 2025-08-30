@@ -363,19 +363,19 @@ function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogP
   const [isMoving, setIsMoving] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, activeWorkspace } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && user && activeWorkspace) {
       const fetchProjects = async () => {
-        const { projects } = await getProjectsForUser(user.uid);
+        const { projects } = await getProjectsForUser(activeWorkspace.id);
         // Filter out the current project from the list of destinations
         setProjects(projects.filter(p => p.id !== currentProjectId));
       };
       fetchProjects();
     }
-  }, [isOpen, user, currentProjectId]);
+  }, [isOpen, user, currentProjectId, activeWorkspace]);
 
   const handleMovePage = async () => {
     if (!selectedProject || !page) return;
@@ -434,7 +434,7 @@ function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogP
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, logout, loading: authLoading, activeWorkspace } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [project, setProject] = useState<Project | null>(null);
@@ -468,10 +468,10 @@ export function PageList({ projectId }: PageListProps) {
 
 
   const fetchProjectData = useCallback(async () => {
-    if (!user) return;
+    if (!user || !activeWorkspace) return;
     setIsLoading(true);
     try {
-      const data = await getProjectWithPages(projectId, user.uid);
+      const data = await getProjectWithPages(projectId, activeWorkspace.id);
       if (data) {
         setProject(data.project);
         setPages(data.pages);
@@ -486,15 +486,15 @@ export function PageList({ projectId }: PageListProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, user, toast, router]);
+  }, [projectId, user, activeWorkspace, toast, router]);
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && activeWorkspace) {
         fetchProjectData();
     } else if (!authLoading && !user) {
         router.push('/login');
     }
-  }, [user, authLoading, fetchProjectData, router]);
+  }, [user, authLoading, fetchProjectData, router, activeWorkspace]);
 
   // Effect to handle default analytics page selection
   useEffect(() => {
@@ -1122,5 +1122,6 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
 
 

@@ -294,7 +294,7 @@ const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'up
 
 
 const getTemplates = async (workspaceId: string): Promise<Template[]> => {
-    if (!workspaceId) throw new Error("Workspace ID is required to fetch templates.");
+    if (!workspaceId) return [];
     const db = getDbInstance();
     const templatesQuery = query(collection(db, "templates"), where("workspaceId", "==", workspaceId), orderBy("name", "asc"));
     const querySnapshot = await getDocs(templatesQuery);
@@ -488,5 +488,3 @@ export {
 logFormSubmission,
     getFormSubmissions,
 };
-
-    

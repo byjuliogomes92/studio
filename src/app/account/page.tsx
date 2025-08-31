@@ -276,23 +276,26 @@ export default function AccountPage() {
                          ) : (
                             <div className="space-y-3">
                                 {members.map(member => {
-                                    const memberName = member.email || "Usuário";
-                                    const memberInitial = (memberName[0] || 'U').toUpperCase();
+                                    const isCurrentUser = member.userId === user.uid;
+                                    // Use the current user's data for their own entry
+                                    const memberName = isCurrentUser ? user.displayName : (member.email || "Usuário");
+                                    const memberAvatar = isCurrentUser ? user.photoURL : `https://api.dicebear.com/7.x/bottts/svg?seed=${member.userId}`;
+                                    const memberInitial = (memberName?.[0] || 'U').toUpperCase();
 
                                     return (
                                         <div key={member.id} className="flex items-center justify-between p-3 rounded-md border">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-10 w-10">
-                                                    <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${member.userId}`} alt={memberName} />
+                                                    <AvatarImage src={memberAvatar || ''} alt={memberName || 'Avatar'} />
                                                     <AvatarFallback>{memberInitial}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
                                                     <p className="font-medium">{memberName}</p>
-                                                    <p className="text-sm text-muted-foreground capitalize">{member.userId === user.uid ? `Você (${member.role})` : member.role}</p>
+                                                    <p className="text-sm text-muted-foreground capitalize">{isCurrentUser ? `Você (${member.role})` : member.role}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {isOwner && member.userId !== user.uid ? (
+                                                {isOwner && !isCurrentUser ? (
                                                     <>
                                                      <Select value={member.role} onValueChange={(value) => handleRoleChange(member.userId, value as WorkspaceMemberRole)}>
                                                           <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>

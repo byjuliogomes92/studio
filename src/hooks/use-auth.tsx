@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!auth) throw new Error("Firebase Auth not initialized");
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    const avatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${user.uid}`;
+    const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`;
     await updateProfile(user, { 
         displayName: `${firstName} ${lastName}`,
         photoURL: avatarUrl
@@ -155,7 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     if (result.user && !result.user.photoURL) {
-        const avatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${result.user.uid}`;
+        const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${result.user.uid}`;
         await updateProfile(result.user, { photoURL: avatarUrl });
         setUser({ ...result.user, photoURL: avatarUrl });
     }
@@ -173,7 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsUpdatingAvatar(true);
     try {
         const newSeed = `${auth.currentUser.uid}-${Date.now()}`;
-        const newAvatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${newSeed}`;
+        const newAvatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${newSeed}`;
         await updateProfile(auth.currentUser, { photoURL: newAvatarUrl });
         setUser({ ...auth.currentUser, photoURL: newAvatarUrl });
         toast({ title: "Avatar atualizado!", description: "Seu novo avatar foi salvo." });

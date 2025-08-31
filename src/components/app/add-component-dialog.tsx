@@ -43,6 +43,7 @@ import {
   LayoutTemplate,
   View,
   Mail,
+  HelpCircle,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -61,7 +62,8 @@ type BlockType =
     | 'logo-carousel'
     | 'footer-simple'
     | 'footer-columns'
-    | 'footer-newsletter';
+    | 'footer-newsletter'
+    | 'faq-section';
 
 const componentList: {
   category: string;
@@ -139,6 +141,7 @@ const blockList: {
              { name: "Galeria Simples", description: "Layout de 3 colunas com imagens e legendas.", type: "simple-gallery", icon: GalleryThumbnails },
              { name: "Notícias Recentes", description: "Grade para 3 artigos com imagem, título e resumo.", type: "news-section", icon: Newspaper },
              { name: "Carrossel de Logos", description: "Exiba os logos de clientes ou parceiros em um carrossel infinito.", type: "logo-carousel", icon: View },
+             { name: "Seção de FAQ", description: "Um layout com título e um acordeão para perguntas e respostas.", type: "faq-section", icon: HelpCircle },
         ]
     },
     {
@@ -409,6 +412,28 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                 { id: `copy-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa.`, styles: { textAlign: 'center', fontSize: '0.8rem', marginTop: '2rem' } }, order: 3, parentId: `cols-footer-${baseId}`, column: 0 },
              ];
              break;
+        }
+        case 'faq-section': {
+            componentsToAdd = [
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Perguntas Frequentes', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: null, column: 0 },
+                {
+                    id: `accordion-${baseId}`,
+                    type: 'Accordion',
+                    props: {
+                        items: [
+                            { id: 'faq1', title: 'Qual é a política de devolução?', content: 'Nossa política de devolução permite que você devolva qualquer item dentro de 30 dias após a compra para um reembolso total.' },
+                            { id: 'faq2', title: 'Como acompanho meu pedido?', content: 'Você pode acompanhar seu pedido usando o link de rastreamento enviado para o seu e-mail após a confirmação da compra.' },
+                            { id: 'faq3', title: 'Vocês oferecem frete internacional?', content: 'Sim, oferecemos frete para a maioria dos países. Os custos e prazos de entrega variam de acordo com o destino.' },
+                            { id: 'faq4', title: 'Como posso entrar em contato com o suporte?', content: 'Você pode entrar em contato com nosso suporte ao cliente através do e-mail suporte@exemplo.com ou pelo telefone (XX) XXXX-XXXX.' },
+                        ]
+                    },
+                    order: 1,
+                    parentId: null,
+                    column: 0
+                },
+                { id: `spacer-${baseId}`, type: 'Spacer', props: { height: 40 }, order: 2, parentId: null, column: 0 }
+            ];
+            break;
         }
 
     }

@@ -211,7 +211,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                     props: {
                         columnCount: 1,
                         styles: {
-                            isHero: true, // Custom prop for specific styling
+                            isHero: true,
                             backgroundImageUrl: 'https://picsum.photos/1200/800',
                             paddingTop: '8rem',
                             paddingBottom: '8rem',
@@ -235,7 +235,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             const imageColumn = isImageRight ? 1 : 0;
             const parentId = `hero-split-${baseId}`;
             componentsToAdd = [
-                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { isHero: true, alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem' } }, order: 0, parentId: null, column: 0 },
+                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { isHero: true, alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
                  { id: `title-${baseId}`, type: 'Title', props: { text: 'Resolva um Problema Real', styles: { fontSize: '2.5rem' } }, order: 0, parentId, column: textColumn },
                  { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.' }, order: 1, parentId, column: textColumn },
                  { id: `btn-${baseId}`, type: 'Button', props: { text: 'Saiba Mais', href: '#', align: 'left' }, order: 2, parentId, column: textColumn },
@@ -246,10 +246,10 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'hero-lead-capture': {
              const parentId = `hero-lead-${baseId}`;
              componentsToAdd = [
-                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { isHero: true, alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem' } }, order: 0, parentId: null, column: 0 },
+                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { isHero: true, alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
                  { id: `title-${baseId}`, type: 'Title', props: { text: 'Receba a Oferta Exclusiva', styles: { fontSize: '2.5rem' } }, order: 0, parentId, column: 0 },
                  { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.' }, order: 1, parentId, column: 0 },
-                 { id: `form-${baseId}`, type: 'Form', props: { fields: { email: {enabled: true, conditional: null, prefillFromUrl: false } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' } }, order: 2, parentId, column: 0 },
+                 { id: `form-${baseId}`, type: 'Form', props: { fields: { email: {enabled: true, conditional: null, prefillFromUrl: false } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' }, formAlign: 'left', buttonAlign: 'left' }, order: 2, parentId, column: 0 },
                  { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/600/500' }, order: 0, parentId, column: 1 },
              ];
              break;

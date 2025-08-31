@@ -44,6 +44,20 @@ export interface WorkspaceMember {
   createdAt: any;
 }
 
+export type InviteStatus = 'pending' | 'accepted' | 'declined';
+
+export interface Invite {
+  id: string;
+  workspaceId: string;
+  workspaceName: string; // denormalized for display
+  fromUserName: string;  // denormalized for display
+  toEmail: string;
+  role: WorkspaceMemberRole;
+  status: InviteStatus;
+  createdAt: any;
+}
+
+
 export interface Brand {
   id: string;
   workspaceId: string;
@@ -220,4 +234,21 @@ export interface FormSubmission {
     pageId: string;
     timestamp: any;
     formData: { [key: string]: any };
+}
+
+export type ActivityLogAction = 
+    | 'PROJECT_CREATED' | 'PROJECT_DELETED'
+    | 'PAGE_CREATED' | 'PAGE_DELETED' | 'PAGE_PUBLISHED'
+    | 'MEMBER_INVITED' | 'MEMBER_REMOVED' | 'MEMBER_ROLE_CHANGED' | 'MEMBER_JOINED'
+    | 'WORKSPACE_RENAMED';
+
+export interface ActivityLog {
+    id: string;
+    workspaceId: string;
+    userId: string;
+    userName: string;
+    userAvatarUrl?: string;
+    action: ActivityLogAction;
+    details: { [key: string]: any };
+    timestamp: any;
 }

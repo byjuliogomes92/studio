@@ -30,10 +30,12 @@ export async function GET(
     const publishDate = pageData.publishDate?.toDate ? pageData.publishDate.toDate() : (pageData.publishDate ? new Date(pageData.publishDate) : null);
     const expiryDate = pageData.expiryDate?.toDate ? pageData.expiryDate.toDate() : (pageData.expiryDate ? new Date(pageData.expiryDate) : null);
 
+    // Check if the current time is before the publish date
     if (publishDate && now < publishDate) {
       return new NextResponse('Esta página ainda não está disponível.', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
+    // Check if the current time is after the expiry date
     if (expiryDate && now > expiryDate) {
         return new NextResponse('Esta página expirou.', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }

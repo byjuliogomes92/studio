@@ -175,12 +175,6 @@ export default function AccountPage() {
     setTimeout(() => setIsDeleting(false), 2000);
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copiado!", description: "O ID do Workspace foi copiado." });
-  };
-
-
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -273,23 +267,6 @@ export default function AccountPage() {
                 <CardContent className="space-y-6">
                     {isOwner && (
                         <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-                             <div>
-                                <h4 className="font-semibold mb-2">ID do Workspace</h4>
-                                <p className="text-sm text-muted-foreground mb-2">
-                                  Compartilhe este código com pessoas que você deseja convidar para o seu workspace.
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        id="workspace-id"
-                                        value={activeWorkspace.id}
-                                        readOnly
-                                    />
-                                    <Button variant="outline" size="icon" onClick={() => copyToClipboard(activeWorkspace.id)}>
-                                        <Copy className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                            <Separator />
                             <div>
                                 <h4 className="font-semibold mb-2">Renomear Workspace</h4>
                                  <div className="flex items-center gap-2">

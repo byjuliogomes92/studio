@@ -17,15 +17,33 @@ export function renderBanner(component: PageComponent): string {
 
     const customStyleString = getStyleString(styles);
 
-    const bannerStyle = `
-        display: block;
-        position: relative;
-        overflow: hidden;
-        padding: ${padding};
-        ${height ? `height: ${height};` : ''}
-        ${isFullWidth ? 'width: 100vw; position: relative; left: 50%; transform: translateX(-50%);' : 'width: 100%;'}
-        ${customStyleString}
-    `;
+    let bannerStyle: string;
+    if (isFullWidth) {
+        bannerStyle = `
+            display: block;
+            position: relative;
+            overflow: hidden;
+            padding: ${padding};
+            ${height ? `height: ${height};` : ''}
+            width: 100vw;
+            left: 50%;
+            transform: translateX(-50%);
+            ${customStyleString}
+        `;
+    } else {
+         bannerStyle = `
+            display: block;
+            position: relative;
+            overflow: hidden;
+            padding: ${padding};
+            ${height ? `height: ${height};` : ''}
+            width: 100%;
+            max-width: 1200px; /* Garante que não fique excessivamente largo */
+            margin: 0 auto; /* Centraliza o banner */
+            ${customStyleString}
+        `;
+    }
+
 
     let mediaHtml = '';
     if (mediaType === 'video' && videoUrl) {

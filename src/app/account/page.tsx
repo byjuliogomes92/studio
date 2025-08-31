@@ -242,56 +242,61 @@ export default function AccountPage() {
                              <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
                          ) : (
                             <div className="space-y-3">
-                                {members.map(member => (
-                                    <div key={member.id} className="flex items-center justify-between p-3 rounded-md border">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-10 w-10">
-                                                <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${member.userId}`} alt={member.email} />
-                                                <AvatarFallback>{member.email[0].toUpperCase()}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-medium">{member.email}</p>
-                                                <p className="text-sm text-muted-foreground capitalize">{member.role}</p>
+                                {members.map(member => {
+                                    const memberName = member.email || "Usuário";
+                                    const memberInitial = (memberName[0] || 'U').toUpperCase();
+
+                                    return (
+                                        <div key={member.id} className="flex items-center justify-between p-3 rounded-md border">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-10 w-10">
+                                                    <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${member.userId}`} alt={memberName} />
+                                                    <AvatarFallback>{memberInitial}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-medium">{memberName}</p>
+                                                    <p className="text-sm text-muted-foreground capitalize">{member.role}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {isOwner && member.userId !== user.uid ? (
+                                                    <>
+                                                     <Select value={member.role} onValueChange={(value) => handleRoleChange(member.userId, value as WorkspaceMemberRole)}>
+                                                          <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                                                          <SelectContent>
+                                                              <SelectItem value="owner">Dono</SelectItem>
+                                                              <SelectItem value="editor">Editor</SelectItem>
+                                                              <SelectItem value="viewer">Visualizador</SelectItem>
+                                                          </SelectContent>
+                                                      </Select>
+                                                      <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                          <Button variant="destructive" size="icon"><UserX className="h-4 w-4" /></Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                          <AlertDialogHeader>
+                                                            <AlertDialogTitle>Remover Membro?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Tem certeza que deseja remover {memberName} do workspace? Esta ação não pode ser desfeita.
+                                                            </AlertDialogDescription>
+                                                          </AlertDialogHeader>
+                                                          <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleRemoveUser(member)}>Remover</AlertDialogAction>
+                                                          </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                      </AlertDialog>
+                                                    </>
+                                                ) : (
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                        {member.role === 'owner' && <ShieldCheck className="h-4 w-4" />}
+                                                        <span>{member.role === 'owner' ? 'Dono' : 'Você'}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            {isOwner && member.userId !== user.uid ? (
-                                                <>
-                                                 <Select value={member.role} onValueChange={(value) => handleRoleChange(member.userId, value as WorkspaceMemberRole)}>
-                                                      <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                                                      <SelectContent>
-                                                          <SelectItem value="owner">Dono</SelectItem>
-                                                          <SelectItem value="editor">Editor</SelectItem>
-                                                          <SelectItem value="viewer">Visualizador</SelectItem>
-                                                      </SelectContent>
-                                                  </Select>
-                                                  <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                      <Button variant="destructive" size="icon"><UserX className="h-4 w-4" /></Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                      <AlertDialogHeader>
-                                                        <AlertDialogTitle>Remover Membro?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Tem certeza que deseja remover {member.email} do workspace? Esta ação não pode ser desfeita.
-                                                        </AlertDialogDescription>
-                                                      </AlertDialogHeader>
-                                                      <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleRemoveUser(member)}>Remover</AlertDialogAction>
-                                                      </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                  </AlertDialog>
-                                                </>
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    {member.role === 'owner' && <ShieldCheck className="h-4 w-4" />}
-                                                    <span>{member.role === 'owner' ? 'Dono' : 'Você'}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                          )}
                     </div>
@@ -365,3 +370,5 @@ export default function AccountPage() {
     </>
   );
 }
+
+    

@@ -2,7 +2,7 @@
 
 import { getDb } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -60,6 +60,63 @@ export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]>
     return workspaceSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Workspace));
 };
 
+export const getWorkspaceMembers = async (workspaceId: string): Promise<WorkspaceMember[]> => {
+    const db = getDbInstance();
+    const membersQuery = query(collection(db, 'workspaceMembers'), where('workspaceId', '==', workspaceId));
+    const querySnapshot = await getDocs(membersQuery);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkspaceMember));
+};
+
+export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole): Promise<void> => {
+    const db = getDbInstance();
+    // This is a simplified invite system. In a real app, you'd use a Cloud Function
+    // to look up the user's UID by email or create a pending invite.
+    // For now, we'll find the user by email, which is not ideal for security/privacy.
+    // This assumes a `users` collection exists mapping email to UID. Since it doesn't,
+    // we'll simulate finding a user and creating a membership.
+    // THIS IS A PLACEHOLDER for a more robust invitation flow.
+    const usersRef = collection(db, "users"); // This collection doesn't exist, so this is a simplification
+    const q = query(usersRef, where("email", "==", email));
+    const querySnapshot = await getDocs(q);
+
+    let userId = '';
+    // A real app would have a users collection. We'll simulate finding one.
+    if (querySnapshot.empty) {
+        // For the sake of this demo, we'll throw an error.
+        // A real app would handle creating a pending invite.
+        throw new Error("Usuário não encontrado. Em uma aplicação real, um convite seria enviado.");
+    } else {
+       userId = querySnapshot.docs[0].id;
+    }
+
+    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceId}`);
+    const memberDoc = await getDoc(memberRef);
+
+    if (memberDoc.exists()) {
+        throw new Error("Este usuário já é membro do workspace.");
+    }
+
+    await setDoc(memberRef, {
+        userId,
+        email,
+        workspaceId,
+        role,
+        createdAt: serverTimestamp(),
+    });
+};
+
+export const removeUserFromWorkspace = async (workspaceId: string, userId: string): Promise<void> => {
+    const db = getDbInstance();
+    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceId}`);
+    await deleteDoc(memberRef);
+}
+
+export const updateUserRole = async (workspaceId: string, userId: string, role: WorkspaceMemberRole): Promise<void> => {
+    const db = getDbInstance();
+    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceId}`);
+    await updateDoc(memberRef, { role });
+}
+
 
 // Projects
 
@@ -102,11 +159,19 @@ export const getProjectsForUser = async (workspaceId: string): Promise<{ project
     return { projects, pages };
 };
 
-export const getProject = async (projectId: string): Promise<Project | null> => {
+export const getProjectWithPages = async (projectId: string, workspaceId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
     const db = getDbInstance();
-    const docRef = doc(db, "projects", projectId);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Project : null;
+    const projectRef = doc(db, 'projects', projectId);
+    const projectDoc = await getDoc(projectRef);
+
+    if (!projectDoc.exists() || projectDoc.data().workspaceId !== workspaceId) {
+        return null; // Project doesn't exist or user doesn't have access
+    }
+
+    const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
+    const pages = await getPagesForProject(projectId, workspaceId);
+
+    return { project, pages };
 };
 
 
@@ -123,14 +188,12 @@ export const deleteProject = async (projectId: string): Promise<void> => {
         getDocs(publishedPagesQuery)
     ]);
     
-    const deletePromises = [
-        ...draftsSnapshot.docs.map(pageDoc => deleteDoc(pageDoc.ref)),
-        ...publishedSnapshot.docs.map(pageDoc => deleteDoc(pageDoc.ref))
-    ];
-    await Promise.all(deletePromises);
+    const batch = writeBatch(db);
+    draftsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+    publishedSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+    batch.delete(projectDocRef);
 
-    // Now delete the project itself
-    await deleteDoc(projectDocRef);
+    await batch.commit();
 };
 
 
@@ -192,9 +255,7 @@ export const getPage = async (pageId: string, version: 'drafts' | 'published' = 
     // Ensure timestamps are converted correctly
     const page = {
         id: docSnap.id,
-        ...data,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+        ...data
     } as CloudPage;
     return page;
 };
@@ -209,21 +270,6 @@ export const getPagesForProject = async (projectId: string, workspaceId: string)
     );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
-};
-
-export const getProjectWithPages = async (projectId: string, workspaceId: string): Promise<{ project: Project; pages: CloudPage[] } | null> => {
-    const db = getDbInstance();
-    const projectRef = doc(db, 'projects', projectId);
-    const projectDoc = await getDoc(projectRef);
-
-    if (!projectDoc.exists() || projectDoc.data().workspaceId !== workspaceId) {
-        return null; // Project doesn't exist or user doesn't have access
-    }
-
-    const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
-    const pages = await getPagesForProject(projectId, workspaceId);
-
-    return { project, pages };
 };
 
 

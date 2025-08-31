@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2, Home, RefreshCw } from 'lucide-react';
+import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,34 +25,89 @@ import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getWorkspaceMembers, inviteUserToWorkspace, removeUserFromWorkspace, updateUserRole } from '@/lib/firestore';
+import type { WorkspaceMember, WorkspaceMemberRole } from '@/lib/types';
+
 
 export default function AccountPage() {
-  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace } = useAuth();
+  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, workspaces, switchWorkspace } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [wantsCommunications, setWantsCommunications] = useState(true); // Placeholder state
+  const [wantsCommunications, setWantsCommunications] = useState(true);
 
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
+  // Workspace management state
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<WorkspaceMemberRole>("editor");
+  const [isInviting, setIsInviting] = useState(false);
+
+  const currentUserRole = members.find(m => m.userId === user?.uid)?.role;
+  const isOwner = currentUserRole === 'owner';
+
+  const fetchMembers = useCallback(async () => {
+    if (!activeWorkspace) return;
+    setIsLoadingMembers(true);
     try {
-      // In a real app, you would need to re-authenticate the user first
-      // for security reasons before calling user.delete().
-      // This is a placeholder for the UI.
-      await user?.delete();
-      toast({ title: "Conta excluída", description: "Sua conta foi excluída permanentemente." });
-      await logout();
-    } catch (error: any) {
-      console.error("Account deletion error:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir conta",
-        description: error.message || "Por favor, tente novamente. Pode ser necessário fazer login novamente.",
-      });
+      const workspaceMembers = await getWorkspaceMembers(activeWorkspace.id);
+      setMembers(workspaceMembers);
+    } catch (error) {
+      console.error("Failed to fetch members:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os membros do workspace." });
     } finally {
-      setIsDeleting(false);
+      setIsLoadingMembers(false);
+    }
+  }, [activeWorkspace, toast]);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+  
+  const handleInviteUser = async () => {
+    if (!activeWorkspace || !inviteEmail) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'O e-mail do convidado é obrigatório.' });
+        return;
+    }
+    setIsInviting(true);
+    try {
+        await inviteUserToWorkspace(activeWorkspace.id, inviteEmail, inviteRole);
+        toast({ title: 'Usuário convidado!', description: `${inviteEmail} foi convidado para o workspace.` });
+        setInviteEmail('');
+        fetchMembers(); // Refresh member list
+    } catch (error: any) {
+        console.error("Failed to invite user:", error);
+        toast({ variant: "destructive", title: "Erro ao convidar", description: error.message });
+    } finally {
+        setIsInviting(false);
     }
   };
+  
+  const handleRemoveUser = async (memberToRemove: WorkspaceMember) => {
+    if (!activeWorkspace) return;
+    try {
+        await removeUserFromWorkspace(activeWorkspace.id, memberToRemove.userId);
+        toast({ title: 'Usuário removido!', description: `${memberToRemove.email} foi removido do workspace.` });
+        fetchMembers(); // Refresh member list
+    } catch (error: any) {
+        console.error("Failed to remove user:", error);
+        toast({ variant: "destructive", title: "Erro ao remover", description: error.message });
+    }
+  };
+
+  const handleRoleChange = async (memberId: string, newRole: WorkspaceMemberRole) => {
+    if (!activeWorkspace) return;
+    try {
+      await updateUserRole(activeWorkspace.id, memberId, newRole);
+      toast({ title: 'Função atualizada!', description: `A função do membro foi alterada.` });
+      fetchMembers();
+    } catch (error: any) {
+        console.error("Failed to update role:", error);
+        toast({ variant: "destructive", title: "Erro ao atualizar função", description: error.message });
+    }
+  }
+
 
   if (loading) {
     return (
@@ -124,10 +179,114 @@ export default function AccountPage() {
             </div>
              <div className="space-y-2">
               <Label htmlFor="workspace">Workspace Ativo</Label>
-              <Input id="workspace" value={activeWorkspace?.name || 'N/A'} disabled />
+               <Select onValueChange={switchWorkspace} value={activeWorkspace?.id}>
+                  <SelectTrigger>
+                      <SelectValue placeholder="Selecione um workspace..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {workspaces.map(ws => (
+                          <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
             </div>
           </CardContent>
         </Card>
+
+        {activeWorkspace && (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Gerenciamento do Workspace</CardTitle>
+                    <CardDescription>Convide e gerencie os membros do seu workspace "{activeWorkspace.name}".</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {isOwner && (
+                        <div className="p-4 border rounded-lg bg-muted/30">
+                            <h4 className="font-semibold mb-2">Convidar Novo Membro</h4>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <Input 
+                                    type="email" 
+                                    placeholder="E-mail do convidado" 
+                                    value={inviteEmail}
+                                    onChange={e => setInviteEmail(e.target.value)}
+                                    className="flex-grow"
+                                />
+                                <Select value={inviteRole} onValueChange={value => setInviteRole(value as WorkspaceMemberRole)}>
+                                    <SelectTrigger className="w-full sm:w-[120px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="editor">Editor</SelectItem>
+                                        <SelectItem value="viewer">Visualizador</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Button onClick={handleInviteUser} disabled={isInviting}>
+                                    {isInviting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                                    Convidar
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    <div>
+                        <h4 className="font-semibold mb-4">Membros Atuais</h4>
+                         {isLoadingMembers ? (
+                             <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                         ) : (
+                            <div className="space-y-3">
+                                {members.map(member => (
+                                    <div key={member.id} className="flex items-center justify-between p-3 rounded-md border">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${member.userId}`} alt={member.email} />
+                                                <AvatarFallback>{member.email[0].toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-medium">{member.email}</p>
+                                                <p className="text-sm text-muted-foreground capitalize">{member.role}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {isOwner && member.userId !== user.uid ? (
+                                                <>
+                                                 <Select value={member.role} onValueChange={(value) => handleRoleChange(member.userId, value as WorkspaceMemberRole)}>
+                                                      <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                                                      <SelectContent>
+                                                          <SelectItem value="owner">Dono</SelectItem>
+                                                          <SelectItem value="editor">Editor</SelectItem>
+                                                          <SelectItem value="viewer">Visualizador</SelectItem>
+                                                      </SelectContent>
+                                                  </Select>
+                                                  <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                      <Button variant="destructive" size="icon"><UserX className="h-4 w-4" /></Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                      <AlertDialogHeader>
+                                                        <AlertDialogTitle>Remover Membro?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Tem certeza que deseja remover {member.email} do workspace? Esta ação não pode ser desfeita.
+                                                        </AlertDialogDescription>
+                                                      </AlertDialogHeader>
+                                                      <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleRemoveUser(member)}>Remover</AlertDialogAction>
+                                                      </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                  </AlertDialog>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    {member.role === 'owner' && <ShieldCheck className="h-4 w-4" />}
+                                                    <span>{member.role === 'owner' ? 'Dono' : 'Você'}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                         )}
+                    </div>
+                </CardContent>
+            </Card>
+        )}
 
         <Card>
           <CardHeader>

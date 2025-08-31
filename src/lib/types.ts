@@ -143,8 +143,8 @@ export interface CloudPage {
   };
   publishDate?: any;
   expiryDate?: any;
-  createdAt: any;
-  updatedAt: any;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface Project {
@@ -162,6 +162,7 @@ export interface Template {
   id: string;
   name: string;
   brand: 'Natura' | 'Avon'; // Legacy brand for default templates
+  workspaceId: string;
   description?: string;
   icon?: string;
   styles: CloudPage['styles'];

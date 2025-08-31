@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink } from "@/lib/types";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -513,6 +512,53 @@ function ImageInput({ label, value, onPropChange, propName, tooltipText }: { lab
     );
 }
 
+function HeaderLinksManager({ links, onPropChange }: { links: HeaderLink[], onPropChange: (prop: string, value: any) => void }) {
+    const handleLinkChange = (index: number, field: keyof HeaderLink, value: string) => {
+        const newLinks = produce(links, draft => {
+            draft[index][field] = value;
+        });
+        onPropChange('links', newLinks);
+    };
+
+    const addLink = () => {
+        const newLink: HeaderLink = { id: `link-${Date.now()}`, text: 'Novo Link', url: '#' };
+        onPropChange('links', [...(links || []), newLink]);
+    };
+
+    const removeLink = (index: number) => {
+        const newLinks = links.filter((_, i) => i !== index);
+        onPropChange('links', newLinks);
+    };
+
+    return (
+        <div className="space-y-4">
+            <Label>Itens de Menu</Label>
+            {links?.map((link, index) => (
+                <div key={link.id} className="p-3 border rounded-md space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-end">
+                        <Button variant="ghost" size="icon" onClick={() => removeLink(index)} className="h-7 w-7 text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor={`link-text-${link.id}`} className="text-xs">Texto</Label>
+                            <Input id={`link-text-${link.id}`} value={link.text} onChange={e => handleLinkChange(index, 'text', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor={`link-url-${link.id}`} className="text-xs">URL</Label>
+                            <Input id={`link-url-${link.id}`} value={link.url} onChange={e => handleLinkChange(index, 'url', e.target.value)} />
+                        </div>
+                    </div>
+                </div>
+            ))}
+            <Button variant="outline" className="w-full" onClick={addLink}>
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Item de Menu
+            </Button>
+        </div>
+    );
+}
+
 
 const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
     
@@ -563,14 +609,48 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
 
     switch (type) {
       case "Header":
+        const layout = props.layout || 'logo-left-menu-right';
+        const showMenu = layout.includes('menu');
+        const showButton = layout.includes('button');
         return (
-            <ImageInput 
-                label="URL do Logo"
-                value={props.logoUrl || ""}
-                onPropChange={onPropChange}
-                propName="logoUrl"
-                tooltipText="URL para a imagem do logo no cabeçalho."
-            />
+            <div className="space-y-4">
+                <ImageInput 
+                    label="URL do Logo"
+                    value={props.logoUrl || ""}
+                    onPropChange={onPropChange}
+                    propName="logoUrl"
+                    tooltipText="URL para a imagem do logo no cabeçalho."
+                />
+                <div className="space-y-2">
+                    <Label htmlFor="header-layout">Layout do Cabeçalho</Label>
+                    <Select value={layout} onValueChange={(value) => onPropChange('layout', value)}>
+                        <SelectTrigger id="header-layout"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="logo-left-menu-right">Logo Esquerda, Menu Direita</SelectItem>
+                            <SelectItem value="logo-center-menu-below">Logo Centro, Menu Abaixo</SelectItem>
+                            <SelectItem value="logo-left-button-right">Logo Esquerda, Botão Direita</SelectItem>
+                            <SelectItem value="logo-only-center">Apenas Logo (Centro)</SelectItem>
+                            <SelectItem value="logo-only-left">Apenas Logo (Esquerda)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                {showMenu && (
+                    <HeaderLinksManager links={props.links || []} onPropChange={onPropChange} />
+                )}
+                {showButton && (
+                    <div className="p-3 border rounded-md space-y-3 bg-muted/30">
+                         <h4 className="font-medium text-sm">Botão de Ação</h4>
+                         <div className="space-y-2">
+                            <Label htmlFor="header-button-text">Texto do Botão</Label>
+                            <Input id="header-button-text" value={props.buttonText || ''} onChange={(e) => onPropChange('buttonText', e.target.value)} />
+                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="header-button-url">URL do Botão</Label>
+                            <Input id="header-button-url" value={props.buttonUrl || ''} onChange={(e) => onPropChange('buttonUrl', e.target.value)} />
+                         </div>
+                    </div>
+                )}
+            </div>
         );
       case "Banner":
         return (

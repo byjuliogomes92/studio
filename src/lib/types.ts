@@ -83,6 +83,12 @@ export interface CustomFormField {
     placeholder?: string;
 }
 
+export interface HeaderLink {
+    id: string;
+    text: string;
+    url: string;
+}
+
 export interface PageComponent {
   id: string;
   type: ComponentType;

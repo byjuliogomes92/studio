@@ -1,6 +1,5 @@
 
-
-import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
+import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig, HeaderLink } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 
 
@@ -162,10 +161,22 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
 
   switch (component.type) {
     case 'Header':
-      return `
-        <div class="logo" style="${styleString}">
-          <img src="${component.props.logoUrl || 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png'}" alt="Logo">
-        </div>`;
+        const { layout = 'logo-left-menu-right', logoUrl = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png', links = [], buttonText, buttonUrl } = component.props;
+        const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
+        const buttonHtml = layout.includes('button') && buttonText && buttonUrl ? `<a href="${buttonUrl}" class="header-button">${buttonText}</a>` : '';
+
+        return `
+            <header class="page-header" data-layout="${layout}">
+                <div class="header-logo">
+                    <img src="${logoUrl}" alt="Logo">
+                </div>
+                ${layout.includes('menu') ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : ''}
+                ${buttonHtml}
+                <button class="mobile-menu-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                </button>
+            </header>
+        `;
     case 'Banner':
         return `
         <div class="banner" style="${styleString}">
@@ -211,7 +222,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
                   var now = new Date().getTime();
                   var distance = target - now;
                   var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                  var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                  var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / 1000 / 60 / 60);
                   var minutes = Math.floor((distance % (1000 * 60 * 60)) / 1000 / 60);
                   var seconds = Math.floor((distance % (1000 * 60)) / 1000);
                   el.innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
@@ -928,7 +939,7 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
     return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
 }
 
-const getClientSideScripts = (pageState: CloudPage) => {
+const getClientSideScripts = (pageState: CloudPage): string => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
 
@@ -1165,6 +1176,16 @@ const getClientSideScripts = (pageState: CloudPage) => {
             emailInput.addEventListener('blur', function() { validateEmail(this); });
         }
         
+        // Mobile menu toggle for headers
+        document.querySelectorAll('.mobile-menu-toggle').forEach(button => {
+            button.addEventListener('click', function() {
+                const header = this.closest('.page-header');
+                if (header) {
+                    header.classList.toggle('mobile-menu-open');
+                }
+            });
+        });
+        
         setupForms();
         setupAccordions();
         setupTabs();
@@ -1333,16 +1354,78 @@ ${trackingScripts.head}
         padding: 10px 20px;
         box-sizing: border-box;
     }
+    
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+    .page-header .header-logo img {
+        height: 40px;
+        max-height: 40px;
+        width: auto;
+    }
+    .page-header .header-nav ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        gap: 1.5rem;
+    }
+    .page-header .header-nav a {
+        text-decoration: none;
+        color: inherit;
+        font-weight: 500;
+    }
+    .page-header .header-button {
+        background-color: var(--theme-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .page-header[data-layout="logo-center-menu-below"] {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .page-header[data-layout="logo-only-left"] .header-logo { margin-right: auto; }
+    .page-header[data-layout="logo-only-center"] { justify-content: center; }
 
-    .logo {
-        margin-top: 10px;
-        margin-bottom: 20px;
-        text-align: center;
+    .mobile-menu-toggle { display: none; }
+
+    @media (max-width: 768px) {
+        .page-header .header-nav, .page-header .header-button {
+            display: none;
+        }
+        .mobile-menu-toggle {
+            display: block;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .page-header.mobile-menu-open {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .page-header.mobile-menu-open .header-nav {
+            display: block;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .page-header.mobile-menu-open .header-nav ul {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .page-header.mobile-menu-open .header-button {
+            display: block;
+            margin-top: 1rem;
+        }
     }
 
-    .logo img {
-        width: 150px;
-    }
 
     .banner img {
         width: 100%;
@@ -1977,5 +2060,5 @@ ${ssjsScript}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;
 }

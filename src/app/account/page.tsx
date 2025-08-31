@@ -88,7 +88,7 @@ export default function AccountPage() {
     if (!activeWorkspace) return;
     try {
         await removeUserFromWorkspace(activeWorkspace.id, memberToRemove.userId);
-        toast({ title: 'Usuário removido!', description: `${memberToRemove.email} foi removido do workspace.` });
+        toast({ title: 'Usuário removido!', description: `${memberToRemove.email || 'O membro'} foi removido do workspace.` });
         fetchMembers(); // Refresh member list
     } catch (error: any) {
         console.error("Failed to remove user:", error);
@@ -255,7 +255,7 @@ export default function AccountPage() {
                                                 </Avatar>
                                                 <div>
                                                     <p className="font-medium">{memberName}</p>
-                                                    <p className="text-sm text-muted-foreground capitalize">{member.role}</p>
+                                                    <p className="text-sm text-muted-foreground capitalize">{member.userId === user.uid ? `Você (${member.role})` : member.role}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -288,10 +288,12 @@ export default function AccountPage() {
                                                       </AlertDialog>
                                                     </>
                                                 ) : (
-                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                        {member.role === 'owner' && <ShieldCheck className="h-4 w-4" />}
-                                                        <span>{member.role === 'owner' ? 'Dono' : 'Você'}</span>
-                                                    </div>
+                                                    member.role === 'owner' && member.userId !== user.uid && (
+                                                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                          <ShieldCheck className="h-4 w-4" />
+                                                          <span>Dono</span>
+                                                      </div>
+                                                    )
                                                 )}
                                             </div>
                                         </div>
@@ -370,5 +372,3 @@ export default function AccountPage() {
     </>
   );
 }
-
-    

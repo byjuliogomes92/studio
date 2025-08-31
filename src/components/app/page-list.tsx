@@ -153,9 +153,9 @@ function QuickSnippetPopover({ pageId }: { pageId: string }) {
                     size="icon"
                     className="h-8 w-8 data-[state=open]:bg-muted"
                     onClick={(e) => e.stopPropagation()}
+                    aria-label="Copiar Snippet"
                 >
                     <Code className="h-4 w-4" />
-                    <span className="sr-only">Copiar Snippet</span>
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80" onClick={(e) => e.stopPropagation()}>
@@ -635,9 +635,9 @@ export function PageList({ projectId }: PageListProps) {
                     size="icon"
                     className="h-8 w-8 data-[state=open]:bg-muted"
                     onClick={(e) => e.stopPropagation()}
+                    aria-label="Abrir menu de ações da página"
                 >
                     <MoreVertical className="h-4 w-4" />
-                    <span className="sr-only">Abrir menu</span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
@@ -680,7 +680,7 @@ export function PageList({ projectId }: PageListProps) {
       return (
          <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" aria-label="Abrir menu principal">
               <Menu className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -711,7 +711,7 @@ export function PageList({ projectId }: PageListProps) {
         <Separator orientation="vertical" className="h-6 mx-2" />
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative" aria-label={`Notificações: ${unreadCount} não lidas`}>
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -748,7 +748,7 @@ export function PageList({ projectId }: PageListProps) {
         {user && (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full" aria-label="Menu do usuário">
                          <Avatar className="h-8 w-8">
                             <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar do usuário'} />
                             <AvatarFallback>{userInitials}</AvatarFallback>
@@ -807,6 +807,7 @@ export function PageList({ projectId }: PageListProps) {
                           size="icon" 
                           className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                           onClick={() => setSearchTerm("")}
+                          aria-label="Limpar busca"
                       >
                           <X className="h-4 w-4" />
                       </Button>
@@ -840,7 +841,7 @@ export function PageList({ projectId }: PageListProps) {
             {isSearchVisible ? (
                 <div className="flex items-center gap-2">
                     {searchInput}
-                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)}>
+                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)} aria-label="Fechar busca">
                         <X className="h-4 w-4"/>
                     </Button>
                 </div>
@@ -900,10 +901,10 @@ export function PageList({ projectId }: PageListProps) {
                                     </SelectContent>
                                 </Select>
                                 <div className="flex items-center gap-1 rounded-md border bg-background p-1">
-                                    <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
+                                    <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8" aria-label="Visualização em grade">
                                         <LayoutGrid className="h-4 w-4"/>
                                     </Button>
-                                    <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
+                                    <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8" aria-label="Visualização em lista">
                                         <List className="h-4 w-4"/>
                                     </Button>
                                 </div>
@@ -937,7 +938,7 @@ export function PageList({ projectId }: PageListProps) {
                             </Badge>
                         ))}
                         {activeTag && (
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)} aria-label="Limpar filtro de tag">
                                 <X className="h-4 w-4" />
                             </Button>
                         )}
@@ -1122,6 +1123,7 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
 
 
 

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -411,7 +412,7 @@ export function ProjectDashboard() {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" aria-label="Abrir menu principal">
               <Menu className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -478,7 +479,7 @@ export function ProjectDashboard() {
           <div className="flex items-center gap-2">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
+                <Button variant="ghost" size="icon" className="relative" aria-label={`Notificações: ${unreadCount} não lidas`}>
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -516,7 +517,7 @@ export function ProjectDashboard() {
           {user && (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full" aria-label="Menu do usuário">
                          <Avatar className="h-8 w-8">
                             <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar do usuário'} />
                             <AvatarFallback>{userInitials}</AvatarFallback>
@@ -575,6 +576,7 @@ export function ProjectDashboard() {
                           size="icon" 
                           className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                           onClick={() => setSearchTerm("")}
+                          aria-label="Limpar busca"
                       >
                           <X className="h-4 w-4" />
                       </Button>
@@ -609,7 +611,7 @@ export function ProjectDashboard() {
             {isSearchVisible ? (
                 <div className="flex items-center gap-2">
                     {searchInput}
-                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)}>
+                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)} aria-label="Fechar busca">
                         <X className="h-4 w-4"/>
                     </Button>
                 </div>
@@ -683,10 +685,10 @@ export function ProjectDashboard() {
                 <CardContent className="grid grid-cols-2 gap-4">
                    <div className="flex items-center gap-3 rounded-lg bg-green-500/10 p-4 border border-green-500/20">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20">
-                            <Link className="h-5 w-5 text-green-500" />
+                            <Link className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-green-500">{dashboardStats.activePageCount}</div>
+                            <div className="text-2xl font-bold text-green-700">{dashboardStats.activePageCount}</div>
                             <p className="text-xs text-green-600">Páginas Ativas</p>
                         </div>
                     </div>
@@ -695,9 +697,7 @@ export function ProjectDashboard() {
                             <Target className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                           <div className="text-lg font-bold text-primary">
-                                {projects.length === 0 ? "Crie um Projeto" : "Crie uma Página"}
-                            </div>
+                           <div className="text-lg font-bold text-primary">{projects.length === 0 ? "Crie um Projeto" : "Crie uma Página"}</div>
                             <p className="text-xs text-primary/80">Próximo Passo</p>
                         </div>
                     </div>
@@ -710,10 +710,10 @@ export function ProjectDashboard() {
             {renderSearch()}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 rounded-md border bg-background p-1">
-                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
+                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8" aria-label="Visualização em grade">
                   <LayoutGrid className="h-4 w-4"/>
                 </Button>
-                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
+                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8" aria-label="Visualização em lista">
                   <List className="h-4 w-4"/>
                 </Button>
               </div>
@@ -767,7 +767,7 @@ export function ProjectDashboard() {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações para o projeto ${project.name}`}>
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -835,7 +835,7 @@ export function ProjectDashboard() {
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações para o projeto ${project.name}`}>
                                   <MoreVertical className="h-4 w-4" />
                               </Button>
                           </DropdownMenuTrigger>

@@ -181,7 +181,7 @@ function ComponentItem({
         isContainer ? "flex flex-col items-stretch gap-1.5" : "flex items-center gap-1"
       )}>
           <div className="flex items-center min-w-0"> {/* Allow shrinking */}
-            <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8 flex-shrink-0">
+            <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8 flex-shrink-0" aria-label={`Arrastar componente ${component.type}`}>
                 <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
             </Button>
             <Button
@@ -200,6 +200,7 @@ function ComponentItem({
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 flex-shrink-0"
                 onClick={() => duplicateComponent(component.id)}
+                aria-label={`Duplicar componente ${component.type}`}
             >
                 <Copy className="h-4 w-4" />
             </Button>
@@ -208,6 +209,7 @@ function ComponentItem({
                 size="icon"
                 className="h-8 w-8 text-destructive/80 hover:text-destructive opacity-0 group-hover:opacity-100 flex-shrink-0"
                 onClick={() => removeComponent(component.id)}
+                aria-label={`Remover componente ${component.type}`}
             >
                 <Trash2 className="h-4 w-4" />
             </Button>

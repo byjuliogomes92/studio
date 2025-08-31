@@ -146,7 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         displayName: `${firstName} ${lastName}`,
         photoURL: avatarUrl
     });
-    setUser({ ...user, displayName: `${firstName} ${lastName}`, photoURL: avatarUrl });
+    setUser({ ...user, displayName: `${firstName} ${lastName}`, photoURL: avatarUrl } as User);
     return userCredential;
   }
 
@@ -158,7 +158,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (result.user && !result.user.photoURL) {
         const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${result.user.uid}`;
         await updateProfile(result.user, { photoURL: avatarUrl });
-        setUser({ ...result.user, photoURL: avatarUrl });
+        setUser({ ...result.user, photoURL: avatarUrl } as User);
     }
     return result;
   };
@@ -170,18 +170,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateUserName = async (firstName: string, lastName: string) => {
-    if (!auth?.currentUser) return;
+    if (!auth?.currentUser || !user) return;
     const newDisplayName = `${firstName} ${lastName}`.trim();
     if (!newDisplayName) {
         toast({ variant: 'destructive', title: 'Erro', description: 'O nome não pode ser vazio.' });
         return;
     }
     await updateProfile(auth.currentUser, { displayName: newDisplayName });
-    setUser(produce(user, draft => {
-        if(draft) {
-            draft.displayName = newDisplayName;
-        }
-    }));
+    // Create a new plain object from the user to update state
+    setUser({
+        ...user,
+        displayName: newDisplayName
+    } as User);
   };
 
   const updateUserAvatar = async () => {
@@ -191,7 +191,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const newSeed = `${auth.currentUser.uid}-${Date.now()}`;
         const newAvatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${newSeed}`;
         await updateProfile(auth.currentUser, { photoURL: newAvatarUrl });
-        setUser({ ...auth.currentUser, photoURL: newAvatarUrl });
+        setUser({ ...auth.currentUser, photoURL: newAvatarUrl } as User);
         toast({ title: "Avatar atualizado!", description: "Seu novo avatar foi salvo." });
     } catch (error: any) {
         console.error("Avatar update error:", error);

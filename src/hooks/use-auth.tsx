@@ -46,56 +46,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const authInstance = getAuth(app);
-      setAuth(authInstance);
-      setIsGoogleAuthEnabled(window.location.hostname === 'cloudpagestudio.vercel.app');
+    const authInstance = getAuth(app);
+    setAuth(authInstance);
+    setIsGoogleAuthEnabled(process.env.NODE_ENV === 'production' || window.location.hostname === 'cloudpagestudio.vercel.app');
 
-      const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
-        setUser(currentUser);
-        if (!currentUser) {
-            // Clear workspace state on logout
+    const unsubscribe = onAuthStateChanged(authInstance, async (currentUser) => {
+        setLoading(true);
+        if (currentUser) {
+            setUser(currentUser);
+            try {
+                const userWorkspaces = await getWorkspacesForUser(currentUser.uid);
+                if (userWorkspaces.length > 0) {
+                    setWorkspaces(userWorkspaces);
+                    const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
+                    const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
+                    setActiveWorkspace(found || userWorkspaces[0]);
+                } else {
+                    const newWorkspace = await createWorkspace(currentUser.uid, currentUser.email || 'Usuário', 'Meu Workspace');
+                    setWorkspaces([newWorkspace]);
+                    setActiveWorkspace(newWorkspace);
+                }
+            } catch (error) {
+                console.error("Failed to fetch or create workspace:", error);
+                toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
+            }
+        } else {
+            setUser(null);
             setWorkspaces([]);
             setActiveWorkspace(null);
-            setLoading(false);
         }
-      });
-
-      return () => unsubscribe();
-    } else {
         setLoading(false);
-    }
-  }, []);
+    });
 
-  useEffect(() => {
-    if (user) {
-      getWorkspacesForUser(user.uid)
-        .then(async (userWorkspaces) => {
-          if (userWorkspaces.length > 0) {
-            setWorkspaces(userWorkspaces);
-            const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
-            const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
-            setActiveWorkspace(found || userWorkspaces[0]);
-          } else {
-            // If user has no workspaces, create a default one
-            try {
-              const newWorkspace = await createWorkspace(user.uid, user.email || 'Usuário', 'Meu Workspace');
-              setWorkspaces([newWorkspace]);
-              setActiveWorkspace(newWorkspace);
-            } catch (error) {
-              console.error("Failed to create default workspace:", error);
-              toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível criar seu workspace inicial.' });
-            }
-          }
-        })
-        .finally(() => setLoading(false));
-    } else {
-      // No user, not loading.
-      if (!publicRoutes.includes(pathname)) {
-        setLoading(false);
-      }
-    }
-  }, [user, toast]);
+    return () => unsubscribe();
+  }, [toast]);
+
 
   useEffect(() => {
     // This effect should only run on the client side for route protection
@@ -109,17 +94,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (newActiveWorkspace) {
       setActiveWorkspace(newActiveWorkspace);
       localStorage.setItem('activeWorkspaceId', workspaceId);
-      // We don't need a full page reload, but we might want to trigger a data refetch
-      // on the component level. For now, we'll just switch context.
-      // A full router.refresh() might be too heavy.
-      window.location.reload(); // Simple solution for now
+      window.location.reload(); 
     }
   };
 
   const updateWorkspaceName = async (workspaceId: string, newName: string) => {
     await updateWorkspaceNameInDb(workspaceId, newName);
     
-    // Update local state to reflect the change immediately
     const updateState = (ws: Workspace) => produce(ws, draft => {
         if(draft.id === workspaceId) {
             draft.name = newName;
@@ -179,8 +160,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await updateProfile(auth.currentUser, { displayName: newDisplayName });
     // Create a new plain object from the user to update state
     setUser({
-        ...user,
-        displayName: newDisplayName
+        ...auth.currentUser,
     } as User);
   };
 

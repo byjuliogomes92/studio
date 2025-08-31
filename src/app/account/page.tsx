@@ -108,6 +108,17 @@ export default function AccountPage() {
     }
   }
 
+  const handleDeleteAccount = () => {
+    // This is a placeholder. A real implementation would require a backend function
+    // to delete all user data across all collections.
+    setIsDeleting(true);
+    toast({
+        title: "Funcionalidade em desenvolvimento",
+        description: "A exclusão de contas será implementada em breve.",
+    });
+    setTimeout(() => setIsDeleting(false), 2000);
+  };
+
 
   if (loading) {
     return (

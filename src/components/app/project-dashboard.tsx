@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Project, CloudPage, UserProgress, Template, PageView } from "@/lib/types";
+import type { Project, CloudPage, UserProgress, Template, PageView, Workspace } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette } from "lucide-react";
 import {
@@ -52,6 +52,7 @@ import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../ui/select";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -87,9 +88,30 @@ function ProjectIcon({ iconName, color, className }: { iconName?: string; color?
     return <Icon className={cn("h-10 w-10", className)} style={{ color: color || 'hsl(var(--primary))' }} />;
 }
 
+function WorkspaceSwitcher() {
+    const { workspaces, activeWorkspace, switchWorkspace } = useAuth();
+    
+    if (!activeWorkspace) {
+        return null;
+    }
+
+    return (
+        <Select onValueChange={switchWorkspace} value={activeWorkspace.id}>
+            <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Selecione um workspace..." />
+            </SelectTrigger>
+            <SelectContent>
+                {workspaces.map(ws => (
+                    <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+}
+
 export function ProjectDashboard() {
   const router = useRouter();
-  const { user, logout, loading: authLoading, activeWorkspace, workspaces, switchWorkspace } = useAuth();
+  const { user, logout, loading: authLoading, activeWorkspace } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -621,6 +643,8 @@ export function ProjectDashboard() {
             <Logo className="h-6 w-6 text-primary" />
             <h1 className="hidden md:block">Meus Projetos</h1>
           </div>
+          <Separator orientation="vertical" className="h-6 mx-2 hidden md:block" />
+          <WorkspaceSwitcher />
         </div>
         <div className="flex items-center gap-2 md:gap-4">
           {renderHeaderActions()}

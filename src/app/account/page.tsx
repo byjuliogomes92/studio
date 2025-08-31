@@ -31,7 +31,7 @@ import type { WorkspaceMember, WorkspaceMemberRole } from '@/lib/types';
 
 
 export default function AccountPage() {
-  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, workspaces, switchWorkspace } = useAuth();
+  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -44,7 +44,7 @@ export default function AccountPage() {
   const [inviteRole, setInviteRole] = useState<WorkspaceMemberRole>("editor");
   const [isInviting, setIsInviting] = useState(false);
 
-  const currentUserRole = members.find(m => m.userId === user?.uid)?.role;
+  const currentUserRole = activeWorkspace ? members.find(m => m.userId === user?.uid)?.role : undefined;
   const isOwner = currentUserRole === 'owner';
 
   const fetchMembers = useCallback(async () => {
@@ -131,6 +131,7 @@ export default function AccountPage() {
   }
 
   if (!user) {
+    // This should ideally not be reached due to the AuthProvider redirect, but it's a good fallback.
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <p>Você precisa estar logado para ver esta página.</p>
@@ -189,19 +190,6 @@ export default function AccountPage() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" value={user.email || ''} disabled />
-            </div>
-             <div className="space-y-2">
-              <Label htmlFor="workspace">Workspace Ativo</Label>
-               <Select onValueChange={switchWorkspace} value={activeWorkspace?.id}>
-                  <SelectTrigger>
-                      <SelectValue placeholder="Selecione um workspace..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                      {workspaces.map(ws => (
-                          <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
             </div>
           </CardContent>
         </Card>

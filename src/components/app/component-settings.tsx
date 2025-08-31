@@ -660,6 +660,40 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                          </div>
                     </div>
                 )}
+                 <Separator />
+                <h4 className="font-medium text-sm pt-2">Comportamento Fixo (Sticky)</h4>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="header-sticky">Fixo no Topo</Label>
+                    <Switch
+                        id="header-sticky"
+                        checked={props.isSticky || false}
+                        onCheckedChange={(checked) => onPropChange('isSticky', checked)}
+                    />
+                </div>
+                {props.isSticky && (
+                    <div className="space-y-4 pt-2">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="header-bg">Fundo (Topo)</Label>
+                                <Input id="header-bg" type="color" value={props.backgroundColor || '#ffffff00'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="header-text-color">Texto (Topo)</Label>
+                                <Input id="header-text-color" type="color" value={props.textColor || '#000000'} onChange={(e) => onPropChange('textColor', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="header-bg-scroll">Fundo (Rolagem)</Label>
+                                <Input id="header-bg-scroll" type="color" value={props.backgroundColorOnScroll || '#ffffffff'} onChange={(e) => onPropChange('backgroundColorOnScroll', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="header-text-scroll">Texto (Rolagem)</Label>
+                                <Input id="header-text-scroll" type="color" value={props.textColorOnScroll || '#000000'} onChange={(e) => onPropChange('textColorOnScroll', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
       case "Banner":

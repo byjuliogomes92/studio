@@ -537,6 +537,33 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         });
     }
 
+    function setupStickyHeader() {
+        const header = document.querySelector('.page-header[data-sticky="true"]');
+        if (!header) return;
+
+        const setHeaderStyle = (isScrolled) => {
+            const bgColor = isScrolled ? header.dataset.bgScroll : header.dataset.bgTop;
+            const textColor = isScrolled ? header.dataset.textColorScroll : header.dataset.textColorTop;
+            header.style.backgroundColor = bgColor;
+            header.style.color = textColor;
+            if (isScrolled) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        };
+        
+        setHeaderStyle(false); // Set initial styles
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                setHeaderStyle(true);
+            } else {
+                setHeaderStyle(false);
+            }
+        }, { passive: true });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
         if (loader) {
@@ -574,8 +601,9 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         setupTabs();
         setSocialIconStyles();
         handleConditionalFields();
+        setupStickyHeader();
     });
-</script>
+    </script>
     `;
 
     return `${lottiePlayerScript}${script}`;
@@ -743,6 +771,15 @@ ${trackingScripts.head}
         width: 100%;
         padding: 1rem;
         box-sizing: border-box;
+        transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+    .page-header[data-sticky="true"] {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+    .page-header.scrolled {
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     }
     .page-header .header-logo img {
         width: auto;
@@ -785,6 +822,7 @@ ${trackingScripts.head}
             background: none;
             border: none;
             cursor: pointer;
+            color: inherit;
         }
         .page-header.mobile-menu-open {
             flex-direction: column;
@@ -1433,5 +1471,3 @@ ${ssjsScript}
   %%[ ENDIF ]%%
 </body>
 </html>
-`;
-}

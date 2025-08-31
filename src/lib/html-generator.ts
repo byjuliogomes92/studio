@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent, ComponentType } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
@@ -38,7 +39,8 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                     columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
                 }
                 const renderedComponent = renderSingleComponent(component, pageState, isForPreview, columnsHtml);
-                return `<div class="section-wrapper"><div class="section-container">${renderedComponent}</div></div>`;
+                const isHero = !!component.props.styles?.isHero;
+                return `<div class="section-wrapper ${isHero ? 'hero-section' : ''}">${renderedComponent}</div>`;
             }
              return `<div class="section-wrapper"><div class="section-container">${renderComponent(component, pageState, isForPreview)}</div></div>`;
         })
@@ -585,7 +587,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
                             navContainer.style.maxHeight = '0';
                         }
                     } else if (behavior === 'drawer') {
-                        body.classList.toggle('menu-drawer-open');
+                         body.classList.toggle('menu-drawer-open');
                     } else if (behavior === 'overlay') {
                          body.classList.toggle('menu-overlay-open');
                     }
@@ -792,6 +794,11 @@ ${trackingScripts.head}
         max-width: 800px;
         padding: 10px 20px;
         box-sizing: border-box;
+    }
+
+    .hero-section .section-container {
+        max-width: 1200px;
+        padding: 0;
     }
     
     .page-header {
@@ -1446,14 +1453,42 @@ ${trackingScripts.head}
     }
 
     .columns-container {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(var(--column-count, 2), 1fr);
         gap: 20px;
         width: 100%;
+        position: relative; /* For hero text overlay */
     }
-    .column {
+    .columns-container .column {
         flex: 1;
         min-width: 0;
     }
+
+    /* Hero Specific Styles */
+    .hero-section > .columns-container[style*="--column-count: 1"] {
+        display: block; /* Override grid for background image hero */
+        padding: 0;
+    }
+    .hero-section .columns-container[style*="background-image"] {
+        background-size: cover;
+        background-position: center center;
+        position: relative;
+        min-height: 50vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hero-section .columns-container[style*="background-image"]::before {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; bottom: 0; left: 0;
+        background-color: rgba(0,0,0,0.5); /* Dimming overlay */
+    }
+    .hero-section .columns-container[style*="background-image"] > .column {
+        position: relative; /* Ensure text is above the overlay */
+        z-index: 1;
+    }
+
 
     .whatsapp-float-btn {
         position: fixed;
@@ -1527,8 +1562,8 @@ ${trackingScripts.head}
 
 
     @media (max-width: 768px) {
-        .columns-container {
-            flex-direction: column;
+        .columns-container:not([style*="--column-count: 1"]) {
+            grid-template-columns: 1fr;
         }
         .form-container .row {
             flex-direction: column;
@@ -1561,4 +1596,4 @@ ${ssjsScript}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`
+</html>

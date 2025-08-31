@@ -1357,13 +1357,40 @@ ${trackingScripts.head}
         display: flex;
         align-items: center;
         justify-content: center;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
+        position: relative;
+        gap: 1rem;
     }
-    .stripe-container p {
-        margin: 0;
+    .stripe-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
         flex-grow: 1;
+        justify-content: center;
+    }
+    .stripe-content p {
+        margin: 0;
+    }
+    .stripe-icon svg {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+    .stripe-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .stripe-button {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: inherit;
+        text-decoration: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+    .stripe-button:hover {
+        background-color: rgba(255, 255, 255, 0.3);
     }
     .stripe-close-btn {
         background: none;
@@ -1372,9 +1399,11 @@ ${trackingScripts.head}
         font-size: 24px;
         line-height: 1;
         cursor: pointer;
-        padding: 0 10px;
-        position: absolute;
-        right: 10px;
+        padding: 0 5px;
+        opacity: 0.7;
+    }
+     .stripe-close-btn:hover {
+        opacity: 1;
     }
 
     .nps-container {

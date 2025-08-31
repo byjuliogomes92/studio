@@ -31,7 +31,7 @@ export const createWorkspace = async (userId: string, userEmail: string, workspa
     const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceRef.id}`);
     const newMember: Omit<WorkspaceMember, 'id'> = {
         userId,
-        email: userEmail,
+        email: userEmail || '',
         workspaceId: workspaceRef.id,
         role: 'owner',
         createdAt: serverTimestamp(),
@@ -59,6 +59,13 @@ export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]>
     
     return workspaceSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Workspace));
 };
+
+export const updateWorkspaceName = async (workspaceId: string, newName: string): Promise<void> => {
+    const db = getDbInstance();
+    const workspaceRef = doc(db, 'workspaces', workspaceId);
+    await updateDoc(workspaceRef, { name: newName });
+};
+
 
 export const getWorkspaceMembers = async (workspaceId: string): Promise<WorkspaceMember[]> => {
     const db = getDbInstance();

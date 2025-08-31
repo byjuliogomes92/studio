@@ -8,7 +8,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
 import type { Workspace } from '@/lib/types';
-import { getWorkspacesForUser, createWorkspace } from '@/lib/firestore';
+import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb } from '@/lib/firestore';
+import { produce } from 'immer';
 
 interface AuthContextType {
   user: User | null;
@@ -18,6 +19,7 @@ interface AuthContextType {
   activeWorkspace: Workspace | null;
   workspaces: Workspace[];
   switchWorkspace: (workspaceId: string) => void;
+  updateWorkspaceName: (workspaceId: string, newName: string) => Promise<void>;
   login: (email: string, password: string) => Promise<any>;
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<any>;
   loginWithGoogle: () => Promise<any>;
@@ -106,6 +108,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (newActiveWorkspace) {
       setActiveWorkspace(newActiveWorkspace);
       localStorage.setItem('activeWorkspaceId', workspaceId);
+      // We don't need a full page reload, but we might want to trigger a data refetch
+      // on the component level. For now, we'll just switch context.
+      // A full router.refresh() might be too heavy.
+      window.location.reload(); // Simple solution for now
+    }
+  };
+
+  const updateWorkspaceName = async (workspaceId: string, newName: string) => {
+    await updateWorkspaceNameInDb(workspaceId, newName);
+    
+    // Update local state to reflect the change immediately
+    const updateState = (ws: Workspace) => produce(ws, draft => {
+        if(draft.id === workspaceId) {
+            draft.name = newName;
+        }
+    });
+
+    setWorkspaces(prev => prev.map(updateState));
+    if (activeWorkspace && activeWorkspace.id === workspaceId) {
+        setActiveWorkspace(prev => prev ? updateState(prev) : null);
     }
   };
 
@@ -176,6 +198,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     activeWorkspace,
     workspaces,
     switchWorkspace,
+    updateWorkspaceName,
   };
 
   if (loading && !publicRoutes.includes(pathname)) {
@@ -196,5 +219,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    

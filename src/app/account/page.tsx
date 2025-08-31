@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck } from 'lucide-react';
+import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +31,7 @@ import type { WorkspaceMember, WorkspaceMemberRole } from '@/lib/types';
 
 
 export default function AccountPage() {
-  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace } = useAuth();
+  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, updateWorkspaceName } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -43,6 +43,14 @@ export default function AccountPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<WorkspaceMemberRole>("editor");
   const [isInviting, setIsInviting] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState(activeWorkspace?.name || '');
+  const [isSavingName, setIsSavingName] = useState(false);
+  
+  useEffect(() => {
+    if (activeWorkspace) {
+        setWorkspaceName(activeWorkspace.name);
+    }
+  }, [activeWorkspace]);
 
   const currentUserRole = activeWorkspace ? members.find(m => m.userId === user?.uid)?.role : undefined;
   const isOwner = currentUserRole === 'owner';
@@ -109,6 +117,23 @@ export default function AccountPage() {
         toast({ variant: "destructive", title: "Erro ao atualizar função", description: error.message });
     }
   }
+
+  const handleUpdateWorkspaceName = async () => {
+    if (!activeWorkspace || !workspaceName.trim()) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'O nome do workspace não pode ser vazio.' });
+        return;
+    }
+    setIsSavingName(true);
+    try {
+        await updateWorkspaceName(activeWorkspace.id, workspaceName);
+        toast({ title: 'Workspace atualizado!', description: 'O nome do seu workspace foi alterado.' });
+    } catch (error: any) {
+        console.error("Failed to update workspace name:", error);
+        toast({ variant: "destructive", title: "Erro ao renomear", description: error.message });
+    } finally {
+        setIsSavingName(false);
+    }
+  };
 
   const handleDeleteAccount = () => {
     // This is a placeholder. A real implementation would require a backend function
@@ -197,32 +222,50 @@ export default function AccountPage() {
         {activeWorkspace && (
              <Card>
                 <CardHeader>
-                    <CardTitle>Colaboradores do Workspace</CardTitle>
-                    <CardDescription>Convide e gerencie os membros do seu workspace "{activeWorkspace.name}".</CardDescription>
+                    <CardTitle>Workspace: {activeWorkspace.name}</CardTitle>
+                    <CardDescription>Gerencie o nome e os membros do seu workspace.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {isOwner && (
-                        <div className="p-4 border rounded-lg bg-muted/30">
-                            <h4 className="font-semibold mb-2">Convidar Novo Membro</h4>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <Input 
-                                    type="email" 
-                                    placeholder="E-mail do convidado" 
-                                    value={inviteEmail}
-                                    onChange={e => setInviteEmail(e.target.value)}
-                                    className="flex-grow"
-                                />
-                                <Select value={inviteRole} onValueChange={value => setInviteRole(value as WorkspaceMemberRole)}>
-                                    <SelectTrigger className="w-full sm:w-[120px]"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="editor">Editor</SelectItem>
-                                        <SelectItem value="viewer">Visualizador</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <Button onClick={handleInviteUser} disabled={isInviting}>
-                                    {isInviting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                                    Convidar
-                                </Button>
+                        <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                            <div>
+                                <h4 className="font-semibold mb-2">Renomear Workspace</h4>
+                                 <div className="flex items-center gap-2">
+                                    <Input 
+                                        id="workspace-name"
+                                        value={workspaceName}
+                                        onChange={(e) => setWorkspaceName(e.target.value)}
+                                        disabled={!isOwner || isSavingName}
+                                    />
+                                    <Button onClick={handleUpdateWorkspaceName} disabled={!isOwner || isSavingName || workspaceName === activeWorkspace.name}>
+                                       {isSavingName ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                       Salvar
+                                    </Button>
+                                </div>
+                            </div>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Convidar Novo Membro</h4>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <Input 
+                                        type="email" 
+                                        placeholder="E-mail do convidado" 
+                                        value={inviteEmail}
+                                        onChange={e => setInviteEmail(e.target.value)}
+                                        className="flex-grow"
+                                    />
+                                    <Select value={inviteRole} onValueChange={value => setInviteRole(value as WorkspaceMemberRole)}>
+                                        <SelectTrigger className="w-full sm:w-[120px]"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="editor">Editor</SelectItem>
+                                            <SelectItem value="viewer">Visualizador</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Button onClick={handleInviteUser} disabled={isInviting}>
+                                        {isInviting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                                        Convidar
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     )}

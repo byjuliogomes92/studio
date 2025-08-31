@@ -1,8 +1,9 @@
 
 
-import { getDb } from "./firebase";
+import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole } from "./types";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -394,6 +395,55 @@ export const deleteBrand = async (brandId: string): Promise<void> => {
     const db = getDbInstance();
     await deleteDoc(doc(db, 'brands', brandId));
 };
+
+
+// Media Library
+export const uploadMedia = async (file: File, workspaceId: string, userId: string): Promise<MediaAsset> => {
+    const db = getDbInstance();
+    
+    // Create a unique path for the file in Firebase Storage
+    const storagePath = `${workspaceId}/${userId}/${Date.now()}-${file.name}`;
+    const storageRef = ref(storage, storagePath);
+
+    // Upload the file
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+
+    // Create a metadata document in Firestore
+    const mediaData: Omit<MediaAsset, 'id'> = {
+        workspaceId,
+        userId,
+        fileName: file.name,
+        url: downloadURL,
+        storagePath,
+        contentType: file.type,
+        size: file.size,
+        createdAt: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(collection(db, 'media'), mediaData);
+
+    return { ...mediaData, id: docRef.id, createdAt: Timestamp.now() };
+}
+
+export const getMediaForWorkspace = async (workspaceId: string): Promise<MediaAsset[]> => {
+    if (!workspaceId) return [];
+    const db = getDbInstance();
+    const q = query(collection(db, 'media'), where('workspaceId', '==', workspaceId), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaAsset));
+}
+
+export const deleteMedia = async (mediaAsset: MediaAsset): Promise<void> => {
+    const db = getDbInstance();
+    
+    // Create a reference to the file to delete
+    const fileRef = ref(storage, mediaAsset.storagePath);
+
+    // Delete the file from Storage and the document from Firestore
+    await deleteObject(fileRef);
+    await deleteDoc(doc(db, 'media', mediaAsset.id));
+}
 
 
 // User Progress (Onboarding)

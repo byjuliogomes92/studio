@@ -1,0 +1,20 @@
+
+rules_version = '2';
+
+// Documentação de Regras de Segurança: https://firebase.google.com/docs/storage/security
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Regra principal: Permite leitura e escrita apenas em pastas que correspondem ao ID do workspace do usuário.
+    // O nome do arquivo deve ser no formato: {workspaceId}/{userId}/{fileName}
+    // Isso garante que um usuário só possa acessar arquivos do seu próprio workspace.
+    match /{workspaceId}/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
+    }
+
+    // Regra de fallback para negar acesso a qualquer outro caminho.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

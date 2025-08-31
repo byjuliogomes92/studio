@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress, Template, PageView, Workspace } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette, Image as ImageIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -421,6 +421,10 @@ export function ProjectDashboard() {
               <Palette className="mr-2 h-4 w-4" />
               Marcas
             </DropdownMenuItem>
+             <DropdownMenuItem onClick={() => router.push('/media')}>
+              <ImageIcon className="mr-2 h-4 w-4" />
+              Mídia
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/templates')}>
               <Library className="mr-2 h-4 w-4" />
               Templates
@@ -467,6 +471,10 @@ export function ProjectDashboard() {
           <Button variant="ghost" onClick={() => router.push('/brands')}>
             <Palette className="mr-2 h-4 w-4" />
             Marcas
+          </Button>
+          <Button variant="ghost" onClick={() => router.push('/media')}>
+            <ImageIcon className="mr-2 h-4 w-4" />
+            Mídia
           </Button>
           <Button variant="ghost" onClick={() => router.push('/templates')}>
             <Library className="mr-2 h-4 w-4" />

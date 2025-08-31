@@ -2,12 +2,12 @@
 
 "use client";
 
-import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset } from "@/lib/types";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download, Send, ArrowRight, CheckCircle, GripVertical } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download, Send, ArrowRight, CheckCircle, GripVertical, Library } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -35,6 +35,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
+import { MediaLibraryDialog } from "./media-library-dialog";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -485,6 +486,33 @@ function AnimationPreview({ animation }: { animation: keyof typeof animationUrls
     );
 }
 
+function ImageInput({ label, value, onPropChange, propName, tooltipText }: { label: string, value: string, onPropChange: (prop: string, value: any) => void, propName: string, tooltipText: string }) {
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+                <Label htmlFor={`image-url-${propName}`}>{label}</Label>
+                <Tooltip>
+                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                    <TooltipContent><p>{tooltipText}</p></TooltipContent>
+                </Tooltip>
+            </div>
+            <div className="flex items-center gap-2">
+                <Input
+                    id={`image-url-${propName}`}
+                    value={value || ""}
+                    onChange={(e) => onPropChange(propName, e.target.value)}
+                    className="flex-grow"
+                />
+                <MediaLibraryDialog onSelectImage={(url) => onPropChange(propName, url)}>
+                    <Button variant="outline" size="icon">
+                        <Library className="h-4 w-4" />
+                    </Button>
+                </MediaLibraryDialog>
+            </div>
+        </div>
+    );
+}
+
 
 const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
     
@@ -536,37 +564,23 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
     switch (type) {
       case "Header":
         return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Label htmlFor="logo-url">URL do Logo</Label>
-              <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>URL para a imagem do logo no cabeçalho.</p></TooltipContent>
-              </Tooltip>
-            </div>
-            <Input
-              id="logo-url"
-              value={props.logoUrl || ""}
-              onChange={(e) => onPropChange("logoUrl", e.target.value)}
+            <ImageInput 
+                label="URL do Logo"
+                value={props.logoUrl || ""}
+                onPropChange={onPropChange}
+                propName="logoUrl"
+                tooltipText="URL para a imagem do logo no cabeçalho."
             />
-          </div>
         );
       case "Banner":
         return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Label htmlFor="image-url">URL da Imagem</Label>
-              <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>URL para a imagem principal do banner.</p></TooltipContent>
-              </Tooltip>
-            </div>
-            <Input
-              id="image-url"
-              value={props.imageUrl || ""}
-              onChange={(e) => onPropChange("imageUrl", e.target.value)}
+           <ImageInput 
+                label="URL da Imagem"
+                value={props.imageUrl || ""}
+                onPropChange={onPropChange}
+                propName="imageUrl"
+                tooltipText="URL para a imagem principal do banner."
             />
-          </div>
         );
       case "Title":
       case "Subtitle":
@@ -632,21 +646,13 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
       case "Image":
         return (
           <div className="space-y-4">
-             <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Label htmlFor="image-src">URL da Imagem</Label>
-                   <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>URL de origem para a imagem.</p></TooltipContent>
-                  </Tooltip>
-                </div>
-                <Input
-                    id="image-src"
-                    value={props.src || ""}
-                    onChange={(e) => onPropChange("src", e.target.value)}
-                    placeholder="https://placehold.co/800x200.png"
-                />
-             </div>
+             <ImageInput 
+                label="URL da Imagem"
+                value={props.src || ""}
+                onPropChange={onPropChange}
+                propName="src"
+                tooltipText="URL de origem para a imagem."
+            />
               <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label htmlFor="image-alt">Texto Alternativo</Label>

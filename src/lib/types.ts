@@ -156,6 +156,19 @@ export interface Project {
     createdAt: Timestamp;
 }
 
+export interface MediaAsset {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  fileName: string;
+  url: string;
+  storagePath: string;
+  contentType: string;
+  size: number;
+  createdAt: any;
+}
+
+
 // A Template is essentially a CloudPage, but without project/user specific data.
 // It can be used to create new CloudPages.
 export interface Template {

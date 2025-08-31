@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout } from "@/lib/types";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,15 @@ const lucideIcons = [
     { value: 'download', label: 'Download' },
     { value: 'star', label: 'Estrela' },
     { value: 'zap', label: 'Raio' },
+];
+
+const headerLayouts: { value: HeaderLayout; label: string; viz: React.ReactNode }[] = [
+    { value: 'logo-left-menu-right', label: 'Logo Esquerda, Menu Direita', viz: <div className="space-y-1 w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
+    { value: 'logo-left-menu-button-right', label: 'Logo Esquerda, Menu e Botão Direita', viz: <div className="space-y-1 w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div><div className="w-4 h-2 ml-auto rounded-sm bg-primary"></div></div> },
+    { value: 'logo-center-menu-below', label: 'Logo Central, Menu Abaixo', viz: <div className="space-y-1 w-full flex flex-col items-center"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
+    { value: 'logo-left-button-right', label: 'Logo Esquerda, Botão Direita', viz: <div className="flex justify-between w-full items-center"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-4 h-2 rounded-sm bg-primary"></div></div> },
+    { value: 'logo-only-center', label: 'Apenas Logo (Centro)', viz: <div className="flex justify-center w-full"><div className="w-6 h-3 rounded-sm bg-current"></div></div> },
+    { value: 'logo-only-left', label: 'Apenas Logo (Esquerda)', viz: <div className="flex justify-start w-full"><div className="w-6 h-3 rounded-sm bg-current"></div></div> },
 ];
 
 function SpacingSettings({ props, onPropChange }: { props: any, onPropChange: (prop: string, value: any) => void }) {
@@ -608,7 +617,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
     const activeFormFields = getActiveFormFields();
 
     switch (type) {
-      case "Header":
+      case "Header": {
         const layout = props.layout || 'logo-left-menu-right';
         const showMenu = layout.includes('menu');
         const showButton = layout.includes('button');
@@ -631,18 +640,29 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         placeholder="40"
                     />
                 </div>
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <Label htmlFor="header-layout">Layout do Cabeçalho</Label>
-                    <Select value={layout} onValueChange={(value) => onPropChange('layout', value)}>
-                        <SelectTrigger id="header-layout"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="logo-left-menu-right">Logo Esquerda, Menu Direita</SelectItem>
-                            <SelectItem value="logo-center-menu-below">Logo Centro, Menu Abaixo</SelectItem>
-                            <SelectItem value="logo-left-button-right">Logo Esquerda, Botão Direita</SelectItem>
-                            <SelectItem value="logo-only-center">Apenas Logo (Centro)</SelectItem>
-                            <SelectItem value="logo-only-left">Apenas Logo (Esquerda)</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    <RadioGroup 
+                        value={layout} 
+                        onValueChange={(value) => onPropChange('layout', value)} 
+                        className="grid grid-cols-2 gap-2"
+                    >
+                        {headerLayouts.map(item => (
+                             <Label
+                                key={item.value}
+                                htmlFor={`layout-${item.value}`}
+                                className={cn(
+                                    "flex flex-col items-start gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all text-foreground",
+                                    "hover:bg-accent/50 hover:border-primary/50",
+                                    layout === item.value && "border-primary bg-primary/5"
+                                )}
+                            >
+                                <RadioGroupItem value={item.value} id={`layout-${item.value}`} className="sr-only" />
+                                <div className="h-10 w-full flex items-center text-muted-foreground">{item.viz}</div>
+                                <span className="text-xs font-semibold">{item.label}</span>
+                            </Label>
+                        ))}
+                    </RadioGroup>
                 </div>
                 {showMenu && (
                     <HeaderLinksManager links={props.links || []} onPropChange={onPropChange} />
@@ -696,6 +716,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 )}
             </div>
         );
+      }
       case "Banner":
         return (
            <ImageInput 

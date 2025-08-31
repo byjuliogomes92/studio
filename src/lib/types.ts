@@ -89,6 +89,14 @@ export interface HeaderLink {
     url: string;
 }
 
+export type HeaderLayout = 
+  | 'logo-left-menu-right'
+  | 'logo-left-menu-button-right'
+  | 'logo-center-menu-below'
+  | 'logo-left-button-right'
+  | 'logo-only-center'
+  | 'logo-only-left';
+
 export interface PageComponent {
   id: string;
   type: ComponentType;

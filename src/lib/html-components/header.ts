@@ -17,7 +17,15 @@ export function renderHeader(component: PageComponent): string {
     } = component.props;
     
     const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
-    const buttonHtml = layout.includes('button') && buttonText && buttonUrl ? `<a href="${buttonUrl}" class="header-button">${buttonText}</a>` : '';
+    
+    const showMenu = layout.includes('menu');
+    const showButton = layout.includes('button');
+    
+    const buttonHtml = showButton && buttonText && buttonUrl 
+        ? `<a href="${buttonUrl}" class="header-button">${buttonText}</a>` 
+        : '';
+        
+    const navHtml = showMenu ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : '';
 
     const stickyAttrs = isSticky ? `
         data-sticky="true"
@@ -26,14 +34,16 @@ export function renderHeader(component: PageComponent): string {
         data-bg-scroll="${backgroundColorOnScroll}"
         data-text-color-scroll="${textColorOnScroll}"
     ` : '';
+    
+    // The main container for nav items and button
+    const navContainer = `<div class="header-nav-container">${navHtml}${buttonHtml}</div>`;
 
     return `
         <header class="page-header" data-layout="${layout}" ${stickyAttrs}>
             <div class="header-logo">
                 <img src="${logoUrl}" alt="Logo" style="height: ${logoHeight}px;">
             </div>
-            ${layout.includes('menu') ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : ''}
-            ${buttonHtml}
+            ${(showMenu || showButton) ? navContainer : ''}
             <button class="mobile-menu-toggle">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
             </button>

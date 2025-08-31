@@ -592,6 +592,13 @@ const getClientSideScripts = (pageState: CloudPage): string => {
                 }
             });
         });
+        
+        const overlay = document.getElementById('mobile-menu-overlay');
+        if(overlay) {
+            overlay.addEventListener('click', () => {
+                body.classList.remove('menu-drawer-open');
+            });
+        }
     }
 
 
@@ -880,22 +887,12 @@ ${trackingScripts.head}
             padding: 2rem;
             box-sizing: border-box;
             transition: right 0.3s ease-in-out;
-            z-index: 1000;
+            z-index: 1001;
         }
         body.menu-drawer-open .page-header[data-mobile-menu-behavior="drawer"] .header-nav-container {
             right: 0;
         }
-        body.menu-drawer-open::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-        }
-
+        
         /* Overlay Behavior */
         body.menu-overlay-open { overflow: hidden; }
         .page-header[data-mobile-menu-behavior="overlay"] .header-nav-container {
@@ -910,7 +907,7 @@ ${trackingScripts.head}
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-            z-index: 1000;
+            z-index: 1001;
         }
          body.menu-overlay-open .page-header[data-mobile-menu-behavior="overlay"] .header-nav-container {
             opacity: 1;
@@ -923,6 +920,17 @@ ${trackingScripts.head}
         .page-header[data-mobile-menu-behavior="overlay"] .header-nav a {
             font-size: 1.5rem;
         }
+    }
+
+    #mobile-menu-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: none;
+    }
+    body.menu-drawer-open #mobile-menu-overlay {
+        display: block;
     }
 
 
@@ -1542,6 +1550,7 @@ ${ssjsScript}
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
   </div>
   ${stripeComponents}
+  <div id="mobile-menu-overlay"></div>
   <main>
     ${mainContentHtml}
   </main>
@@ -1553,4 +1562,3 @@ ${ssjsScript}
   %%[ ENDIF ]%%
 </body>
 </html>`
-}

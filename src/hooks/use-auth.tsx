@@ -25,6 +25,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<any>;
   logout: () => void;
   updateUserAvatar: () => Promise<void>;
+  updateUserName: (firstName: string, lastName: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -168,6 +169,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
+  const updateUserName = async (firstName: string, lastName: string) => {
+    if (!auth?.currentUser) return;
+    const newDisplayName = `${firstName} ${lastName}`.trim();
+    if (!newDisplayName) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'O nome não pode ser vazio.' });
+        return;
+    }
+    await updateProfile(auth.currentUser, { displayName: newDisplayName });
+    setUser(produce(user, draft => {
+        if(draft) {
+            draft.displayName = newDisplayName;
+        }
+    }));
+  };
+
   const updateUserAvatar = async () => {
     if (!auth?.currentUser) return;
     setIsUpdatingAvatar(true);
@@ -195,6 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loginWithGoogle,
     logout,
     updateUserAvatar,
+    updateUserName,
     activeWorkspace,
     workspaces,
     switchWorkspace,

@@ -31,11 +31,16 @@ import type { WorkspaceMember, WorkspaceMemberRole } from '@/lib/types';
 
 
 export default function AccountPage() {
-  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, updateWorkspaceName } = useAuth();
+  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, updateWorkspaceName, updateUserName } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [wantsCommunications, setWantsCommunications] = useState(true);
+
+  // Profile management state
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
 
   // Workspace management state
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
@@ -43,8 +48,32 @@ export default function AccountPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<WorkspaceMemberRole>("editor");
   const [isInviting, setIsInviting] = useState(false);
-  const [workspaceName, setWorkspaceName] = useState(activeWorkspace?.name || '');
-  const [isSavingName, setIsSavingName] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('');
+  const [isSavingWorkspaceName, setIsSavingWorkspaceName] = useState(false);
+  
+  useEffect(() => {
+    if (user?.displayName) {
+        const nameParts = user.displayName.split(' ');
+        setFirstName(nameParts[0] || '');
+        setLastName(nameParts.slice(1).join(' ') || '');
+    }
+  }, [user?.displayName]);
+
+  const hasNameChanged = (user?.displayName || '') !== `${firstName} ${lastName}`.trim();
+
+  const handleUpdateUserName = async () => {
+    if (!hasNameChanged) return;
+    setIsSavingName(true);
+    try {
+        await updateUserName(firstName, lastName);
+        toast({ title: 'Nome atualizado!', description: 'Seu nome foi alterado com sucesso.' });
+    } catch (error: any) {
+        console.error("Failed to update name:", error);
+        toast({ variant: "destructive", title: "Erro ao salvar nome", description: error.message });
+    } finally {
+        setIsSavingName(false);
+    }
+  };
   
   useEffect(() => {
     if (activeWorkspace) {
@@ -123,7 +152,7 @@ export default function AccountPage() {
         toast({ variant: 'destructive', title: 'Erro', description: 'O nome do workspace não pode ser vazio.' });
         return;
     }
-    setIsSavingName(true);
+    setIsSavingWorkspaceName(true);
     try {
         await updateWorkspaceName(activeWorkspace.id, workspaceName);
         toast({ title: 'Workspace atualizado!', description: 'O nome do seu workspace foi alterado.' });
@@ -131,7 +160,7 @@ export default function AccountPage() {
         console.error("Failed to update workspace name:", error);
         toast({ variant: "destructive", title: "Erro ao renomear", description: error.message });
     } finally {
-        setIsSavingName(false);
+        setIsSavingWorkspaceName(false);
     }
   };
 
@@ -193,27 +222,38 @@ export default function AccountPage() {
         <Card>
           <CardHeader>
             <CardTitle>Perfil</CardTitle>
-            <CardDescription>Suas informações pessoais. Para alterá-las, entre em contato com o suporte.</CardDescription>
+            <CardDescription>Suas informações pessoais.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
              <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar do usuário'} />
                   <AvatarFallback>{userInitials}</AvatarFallback>
                 </Avatar>
-                <div className="flex-grow">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Nome</Label>
-                        <Input id="name" value={user.displayName || 'Não definido'} disabled />
-                    </div>
-                </div>
                  <Button variant="outline" onClick={updateUserAvatar} disabled={isUpdatingAvatar}>
                     {isUpdatingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                     Gerar Novo Avatar
                 </Button>
              </div>
+             <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="firstName">Nome</Label>
+                        <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} disabled={isSavingName} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="lastName">Sobrenome</Label>
+                        <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} disabled={isSavingName} />
+                    </div>
+                </div>
+                <Button onClick={handleUpdateUserName} disabled={isSavingName || !hasNameChanged}>
+                    {isSavingName ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Salvar Nome
+                </Button>
+            </div>
+            <Separator />
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email (não pode ser alterado)</Label>
               <Input id="email" value={user.email || ''} disabled />
             </div>
           </CardContent>
@@ -235,10 +275,10 @@ export default function AccountPage() {
                                         id="workspace-name"
                                         value={workspaceName}
                                         onChange={(e) => setWorkspaceName(e.target.value)}
-                                        disabled={!isOwner || isSavingName}
+                                        disabled={!isOwner || isSavingWorkspaceName}
                                     />
-                                    <Button onClick={handleUpdateWorkspaceName} disabled={!isOwner || isSavingName || workspaceName === activeWorkspace.name}>
-                                       {isSavingName ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                    <Button onClick={handleUpdateWorkspaceName} disabled={!isOwner || isSavingWorkspaceName || workspaceName === activeWorkspace.name}>
+                                       {isSavingWorkspaceName ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                        Salvar
                                     </Button>
                                 </div>

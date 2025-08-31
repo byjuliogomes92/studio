@@ -42,6 +42,7 @@ import {
   Newspaper,
   LayoutTemplate,
   View,
+  Mail,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -49,7 +50,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
-type BlockType = 'product-showcase' | 'simple-gallery' | 'news-section' | 'hero-background-image' | 'hero-split-right' | 'hero-split-left' | 'hero-lead-capture' | 'logo-carousel';
+type BlockType = 
+    | 'product-showcase' 
+    | 'simple-gallery' 
+    | 'news-section' 
+    | 'hero-background-image' 
+    | 'hero-split-right' 
+    | 'hero-split-left' 
+    | 'hero-lead-capture' 
+    | 'logo-carousel'
+    | 'footer-simple'
+    | 'footer-columns'
+    | 'footer-newsletter';
 
 const componentList: {
   category: string;
@@ -128,8 +140,16 @@ const blockList: {
              { name: "Notícias Recentes", description: "Grade para 3 artigos com imagem, título e resumo.", type: "news-section", icon: Newspaper },
              { name: "Carrossel de Logos", description: "Exiba os logos de clientes ou parceiros em um carrossel infinito.", type: "logo-carousel", icon: View },
         ]
+    },
+    {
+        category: 'Rodapés',
+        blocks: [
+            { name: "Rodapé Simples", description: "Logo, texto de copyright e ícones de redes sociais centralizados.", type: "footer-simple", icon: AlignEndVertical },
+            { name: "Rodapé Informativo", description: "Layout com 4 colunas para logo, links, redes sociais e contato.", type: "footer-columns", icon: AlignEndVertical },
+            { name: "Rodapé com Newsletter", description: "Capture e-mails para sua newsletter diretamente no rodapé.", type: "footer-newsletter", icon: Mail },
+        ]
     }
-]
+];
 
 function ProductShowcaseConfigDialog({ onConfirm }: { onConfirm: (columnCount: number) => void }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -339,6 +359,59 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             ]
             break;
         }
+        case 'footer-simple':
+            componentsToAdd = [
+                {
+                    id: `cols-footer-${baseId}`,
+                    type: 'Columns',
+                    props: { columnCount: 1, styles: { paddingTop: '2rem', paddingBottom: '2rem', textAlign: 'center' } },
+                    order: 0, parentId: null, column: 0
+                },
+                { id: `img-footer-${baseId}`, type: 'Image', props: { src: 'https://placehold.co/150x50.png', alt: 'Logo da Empresa' }, order: 0, parentId: `cols-footer-${baseId}`, column: 0 },
+                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa. Todos os direitos reservados.`, styles: { fontSize: '0.9rem', marginTop: '1rem' } }, order: 1, parentId: `cols-footer-${baseId}`, column: 0 },
+                { id: `social-footer-${baseId}`, type: 'SocialIcons', props: { links: { facebook: '#', instagram: '#', twitter: '#' } }, order: 2, parentId: `cols-footer-${baseId}`, column: 0 },
+            ];
+            break;
+        case 'footer-columns': {
+            const parentId = `cols-footer-${baseId}`;
+            componentsToAdd = [
+                { id: parentId, type: 'Columns', props: { columnCount: 4, styles: { paddingTop: '3rem', paddingBottom: '3rem', gap: '2rem' } }, order: 0, parentId: null, column: 0 },
+                // Coluna 1
+                { id: `img-footer-${baseId}`, type: 'Image', props: { src: 'https://placehold.co/150x50.png', alt: 'Logo' }, order: 0, parentId, column: 0 },
+                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: 'Sua missão em poucas palavras. Conectando pessoas e criando valor.', styles: { fontSize: '0.9rem', marginTop: '1rem' } }, order: 1, parentId, column: 0 },
+                // Coluna 2
+                { id: `sub1-footer-${baseId}`, type: 'Subtitle', props: { text: 'Empresa', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 1 },
+                { id: `btn1-footer-${baseId}`, type: 'Button', props: { text: 'Sobre Nós', href: '#', align: 'left', styles: { all: 'unset', padding: '0.25rem 0', display: 'block' } }, order: 1, parentId, column: 1 },
+                { id: `btn2-footer-${baseId}`, type: 'Button', props: { text: 'Carreiras', href: '#', align: 'left', styles: { all: 'unset', padding: '0.25rem 0', display: 'block' } }, order: 2, parentId, column: 1 },
+                // Coluna 3
+                { id: `sub2-footer-${baseId}`, type: 'Subtitle', props: { text: 'Recursos', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 2 },
+                { id: `btn3-footer-${baseId}`, type: 'Button', props: { text: 'Blog', href: '#', align: 'left', styles: { all: 'unset', padding: '0.25rem 0', display: 'block' } }, order: 1, parentId, column: 2 },
+                { id: `btn4-footer-${baseId}`, type: 'Button', props: { text: 'Suporte', href: '#', align: 'left', styles: { all: 'unset', padding: '0.25rem 0', display: 'block' } }, order: 2, parentId, column: 2 },
+                // Coluna 4
+                { id: `sub3-footer-${baseId}`, type: 'Subtitle', props: { text: 'Siga-nos', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 3 },
+                { id: `social-footer-${baseId}`, type: 'SocialIcons', props: { links: { facebook: '#', instagram: '#', twitter: '#' }, styles: { align: 'left' } }, order: 1, parentId, column: 3 },
+                // Copyright
+                { id: `divider-footer-${baseId}`, type: 'Divider', props: { margin: 20 }, order: 1, parentId: null, column: 0 },
+                { id: `copy-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa.`, styles: { textAlign: 'center', fontSize: '0.8rem' } }, order: 2, parentId: null, column: 0 },
+            ];
+            break;
+        }
+        case 'footer-newsletter': {
+             componentsToAdd = [
+                {
+                    id: `cols-footer-${baseId}`,
+                    type: 'Columns',
+                    props: { columnCount: 1, styles: { paddingTop: '3rem', paddingBottom: '3rem', textAlign: 'center', backgroundColor: '#f9fafb' } },
+                    order: 0, parentId: null, column: 0
+                },
+                { id: `title-footer-${baseId}`, type: 'Title', props: { text: 'Inscreva-se na nossa Newsletter' }, order: 0, parentId: `cols-footer-${baseId}`, column: 0 },
+                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: 'Fique por dentro das últimas novidades e ofertas especiais.' }, order: 1, parentId: `cols-footer-${baseId}`, column: 0 },
+                { id: `form-footer-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true } }, buttonText: 'Inscrever', formAlign: 'center', buttonAlign: 'center' }, order: 2, parentId: `cols-footer-${baseId}`, column: 0 },
+                { id: `copy-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa.`, styles: { textAlign: 'center', fontSize: '0.8rem', marginTop: '2rem' } }, order: 3, parentId: `cols-footer-${baseId}`, column: 0 },
+             ];
+             break;
+        }
+
     }
 
     onAddComponent(componentsToAdd);
@@ -357,7 +430,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
           <DialogTitle>Adicionar Novo Conteúdo</DialogTitle>
         </DialogHeader>
         <TooltipProvider>
-            <Tabs defaultValue={"componentes"} className="w-full">
+            <Tabs defaultValue="componentes" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="blocos">
                     Blocos Prontos
@@ -368,14 +441,14 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             </TabsList>
             <TabsContent value="blocos">
                 <Tabs defaultValue={blockList[0].category} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         {blockList.map((group) => (
                             <TabsTrigger key={group.category} value={group.category}>{group.category}</TabsTrigger>
                         ))}
                     </TabsList>
                     {blockList.map((group) => (
                         <TabsContent key={group.category} value={group.category}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 max-h-[50vh] overflow-y-auto">
                                 {group.blocks.map(block => {
                                     if (block.type === 'product-showcase') {
                                         return <ProductShowcaseConfigDialog key={block.type} onConfirm={(count) => handleBlockClick(block.type, count)} />

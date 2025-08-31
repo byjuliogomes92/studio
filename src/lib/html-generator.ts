@@ -41,6 +41,11 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                 }
                 const renderedComponent = renderSingleComponent(component, pageState, isForPreview, columnsHtml);
                 const isHero = !!component.props.styles?.isHero;
+                const isFooter = !!component.props.styles?.isFooter;
+
+                if (isFooter) {
+                    return `<footer class="section-wrapper footer-section">${renderedComponent}</footer>`
+                }
                 return `<div class="section-wrapper ${isHero ? 'hero-section' : ''}">${renderedComponent}</div>`;
             }
              return `<div class="section-wrapper"><div class="section-container">${renderComponent(component, pageState, isForPreview)}</div></div>`;
@@ -825,9 +830,18 @@ ${trackingScripts.head}
         box-sizing: border-box;
     }
 
-    .hero-section .section-container {
+    .hero-section .section-container,
+    .footer-section .section-container {
         max-width: 1200px;
         padding: 0;
+    }
+    .footer-section {
+        background-color: #f9fafb;
+        margin-top: auto;
+    }
+    .footer-section a.custom-button {
+      color: inherit !important;
+      text-decoration: none;
     }
     
     .page-header {
@@ -1675,6 +1689,18 @@ ${trackingScripts.head}
             flex-direction: column;
             gap: 10px;
         }
+        .footer-section .columns-container {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+        .footer-section .columns-container .column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+         .footer-section .social-icons-container {
+            justify-content: center;
+        }
     }
 
 
@@ -1705,4 +1731,3 @@ ${ssjsScript}
 </html>
 `
 }
-

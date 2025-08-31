@@ -26,42 +26,20 @@ import { Logo } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getWorkspaceMembers, removeUserFromWorkspace, updateUserRole, getInvitesForWorkspace, inviteUserToWorkspace, acceptInvite, declineInvite, getActivityLogsForWorkspace } from '@/lib/firestore';
-import type { WorkspaceMember, WorkspaceMemberRole, Invite, ActivityLog } from '@/lib/types';
+import { getWorkspaceMembers, removeUserFromWorkspace, updateUserRole, inviteUserToWorkspace, getActivityLogsForWorkspace } from '@/lib/firestore';
+import type { WorkspaceMember, WorkspaceMemberRole, ActivityLog } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 
 
 function MemberManagement({ activeWorkspace, user, members, fetchMembers }: { activeWorkspace: any; user: any; members: WorkspaceMember[]; fetchMembers: () => void }) {
     const { toast } = useToast();
-    const [invites, setInvites] = useState<Invite[]>([]);
-    const [isLoadingInvites, setIsLoadingInvites] = useState(false);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState<WorkspaceMemberRole>("editor");
     const [isInviting, setIsInviting] = useState(false);
 
     const currentUserRole = activeWorkspace ? members.find(m => m.userId === user?.uid)?.role : undefined;
     const isOwner = currentUserRole === 'owner';
-
-    const fetchInvites = useCallback(async () => {
-        if (!activeWorkspace) return;
-        setIsLoadingInvites(true);
-        try {
-            const fetchedInvites = await getInvitesForWorkspace(activeWorkspace.id);
-            setInvites(fetchedInvites.filter(inv => inv.status === 'pending'));
-        } catch (error) {
-            console.error("Failed to fetch invites:", error);
-            toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os convites pendentes." });
-        } finally {
-            setIsLoadingInvites(false);
-        }
-    }, [activeWorkspace, toast]);
-
-    useEffect(() => {
-        if (activeWorkspace) {
-            fetchInvites();
-        }
-    }, [activeWorkspace, fetchInvites]);
     
     const handleInviteUser = async () => {
         if (!activeWorkspace || !inviteEmail) {
@@ -71,12 +49,12 @@ function MemberManagement({ activeWorkspace, user, members, fetchMembers }: { ac
         setIsInviting(true);
         try {
             await inviteUserToWorkspace(activeWorkspace.id, inviteEmail, inviteRole, user.displayName || user.email);
-            toast({ title: 'Usuário convidado!', description: `${inviteEmail} foi convidado para o seu workspace.` });
+            toast({ title: 'Usuário adicionado!', description: `${inviteEmail} foi adicionado ao seu workspace.` });
             setInviteEmail('');
-            fetchInvites();
+            fetchMembers(); // Re-fetch to get the newly added member (if they exist as a user)
         } catch (error: any) {
-            console.error("Failed to invite user:", error);
-            toast({ variant: "destructive", title: "Erro ao convidar", description: error.message });
+            console.error("Failed to add user:", error);
+            toast({ variant: "destructive", title: "Erro ao adicionar", description: error.message });
         } finally {
             setIsInviting(false);
         }
@@ -112,11 +90,11 @@ function MemberManagement({ activeWorkspace, user, members, fetchMembers }: { ac
         <div className="space-y-6">
             {isOwner && (
                 <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-                    <h4 className="font-semibold mb-2">Convidar Novo Membro</h4>
+                    <h4 className="font-semibold mb-2">Adicionar Novo Membro</h4>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <Input 
                             type="email" 
-                            placeholder="E-mail do convidado" 
+                            placeholder="E-mail do membro" 
                             value={inviteEmail}
                             onChange={e => setInviteEmail(e.target.value)}
                             className="flex-grow"
@@ -130,30 +108,12 @@ function MemberManagement({ activeWorkspace, user, members, fetchMembers }: { ac
                         </Select>
                         <Button onClick={handleInviteUser} disabled={isInviting}>
                             {isInviting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                            Convidar
+                            Adicionar
                         </Button>
                     </div>
                 </div>
             )}
             
-            {isOwner && invites.length > 0 && (
-                <div>
-                     <h4 className="font-semibold mb-4">Convites Pendentes</h4>
-                     {isLoadingInvites ? (
-                        <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
-                     ) : (
-                        <div className="space-y-3">
-                            {invites.map(invite => (
-                                 <div key={invite.id} className="flex items-center justify-between p-3 rounded-md border bg-muted/40">
-                                     <p className="text-sm text-muted-foreground">{invite.toEmail} ({invite.role})</p>
-                                     <p className="text-xs text-muted-foreground">Pendente</p>
-                                 </div>
-                            ))}
-                        </div>
-                     )}
-                </div>
-            )}
-
             <div>
                 <h4 className="font-semibold mb-4">Membros Atuais</h4>
                  <div className="space-y-3">
@@ -288,7 +248,7 @@ function ActivityLogDisplay({ activeWorkspace }: { activeWorkspace: any; }) {
 
 
 export default function AccountPage() {
-  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, updateWorkspaceName, updateUserName, refreshUserWorkspaces } = useAuth();
+  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, updateWorkspaceName, updateUserName } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);

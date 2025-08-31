@@ -101,7 +101,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateWorkspaceName = async (workspaceId: string, newName: string) => {
-    await updateWorkspaceNameInDb(workspaceId, newName);
+    if (!user) return;
+    await updateWorkspaceNameInDb(workspaceId, newName, user);
     
     const updateState = (ws: Workspace) => produce(ws, draft => {
         if(draft.id === workspaceId) {
@@ -143,7 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (result.user && !result.user.photoURL) {
         const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${result.user.uid}`;
         await updateProfile(result.user, { photoURL: avatarUrl });
-        setUser({ ...result.user, photoURL: avatarUrl } as User);
+        setUser({ ...result.user, photoURL: newAvatarUrl } as User);
     }
     return result;
   };

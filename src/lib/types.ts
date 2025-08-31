@@ -44,20 +44,6 @@ export interface WorkspaceMember {
   createdAt: any;
 }
 
-export type InviteStatus = 'pending' | 'accepted' | 'declined';
-
-export interface Invite {
-  id: string;
-  workspaceId: string;
-  workspaceName: string; // denormalized for display
-  fromUserName: string;  // denormalized for display
-  toEmail: string;
-  role: WorkspaceMemberRole;
-  status: InviteStatus;
-  createdAt: any;
-}
-
-
 export interface Brand {
   id: string;
   workspaceId: string;
@@ -166,6 +152,7 @@ export interface Project {
     id: string;
     name: string;
     workspaceId: string;
+    userId: string;
     icon?: string;
     color?: string;
     createdAt: Timestamp;

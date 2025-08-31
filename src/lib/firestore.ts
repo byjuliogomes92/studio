@@ -3,7 +3,7 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, Invite, ActivityLog, ActivityLogAction } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -29,10 +29,10 @@ export const createWorkspace = async (userId: string, workspaceName: string): Pr
     batch.set(workspaceRef, newWorkspace);
 
     // Create the owner as a member
-    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceRef.id}`);
+    const memberRef = doc(collection(db, 'workspaceMembers'));
     const newMember: Omit<WorkspaceMember, 'id'> = {
         userId,
-        email: '', // Email can be fetched from auth user object if needed, but not essential for this.
+        email: '', // Email can be fetched from auth user object if needed
         workspaceId: workspaceRef.id,
         role: 'owner',
         createdAt: serverTimestamp(),
@@ -64,9 +64,10 @@ export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]>
 export const updateWorkspaceName = async (workspaceId: string, newName: string, user: { uid: string, displayName?: string | null }): Promise<void> => {
     const db = getDbInstance();
     const workspaceRef = doc(db, 'workspaces', workspaceId);
+    const oldName = (await getDoc(workspaceRef)).data()?.name || '';
     await updateDoc(workspaceRef, { name: newName });
 
-    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName: '', newName });
+    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName: oldName, newName });
 };
 
 
@@ -87,104 +88,47 @@ export const inviteUserToWorkspace = async (workspaceId: string, email: string, 
         throw new Error("Este usuário já é membro do workspace.");
     }
     
-    // Check for an existing pending invite
-    const qInvites = query(collection(db, "invites"), 
-        where("workspaceId", "==", workspaceId), 
-        where("toEmail", "==", email),
-        where("status", "==", "pending")
-    );
-    const inviteSnap = await getDocs(qInvites);
-    if (!inviteSnap.empty) {
-        throw new Error("Já existe um convite pendente para este e-mail.");
-    }
-    
-    const workspaceSnap = await getDoc(doc(db, 'workspaces', workspaceId));
-    if (!workspaceSnap.exists()) {
-        throw new Error("Workspace não encontrado.");
-    }
-
-    const inviteData: Omit<Invite, 'id'> = {
-        workspaceId,
-        workspaceName: workspaceSnap.data().name,
-        fromUserName: inviterName || 'Um membro',
-        toEmail: email,
+    const newMemberData: Omit<WorkspaceMember, 'id'> = {
+        userId: `invited_${email.replace(/[^a-zA-Z0-9]/g, '')}`, // Temporary ID
+        email: email,
+        workspaceId: workspaceId,
         role: role,
-        status: 'pending',
         createdAt: serverTimestamp(),
     };
 
-    await addDoc(collection(db, 'invites'), inviteData);
+    await addDoc(collection(db, 'workspaceMembers'), newMemberData);
+
+    await logActivity(workspaceId, inviterName || 'System', null, 'MEMBER_INVITED', { invitedEmail: email, role });
 };
-
-
-export const getPendingInvitesForUser = async (email: string): Promise<Invite[]> => {
-    if (!email) return [];
-    const db = getDbInstance();
-    const q = query(
-        collection(db, "invites"),
-        where("toEmail", "==", email),
-        where("status", "==", "pending")
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invite));
-};
-
-export const acceptInvite = async (inviteId: string, user: { uid: string, email?: string | null, displayName?: string | null }): Promise<void> => {
-    const db = getDbInstance();
-    const inviteRef = doc(db, 'invites', inviteId);
-    const inviteSnap = await getDoc(inviteRef);
-
-    if (!inviteSnap.exists()) {
-        throw new Error("Convite não encontrado ou inválido.");
-    }
-    const inviteData = inviteSnap.data() as Invite;
-
-    const batch = writeBatch(db);
-
-    // Create the membership document
-    const memberRef = doc(db, 'workspaceMembers', `${user.uid}_${inviteData.workspaceId}`);
-    batch.set(memberRef, {
-        userId: user.uid,
-        email: user.email,
-        workspaceId: inviteData.workspaceId,
-        role: inviteData.role,
-        createdAt: serverTimestamp(),
-    });
-
-    // Update the invite status
-    batch.update(inviteRef, { status: 'accepted' });
-
-    await batch.commit();
-
-    await logActivity(inviteData.workspaceId, user.uid, user.displayName, 'MEMBER_JOINED', {});
-};
-
-export const declineInvite = async (inviteId: string): Promise<void> => {
-    const db = getDbInstance();
-    const inviteRef = doc(db, 'invites', inviteId);
-    await updateDoc(inviteRef, { status: 'declined' });
-};
-
-
-export const getInvitesForWorkspace = async (workspaceId: string): Promise<Invite[]> => {
-    const db = getDbInstance();
-    const invitesQuery = query(collection(db, "invites"), where("workspaceId", "==", workspaceId));
-    const querySnapshot = await getDocs(invitesQuery);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invite));
-};
-
 
 export const removeUserFromWorkspace = async (workspaceId: string, userId: string, removerUser: any, removedUser: WorkspaceMember): Promise<void> => {
     const db = getDbInstance();
-    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceId}`);
-    await deleteDoc(memberRef);
+    
+    const q = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+        throw new Error("Membro não encontrado para remover.");
+    }
+
+    const memberDoc = querySnapshot.docs[0];
+    await deleteDoc(memberDoc.ref);
+
     await logActivity(workspaceId, removerUser.uid, removerUser.displayName, 'MEMBER_REMOVED', { removedMemberEmail: removedUser.email });
 }
 
 export const updateUserRole = async (workspaceId: string, userId: string, role: WorkspaceMemberRole, updaterUser: any, updatedUser: WorkspaceMember): Promise<void> => {
     const db = getDbInstance();
-    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceId}`);
-    await updateDoc(memberRef, { role });
+     
+    const q = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+     
+    if (querySnapshot.empty) {
+        throw new Error("Membro não encontrado para atualizar.");
+    }
+ 
+    const memberDoc = querySnapshot.docs[0];
+    await updateDoc(memberDoc.ref, { role });
 
     await logActivity(workspaceId, updaterUser.uid, updaterUser.displayName, 'MEMBER_ROLE_CHANGED', { memberName: updatedUser.email, newRole: role });
 }

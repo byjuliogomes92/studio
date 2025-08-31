@@ -1596,4 +1596,5 @@ ${ssjsScript}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>
+</html>`
+}

@@ -2,14 +2,14 @@
 import type { PageComponent, HeaderLink } from '@/lib/types';
 
 export function renderHeader(component: PageComponent): string {
-    const { layout = 'logo-left-menu-right', logoUrl = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png', links = [], buttonText, buttonUrl } = component.props;
+    const { layout = 'logo-left-menu-right', logoUrl = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png', links = [], buttonText, buttonUrl, logoHeight = 40 } = component.props;
     const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
     const buttonHtml = layout.includes('button') && buttonText && buttonUrl ? `<a href="${buttonUrl}" class="header-button">${buttonText}</a>` : '';
 
     return `
         <header class="page-header" data-layout="${layout}">
             <div class="header-logo">
-                <img src="${logoUrl}" alt="Logo">
+                <img src="${logoUrl}" alt="Logo" style="height: ${logoHeight}px;">
             </div>
             ${layout.includes('menu') ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : ''}
             ${buttonHtml}

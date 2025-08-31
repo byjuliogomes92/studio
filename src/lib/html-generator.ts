@@ -1,3 +1,4 @@
+
 import type { CloudPage, PageComponent, ComponentType } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
@@ -744,8 +745,6 @@ ${trackingScripts.head}
         box-sizing: border-box;
     }
     .page-header .header-logo img {
-        height: 40px;
-        max-height: 40px;
         width: auto;
     }
     .page-header .header-nav ul {

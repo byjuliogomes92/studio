@@ -621,6 +621,16 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     propName="logoUrl"
                     tooltipText="URL para a imagem do logo no cabeçalho."
                 />
+                 <div className="space-y-2">
+                    <Label htmlFor="header-logo-height">Altura do Logo (px)</Label>
+                    <Input 
+                        id="header-logo-height"
+                        type="number"
+                        value={props.logoHeight || 40} 
+                        onChange={(e) => onPropChange('logoHeight', parseInt(e.target.value, 10))}
+                        placeholder="40"
+                    />
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="header-layout">Layout do Cabeçalho</Label>
                     <Select value={layout} onValueChange={(value) => onPropChange('layout', value)}>

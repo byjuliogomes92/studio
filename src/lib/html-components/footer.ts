@@ -2,13 +2,20 @@
 import type { PageComponent } from '@/lib/types';
 
 export function renderFooter(component: PageComponent): string {
-    const styleString = getStyleString(component.props.styles);
+    const {
+        footerText1 = `© ${new Date().getFullYear()} Empresa. Todos os direitos reservados.`,
+        footerText2 = 'Informações legais ou endereço da empresa.',
+        footerText3 = 'Links úteis ou outros avisos.',
+        styles = {}
+    } = component.props;
+    const styleString = getStyleString(styles);
+
     return `
     <footer style="${styleString}">
       <div class="MuiGrid-root natds602 MuiGrid-container">
-          <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText1 || `© ${new Date().getFullYear()} Natura. Todos os direitos reservados.`}</span></div>
-          <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText2 || 'NATURA COSMÉTICOS S/A...'}</span></div>
-          <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText3 || 'Todos os preços e condições...'}</span></div>
+          <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${footerText1}</span></div>
+          <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${footerText2}</span></div>
+          <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${footerText3}</span></div>
       </div>
     </footer>`;
 }

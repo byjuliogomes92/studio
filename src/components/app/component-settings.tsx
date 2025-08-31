@@ -855,6 +855,38 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 </div>
             </div>
         );
+      case "Footer":
+        return (
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="footer-text1">Texto de Copyright (Linha 1)</Label>
+                    <DebouncedTextInput
+                        id="footer-text1"
+                        value={props.footerText1 || ''}
+                        onBlur={(value) => onPropChange('footerText1', value)}
+                        rows={3}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="footer-text2">Informações da Empresa (Linha 2)</Label>
+                    <DebouncedTextInput
+                        id="footer-text2"
+                        value={props.footerText2 || ''}
+                        onBlur={(value) => onPropChange('footerText2', value)}
+                        rows={3}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="footer-text3">Avisos Legais (Linha 3)</Label>
+                    <DebouncedTextInput
+                        id="footer-text3"
+                        value={props.footerText3 || ''}
+                        onBlur={(value) => onPropChange('footerText3', value)}
+                        rows={3}
+                    />
+                </div>
+            </div>
+        );
       case "Title":
       case "Subtitle":
       case "Paragraph":

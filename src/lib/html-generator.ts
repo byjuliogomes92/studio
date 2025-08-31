@@ -933,18 +933,30 @@ ${trackingScripts.head}
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0,0,0,0.5);
-        z-index: 1000;
+        z-index: 999;
         display: none;
     }
     body.menu-drawer-open #mobile-menu-overlay {
         display: block;
     }
 
-
-    .banner img {
+    .banner-container, .banner-link-wrapper {
+        display: block;
         width: 100%;
-        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    .banner-image, .banner-video {
+        width: 100%;
+        height: auto;
+        display: block;
         object-fit: cover;
+    }
+    .banner-video {
+        height: 100%;
+    }
+    .banner-link-wrapper:hover {
+        filter: brightness(1.1);
     }
     
     [contenteditable="true"]:focus {
@@ -1596,5 +1608,4 @@ ${ssjsScript}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`
-}
+</html>

@@ -1009,6 +1009,7 @@ ${trackingScripts.head}
 
     .banner-container {
         display: block;
+        width: 100%;
     }
     .banner-media {
         width: 100%;

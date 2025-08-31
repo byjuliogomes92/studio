@@ -711,6 +711,29 @@ ${setStatements}
 `;
 }
 
+const renderLoader = (meta: CloudPage['meta'], themeColor: string): string => {
+    if (meta.loaderType === 'none') {
+        return '';
+    }
+
+    if (meta.loaderType === 'image' && meta.loaderImageUrl) {
+        return `
+            <div id="loader" style="background-color: ${themeColor};">
+                <img src="${meta.loaderImageUrl}" alt="Carregando...">
+            </div>
+        `;
+    }
+    
+    // Default to animation
+    const animationClass = meta.loaderAnimation === 'spin' ? 'loader-spin' : 'loader-pulse';
+    return `
+        <div id="loader" style="background-color: ${themeColor};">
+            <div class="${animationClass}" style="--loader-color: #FFFFFF"></div>
+        </div>
+    `;
+};
+
+
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string {
   const { id, styles, components, meta, cookieBanner } = pageState;
   
@@ -793,33 +816,35 @@ ${trackingScripts.head}
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        background-color: ${styles.themeColor};
     }
-
     #loader img {
         width: 150px;
         height: 150px;
         object-fit: contain;
         border-radius: 0%;
         animation: pulse 2s infinite;
-        filter: brightness(0) invert(1);
+    }
+    .loader-pulse {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--loader-color, #FFF);
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+    .loader-spin {
+        width: 60px;
+        height: 60px;
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-top-color: var(--loader-color, #FFF);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
     }
 
     @keyframes pulse {
-        0% {
-            transform: scale(1);
-            opacity: 1;
-        }
-        50% {
-            transform: scale(1.1);
-            opacity: 0.8;
-        }
-        100% {
-            transform: scale(1);
-            opacity: 1;
-        }
+        0% { transform: scale(0.8); opacity: 0.7; }
+        50% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0.8); opacity: 0.7; }
     }
-  
   
     @keyframes spin {
         100% {
@@ -1724,9 +1749,7 @@ ${trackingScripts.body}
 ${initialAmpscript}
 ${ssjsScript}
   %%[ IF @isAuthenticated == true THEN ]%%
-  <div id="loader">
-    <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
-  </div>
+  ${renderLoader(meta, styles.themeColor)}
   ${stripeComponents}
   <div id="mobile-menu-overlay"></div>
   <main>
@@ -1740,3 +1763,5 @@ ${ssjsScript}
   %%[ ENDIF ]%%
 </body>
 </html>
+`
+}

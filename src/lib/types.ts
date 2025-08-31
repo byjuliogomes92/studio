@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 
 export type ComponentType =
@@ -115,6 +116,9 @@ export interface PageComponent {
 }
 
 export type SecurityType = 'none' | 'sso' | 'password';
+export type LoaderType = 'none' | 'image' | 'animation';
+export type LoaderAnimation = 'pulse' | 'spin';
+
 
 export interface CloudPage {
   id: string;
@@ -137,7 +141,9 @@ export interface CloudPage {
   meta: {
     title: string;
     faviconUrl: string;
-    loaderImageUrl: string;
+    loaderType?: LoaderType;
+    loaderImageUrl?: string;
+    loaderAnimation?: LoaderAnimation;
     dataExtensionKey: string;
     dataExtensionTargetMethod?: 'key' | 'name';
     metaDescription: string;

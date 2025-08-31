@@ -1096,16 +1096,37 @@ SET @name = AttributeValue("FirstName")
                   </div>
                   <Input value={pageState.meta.faviconUrl} onChange={(e) => handleMetaChange('faviconUrl', e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <Label>URL da Imagem de Carregamento</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
-                      <TooltipContent><p>Imagem para exibir durante o carregamento da página.</p></TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Input value={pageState.meta.loaderImageUrl} onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} />
-                </div>
+                
+                 <div className="space-y-2">
+                    <Label>Configuração do Loader</Label>
+                    <Select value={pageState.meta.loaderType || 'image'} onValueChange={(v) => handleMetaChange('loaderType', v)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">Nenhum</SelectItem>
+                            <SelectItem value="image">Imagem Personalizada</SelectItem>
+                            <SelectItem value="animation">Animação Padrão</SelectItem>
+                        </SelectContent>
+                    </Select>
+                 </div>
+                 {pageState.meta.loaderType === 'image' && (
+                    <div className="space-y-2">
+                        <Label htmlFor="loader-url">URL da Imagem de Carregamento</Label>
+                        <Input id="loader-url" value={pageState.meta.loaderImageUrl} onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} />
+                    </div>
+                 )}
+                 {pageState.meta.loaderType === 'animation' && (
+                    <div className="space-y-2">
+                         <Label>Animação</Label>
+                         <Select value={pageState.meta.loaderAnimation || 'pulse'} onValueChange={(v) => handleMetaChange('loaderAnimation', v)}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="pulse">Pulse</SelectItem>
+                                <SelectItem value="spin">Spin</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                 )}
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label>URL de Redirecionamento</Label>

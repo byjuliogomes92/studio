@@ -357,7 +357,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
           <DialogTitle>Adicionar Novo Conteúdo</DialogTitle>
         </DialogHeader>
         <TooltipProvider>
-            <Tabs defaultValue={"blocos"} className="w-full">
+            <Tabs defaultValue={"componentes"} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="blocos">
                     Blocos Prontos

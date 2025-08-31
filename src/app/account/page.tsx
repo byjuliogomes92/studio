@@ -279,7 +279,7 @@ export default function AccountPage() {
                                     const isCurrentUser = member.userId === user.uid;
                                     // Use the current user's data for their own entry
                                     const memberName = isCurrentUser ? user.displayName : (member.email || "Usuário");
-                                    const memberAvatar = isCurrentUser ? user.photoURL : `https://api.dicebear.com/7.x/bottts/svg?seed=${member.userId}`;
+                                    const memberAvatar = isCurrentUser ? user.photoURL : `https://api.dicebear.com/7.x/thumbs/svg?seed=${member.userId}`;
                                     const memberInitial = (memberName?.[0] || 'U').toUpperCase();
 
                                     return (

@@ -23,6 +23,7 @@ import { renderMap } from './html-components/map';
 import { renderSocialIcons } from './html-components/social-icons';
 import { renderColumns } from './html-components/columns';
 import { renderWhatsApp } from './html-components/whatsapp';
+import { renderCarousel } from './html-components/carousel';
 import { renderForm } from './html-components/form';
 import { renderFooter } from './html-components/footer';
 
@@ -103,6 +104,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'SocialIcons': return renderSocialIcons(component);
     case 'Columns': return renderColumns(component, childrenHtml);
     case 'WhatsApp': return renderWhatsApp(component);
+    case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState);
     case 'Footer': return renderFooter(component);
     default:
@@ -329,7 +331,11 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 
 const getClientSideScripts = (pageState: CloudPage): string => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
+    const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
+
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
+    const carouselScript = hasCarousel ? '<script src="https://cdn.jsdelivr.net/npm/embla-carousel@8.1.5/embla-carousel.umd.js"></script><script src="https://cdn.jsdelivr.net/npm/embla-carousel-autoplay@8.1.5/embla-carousel-autoplay.umd.js"></script>' : '';
+
 
     const script = `
     <script>
@@ -603,6 +609,28 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         }
     }
 
+    function setupCarousels() {
+        if (typeof EmblaCarousel === 'undefined') return;
+
+        document.querySelectorAll('.carousel-container').forEach(container => {
+            const viewport = container.querySelector('.carousel-viewport');
+            if (!viewport) return;
+
+            const options = JSON.parse(container.dataset.options || '{}');
+            const plugins = [];
+            if (options.autoplay) {
+                plugins.push(EmblaCarouselAutoplay(options.autoplay));
+            }
+
+            const emblaApi = EmblaCarousel(viewport, options, plugins);
+
+            const prevBtn = container.querySelector('.carousel-prev');
+            const nextBtn = container.querySelector('.carousel-next');
+
+            if (prevBtn) prevBtn.addEventListener('click', () => emblaApi.scrollPrev());
+            if (nextBtn) nextBtn.addEventListener('click', () => emblaApi.scrollNext());
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
@@ -634,11 +662,12 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         setSocialIconStyles();
         handleConditionalFields();
         setupStickyHeader();
+        setupCarousels();
     });
     </script>
     `;
 
-    return `${lottiePlayerScript}${script}`;
+    return `${lottiePlayerScript}${carouselScript}${script}`;
 };
 
 const getPrefillAmpscript = (pageState: CloudPage): string => {
@@ -933,7 +962,7 @@ ${trackingScripts.head}
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0,0,0,0.5);
-        z-index: 999;
+        z-index: 1000;
         display: none;
     }
     body.menu-drawer-open #mobile-menu-overlay {
@@ -1530,6 +1559,42 @@ ${trackingScripts.head}
         z-index: 1;
     }
 
+    .carousel-container { position: relative; }
+    .carousel-viewport { overflow: hidden; }
+    .carousel-inner { display: flex; }
+    .carousel-slide { flex: 0 0 auto; min-width: 0; }
+    .carousel-slide img { display: block; width: 100%; object-fit: contain; }
+    .carousel-prev, .carousel-next {
+        cursor: pointer; position: absolute; top: 50%; transform: translateY(-50%);
+        background-color: rgba(255,255,255,0.7); border: none; border-radius: 50%;
+        width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    }
+    .carousel-prev { left: 10px; }
+    .carousel-next { right: 10px; }
+    .carousel-dots { text-align: center; padding-top: 10px; }
+    .carousel-dot {
+        cursor: pointer; height: 12px; width: 12px; margin: 0 5px;
+        background-color: #bbb; border-radius: 50%; display: inline-block;
+        transition: background-color 0.6s ease;
+    }
+    .carousel-dot.is-selected { background-color: var(--theme-color); }
+
+    .logo-carousel .carousel-slide {
+        padding: 0 20px;
+    }
+    .logo-carousel img {
+        max-height: 60px;
+        width: auto;
+        margin: 0 auto;
+        filter: grayscale(100%);
+        opacity: 0.6;
+        transition: all 0.3s ease;
+    }
+    .logo-carousel img:hover {
+        filter: grayscale(0%);
+        opacity: 1;
+        transform: scale(1.1);
+    }
 
     .whatsapp-float-btn {
         position: fixed;
@@ -1638,3 +1703,4 @@ ${ssjsScript}
   %%[ ENDIF ]%%
 </body>
 </html>
+

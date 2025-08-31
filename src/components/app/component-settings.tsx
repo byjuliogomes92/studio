@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior } from "@/lib/types";
@@ -71,7 +72,7 @@ const stripeIcons = [
 const headerLayouts: { value: HeaderLayout; label: string; viz: React.ReactNode }[] = [
     { value: 'logo-left-menu-right', label: 'Logo Esquerda, Menu Direita', viz: <div className="space-y-1 w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
     { value: 'logo-left-menu-button-right', label: 'Logo Esquerda, Menu e Botão Direita', viz: <div className="space-y-1 w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div><div className="w-4 h-2 ml-auto rounded-sm bg-primary"></div></div> },
-    { value: 'logo-center-menu-below', label: 'Logo Central, Menu Abaixo', viz: <div className="space-y-1 w-full flex flex-col items-center"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
+    { value: 'logo-center-menu-below', label: 'Logo Central, Menu Abaixo', viz: <div className="flex flex-col items-center w-full space-y-1"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
     { value: 'logo-left-button-right', label: 'Logo Esquerda, Botão Direita', viz: <div className="flex justify-between w-full items-center"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-4 h-2 rounded-sm bg-primary"></div></div> },
     { value: 'logo-only-center', label: 'Apenas Logo (Centro)', viz: <div className="flex justify-center w-full"><div className="w-6 h-3 rounded-sm bg-current"></div></div> },
     { value: 'logo-only-left', label: 'Apenas Logo (Esquerda)', viz: <div className="flex justify-start w-full"><div className="w-6 h-3 rounded-sm bg-current"></div></div> },
@@ -575,6 +576,51 @@ function HeaderLinksManager({ links, onPropChange }: { links: HeaderLink[], onPr
     );
 }
 
+function CarouselImageManager({ images, onPropChange }: { images: { id: string; url: string; alt: string }[], onPropChange: (prop: string, value: any) => void }) {
+    const handleImageChange = (id: string, field: 'url' | 'alt', value: string) => {
+        const newImages = images.map(img => img.id === id ? { ...img, [field]: value } : img);
+        onPropChange('images', newImages);
+    };
+
+    const addImage = () => {
+        const newImage = { id: `slide-${Date.now()}`, url: 'https://placehold.co/800x400.png', alt: 'Novo Slide' };
+        onPropChange('images', [...(images || []), newImage]);
+    };
+
+    const removeImage = (id: string) => {
+        onPropChange('images', images.filter(img => img.id !== id));
+    };
+
+    return (
+        <div className="space-y-4">
+            <Label>Slides do Carrossel</Label>
+            {images?.map(image => (
+                <div key={image.id} className="p-3 border rounded-md space-y-3 bg-muted/30">
+                     <div className="flex items-center justify-end">
+                        <Button variant="ghost" size="icon" onClick={() => removeImage(image.id)} className="h-7 w-7 text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <ImageInput
+                        label="URL da Imagem"
+                        value={image.url}
+                        onPropChange={(_, value) => handleImageChange(image.id, 'url', value)}
+                        propName={`url-${image.id}`}
+                        tooltipText="URL da imagem para este slide."
+                    />
+                    <div className="space-y-2">
+                        <Label htmlFor={`alt-${image.id}`}>Texto Alternativo</Label>
+                        <Input id={`alt-${image.id}`} value={image.alt} onChange={e => handleImageChange(image.id, 'alt', e.target.value)} />
+                    </div>
+                </div>
+            ))}
+            <Button variant="outline" className="w-full" onClick={addImage}>
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Slide
+            </Button>
+        </div>
+    );
+}
+
 
 const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
     
@@ -908,6 +954,32 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
               placeholder="https://www.youtube.com/watch?v=..."
             />
           </div>
+        );
+      case 'Carousel':
+        return (
+            <div className="space-y-4">
+                <CarouselImageManager images={props.images || []} onPropChange={onPropChange} />
+                <Separator />
+                <h4 className="font-medium text-sm pt-2">Opções do Carrossel</h4>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="carousel-loop">Loop Infinito</Label>
+                    <Switch id="carousel-loop" checked={props.options?.loop || false} onCheckedChange={(checked) => onSubPropChange('options', 'loop', checked)} />
+                </div>
+                 <div className="flex items-center justify-between">
+                    <Label htmlFor="carousel-autoplay">Autoplay</Label>
+                    <Switch id="carousel-autoplay" checked={props.options?.autoplay?.delay > 0} onCheckedChange={(checked) => onSubPropChange('options', 'autoplay', checked ? { delay: 4000 } : null)} />
+                </div>
+                {props.options?.autoplay && (
+                    <div className="space-y-2">
+                        <Label htmlFor="carousel-speed">Velocidade do Autoplay (ms)</Label>
+                        <Input id="carousel-speed" type="number" value={props.options.autoplay.delay} onChange={(e) => onSubPropChange('options', 'autoplay', { delay: parseInt(e.target.value) })} />
+                    </div>
+                )}
+                 <div className="flex items-center justify-between">
+                    <Label htmlFor="carousel-arrows">Mostrar Setas</Label>
+                    <Switch id="carousel-arrows" checked={props.showArrows !== false} onCheckedChange={(checked) => onPropChange('showArrows', checked)} />
+                </div>
+            </div>
         );
       case 'Countdown':
         return (

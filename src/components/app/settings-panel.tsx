@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -69,6 +69,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Map: MapPin,
     SocialIcons: Share2,
     Columns: Columns,
+    Carousel: View,
     WhatsApp: Zap,
 };
 
@@ -423,6 +424,18 @@ export function SettingsPanel({
               switch(type) {
                   case 'Columns':
                       newComponent.props = { columnCount: 2 };
+                      break;
+                  case 'Carousel':
+                      newComponent.props = {
+                          images: [
+                              { id: '1', url: 'https://placehold.co/800x400.png?text=Slide+1', alt: 'Slide 1' },
+                              { id: '2', url: 'https://placehold.co/800x400.png?text=Slide+2', alt: 'Slide 2' },
+                              { id: '3', url: 'https://placehold.co/800x400.png?text=Slide+3', alt: 'Slide 3' },
+                          ],
+                          options: { loop: true, slidesPerView: 1 },
+                          showArrows: true,
+                          showDots: true,
+                      };
                       break;
                   case 'Form':
                       newComponent.props = {

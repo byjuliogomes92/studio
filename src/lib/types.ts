@@ -24,6 +24,7 @@ export type ComponentType =
   | 'SocialIcons'
   | 'Columns'
   | 'WhatsApp'
+  | 'Carousel'
   | 'DownloadButton';
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';

@@ -41,6 +41,7 @@ import {
   GalleryThumbnails,
   Newspaper,
   LayoutTemplate,
+  View,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -48,7 +49,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
-type BlockType = 'product-showcase' | 'simple-gallery' | 'news-section' | 'hero-background-image' | 'hero-split-right' | 'hero-split-left' | 'hero-lead-capture';
+type BlockType = 'product-showcase' | 'simple-gallery' | 'news-section' | 'hero-background-image' | 'hero-split-right' | 'hero-split-left' | 'hero-lead-capture' | 'logo-carousel';
 
 const componentList: {
   category: string;
@@ -80,6 +81,7 @@ const componentList: {
       { name: "Columns", icon: Columns, enabled: true },
       { name: "Button", icon: MousePointerClick, enabled: true },
       { name: "DownloadButton", icon: Download, enabled: true },
+      { name: "Carousel", icon: View, enabled: true },
       { name: "Countdown", icon: Timer, enabled: true },
       { name: "Divider", icon: Minus, enabled: true },
       { name: "Spacer", icon: StretchHorizontal, enabled: true },
@@ -123,7 +125,8 @@ const blockList: {
         blocks: [
              { name: "Vitrine de Produto", description: "Estrutura para exibir 1, 2 ou 3 produtos com imagem e preços.", type: "product-showcase", icon: Building2 },
              { name: "Galeria Simples", description: "Layout de 3 colunas com imagens e legendas.", type: "simple-gallery", icon: GalleryThumbnails },
-             { name: "Seção de Notícias", description: "Grade para 3 artigos recentes com imagem, título e resumo.", type: "news-section", icon: Newspaper },
+             { name: "Notícias Recentes", description: "Grade para 3 artigos com imagem, título e resumo.", type: "news-section", icon: Newspaper },
+             { name: "Carrossel de Logos", description: "Exiba os logos de clientes ou parceiros em um carrossel infinito.", type: "logo-carousel", icon: View },
         ]
     }
 ]
@@ -300,6 +303,41 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                  );
              }
              break;
+        }
+        case 'logo-carousel': {
+            componentsToAdd = [
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Nossos Clientes', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: null, column: 0 },
+                {
+                    id: `carousel-${baseId}`,
+                    type: 'Carousel',
+                    props: {
+                        carouselType: 'logo',
+                        images: [
+                            { id: '1', url: 'https://logo.clearbit.com/google.com', alt: 'Google' },
+                            { id: '2', url: 'https://logo.clearbit.com/spotify.com', alt: 'Spotify' },
+                            { id: '3', url: 'https://logo.clearbit.com/netflix.com', alt: 'Netflix' },
+                            { id: '4', url: 'https://logo.clearbit.com/airbnb.com', alt: 'Airbnb' },
+                            { id: '5', url: 'https://logo.clearbit.com/microsoft.com', alt: 'Microsoft' },
+                            { id: '6', url: 'https://logo.clearbit.com/amazon.com', alt: 'Amazon' },
+                        ],
+                        showArrows: false,
+                        showDots: false,
+                        options: {
+                            loop: true,
+                            align: 'start',
+                            slidesPerView: 5,
+                            autoplay: {
+                                delay: 2000,
+                                stopOnInteraction: false,
+                            },
+                        },
+                    },
+                    order: 1,
+                    parentId: null,
+                    column: 0,
+                }
+            ]
+            break;
         }
     }
 

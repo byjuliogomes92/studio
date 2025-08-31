@@ -241,7 +241,6 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                             paddingLeft: '2rem',
                             paddingRight: '2rem',
                             textAlign: 'center',
-                            color: '#FFFFFF'
                         }
                     },
                     order: 0, parentId: null, column: 0
@@ -381,12 +380,12 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                 { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: 'Sua missão em poucas palavras. Conectando pessoas e criando valor.', styles: { fontSize: '0.9rem', marginTop: '1rem' } }, order: 1, parentId, column: 0 },
                 // Coluna 2
                 { id: `sub1-footer-${baseId}`, type: 'Subtitle', props: { text: 'Empresa', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 1 },
-                { id: `btn1-footer-${baseId}`, type: 'Button', props: { text: 'Sobre Nós', href: '#', align: 'left', styles: { all: 'unset', padding: '0.25rem 0', display: 'block' } }, order: 1, parentId, column: 1 },
-                { id: `btn2-footer-${baseId}`, type: 'Button', props: { text: 'Carreiras', href: '#', align: 'left', styles: { all: 'unset', padding: '0.25rem 0', display: 'block' } }, order: 2, parentId, column: 1 },
+                { id: `btn1-footer-${baseId}`, type: 'Button', props: { text: 'Sobre Nós', href: '#', align: 'left', variant: 'link' }, order: 1, parentId, column: 1 },
+                { id: `btn2-footer-${baseId}`, type: 'Button', props: { text: 'Carreiras', href: '#', align: 'left', variant: 'link' }, order: 2, parentId, column: 1 },
                 // Coluna 3
                 { id: `sub2-footer-${baseId}`, type: 'Subtitle', props: { text: 'Recursos', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 2 },
-                { id: `btn3-footer-${baseId}`, type: 'Button', props: { text: 'Blog', href: '#', align: 'left', styles: { all: 'unset', padding: '0.25rem 0', display: 'block' } }, order: 1, parentId, column: 2 },
-                { id: `btn4-footer-${baseId}`, type: 'Button', props: { text: 'Suporte', href: '#', align: 'left', styles: { all: 'unset', padding: '0.25rem 0', display: 'block' } }, order: 2, parentId, column: 2 },
+                { id: `btn3-footer-${baseId}`, type: 'Button', props: { text: 'Blog', href: '#', align: 'left', variant: 'link' }, order: 1, parentId, column: 2 },
+                { id: `btn4-footer-${baseId}`, type: 'Button', props: { text: 'Suporte', href: '#', align: 'left', variant: 'link' }, order: 2, parentId, column: 2 },
                 // Coluna 4
                 { id: `sub3-footer-${baseId}`, type: 'Subtitle', props: { text: 'Siga-nos', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 3 },
                 { id: `social-footer-${baseId}`, type: 'SocialIcons', props: { links: { facebook: '#', instagram: '#', twitter: '#' }, styles: { align: 'left' } }, order: 1, parentId, column: 3 },

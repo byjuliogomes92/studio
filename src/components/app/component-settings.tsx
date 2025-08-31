@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant } from "@/lib/types";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -1120,6 +1120,22 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         onChange={(e) => onPropChange('href', e.target.value)}
                         placeholder="https://exemplo.com"
                     />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="button-variant">Variante</Label>
+                     <Select value={props.variant || 'default'} onValueChange={(value: ButtonVariant) => onPropChange('variant', value)}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">Padrão</SelectItem>
+                            <SelectItem value="destructive">Destrutivo</SelectItem>
+                            <SelectItem value="outline">Contorno</SelectItem>
+                            <SelectItem value="secondary">Secundário</SelectItem>
+                            <SelectItem value="ghost">Fantasma</SelectItem>
+                            <SelectItem value="link">Link</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="button-align">Alinhamento</Label>

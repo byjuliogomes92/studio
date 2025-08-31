@@ -1035,7 +1035,6 @@ ${trackingScripts.head}
     }
     
     .custom-button, .thank-you-message a.custom-button {
-      background-color: var(--theme-color);
       color: white !important;
       padding: 10px 20px;
       text-decoration: none;
@@ -1044,6 +1043,19 @@ ${trackingScripts.head}
       transition: background-color 0.3s ease;
       border: none;
       cursor: pointer;
+    }
+    .custom-button--default { background-color: var(--theme-color); }
+    .custom-button--default:hover { background-color: var(--theme-color-hover); }
+
+    .custom-button--link {
+        background-color: transparent !important;
+        color: var(--theme-color) !important;
+        padding: 0 !important;
+        text-decoration: none !important;
+        border-radius: 0 !important;
+    }
+    .custom-button--link:hover {
+        text-decoration: underline !important;
     }
     
     .custom-button:hover, .thank-you-message a.custom-button:hover {
@@ -1729,5 +1741,3 @@ ${ssjsScript}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
-}

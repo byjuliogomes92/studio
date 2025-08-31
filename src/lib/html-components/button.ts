@@ -2,9 +2,12 @@
 import type { PageComponent } from '@/lib/types';
 
 export function renderButton(component: PageComponent): string {
+    const { href = '#', text = 'Clique Aqui', align = 'center', variant = 'default' } = component.props;
     const styles = component.props.styles || {};
     const styleString = getStyleString(styles);
-    return `<div style="text-align: ${component.props.align || 'center'}; ${styleString}"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
+    const className = `custom-button custom-button--${variant}`;
+    
+    return `<div style="text-align: ${align}; ${styleString}"><a href="${href}" target="_blank" class="${className}">${text}</a></div>`;
 }
 
 function getStyleString(styles: any = {}): string {

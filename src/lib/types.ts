@@ -100,6 +100,8 @@ export type HeaderLayout =
 
 export type MobileMenuBehavior = 'push' | 'drawer' | 'overlay';
 
+export type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+
 export interface PageComponent {
   id: string;
   type: ComponentType;

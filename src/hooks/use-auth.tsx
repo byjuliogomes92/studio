@@ -48,34 +48,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const authInstance = getAuth(app);
     setAuth(authInstance);
+    // Enable Google Auth on production or specific development domains
     setIsGoogleAuthEnabled(process.env.NODE_ENV === 'production' || window.location.hostname === 'cloudpagestudio.vercel.app');
 
     const unsubscribe = onAuthStateChanged(authInstance, async (currentUser) => {
-        setLoading(true);
-        if (currentUser) {
-            setUser(currentUser);
-            try {
-                const userWorkspaces = await getWorkspacesForUser(currentUser.uid);
-                if (userWorkspaces.length > 0) {
-                    setWorkspaces(userWorkspaces);
-                    const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
-                    const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
-                    setActiveWorkspace(found || userWorkspaces[0]);
-                } else {
-                    const newWorkspace = await createWorkspace(currentUser.uid, currentUser.email || 'Usuário', 'Meu Workspace');
-                    setWorkspaces([newWorkspace]);
-                    setActiveWorkspace(newWorkspace);
-                }
-            } catch (error) {
-                console.error("Failed to fetch or create workspace:", error);
-                toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
-            }
-        } else {
-            setUser(null);
-            setWorkspaces([]);
-            setActiveWorkspace(null);
+      if (currentUser) {
+        setUser(currentUser);
+        try {
+          const userWorkspaces = await getWorkspacesForUser(currentUser.uid);
+          if (userWorkspaces.length > 0) {
+            setWorkspaces(userWorkspaces);
+            const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
+            const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
+            setActiveWorkspace(found || userWorkspaces[0]);
+          } else {
+            // New user, create their first workspace
+            const firstName = currentUser.displayName?.split(' ')[0] || 'Usuário';
+            const newWorkspace = await createWorkspace(currentUser.uid, `Workspace de ${firstName}`);
+            setWorkspaces([newWorkspace]);
+            setActiveWorkspace(newWorkspace);
+          }
+        } catch (error) {
+          console.error("Failed to fetch or create workspace:", error);
+          toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
         }
-        setLoading(false);
+      } else {
+        setUser(null);
+        setWorkspaces([]);
+        setActiveWorkspace(null);
+      }
+      setLoading(false); // Set loading to false after user and workspace logic is complete
     });
 
     return () => unsubscribe();
@@ -127,7 +129,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         displayName: `${firstName} ${lastName}`,
         photoURL: avatarUrl
     });
-    setUser({ ...user, displayName: `${firstName} ${lastName}`, photoURL: avatarUrl } as User);
+    // Manually update the user state to reflect the new profile immediately
+    setUser(user);
     return userCredential;
   }
 
@@ -136,6 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!isGoogleAuthEnabled) throw new Error("Google Auth is not enabled for this domain.");
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
+    // If the user is new and doesn't have a photo, generate one.
     if (result.user && !result.user.photoURL) {
         const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${result.user.uid}`;
         await updateProfile(result.user, { photoURL: avatarUrl });
@@ -158,10 +162,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     await updateProfile(auth.currentUser, { displayName: newDisplayName });
-    // Create a new plain object from the user to update state
-    setUser({
-        ...auth.currentUser,
-    } as User);
+    // Re-create the user object to trigger a state update correctly
+    const updatedUser = { ...auth.currentUser };
+    setUser(updatedUser as User);
   };
 
   const updateUserAvatar = async () => {

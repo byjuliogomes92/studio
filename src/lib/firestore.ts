@@ -14,7 +14,7 @@ const getDbInstance = (): Firestore => {
 
 
 // Workspaces
-export const createWorkspace = async (userId: string, userEmail: string, workspaceName: string): Promise<Workspace> => {
+export const createWorkspace = async (userId: string, workspaceName: string): Promise<Workspace> => {
     const db = getDbInstance();
     const batch = writeBatch(db);
 
@@ -31,7 +31,7 @@ export const createWorkspace = async (userId: string, userEmail: string, workspa
     const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceRef.id}`);
     const newMember: Omit<WorkspaceMember, 'id'> = {
         userId,
-        email: userEmail || '',
+        email: '', // Email can be fetched from auth user object if needed, but not essential for this.
         workspaceId: workspaceRef.id,
         role: 'owner',
         createdAt: serverTimestamp(),

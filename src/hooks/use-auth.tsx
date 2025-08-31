@@ -8,7 +8,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
 import type { Workspace, UserProfileType } from '@/lib/types';
-import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete } from '@/lib/firestore';
+import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete, completeGoogleSignup } from '@/lib/firestore';
 import { produce } from 'immer';
 
 interface AuthContextType {
@@ -53,8 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
         setActiveWorkspace(found || userWorkspaces[0]);
       } else {
-        // This case is now for existing users without workspaces, or as a fallback.
-        // New users handle workspace creation in their respective signup flows.
         setActiveWorkspace(null); 
       }
     } catch (error) {
@@ -71,40 +69,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(authInstance, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        // Defer workspace loading to a separate effect that depends on the user object.
+        const profileComplete = await isProfileComplete(currentUser.uid);
+        if (profileComplete) {
+            await fetchWorkspaces(currentUser.uid);
+        }
+        // Loading is set to false after checks are done
       } else {
         setUser(null);
         setWorkspaces([]);
         setActiveWorkspace(null);
-        setLoading(false);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchWorkspaces]);
 
   useEffect(() => {
-    const manageUserSession = async () => {
-      if (user) {
-        const profileComplete = await isProfileComplete(user.uid);
-        if (profileComplete) {
-            await fetchWorkspaces(user.uid);
-        } else {
-            // If profile is not complete (e.g., new Google user), redirect to welcome page
-            if (pathname !== '/welcome') {
+    if (!loading && !user && !publicRoutes.includes(pathname)) {
+      router.push('/login');
+    }
+     if (!loading && user && !isProfileComplete(user.uid) && pathname !== '/welcome') {
+        const checkProfile = async () => {
+            const complete = await isProfileComplete(user.uid);
+            if (!complete) {
                 router.push('/welcome');
             }
-        }
-      }
-      setLoading(false);
-    };
-    
-    manageUserSession();
-  }, [user, fetchWorkspaces, router, pathname]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !loading && !user && !publicRoutes.includes(pathname)) {
-      router.push('/login');
+        };
+        checkProfile();
     }
   }, [loading, user, router, pathname]);
 
@@ -122,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const oldName = activeWorkspace.name;
     await updateWorkspaceNameInDb(workspaceId, newName, user);
     
-    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName, newName });
+    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName: oldName, newName });
 
     const updateState = (ws: Workspace) => produce(ws, draft => {
         if(draft.id === workspaceId) {
@@ -175,12 +167,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!auth) throw new Error("Firebase Auth not initialized");
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-
-    // After login, the `onAuthStateChanged` and subsequent useEffects will handle
-    // checking if the profile is complete and redirecting if necessary.
-    // No need for duplicate logic here.
-    
     return result;
   };
 
@@ -236,7 +222,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     reloadWorkspaces: () => fetchWorkspaces(user!.uid),
   };
 
-  if (loading && !publicRoutes.includes(pathname)) {
+  if (loading) {
       return (
         <div className="flex h-screen w-full items-center justify-center">
             <Logo className="h-10 w-10 animate-spin text-primary" />

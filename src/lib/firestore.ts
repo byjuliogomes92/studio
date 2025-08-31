@@ -3,6 +3,8 @@ import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType } from "./types";
+import { updateProfile, type User } from "firebase/auth";
+
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -18,7 +20,6 @@ export const createWorkspace = async (userId: string, workspaceName: string, pro
     const db = getDbInstance();
     const batch = writeBatch(db);
 
-    // Create the workspace
     const workspaceRef = doc(collection(db, 'workspaces'));
     const newWorkspace: Omit<Workspace, 'id'> = {
         name: workspaceName,
@@ -28,11 +29,9 @@ export const createWorkspace = async (userId: string, workspaceName: string, pro
     };
     batch.set(workspaceRef, newWorkspace);
 
-    // Create the owner as a member
     const memberRef = doc(collection(db, 'workspaceMembers'));
     const newMember: Omit<WorkspaceMember, 'id'> = {
         userId,
-        email: '', // Email can be fetched from auth user object if needed
         workspaceId: workspaceRef.id,
         role: 'owner',
         createdAt: serverTimestamp(),
@@ -43,6 +42,40 @@ export const createWorkspace = async (userId: string, workspaceName: string, pro
 
     return { ...newWorkspace, id: workspaceRef.id, createdAt: Timestamp.now() } as Workspace;
 };
+
+// Check if user has a workspace, which implies their profile is complete
+export const isProfileComplete = async (userId: string): Promise<boolean> => {
+    const db = getDbInstance();
+    const membersQuery = query(collection(db, 'workspaceMembers'), where('userId', '==', userId));
+    const memberSnapshots = await getDocs(membersQuery);
+    return !memberSnapshots.empty;
+};
+
+
+// Function to finalize signup for Google users
+interface CompleteSignupParams {
+    user: User;
+    firstName: string;
+    lastName: string;
+    profileType: UserProfileType;
+    companyName?: string;
+}
+export const completeGoogleSignup = async ({ user, firstName, lastName, profileType, companyName }: CompleteSignupParams) => {
+    const newDisplayName = `${firstName} ${lastName}`.trim();
+    if (user.displayName !== newDisplayName) {
+        await updateProfile(user, { displayName: newDisplayName });
+    }
+    
+    let workspaceName: string;
+    if (profileType === 'owner' && companyName) {
+        workspaceName = companyName;
+    } else {
+        workspaceName = `Workspace de ${firstName}`;
+    }
+
+    await createWorkspace(user.uid, workspaceName, profileType);
+};
+
 
 export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]> => {
     const db = getDbInstance();
@@ -81,20 +114,15 @@ export const getWorkspaceMembers = async (workspaceId: string): Promise<Workspac
 export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole, inviterName: string | null): Promise<void> => {
     const db = getDbInstance();
     
-    // This is a simplified invite. It assumes the user exists.
-    // In a real app, you'd want to handle users who don't have an account yet.
     const userQuery = query(collection(db, "users"), where("email", "==", email));
     const userSnap = await getDocs(userQuery);
 
     if (userSnap.empty) {
-        // For simplicity, we are not creating an invite for a non-existent user.
-        // A full implementation would create a pending invite.
         throw new Error("Usuário não encontrado. Peça para que ele se cadastre primeiro.");
     }
     const userDoc = userSnap.docs[0];
     const userId = userDoc.id;
 
-    // Check if user is already a member
     const qMembers = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
     const memberSnap = await getDocs(qMembers);
     if (!memberSnap.empty) {
@@ -196,7 +224,7 @@ export const getProjectWithPages = async (projectId: string, workspaceId: string
     const projectDoc = await getDoc(projectRef);
 
     if (!projectDoc.exists() || projectDoc.data().workspaceId !== workspaceId) {
-        return null; // Project doesn't exist or user doesn't have access
+        return null; 
     }
 
     const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
@@ -210,7 +238,6 @@ export const deleteProject = async (projectId: string): Promise<void> => {
     const db = getDbInstance();
     const projectDocRef = doc(db, "projects", projectId);
     
-    // Delete all draft and published pages within the project
     const draftPagesQuery = query(collection(db, "pages_drafts"), where("projectId", "==", projectId));
     const publishedPagesQuery = query(collection(db, "pages_published"), where("projectId", "==", projectId));
 
@@ -232,11 +259,11 @@ export const deleteProject = async (projectId: string): Promise<void> => {
 
 export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     const db = getDbInstance();
-    const pageId = doc(collection(db, 'dummy_id_generator')).id; // Generate a unique ID
+    const pageId = doc(collection(db, 'dummy_id_generator')).id; 
 
     const pageWithTimestamps = {
       ...pageData,
-      id: pageId, // Add the ID to the data itself
+      id: pageId, 
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -244,7 +271,6 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
     const draftRef = doc(db, "pages_drafts", pageId);
     const publishedRef = doc(db, "pages_published", pageId);
 
-    // Create both draft and published documents simultaneously
     await Promise.all([
         setDoc(draftRef, pageWithTimestamps),
         setDoc(publishedRef, pageWithTimestamps)
@@ -255,7 +281,6 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
 
 export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
-    // Only update the draft document
     const draftRef = doc(db, "pages_drafts", pageId);
     await updateDoc(draftRef, {
         ...pageData,
@@ -266,10 +291,9 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
 export const publishPage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
     const publishedRef = doc(db, "pages_published", pageId);
-    // Overwrite the published document with the current draft data
     await setDoc(publishedRef, {
         ...pageData,
-        updatedAt: serverTimestamp(), // Record the publish time
+        updatedAt: serverTimestamp(), 
     }, { merge: true });
 };
 
@@ -283,7 +307,6 @@ export const getPage = async (pageId: string, version: 'drafts' | 'published' = 
     if (!docSnap.exists()) return null;
 
     const data = docSnap.data();
-    // Ensure timestamps are converted correctly
     const page = {
         id: docSnap.id,
         ...data
@@ -306,23 +329,19 @@ export const getPagesForProject = async (projectId: string, workspaceId: string)
 
 export const deletePage = async (pageId: string): Promise<void> => {
     const db = getDbInstance();
-    // Delete both the draft and the published version
     const draftRef = doc(db, "pages_drafts", pageId);
     const publishedRef = doc(db, "pages_published", pageId);
     await Promise.all([deleteDoc(draftRef), deleteDoc(publishedRef)]);
 };
 
 export const duplicatePage = async (pageId: string): Promise<CloudPage> => {
-    // Always duplicate from the draft version, as it's the most current state
     const originalPage = await getPage(pageId, 'drafts');
     if (!originalPage) {
         throw new Error("Página original não encontrada.");
     }
     
-    // Create a copy, removing the old ID and timestamps
     const { id, createdAt, updatedAt, ...pageDataToCopy } = originalPage;
 
-    // Create a new name for the duplicated page
     pageDataToCopy.name = `Cópia de ${originalPage.name}`;
     
     const newPageId = await addPage(pageDataToCopy);
@@ -343,7 +362,6 @@ export const movePageToProject = async (pageId: string, newProjectId: string): P
         projectId: newProjectId,
         updatedAt: serverTimestamp()
     };
-    // Update both documents
     await Promise.all([
         updateDoc(draftRef, updateData),
         updateDoc(publishedRef, updateData)
@@ -424,15 +442,12 @@ export const deleteBrand = async (brandId: string): Promise<void> => {
 export const uploadMedia = async (file: File, workspaceId: string, userId: string): Promise<MediaAsset> => {
     const db = getDbInstance();
     
-    // Create a unique path for the file in Firebase Storage
     const storagePath = `${workspaceId}/${userId}/${Date.now()}-${file.name}`;
     const storageRef = ref(storage, storagePath);
 
-    // Upload the file
     const snapshot = await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(snapshot.ref);
 
-    // Create a metadata document in Firestore
     const mediaData: Omit<MediaAsset, 'id'> = {
         workspaceId,
         userId,
@@ -460,10 +475,8 @@ export const getMediaForWorkspace = async (workspaceId: string): Promise<MediaAs
 export const deleteMedia = async (mediaAsset: MediaAsset): Promise<void> => {
     const db = getDbInstance();
     
-    // Create a reference to the file to delete
     const fileRef = ref(storage, mediaAsset.storagePath);
 
-    // Delete the file from Storage and the document from Firestore
     await deleteObject(fileRef);
     await deleteDoc(doc(db, 'media', mediaAsset.id));
 }
@@ -478,7 +491,6 @@ export const getUserProgress = async (userId: string): Promise<UserProgress> => 
     if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() } as UserProgress;
     } else {
-        // Create a new progress document if it doesn't exist
         const newProgress: UserProgress = {
             id: userId,
             userId,
@@ -499,11 +511,10 @@ export const updateUserProgress = async (userId: string, objective: keyof Onboar
     const db = getDbInstance();
     const docRef = doc(db, "userProgress", userId);
     
-    // Ensure the document exists before trying to update it
     const currentProgress = await getUserProgress(userId);
 
     if (currentProgress.objectives[objective]) {
-        return currentProgress; // Objective already completed, no need to update
+        return currentProgress; 
     }
 
     const updates = {
@@ -511,7 +522,6 @@ export const updateUserProgress = async (userId: string, objective: keyof Onboar
     };
     await updateDoc(docRef, updates);
 
-    // Return the updated document
     return {
         ...currentProgress,
         objectives: {
@@ -567,7 +577,6 @@ export const logFormSubmission = async (pageId: string, formData: { [key: string
         await addDoc(collection(db, 'formSubmissions'), submissionData);
     } catch (e) {
         console.error("Failed to log form submission:", e);
-        // We don't re-throw, as this is a background/backup task.
     }
 };
 
@@ -593,7 +602,6 @@ export const logActivity = async (
 ): Promise<void> => {
     const db = getDbInstance();
     
-    // In a real app, you might get the user's avatar from their profile
     const userAvatarUrl = `https://api.dicebear.com/8.x/thumbs/svg?seed=${userId}`;
 
     const logEntry: Omit<ActivityLog, 'id'> = {
@@ -610,7 +618,6 @@ export const logActivity = async (
         await addDoc(collection(db, 'activityLogs'), logEntry);
     } catch (error) {
         console.error("Failed to log activity:", error);
-        // Don't block the main action if logging fails
     }
 };
 

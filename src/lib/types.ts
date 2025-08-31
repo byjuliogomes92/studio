@@ -32,14 +32,14 @@ export interface Workspace {
   id: string;
   name: string;
   ownerId: string;
-  profileType?: UserProfileType; // 'owner', 'employee', 'freelancer'
+  profileType?: UserProfileType; 
   createdAt: any;
 }
 
-export type WorkspaceMemberRole = 'owner' | 'admin' | 'editor' | 'viewer';
+export type WorkspaceMemberRole = 'owner' | 'editor' | 'viewer';
 
 export interface WorkspaceMember {
-  id: string; // usually ${userId}_${workspaceId}
+  id: string; 
   userId: string;
   workspaceId: string;
   email: string;
@@ -76,7 +76,7 @@ export type CustomFormFieldType = 'text' | 'number' | 'date' | 'checkbox';
 
 export interface CustomFormField {
     id: string;
-    name: string; // This will be the DE column name
+    name: string; 
     label: string;
     type: CustomFormFieldType;
     required: boolean;
@@ -87,12 +87,12 @@ export interface PageComponent {
   id: string;
   type: ComponentType;
   props: any;
-  parentId?: string | null; // ID of the parent component (e.g., a Columns component)
-  column?: number;        // Index of the column if inside a Columns component
-  order: number;          // Order within its container (root or a column)
+  parentId?: string | null; 
+  column?: number;        
+  order: number;          
   abTestEnabled?: boolean;
   abTestVariants?: any[];
-  children?: PageComponent[]; // For nesting components, e.g., inside columns
+  children?: PageComponent[]; 
 }
 
 export type SecurityType = 'none' | 'sso' | 'password';
@@ -174,12 +174,10 @@ export interface MediaAsset {
 }
 
 
-// A Template is essentially a CloudPage, but without project/user specific data.
-// It can be used to create new CloudPages.
 export interface Template {
   id: string;
   name: string;
-  brand: 'Natura' | 'Avon'; // Legacy brand for default templates
+  brand: 'Natura' | 'Avon'; 
   workspaceId: string;
   description?: string;
   icon?: string;
@@ -187,10 +185,10 @@ export interface Template {
   components: PageComponent[];
   meta: Omit<CloudPage['meta'], 'dataExtensionKey' | 'tracking' | 'security'>;
   cookieBanner?: CloudPage['cookieBanner'];
-  createdBy: string; // UserID of the creator
+  createdBy: string; 
   createdAt: any;
   updatedAt: any;
-  isDefault?: boolean; // Flag to identify default templates
+  isDefault?: boolean; 
 }
 
 export interface OnboardingObjectives {
@@ -202,10 +200,9 @@ export interface OnboardingObjectives {
 }
 
 export interface UserProgress {
-  id: string; // Same as user.uid
+  id: string; 
   userId: string;
   objectives: OnboardingObjectives;
-  // Potentially add more progress tracking in the future
 }
 
 export interface PageView {

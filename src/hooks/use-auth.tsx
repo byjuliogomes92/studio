@@ -1,14 +1,14 @@
 
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getAuth, onAuthStateChanged, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, Auth, GoogleAuthProvider, signInWithPopup, updateProfile } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
 import type { Workspace, UserProfileType } from '@/lib/types';
-import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity } from '@/lib/firestore';
+import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete } from '@/lib/firestore';
 import { produce } from 'immer';
 
 interface AuthContextType {
@@ -25,11 +25,12 @@ interface AuthContextType {
   logout: () => void;
   updateUserAvatar: () => Promise<void>;
   updateUserName: (firstName: string, lastName: string) => Promise<void>;
+  reloadWorkspaces: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const publicRoutes = ['/login', '/signup', '/debug-workspace'];
+const publicRoutes = ['/login', '/signup', '/debug-workspace', '/welcome'];
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -43,6 +44,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
   const { toast } = useToast();
 
+  const fetchWorkspaces = useCallback(async (userId: string) => {
+    try {
+      const userWorkspaces = await getWorkspacesForUser(userId);
+      setWorkspaces(userWorkspaces);
+      if (userWorkspaces.length > 0) {
+        const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
+        const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
+        setActiveWorkspace(found || userWorkspaces[0]);
+      } else {
+        // This case is now for existing users without workspaces, or as a fallback.
+        // New users handle workspace creation in their respective signup flows.
+        setActiveWorkspace(null); 
+      }
+    } catch (error) {
+      console.error("Failed to fetch workspaces:", error);
+      toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
+    }
+  }, [toast]);
+
+
   useEffect(() => {
     const authInstance = getAuth(app);
     setAuth(authInstance);
@@ -50,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(authInstance, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        // Workspace logic is now handled in a separate effect to react to user changes
+        // Defer workspace loading to a separate effect that depends on the user object.
       } else {
         setUser(null);
         setWorkspaces([]);
@@ -63,33 +84,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const manageWorkspaces = async () => {
+    const manageUserSession = async () => {
       if (user) {
-        try {
-          const userWorkspaces = await getWorkspacesForUser(user.uid);
-          setWorkspaces(userWorkspaces);
-          if (userWorkspaces.length > 0) {
-              const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
-              const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
-              setActiveWorkspace(found || userWorkspaces[0]);
-          } else {
-             // This case will now be handled during signup, but keep as fallback.
-             const newWorkspace = await createWorkspace(user.uid, `Workspace de ${user.displayName?.split(' ')[0] || 'Usuário'}`, 'freelancer');
-             setWorkspaces([newWorkspace]);
-             setActiveWorkspace(newWorkspace);
-          }
-        } catch (error) {
-          console.error("Failed to fetch or create workspace:", error);
-          toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
-        } finally {
-           setLoading(false); // Set loading to false after user and workspace logic is complete
+        const profileComplete = await isProfileComplete(user.uid);
+        if (profileComplete) {
+            await fetchWorkspaces(user.uid);
+        } else {
+            // If profile is not complete (e.g., new Google user), redirect to welcome page
+            if (pathname !== '/welcome') {
+                router.push('/welcome');
+            }
         }
       }
+      setLoading(false);
     };
     
-    manageWorkspaces();
-  }, [user, toast]);
-
+    manageUserSession();
+  }, [user, fetchWorkspaces, router, pathname]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !loading && !user && !publicRoutes.includes(pathname)) {
@@ -111,7 +122,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const oldName = activeWorkspace.name;
     await updateWorkspaceNameInDb(workspaceId, newName, user);
     
-    // Log the activity
     await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName, newName });
 
     const updateState = (ws: Workspace) => produce(ws, draft => {
@@ -142,13 +152,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         photoURL: avatarUrl
     });
 
-    // Manually update the user state to reflect the new profile immediately
     setUser(produce(user, draft => {
         draft.displayName = `${firstName} ${lastName}`;
         draft.photoURL = avatarUrl;
     }));
     
-    // Create workspace based on profile
     let workspaceName: string;
     if (profileType === 'owner' && companyName) {
         workspaceName = companyName;
@@ -168,47 +176,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
+
+    // After login, the `onAuthStateChanged` and subsequent useEffects will handle
+    // checking if the profile is complete and redirecting if necessary.
+    // No need for duplicate logic here.
     
-    const userWorkspaces = await getWorkspacesForUser(user.uid);
-    const isNewUser = userWorkspaces.length === 0;
-
-    if (isNewUser) {
-        const workspaceName = `Meu Workspace`;
-        const profileType = 'freelancer'; // Default profile type for Google sign-ups
-        const newWorkspace = await createWorkspace(user.uid, workspaceName, profileType);
-        setWorkspaces([newWorkspace]);
-        setActiveWorkspace(newWorkspace);
-
-        // Ensure photoURL exists
-        if (!user.photoURL) {
-            const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
-            await updateProfile(user, { photoURL: avatarUrl });
-        }
-        
-        // Manually update the user object in state
-        setUser(produce(auth.currentUser, draft => {
-            if (draft) {
-                draft.photoURL = user.photoURL;
-            }
-        }));
-
-        // Redirect to account page if name is not properly set
-        const hasFullName = user.displayName && user.displayName.includes(' ');
-        if (!hasFullName) {
-            toast({
-                title: 'Complete seu perfil',
-                description: 'Por favor, verifique seu nome e sobrenome para continuar.',
-            });
-            router.push('/account');
-        }
-    } else {
-        setWorkspaces(userWorkspaces);
-        const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
-        const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
-        setActiveWorkspace(found || userWorkspaces[0]);
-        setUser({ ...user }); // Trigger re-render
-    }
-
     return result;
   };
 
@@ -226,7 +198,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     await updateProfile(auth.currentUser, { displayName: newDisplayName });
-    // Re-create the user object to trigger a state update correctly
     const updatedUser = { ...auth.currentUser };
     setUser(updatedUser as User);
   };
@@ -262,6 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     workspaces,
     switchWorkspace,
     updateWorkspaceName,
+    reloadWorkspaces: () => fetchWorkspaces(user!.uid),
   };
 
   if (loading && !publicRoutes.includes(pathname)) {

@@ -32,6 +32,10 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
     return components
         .sort((a, b) => a.order - b.order)
         .map(component => {
+            const isFullWidth = !!component.props.styles?.isFullWidth;
+            const sectionClass = isFullWidth ? 'section-wrapper section-wrapper--full-width' : 'section-wrapper';
+            const containerClass = isFullWidth ? 'section-container' : '';
+
             if (component.type === 'Columns') {
                 const columnCount = component.props.columnCount || 2;
                 let columnsHtml = '';
@@ -40,15 +44,21 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                     columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
                 }
                 const renderedComponent = renderSingleComponent(component, pageState, isForPreview, columnsHtml);
-                const isHero = !!component.props.styles?.isHero;
-                const isFooter = !!component.props.styles?.isFooter;
+                
+                const wrapperStyle = isFullWidth ? `background-color: ${component.props.styles?.backgroundColor || 'transparent'};` : '';
 
-                if (isFooter) {
-                    return `<footer class="section-wrapper footer-section">${renderedComponent}</footer>`
-                }
-                return `<div class="section-wrapper ${isHero ? 'hero-section' : ''}">${renderedComponent}</div>`;
+                return `<div class="${sectionClass}" style="${wrapperStyle}">
+                           <div class="${containerClass}">
+                             ${renderedComponent}
+                           </div>
+                        </div>`;
             }
-             return `<div class="section-wrapper"><div class="section-container">${renderComponent(component, pageState, isForPreview)}</div></div>`;
+
+             return `<div class="${sectionClass}">
+                        <div class="section-container">
+                          ${renderComponent(component, pageState, isForPreview)}
+                        </div>
+                     </div>`;
         })
         .join('\n');
 }
@@ -822,26 +832,15 @@ ${trackingScripts.head}
         display: flex;
         justify-content: center;
     }
+    .section-wrapper--full-width {
+        /* This element will have the background color */
+    }
 
     .section-container {
         width: 100%;
-        max-width: 800px;
-        padding: 10px 20px;
-        box-sizing: border-box;
-    }
-
-    .hero-section .section-container,
-    .footer-section .section-container {
         max-width: 1200px;
-        padding: 0;
-    }
-    .footer-section {
-        background-color: #f9fafb;
-        margin-top: auto;
-    }
-    .footer-section a.custom-button {
-      color: inherit !important;
-      text-decoration: none;
+        padding: 0 20px;
+        box-sizing: border-box;
     }
     
     .page-header {

@@ -783,6 +783,33 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
             </div>
         );
       }
+      case "Columns": {
+        const styles = props.styles || {};
+        return (
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="columns-full-width" className="font-semibold">Largura Total da Seção</Label>
+                    <Switch
+                        id="columns-full-width"
+                        checked={styles.isFullWidth || false}
+                        onCheckedChange={(checked) => onSubPropChange('styles', 'isFullWidth', checked)}
+                    />
+                </div>
+                 {styles.isFullWidth && (
+                    <div className="space-y-2">
+                        <Label htmlFor="columns-bg-color">Cor de Fundo da Seção</Label>
+                        <Input 
+                          id="columns-bg-color"
+                          type="color"
+                          value={styles.backgroundColor || '#ffffff'}
+                          onChange={(e) => onSubPropChange('styles', 'backgroundColor', e.target.value)}
+                          className="p-1 h-10"
+                        />
+                    </div>
+                )}
+            </div>
+        );
+      }
       case "Banner":
         return (
             <div className="space-y-4">

@@ -10,10 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Building2, User as UserIcon, Briefcase } from "lucide-react";
 import { Logo } from "@/components/icons";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
+import type { UserProfileType } from "@/lib/types";
 
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -45,14 +46,22 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     );
 }
 
+const profileOptions: { type: UserProfileType, icon: React.ElementType, title: string, description: string }[] = [
+    { type: 'owner', icon: Building2, title: "Dono(a) ou gestor(a) de agência", description: "Crie um workspace para sua equipe e clientes." },
+    { type: 'employee', icon: Briefcase, title: "Trabalho em uma agência", description: "Junte-se a um workspace existente." },
+    { type: 'freelancer', icon: UserIcon, title: "Profissional independente", description: "Use a plataforma para seus próprios projetos." },
+];
+
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [agreesToTerms, setAgreesToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signup, loginWithGoogle, isGoogleAuthEnabled } = useAuth();
+  const [profileType, setProfileType] = useState<UserProfileType>('owner');
+  const [companyName, setCompanyName] = useState("");
+
+  const { signup, loginWithGoogle } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -62,9 +71,14 @@ export default function SignupPage() {
         toast({ variant: 'destructive', title: 'Erro', description: 'Por favor, preencha seu nome e sobrenome.' });
         return;
     }
+    if (profileType === 'owner' && !companyName.trim()) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Por favor, insira o nome da sua empresa.' });
+        return;
+    }
+
     setIsLoading(true);
     try {
-      await signup(email, password, firstName, lastName);
+      await signup(email, password, firstName, lastName, profileType, companyName);
       router.push("/");
     } catch (error: any) {
       console.error(error);
@@ -79,6 +93,8 @@ export default function SignupPage() {
   };
 
   const handleGoogleLogin = async () => {
+    // Note: Google login will not have the profile type selection.
+    // It will default to the 'freelancer' flow in the useAuth hook.
     setIsLoading(true);
     try {
         await loginWithGoogle();
@@ -95,23 +111,11 @@ export default function SignupPage() {
     }
   }
 
-  const googleButton = (
-    <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || !isGoogleAuthEnabled}>
-        {isLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-            <>
-                <GoogleIcon className="mr-2 h-5 w-5" />
-                Cadastre-se com Google
-            </>
-        )}
-    </Button>
-  );
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
        <div className="flex items-center justify-center py-12">
-        <div className="mx-auto grid w-[400px] gap-6">
+        <div className="mx-auto grid w-[450px] gap-6">
             <div className="grid gap-2 text-center">
                 <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
                 <h1 className="text-3xl font-bold">Crie sua Conta</h1>
@@ -119,55 +123,82 @@ export default function SignupPage() {
                     É rápido e fácil. Comece a construir suas páginas agora mesmo.
                 </p>
             </div>
-            <div className="grid gap-4">
-                <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="first-name">Nome</Label>
-                            <Input id="first-name" placeholder="Seu nome" required disabled={isLoading} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            <div className="grid gap-6">
+                <form onSubmit={handleSignup} className="space-y-6">
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="first-name">Nome</Label>
+                                <Input id="first-name" placeholder="Seu nome" required disabled={isLoading} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="last-name">Sobrenome</Label>
+                                <Input id="last-name" placeholder="Seu sobrenome" required disabled={isLoading} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                            </div>
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="last-name">Sobrenome</Label>
-                            <Input id="last-name" placeholder="Seu sobrenome" required disabled={isLoading} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            placeholder="m@example.com"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={isLoading}
+                        />
+                        </div>
+                        <div className="grid gap-2">
+                        <Label htmlFor="password">Senha</Label>
+                        <Input 
+                            id="password" 
+                            type="password" 
+                            required 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={isLoading}
+                        />
                         </div>
                     </div>
-                    <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        placeholder="m@example.com"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={isLoading}
-                    />
-                    </div>
-                    <div className="grid gap-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input 
-                        id="password" 
-                        type="password" 
-                        required 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={isLoading}
-                    />
-                    </div>
-                    <div className="items-top flex space-x-2">
-                        <Checkbox id="terms1" checked={agreesToTerms} onCheckedChange={(checked) => setAgreesToTerms(checked as boolean)} disabled={isLoading} />
-                        <div className="grid gap-1.5 leading-none">
-                            <label
-                            htmlFor="terms1"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    
+                    <div className="space-y-4">
+                        <Label>Qual perfil você se identifica?</Label>
+                        <RadioGroup value={profileType} onValueChange={(value: UserProfileType) => setProfileType(value)} className="grid grid-cols-1 gap-3">
+                            {profileOptions.map(({ type, icon: Icon, title, description }) => (
+                                <Label
+                                key={type}
+                                htmlFor={`profile-${type}`}
+                                className={cn(
+                                    "flex items-center gap-4 rounded-lg border-2 p-4 cursor-pointer transition-all",
+                                    "hover:bg-accent/50 hover:border-primary/50",
+                                    profileType === type && "border-primary bg-primary/5"
+                                )}
                             >
-                            Quero receber novidades e atualizações
-                            </label>
-                            <p className="text-sm text-muted-foreground">
-                            Você pode cancelar a inscrição a qualquer momento.
-                            </p>
-                        </div>
+                                <RadioGroupItem value={type} id={`profile-${type}`} className="sr-only" />
+                                <Icon className={cn("h-8 w-8 text-muted-foreground", profileType === type && "text-primary")} />
+                                <div>
+                                    <h4 className="font-semibold">{title}</h4>
+                                    <p className="text-sm text-muted-foreground">{description}</p>
+                                </div>
+                            </Label>
+                            ))}
+                        </RadioGroup>
+
+                        {profileType === 'owner' && (
+                            <div className="grid gap-2 pt-2 animate-in fade-in-50">
+                                <Label htmlFor="company-name">Nome da empresa/agência</Label>
+                                <Input 
+                                    id="company-name" 
+                                    placeholder="Ex: Agência Criativa" 
+                                    required 
+                                    disabled={isLoading} 
+                                    value={companyName}
+                                    onChange={(e) => setCompanyName(e.target.value)} 
+                                />
+                            </div>
+                        )}
                     </div>
+                    
                     <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Quero me Cadastrar"}
                     </Button>
@@ -184,18 +215,17 @@ export default function SignupPage() {
                     </div>
                 </div>
                 
-                {isGoogleAuthEnabled ? googleButton : (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                        <div className="w-full">{googleButton}</div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                        <p>Disponível no ambiente de produção.</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                )}
+                <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
+                    {isLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <>
+                            <GoogleIcon className="mr-2 h-5 w-5" />
+                            Cadastre-se com Google
+                        </>
+                    )}
+                </Button>
+
             </div>
             <div className="mt-4 text-center text-sm">
                 Já possui uma conta?{" "}

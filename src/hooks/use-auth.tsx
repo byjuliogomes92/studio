@@ -7,21 +7,20 @@ import { app } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
-import type { Workspace } from '@/lib/types';
+import type { Workspace, UserProfileType } from '@/lib/types';
 import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb } from '@/lib/firestore';
 import { produce } from 'immer';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isGoogleAuthEnabled: boolean;
   isUpdatingAvatar: boolean;
   activeWorkspace: Workspace | null;
   workspaces: Workspace[];
   switchWorkspace: (workspaceId: string) => void;
   updateWorkspaceName: (workspaceId: string, newName: string) => Promise<void>;
   login: (email: string, password: string) => Promise<any>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<any>;
+  signup: (email: string, password: string, firstName: string, lastName: string, profileType: UserProfileType, companyName?: string) => Promise<any>;
   loginWithGoogle: () => Promise<any>;
   logout: () => void;
   updateUserAvatar: () => Promise<void>;
@@ -37,7 +36,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [auth, setAuth] = useState<Auth | null>(null);
-  const [isGoogleAuthEnabled, setIsGoogleAuthEnabled] = useState(false);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
 
@@ -48,44 +46,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const authInstance = getAuth(app);
     setAuth(authInstance);
-    // Enable Google Auth on production or specific development domains
-    setIsGoogleAuthEnabled(process.env.NODE_ENV === 'production' || window.location.hostname === 'cloudpagestudio.vercel.app');
 
     const unsubscribe = onAuthStateChanged(authInstance, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        try {
-          const userWorkspaces = await getWorkspacesForUser(currentUser.uid);
-          if (userWorkspaces.length > 0) {
-            setWorkspaces(userWorkspaces);
-            const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
-            const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
-            setActiveWorkspace(found || userWorkspaces[0]);
-          } else {
-            // New user, create their first workspace
-            const firstName = currentUser.displayName?.split(' ')[0] || 'Usuário';
-            const newWorkspace = await createWorkspace(currentUser.uid, `Workspace de ${firstName}`);
-            setWorkspaces([newWorkspace]);
-            setActiveWorkspace(newWorkspace);
-          }
-        } catch (error) {
-          console.error("Failed to fetch or create workspace:", error);
-          toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
-        }
+        // Workspace logic is now handled in a separate effect to react to user changes
       } else {
         setUser(null);
         setWorkspaces([]);
         setActiveWorkspace(null);
+        setLoading(false);
       }
-      setLoading(false); // Set loading to false after user and workspace logic is complete
     });
 
     return () => unsubscribe();
-  }, [toast]);
+  }, []);
+
+  useEffect(() => {
+    const manageWorkspaces = async () => {
+      if (user) {
+        try {
+          const userWorkspaces = await getWorkspacesForUser(user.uid);
+          setWorkspaces(userWorkspaces);
+          if (userWorkspaces.length > 0) {
+              const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
+              const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
+              setActiveWorkspace(found || userWorkspaces[0]);
+          } else {
+             // This case will now be handled during signup, but keep as fallback.
+             const newWorkspace = await createWorkspace(user.uid, `Workspace de ${user.displayName?.split(' ')[0] || 'Usuário'}`, 'freelancer');
+             setWorkspaces([newWorkspace]);
+             setActiveWorkspace(newWorkspace);
+          }
+        } catch (error) {
+          console.error("Failed to fetch or create workspace:", error);
+          toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
+        } finally {
+           setLoading(false); // Set loading to false after user and workspace logic is complete
+        }
+      }
+    };
+    
+    manageWorkspaces();
+  }, [user, toast]);
 
 
   useEffect(() => {
-    // This effect should only run on the client side for route protection
     if (typeof window !== 'undefined' && !loading && !user && !publicRoutes.includes(pathname)) {
       router.push('/login');
     }
@@ -121,8 +127,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return signInWithEmailAndPassword(auth, email, password);
   }
 
-  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signup = async (email: string, password: string, firstName: string, lastName: string, profileType: UserProfileType, companyName?: string) => {
     if (!auth) throw new Error("Firebase Auth not initialized");
+    
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
@@ -130,22 +137,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         displayName: `${firstName} ${lastName}`,
         photoURL: avatarUrl
     });
+
     // Manually update the user state to reflect the new profile immediately
-    setUser(user);
+    setUser(produce(user, draft => {
+        draft.displayName = `${firstName} ${lastName}`;
+        draft.photoURL = avatarUrl;
+    }));
+    
+    // Create workspace based on profile
+    let workspaceName: string;
+    if (profileType === 'owner' && companyName) {
+        workspaceName = companyName;
+    } else {
+        workspaceName = `Workspace de ${firstName}`;
+    }
+
+    const newWorkspace = await createWorkspace(user.uid, workspaceName, profileType);
+    setWorkspaces([newWorkspace]);
+    setActiveWorkspace(newWorkspace);
+
     return userCredential;
   }
 
   const loginWithGoogle = async () => {
     if (!auth) throw new Error("Firebase Auth not initialized");
-    if (!isGoogleAuthEnabled) throw new Error("Google Auth is not enabled for this domain.");
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    // If the user is new and doesn't have a photo, generate one.
-    if (result.user && !result.user.photoURL) {
-        const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${result.user.uid}`;
-        await updateProfile(result.user, { photoURL: avatarUrl });
-        setUser({ ...result.user, photoURL: newAvatarUrl } as User);
+    const user = result.user;
+    
+    // Manually update state for immediate reflection
+    setUser(produce(user, draft => {
+      if (!draft.photoURL) {
+          draft.photoURL = `https://api.dicebear.com/7.x/thumbs/svg?seed=${draft.uid}`;
+      }
+    }));
+    
+    // Check if user is new (by checking workspaces) to create one
+    const userWorkspaces = await getWorkspacesForUser(user.uid);
+    if (userWorkspaces.length === 0) {
+        const workspaceName = `Workspace de ${user.displayName?.split(' ')[0] || 'Usuário'}`;
+        // Google sign-ups default to a personal/freelancer profile type
+        const newWorkspace = await createWorkspace(user.uid, workspaceName, 'freelancer');
+        setWorkspaces([newWorkspace]);
+        setActiveWorkspace(newWorkspace);
+    } else {
+        setWorkspaces(userWorkspaces);
+        setActiveWorkspace(userWorkspaces[0]);
     }
+    
+    // Ensure photoURL exists, update if not
+    if (user && !user.photoURL) {
+        const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+        await updateProfile(user, { photoURL: avatarUrl });
+    }
+
     return result;
   };
 
@@ -188,7 +233,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     loading,
-    isGoogleAuthEnabled,
     isUpdatingAvatar,
     login,
     signup,

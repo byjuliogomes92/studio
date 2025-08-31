@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress, Template, PageView, Workspace } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette, Image as ImageIcon } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette, Image as ImageIcon, ShieldCheck } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -97,12 +97,17 @@ function WorkspaceSwitcher() {
 
     return (
         <Select onValueChange={switchWorkspace} value={activeWorkspace.id}>
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-auto md:w-[220px] border-none shadow-none focus:ring-0">
                 <SelectValue placeholder="Selecione um workspace..." />
             </SelectTrigger>
             <SelectContent>
                 {workspaces.map(ws => (
-                    <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
+                    <SelectItem key={ws.id} value={ws.id}>
+                        <div className="flex items-center gap-2">
+                             {ws.profileType === 'owner' && <ShieldCheck className="h-4 w-4 text-primary" />}
+                            <span>{ws.name}</span>
+                        </div>
+                    </SelectItem>
                 ))}
             </SelectContent>
         </Select>

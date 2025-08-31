@@ -26,10 +26,13 @@ export type ComponentType =
   | 'WhatsApp'
   | 'DownloadButton';
 
+export type UserProfileType = 'owner' | 'employee' | 'freelancer';
+
 export interface Workspace {
   id: string;
   name: string;
   ownerId: string;
+  profileType?: UserProfileType; // 'owner', 'employee', 'freelancer'
   createdAt: any;
 }
 

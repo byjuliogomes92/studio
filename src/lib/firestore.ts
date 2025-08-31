@@ -1,9 +1,8 @@
 
-
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -15,7 +14,7 @@ const getDbInstance = (): Firestore => {
 
 
 // Workspaces
-export const createWorkspace = async (userId: string, workspaceName: string): Promise<Workspace> => {
+export const createWorkspace = async (userId: string, workspaceName: string, profileType: UserProfileType): Promise<Workspace> => {
     const db = getDbInstance();
     const batch = writeBatch(db);
 
@@ -24,6 +23,7 @@ export const createWorkspace = async (userId: string, workspaceName: string): Pr
     const newWorkspace: Omit<Workspace, 'id'> = {
         name: workspaceName,
         ownerId: userId,
+        profileType: profileType,
         createdAt: serverTimestamp(),
     };
     batch.set(workspaceRef, newWorkspace);
@@ -81,15 +81,28 @@ export const getWorkspaceMembers = async (workspaceId: string): Promise<Workspac
 export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole, inviterName: string | null): Promise<void> => {
     const db = getDbInstance();
     
+    // This is a simplified invite. It assumes the user exists.
+    // In a real app, you'd want to handle users who don't have an account yet.
+    const userQuery = query(collection(db, "users"), where("email", "==", email));
+    const userSnap = await getDocs(userQuery);
+
+    if (userSnap.empty) {
+        // For simplicity, we are not creating an invite for a non-existent user.
+        // A full implementation would create a pending invite.
+        throw new Error("Usuário não encontrado. Peça para que ele se cadastre primeiro.");
+    }
+    const userDoc = userSnap.docs[0];
+    const userId = userDoc.id;
+
     // Check if user is already a member
-    const qMembers = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("email", "==", email));
+    const qMembers = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
     const memberSnap = await getDocs(qMembers);
     if (!memberSnap.empty) {
         throw new Error("Este usuário já é membro do workspace.");
     }
     
     const newMemberData: Omit<WorkspaceMember, 'id'> = {
-        userId: `invited_${email.replace(/[^a-zA-Z0-9]/g, '')}`, // Temporary ID
+        userId: userId,
         email: email,
         workspaceId: workspaceId,
         role: role,
@@ -193,7 +206,7 @@ export const getProjectWithPages = async (projectId: string, workspaceId: string
 };
 
 
-export const deleteProject = async (projectId: string, user: { uid: string, displayName?: string | null }, projectName: string, workspaceId: string): Promise<void> => {
+export const deleteProject = async (projectId: string): Promise<void> => {
     const db = getDbInstance();
     const projectDocRef = doc(db, "projects", projectId);
     
@@ -212,13 +225,12 @@ export const deleteProject = async (projectId: string, user: { uid: string, disp
     batch.delete(projectDocRef);
 
     await batch.commit();
-    await logActivity(workspaceId, user.uid, user.displayName, 'PROJECT_DELETED', { projectName });
 };
 
 
 // Pages
 
-export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>, user: { uid: string, displayName?: string | null }): Promise<string> => {
+export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     const db = getDbInstance();
     const pageId = doc(collection(db, 'dummy_id_generator')).id; // Generate a unique ID
 
@@ -238,7 +250,6 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
         setDoc(publishedRef, pageWithTimestamps)
     ]);
 
-    await logActivity(pageData.workspaceId, user.uid, user.displayName, 'PAGE_CREATED', { pageName: pageData.name });
     return pageId;
 };
 
@@ -252,7 +263,7 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
     });
 };
 
-export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, user: { uid: string, displayName?: string | null }): Promise<void> => {
+export const publishPage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
     const publishedRef = doc(db, "pages_published", pageId);
     // Overwrite the published document with the current draft data
@@ -260,8 +271,6 @@ export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, 
         ...pageData,
         updatedAt: serverTimestamp(), // Record the publish time
     }, { merge: true });
-
-    await logActivity(pageData.workspaceId!, user.uid, user.displayName, 'PAGE_PUBLISHED', { pageName: pageData.name });
 };
 
 
@@ -295,17 +304,15 @@ export const getPagesForProject = async (projectId: string, workspaceId: string)
 };
 
 
-export const deletePage = async (pageId: string, user: { uid: string, displayName?: string | null }, pageName: string, workspaceId: string): Promise<void> => {
+export const deletePage = async (pageId: string): Promise<void> => {
     const db = getDbInstance();
     // Delete both the draft and the published version
     const draftRef = doc(db, "pages_drafts", pageId);
     const publishedRef = doc(db, "pages_published", pageId);
     await Promise.all([deleteDoc(draftRef), deleteDoc(publishedRef)]);
-
-    await logActivity(workspaceId, user.uid, user.displayName, 'PAGE_DELETED', { pageName });
 };
 
-export const duplicatePage = async (pageId: string, user: { uid: string, displayName?: string | null }): Promise<CloudPage> => {
+export const duplicatePage = async (pageId: string): Promise<CloudPage> => {
     // Always duplicate from the draft version, as it's the most current state
     const originalPage = await getPage(pageId, 'drafts');
     if (!originalPage) {
@@ -318,7 +325,7 @@ export const duplicatePage = async (pageId: string, user: { uid: string, display
     // Create a new name for the duplicated page
     pageDataToCopy.name = `Cópia de ${originalPage.name}`;
     
-    const newPageId = await addPage(pageDataToCopy, user);
+    const newPageId = await addPage(pageDataToCopy);
     
     const newPage = await getPage(newPageId, 'drafts');
     if (!newPage) {

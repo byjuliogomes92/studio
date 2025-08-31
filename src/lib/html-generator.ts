@@ -15,9 +15,12 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                     const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
                     columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
                 }
-                return renderSingleComponent(component, pageState, isForPreview, columnsHtml);
+                const renderedComponent = renderSingleComponent(component, pageState, isForPreview, columnsHtml);
+                // Wrap columns in a container div for layout control
+                return `<div class="section-wrapper"><div class="section-container">${renderedComponent}</div></div>`;
             }
-            return `<div class="component-wrapper">${renderComponent(component, pageState, isForPreview)}</div>`;
+            // For other top-level components, wrap them as well to allow for full-width backgrounds etc.
+             return `<div class="section-wrapper"><div class="section-container">${renderComponent(component, pageState, isForPreview)}</div></div>`;
         })
         .join('\n');
 }
@@ -1213,15 +1216,13 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
   const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
-  const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
-  const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
-  const footerComponent = components.find(c => c.type === 'Footer' && c.parentId === null);
+  
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState, isForPreview);
-  
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null), components, pageState, isForPreview);
+
   const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
@@ -1319,6 +1320,19 @@ ${trackingScripts.head}
             transform: rotate(360deg);
         }
     }
+    
+    .section-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .section-container {
+        width: 100%;
+        max-width: 800px;
+        padding: 10px 20px;
+        box-sizing: border-box;
+    }
 
     .logo {
         margin-top: 10px;
@@ -1330,35 +1344,12 @@ ${trackingScripts.head}
         width: 150px;
     }
 
-    .container {
-        background-color: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        width: 90%;
-        max-width: 800px;
-        text-align: center;
-        margin-top: 20px;
-        margin-bottom: 20px;
-    }
-
     .banner img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
     
-    .content-wrapper {
-        padding: 20px 40px;
-        color: #333;
-    }
-    
-    .content-wrapper .component-wrapper > * {
-        text-align: left;
-        margin-top: 1em;
-        margin-bottom: 1em;
-    }
-
     [contenteditable="true"]:focus {
       outline: 2px solid ${styles.themeColor};
       box-shadow: 0 0 5px ${styles.themeColor};
@@ -1975,15 +1966,9 @@ ${ssjsScript}
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
   </div>
   ${stripeComponents}
-  <div class="container">
-    ${headerComponent ? renderComponent(headerComponent, pageState, isForPreview) : ''}
-    ${bannerComponent ? renderComponent(bannerComponent, pageState, isForPreview) : ''}
-    <div class="content-wrapper">
-      ${mainComponents}
-    </div>
-    ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}
-  </div>
-
+  <main>
+    ${mainContentHtml}
+  </main>
   ${whatsAppComponent ? renderComponent(whatsAppComponent, pageState, isForPreview) : ''}
   ${cookieBannerHtml}
   ${trackingPixel}

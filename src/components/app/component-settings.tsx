@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior } from "@/lib/types";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -714,6 +714,19 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         </div>
                     </div>
                 )}
+                <Separator />
+                <h4 className="font-medium text-sm pt-2">Menu Mobile</h4>
+                <div className="space-y-2">
+                    <Label>Comportamento do Menu Mobile</Label>
+                    <Select value={props.mobileMenuBehavior || 'push'} onValueChange={(value: MobileMenuBehavior) => onPropChange('mobileMenuBehavior', value)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="push">Empurrar Conteúdo</SelectItem>
+                            <SelectItem value="drawer">Deslizar da Direita (Drawer)</SelectItem>
+                            <SelectItem value="overlay">Tela Cheia (Overlay)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
         );
       }
@@ -1618,41 +1631,6 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     </Select>
                 </div>
             </div>
-        );
-      case "Footer":
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-1">Texto do Rodapé 1</Label>
-                  <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Primeira linha de texto no rodapé (ex: copyright).</p></TooltipContent>
-                  </Tooltip>
-                </div>
-                <DebouncedTextInput id="footer-text-1" value={props.footerText1 || ""} onBlur={(value) => onPropChange("footerText1", value)} rows={3}/>
-            </div>
-            <div className="space-y-2">
-                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-2">Texto do Rodapé 2</Label>
-                   <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Segunda linha de texto no rodapé (ex: informações da empresa).</p></TooltipContent>
-                  </Tooltip>
-                </div>
-                <DebouncedTextInput id="footer-text-2" value={props.footerText2 || ""} onBlur={(value) => onPropChange("footerText2", value)} rows={6} />
-            </div>
-            <div className="space-y-2">
-                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-3">Texto do Rodapé 3</Label>
-                   <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Terceira linha de texto no rodapé (ex: aviso legal).</p></TooltipContent>
-                  </Tooltip>
-                </div>
-                <DebouncedTextInput id="footer-text-3" value={props.footerText3 || ""} onBlur={(value) => onPropChange("footerText3", value)} rows={4}/>
-            </div>
-          </div>
         );
       default:
         return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;

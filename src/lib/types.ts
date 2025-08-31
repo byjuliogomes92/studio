@@ -97,6 +97,8 @@ export type HeaderLayout =
   | 'logo-only-center'
   | 'logo-only-left';
 
+export type MobileMenuBehavior = 'push' | 'drawer' | 'overlay';
+
 export interface PageComponent {
   id: string;
   type: ComponentType;

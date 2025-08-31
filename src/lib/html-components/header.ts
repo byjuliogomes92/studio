@@ -14,6 +14,7 @@ export function renderHeader(component: PageComponent): string {
         textColor = '#000000',
         backgroundColorOnScroll = '#ffffffff',
         textColorOnScroll = '#000000',
+        mobileMenuBehavior = 'push'
     } = component.props;
     
     const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
@@ -35,11 +36,10 @@ export function renderHeader(component: PageComponent): string {
         data-text-color-scroll="${textColorOnScroll}"
     ` : '';
     
-    // The main container for nav items and button
     const navContainer = `<div class="header-nav-container">${navHtml}${buttonHtml}</div>`;
 
     return `
-        <header class="page-header" data-layout="${layout}" ${stickyAttrs}>
+        <header class="page-header" data-layout="${layout}" ${stickyAttrs} data-mobile-menu-behavior="${mobileMenuBehavior}">
             <div class="header-logo">
                 <img src="${logoUrl}" alt="Logo" style="height: ${logoHeight}px;">
             </div>

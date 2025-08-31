@@ -855,12 +855,12 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
 
                 <Separator />
                 <div className="space-y-2">
-                    <Label htmlFor="banner-link-url">URL do Link</Label>
+                    <Label htmlFor="banner-link-url">URL do Link (Opcional)</Label>
                     <Input
                         id="banner-link-url"
                         value={props.linkUrl || ""}
                         onChange={(e) => onPropChange("linkUrl", e.target.value)}
-                        placeholder="https://exemplo.com (opcional)"
+                        placeholder="https://exemplo.com"
                     />
                 </div>
                 <div className="flex items-center justify-between">
@@ -879,6 +879,26 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         onChange={(e) => onPropChange("padding", e.target.value)}
                         placeholder="Ex: 20px ou 1rem 2rem"
                     />
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="banner-height-desktop">Altura (Desktop)</Label>
+                        <Input
+                            id="banner-height-desktop"
+                            value={props.height || ""}
+                            onChange={(e) => onPropChange("height", e.target.value)}
+                            placeholder="Ex: 500px, 60vh"
+                        />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="banner-height-mobile">Altura (Mobile)</Label>
+                        <Input
+                            id="banner-height-mobile"
+                            value={props.mobileHeight || ""}
+                            onChange={(e) => onPropChange("mobileHeight", e.target.value)}
+                            placeholder="Ex: 300px, 50vh"
+                        />
+                    </div>
                 </div>
             </div>
         );

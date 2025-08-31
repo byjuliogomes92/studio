@@ -10,21 +10,27 @@ export function renderBanner(component: PageComponent): string {
         linkUrl,
         isFullWidth = false,
         padding = '0',
+        height,
+        mobileHeight,
         styles = {}
     } = component.props;
 
     const customStyleString = getStyleString(styles);
 
     const bannerStyle = `
+        display: block;
+        position: relative;
+        overflow: hidden;
         padding: ${padding};
-        ${isFullWidth ? 'width: 100vw; position: relative; left: 50%; transform: translateX(-50%);' : ''}
+        ${height ? `height: ${height};` : ''}
+        ${isFullWidth ? 'width: 100vw; position: relative; left: 50%; transform: translateX(-50%);' : 'width: 100%;'}
         ${customStyleString}
     `;
 
     let mediaHtml = '';
     if (mediaType === 'video' && videoUrl) {
         mediaHtml = `
-            <video class="banner-video" autoplay loop muted playsinline>
+            <video class="banner-media" autoplay loop muted playsinline>
                 <source src="${videoUrl}" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
@@ -33,20 +39,36 @@ export function renderBanner(component: PageComponent): string {
         mediaHtml = `
             <picture>
                 ${mobileImageUrl ? `<source media="(max-width: 768px)" srcset="${mobileImageUrl}">` : ''}
-                <img src="${imageUrl}" alt="Banner" class="banner-image">
+                <img src="${imageUrl}" alt="Banner" class="banner-media">
             </picture>
         `;
     }
+    
+    const responsiveHeightStyle = `
+        <style>
+            @media (max-width: 768px) {
+                #banner-${component.id} {
+                    ${mobileHeight ? `height: ${mobileHeight} !important;` : ''}
+                }
+            }
+        </style>
+    `;
 
     if (linkUrl) {
         return `
-            <a href="${linkUrl}" class="banner-link-wrapper" style="${bannerStyle}">
+            <a href="${linkUrl}" id="banner-${component.id}" class="banner-container" style="${bannerStyle}">
                 ${mediaHtml}
             </a>
+            ${responsiveHeightStyle}
         `;
     }
 
-    return `<div class="banner-container" style="${bannerStyle}">${mediaHtml}</div>`;
+    return `
+        <div id="banner-${component.id}" class="banner-container" style="${bannerStyle}">
+            ${mediaHtml}
+        </div>
+        ${responsiveHeightStyle}
+    `;
 }
 
 function getStyleString(styles: any = {}): string {

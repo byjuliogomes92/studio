@@ -1007,23 +1007,18 @@ ${trackingScripts.head}
         display: block;
     }
 
-    .banner-container, .banner-link-wrapper {
+    .banner-container {
         display: block;
-        width: 100%;
-        position: relative;
-        overflow: hidden;
     }
-    .banner-image, .banner-video {
+    .banner-media {
         width: 100%;
-        height: auto;
+        height: 100%;
         display: block;
         object-fit: cover;
     }
-    .banner-video {
-        height: 100%;
-    }
-    .banner-link-wrapper:hover {
-        filter: brightness(1.1);
+    .banner-container:hover {
+        filter: brightness(1.05);
+        transition: filter 0.3s;
     }
     
     [contenteditable="true"]:focus {

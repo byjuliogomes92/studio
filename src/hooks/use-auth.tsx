@@ -8,7 +8,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
 import type { Workspace, UserProfileType } from '@/lib/types';
-import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb } from '@/lib/firestore';
+import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity } from '@/lib/firestore';
 import { produce } from 'immer';
 
 interface AuthContextType {
@@ -107,9 +107,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateWorkspaceName = async (workspaceId: string, newName: string) => {
-    if (!user) return;
+    if (!user || !activeWorkspace) return;
+    const oldName = activeWorkspace.name;
     await updateWorkspaceNameInDb(workspaceId, newName, user);
     
+    // Log the activity
+    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName, newName });
+
     const updateState = (ws: Workspace) => produce(ws, draft => {
         if(draft.id === workspaceId) {
             draft.name = newName;
@@ -165,30 +169,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
     
-    // Manually update state for immediate reflection
-    setUser(produce(user, draft => {
-      if (!draft.photoURL) {
-          draft.photoURL = `https://api.dicebear.com/7.x/thumbs/svg?seed=${draft.uid}`;
-      }
-    }));
-    
-    // Check if user is new (by checking workspaces) to create one
     const userWorkspaces = await getWorkspacesForUser(user.uid);
-    if (userWorkspaces.length === 0) {
-        const workspaceName = `Workspace de ${user.displayName?.split(' ')[0] || 'Usuário'}`;
-        // Google sign-ups default to a personal/freelancer profile type
-        const newWorkspace = await createWorkspace(user.uid, workspaceName, 'freelancer');
+    const isNewUser = userWorkspaces.length === 0;
+
+    if (isNewUser) {
+        const workspaceName = `Meu Workspace`;
+        const profileType = 'freelancer'; // Default profile type for Google sign-ups
+        const newWorkspace = await createWorkspace(user.uid, workspaceName, profileType);
         setWorkspaces([newWorkspace]);
         setActiveWorkspace(newWorkspace);
+
+        // Ensure photoURL exists
+        if (!user.photoURL) {
+            const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
+            await updateProfile(user, { photoURL: avatarUrl });
+        }
+        
+        // Manually update the user object in state
+        setUser(produce(auth.currentUser, draft => {
+            if (draft) {
+                draft.photoURL = user.photoURL;
+            }
+        }));
+
+        // Redirect to account page if name is not properly set
+        const hasFullName = user.displayName && user.displayName.includes(' ');
+        if (!hasFullName) {
+            toast({
+                title: 'Complete seu perfil',
+                description: 'Por favor, verifique seu nome e sobrenome para continuar.',
+            });
+            router.push('/account');
+        }
     } else {
         setWorkspaces(userWorkspaces);
-        setActiveWorkspace(userWorkspaces[0]);
-    }
-    
-    // Ensure photoURL exists, update if not
-    if (user && !user.photoURL) {
-        const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
-        await updateProfile(user, { photoURL: avatarUrl });
+        const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
+        const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
+        setActiveWorkspace(found || userWorkspaces[0]);
+        setUser({ ...user }); // Trigger re-render
     }
 
     return result;

@@ -73,7 +73,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (profileComplete) {
             await fetchWorkspaces(currentUser.uid);
         }
-        // Loading is set to false after checks are done
       } else {
         setUser(null);
         setWorkspaces([]);
@@ -86,17 +85,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchWorkspaces]);
 
   useEffect(() => {
-    if (!loading && !user && !publicRoutes.includes(pathname)) {
+    if (loading) return; // Don't redirect while loading
+
+    if (!user && !publicRoutes.includes(pathname)) {
       router.push('/login');
-    }
-     if (!loading && user && !isProfileComplete(user.uid) && pathname !== '/welcome') {
-        const checkProfile = async () => {
-            const complete = await isProfileComplete(user.uid);
-            if (!complete) {
-                router.push('/welcome');
-            }
-        };
-        checkProfile();
+    } else if (user && pathname !== '/welcome') {
+      const checkProfile = async () => {
+        const complete = await isProfileComplete(user.uid);
+        if (!complete) {
+          router.push('/welcome');
+        }
+      };
+      checkProfile();
     }
   }, [loading, user, router, pathname]);
 
@@ -223,11 +223,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   if (loading) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Logo className="h-10 w-10 animate-spin text-primary" />
-        </div>
-      );
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+          <Logo className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

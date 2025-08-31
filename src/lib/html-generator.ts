@@ -1,6 +1,28 @@
-
-import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig, HeaderLink } from './types';
+import type { CloudPage, PageComponent, ComponentType } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
+import { renderHeader } from './html-components/header';
+import { renderBanner } from './html-components/banner';
+import { renderTitle } from './html-components/title';
+import { renderSubtitle } from './html-components/subtitle';
+import { renderParagraph } from './html-components/paragraph';
+import { renderDivider } from './html-components/divider';
+import { renderImage } from './html-components/image';
+import { renderVideo } from './html-components/video';
+import { renderCountdown } from './html-components/countdown';
+import { renderSpacer } from './html-components/spacer';
+import { renderButton } from './html-components/button';
+import { renderDownloadButton } from './html-components/download-button';
+import { renderAccordion } from './html-components/accordion';
+import { renderTabs } from './html-components/tabs';
+import { renderVoting } from './html-components/voting';
+import { renderStripe } from './html-components/stripe';
+import { renderNPS } from './html-components/nps';
+import { renderMap } from './html-components/map';
+import { renderSocialIcons } from './html-components/social-icons';
+import { renderColumns } from './html-components/columns';
+import { renderWhatsApp } from './html-components/whatsapp';
+import { renderForm } from './html-components/form';
+import { renderFooter } from './html-components/footer';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -15,119 +37,22 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                     columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
                 }
                 const renderedComponent = renderSingleComponent(component, pageState, isForPreview, columnsHtml);
-                // Wrap columns in a container div for layout control
                 return `<div class="section-wrapper"><div class="section-container">${renderedComponent}</div></div>`;
             }
-            // For other top-level components, wrap them as well to allow for full-width backgrounds etc.
              return `<div class="section-wrapper"><div class="section-container">${renderComponent(component, pageState, isForPreview)}</div></div>`;
         })
         .join('\n');
 }
 
-const renderField = (
-    id: string, 
-    fieldName: string, 
-    type: string, 
-    dataType: string, 
-    placeholder: string,
-    conditionalLogic: any,
-    prefill: boolean,
-    required: boolean = true
-  ): string => {
-    const conditionalAttrs = conditionalLogic
-      ? `data-conditional-on="${conditionalLogic.field}" data-conditional-value="${conditionalLogic.value}"`
-      : '';
-    
-    // The AMPScript variable name will be based on the field's 'name' property
-    const prefillValue = prefill ? ` value="%%=v(@${fieldName})=%%"` : '';
-  
-    return `
-      <div class="input-wrapper" id="wrapper-${id}" style="display: ${conditionalLogic ? 'none' : 'block'};" ${conditionalAttrs}>
-        <input 
-          type="${type}" 
-          id="${fieldName}" 
-          name="${fieldName}" 
-          placeholder="${placeholder}" 
-          ${required ? 'required="required"' : ''}
-          ${prefillValue}
-        >
-        <div class="error-message" id="error-${fieldName.toLowerCase()}">Por favor, preencha este campo.</div>
-      </div>
-    `;
-  };
-
-  const renderCustomField = (field: CustomFormField): string => {
-      const { id, name, label, type, required, placeholder = '' } = field;
-      const inputId = `custom-field-${id}`;
-  
-      if (type === 'checkbox') {
-          return `
-              <div class="input-wrapper consent">
-                  <input type="checkbox" id="${inputId}" name="${name}" value="true" ${required ? 'required="required"' : ''}>
-                  <label for="${inputId}">${label}</label>
-                  <div class="error-message" id="error-${name.toLowerCase()}">É necessário aceitar para continuar.</div>
-              </div>
-          `;
-      }
-  
-      return `
-          <div class="input-wrapper">
-              <label for="${inputId}">${label}</label>
-              <input 
-                  type="${type}" 
-                  id="${inputId}" 
-                  name="${name}" 
-                  placeholder="${placeholder}" 
-                  ${required ? 'required="required"' : ''}
-              >
-              <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
-          </div>
-      `;
-  };
-  
-  const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, prefill: boolean, required: boolean = false): string => {
-      const cities = citiesString.split('\n').filter(city => city.trim() !== '');
-      const options = cities.map(city => `<option value="${city}">%%[ IF @CIDADE == "${city}" THEN]%%selected%%[ENDIF]%%${city}</option>`).join('');
-      const conditionalAttrs = conditionalLogic
-        ? `data-conditional-on="${conditionalLogic.field}" data-conditional-value="${conditionalLogic.value}"`
-        : '';
-  
-      return `
-          <div class="input-wrapper" id="wrapper-city" style="display: ${conditionalLogic ? 'none' : 'block'};" ${conditionalAttrs}>
-              <select
-                  id="CIDADE"
-                  name="CIDADE"
-                  ${required ? 'required="required"' : ''}
-              >
-                  <option value="" disabled selected>Selecione sua cidade</option>
-                  ${options}
-              </select>
-              <div class="error-message" id="error-cidade">Por favor, seleciona uma cidade.</div>
-          </div>
-      `;
-  };
-
-const getStyleString = (styles: any = {}): string => {
-    return Object.entries(styles)
-      .map(([key, value]) => {
-        if (!value) return '';
-        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-        return `${cssKey}: ${value};`;
-      })
-      .join(' ');
-};
-
-
 const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean): string => {
   if (isForPreview) {
-    // For preview, we don't want the A/B testing logic with AMPScript
     return renderSingleComponent(component, pageState, isForPreview);
   }
 
   if (component.abTestEnabled) {
     const variantB = (component.abTestVariants && component.abTestVariants[0]) || {};
     const propsA = component.props;
-    const propsB = { ...propsA, ...variantB }; // Variant B props override Variant A
+    const propsB = { ...propsA, ...variantB };
 
     const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview);
     const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview);
@@ -153,566 +78,31 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
 };
 
 const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = ''): string => {
-  const styles = component.props.styles || {};
-  const styleString = getStyleString(styles);
-  const editableAttrs = (propName: string) => isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="${propName}"` : '';
-  const dataBinding = component.props.dataBinding;
-
-
   switch (component.type) {
-    case 'Header':
-        const { layout = 'logo-left-menu-right', logoUrl = 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png', links = [], buttonText, buttonUrl } = component.props;
-        const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
-        const buttonHtml = layout.includes('button') && buttonText && buttonUrl ? `<a href="${buttonUrl}" class="header-button">${buttonText}</a>` : '';
-
-        return `
-            <header class="page-header" data-layout="${layout}">
-                <div class="header-logo">
-                    <img src="${logoUrl}" alt="Logo">
-                </div>
-                ${layout.includes('menu') ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : ''}
-                ${buttonHtml}
-                <button class="mobile-menu-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-                </button>
-            </header>
-        `;
-    case 'Banner':
-        return `
-        <div class="banner" style="${styleString}">
-            <img src="${component.props.imageUrl || 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png'}" alt="Banner">
-        </div>`;
-    case 'Title':
-        const titleText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Título Principal');
-        return `<h1 style="${styleString}" ${editableAttrs('text')}>${titleText}</h1>`;
-    case 'Subtitle':
-        const subtitleText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Subtítulo');
-        return `<h2 style="${styleString}" ${editableAttrs('text')}>${subtitleText}</h2>`;
-    case 'Paragraph':
-        const paragraphText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.');
-        return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs('text')}>${paragraphText}</div>`;
-    case 'Divider':
-        return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0; ${styleString}" />`;
-    case 'Image':
-        return `
-            <div style="text-align: center; ${styleString}">
-                <img src="${component.props.src || 'https://placehold.co/800x200.png'}" alt="${component.props.alt || 'Placeholder image'}" style="max-width: 100%; height: auto; border-radius: 8px;" data-ai-hint="website abstract">
-            </div>`;
-    case 'Video':
-        const videoUrl = component.props.url || '';
-        let embedUrl = '';
-        if (videoUrl.includes('youtube.com/watch?v=')) {
-            const videoId = videoUrl.split('v=')[1].split('&')[0];
-            embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        } else if (videoUrl.includes('youtu.be/')) {
-            const videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
-            embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        }
-        return embedUrl ? `<div class="video-container" style="${styleString}"><iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '<p>URL do vídeo inválida.</p>';
-    case 'Countdown':
-        const targetDate = component.props.targetDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-        return `
-            <div id="countdown-${component.id}" class="countdown" style="${styleString}"></div>
-            <script>
-              (function() {
-                var target = new Date("${targetDate}").getTime();
-                var el = document.getElementById("countdown-${component.id}");
-                if (!el) return;
-                var x = setInterval(function() {
-                  var now = new Date().getTime();
-                  var distance = target - now;
-                  var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                  var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / 1000 / 60 / 60);
-                  var minutes = Math.floor((distance % (1000 * 60 * 60)) / 1000 / 60);
-                  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                  el.innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
-                  if (distance < 0) {
-                    clearInterval(x);
-                    el.innerHTML = "EXPIRADO";
-                  }
-                }, 1000);
-              })();
-            </script>`;
-    case 'Spacer':
-        return `<div style="height: ${component.props.height || 20}px; ${styleString}"></div>`;
-    case 'Button':
-         return `<div style="text-align: ${component.props.align || 'center'}; ${styleString}"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
-    case 'DownloadButton': {
-        const { text = 'Download', fileUrl = '', fileName = '', align = 'center', conditionalDisplay } = component.props;
-        const containerId = `download-container-${component.id}`;
-        const buttonId = `download-btn-${component.id}`;
-        
-        const isConditional = conditionalDisplay?.enabled && conditionalDisplay?.trigger === 'form_submission';
-        const containerStyle = isConditional ? 'display: none;' : '';
-
-        return `
-            <div id="${containerId}" class="download-component-container" style="${containerStyle}">
-                <div style="text-align: ${align}; ${styleString}">
-                    <button id="${buttonId}" class="custom-button">${text}</button>
-                    <div id="progress-container-${component.id}" class="progress-container" style="display: none;">
-                        <div id="progress-bar-${component.id}" class="progress-bar"></div>
-                    </div>
-                </div>
-            </div>
-            <script>
-            (function() {
-                const downloadBtn = document.getElementById('${buttonId}');
-                if (!downloadBtn) return;
-                
-                downloadBtn.addEventListener('click', async function() {
-                    const url = '${fileUrl}';
-                    const filename = '${fileName}';
-                    if (!url) {
-                        alert('URL do arquivo não definida.');
-                        return;
-                    }
-
-                    const progressContainer = document.getElementById('progress-container-${component.id}');
-                    const progressBar = document.getElementById('progress-bar-${component.id}');
-                    
-                    if (progressContainer) progressContainer.style.display = 'block';
-                    if (downloadBtn) downloadBtn.style.display = 'none';
-
-                    try {
-                        const response = await fetch(url);
-                        if (!response.ok) {
-                            throw new Error('Falha na rede ao tentar baixar o arquivo.');
-                        }
-
-                        const contentLength = response.headers.get('content-length');
-                        const total = contentLength ? parseInt(contentLength, 10) : 0;
-                        let loaded = 0;
-
-                        const stream = new ReadableStream({
-                            async start(controller) {
-                                const reader = response.body.getReader();
-                                for (;;) {
-                                    const { done, value } = await reader.read();
-                                    if (done) break;
-                                    loaded += value.byteLength;
-                                    if(total && progressBar) {
-                                       const percentage = Math.round((loaded / total) * 100);
-                                       progressBar.style.width = percentage + '%';
-                                       progressBar.textContent = percentage + '%';
-                                    }
-                                    controller.enqueue(value);
-                                }
-                                controller.close();
-                            },
-                        });
-
-                        const newResponse = new Response(stream);
-                        const blob = await newResponse.blob();
-                        const blobUrl = window.URL.createObjectURL(blob);
-                        
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = blobUrl;
-                        a.download = filename || url.split('/').pop();
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(blobUrl);
-                        document.body.removeChild(a);
-
-                    } catch (error) {
-                        console.error('Erro no download:', error);
-                        alert('Não foi possível baixar o arquivo.');
-                    } finally {
-                        if (progressContainer) progressContainer.style.display = 'none';
-                        if (downloadBtn) downloadBtn.style.display = 'inline-block';
-                        if (progressBar) {
-                            progressBar.style.width = '0%';
-                            progressBar.textContent = '';
-                        }
-                    }
-                });
-            })();
-            </script>`;
-    }
-    case 'Accordion': {
-        const items = component.props.items || [];
-        const itemsHtml = items
-          .map(
-            (item: { id: string; title: string; content: string }) => `
-          <div class="accordion-item">
-            <button class="accordion-header" aria-expanded="false" aria-controls="content-${item.id}">
-              ${item.title}
-              <span class="accordion-icon"></span>
-            </button>
-            <div id="content-${item.id}" class="accordion-content">
-              ${item.content}
-            </div>
-          </div>`
-          )
-          .join('');
-        return `<div class="accordion-container" style="${styleString}">${itemsHtml}</div>`;
-    }
-    case 'Tabs': {
-        const items = component.props.items || [];
-        const tabsId = `tabs-${component.id}`;
-        const triggersHtml = items
-          .map(
-            (item: { id: string; title: string }, index: number) => `
-          <button class="tab-trigger" data-tab="${item.id}" role="tab" aria-controls="panel-${item.id}" aria-selected="${index === 0 ? 'true' : 'false'}">
-            ${item.title}
-          </button>`
-          )
-          .join('');
-        const panelsHtml = items
-          .map(
-            (item: { id: string; content: string }, index: number) => `
-          <div id="panel-${item.id}" class="tab-panel" role="tabpanel" ${index !== 0 ? 'hidden' : ''}>
-            ${item.content}
-          </div>`
-          )
-          .join('');
-        return `
-          <div class="tabs-container" id="${tabsId}" style="${styleString}">
-            <div class="tab-list" role="tablist">${triggersHtml}</div>
-            ${panelsHtml}
-          </div>`;
-    }
-    case 'Voting': {
-        const { question, options = [] } = component.props;
-        const votingId = `voting-${component.id}`;
-
-        const optionsHtml = options.map((opt: { id: string; text: string; }) => `
-            <button class="voting-option" data-option-id="${opt.id}">${opt.text}</button>
-        `).join('');
-
-        const resultsHtml = options.map((opt: { id: string; text: string; }) => `
-            <div class="voting-result">
-                <div class="result-label">${opt.text}</div>
-                <div class="result-bar-container">
-                    <div class="result-bar" id="result-bar-${opt.id}" style="width: 0%;"></div>
-                </div>
-                <div class="result-percentage" id="result-percentage-${opt.id}">0%</div>
-            </div>
-        `).join('');
-
-        return `
-            <div id="${votingId}" class="voting-container" style="${styleString}">
-                <h3 class="voting-question">${question || 'Sua pergunta aqui'}</h3>
-                <div class="voting-options">${optionsHtml}</div>
-                <div class="voting-results" style="display: none;">${resultsHtml}</div>
-            </div>
-            <script>
-                (function() {
-                    const votingContainer = document.getElementById('${votingId}');
-                    if (!votingContainer) return;
-
-                    const optionsContainer = votingContainer.querySelector('.voting-options');
-                    const resultsContainer = votingContainer.querySelector('.voting-results');
-                    const storageKey = 'voting_data_${votingId}';
-                    const hasVotedKey = 'has_voted_${votingId}';
-
-                    let votes = JSON.parse(localStorage.getItem(storageKey)) || {};
-                    const hasVoted = localStorage.getItem(hasVotedKey) === 'true';
-
-                    function updateResults() {
-                        const totalVotes = Object.values(votes).reduce((sum, count) => sum + count, 0);
-                        if (totalVotes === 0) return;
-
-                        Object.keys(votes).forEach(optionId => {
-                            const voteCount = votes[optionId] || 0;
-                            const percentage = ((voteCount / totalVotes) * 100).toFixed(1);
-                            const bar = resultsContainer.querySelector(\`#result-bar-\${optionId}\`);
-                            const percentageEl = resultsContainer.querySelector(\`#result-percentage-\${optionId}\`);
-
-                            if (bar) bar.style.width = \`\${percentage}%\`;
-                            if (percentageEl) percentageEl.textContent = \`\${percentage}%\`;
-                        });
-                    }
-
-                    function showResults() {
-                        optionsContainer.style.display = 'none';
-                        resultsContainer.style.display = 'block';
-                        updateResults();
-                    }
-
-                    if (hasVoted) {
-                        showResults();
-                    }
-
-                    optionsContainer.addEventListener('click', function(event) {
-                        if (event.target.classList.contains('voting-option')) {
-                            if (localStorage.getItem(hasVotedKey) === 'true') {
-                                alert('Você já votou.');
-                                return;
-                            }
-                            
-                            const optionId = event.target.dataset.optionId;
-                            votes[optionId] = (votes[optionId] || 0) + 1;
-                            
-                            localStorage.setItem(storageKey, JSON.stringify(votes));
-                            localStorage.setItem(hasVotedKey, 'true');
-                            
-                            showResults();
-                        }
-                    });
-                })();
-            </script>
-        `;
-    }
-    case 'Stripe': {
-        const { text, isClosable, backgroundColor, textColor, linkUrl } = component.props;
-        const stripeId = `stripe-${component.id}`;
-
-        const closeButton = isClosable ? `<button id="close-${stripeId}" class="stripe-close-btn">&times;</button>` : '';
-        const content = linkUrl ? `<a href="${linkUrl}" target="_blank" style="color: inherit; text-decoration: none;">${text}</a>` : text;
-
-        return `
-            <div id="${stripeId}" class="stripe-container" style="background-color: ${backgroundColor}; color: ${textColor};">
-                <p>${content}</p>
-                ${closeButton}
-            </div>
-            <script>
-                (function() {
-                    const stripe = document.getElementById('${stripeId}');
-                    if (!stripe) return;
-                    const closeBtn = document.getElementById('close-${stripeId}');
-                    const storageKey = 'stripe_closed_${stripeId}';
-
-                    if (localStorage.getItem(storageKey) === 'true') {
-                        stripe.style.display = 'none';
-                    } else {
-                        stripe.style.display = 'flex';
-                    }
-
-                    if (closeBtn) {
-                        closeBtn.addEventListener('click', function() {
-                            stripe.style.display = 'none';
-                            localStorage.setItem(storageKey, 'true');
-                        });
-                    }
-                })();
-            </script>
-        `;
-    }
-    case 'NPS': {
-        const { question, type = 'numeric', lowLabel, highLabel, thankYouMessage } = component.props;
-        const npsId = `nps-${component.id}`;
-
-        let optionsHtml = '';
-        if (type === 'numeric') {
-            for (let i = 0; i <= 10; i++) {
-                optionsHtml += `<button class="nps-option nps-numeric" data-score="${i}">${i}</button>`;
-            }
-        } else { // faces
-            const faces = ['😡', '😠', '😑', '😐', '🙂', '😄', '😁'];
-            optionsHtml = faces.map((face, i) => `<button class="nps-option nps-face" data-score="${i}">${face}</button>`).join('');
-        }
-        
-        return `
-            <div id="${npsId}" class="nps-container" style="${styleString}">
-                <div class="nps-content">
-                    <p class="nps-question">${question}</p>
-                    <div class="nps-options-wrapper">${optionsHtml}</div>
-                    <div class="nps-labels">
-                        <span>${lowLabel}</span>
-                        <span>${highLabel}</span>
-                    </div>
-                </div>
-                <div class="nps-thanks" style="display: none;">
-                    <p>${thankYouMessage}</p>
-                </div>
-            </div>
-            <script>
-                (function() {
-                    const npsContainer = document.getElementById('${npsId}');
-                    if (!npsContainer) return;
-                    
-                    const mainForm = document.querySelector('form[id^="smartcapture-form-"]');
-                    let npsScoreInput;
-
-                    if (mainForm) {
-                        npsScoreInput = mainForm.querySelector('input[name="NPS_SCORE"]');
-                        if (!npsScoreInput) {
-                            npsScoreInput = document.createElement('input');
-                            npsScoreInput.type = 'hidden';
-                            npsScoreInput.name = 'NPS_SCORE';
-                            mainForm.appendChild(npsScoreInput);
-                        }
-                    }
-
-                    const options = npsContainer.querySelectorAll('.nps-option');
-                    options.forEach(option => {
-                        option.addEventListener('click', function() {
-                            const score = this.dataset.score;
-                            
-                            if (npsScoreInput) {
-                                npsScoreInput.value = score;
-                            }
-
-                            // Visual feedback
-                            options.forEach(opt => opt.classList.remove('selected'));
-                            this.classList.add('selected');
-                            
-                            // Show thanks message
-                            const content = npsContainer.querySelector('.nps-content');
-                            const thanks = npsContainer.querySelector('.nps-thanks');
-                            if (content) content.style.display = 'none';
-                            if (thanks) thanks.style.display = 'block';
-                        });
-                    });
-                })();
-            </script>
-        `;
-    }
-    case 'Map': {
-        const { embedUrl } = component.props;
-        if (!embedUrl) {
-            return '<p>URL de incorporação do mapa não fornecida.</p>';
-        }
-        return `
-            <div class="map-container" style="${styleString}">
-                <iframe
-                    src="${embedUrl}"
-                    width="100%"
-                    height="450"
-                    style="border:0;"
-                    allowfullscreen=""
-                    loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade">
-                </iframe>
-            </div>
-        `;
-    }
-    case 'SocialIcons': {
-        const { links = {}, styles: iconStyles = {} } = component.props;
-        const { align = 'center', iconSize = '24px' } = iconStyles;
-        
-        const socialSvgs: Record<string, string> = {
-            facebook: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>',
-            instagram: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>',
-            twitter: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter"><path d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3.3 4.9-6.1 1.2-18 5-18 5s-2.7-7.1 2.5-11.2c-1.4 1.3-2.8 2.5-2.8 2.5s-2.8-7.4 9.1-3.8c.9 2.1 3.3 2.6 3.3 2.6Z"/></svg>',
-            linkedin: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>',
-            youtube: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-youtube"><path d="M2.5 17a24.12 24.12 0 0 1 0-10C2.5 4.24 4.24 2.5 7 2.5h10c2.76 0 4.5 1.74 4.5 4.5v10c0 2.76-1.74 4.5-4.5 4.5H7c-2.76 0-4.5-1.74-4.5-4.5Z"/><path d="m10 15 5-3-5-3z"/></svg>',
-            tiktok: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tiktok"><path d="M12 12a4 4 0 1 0 4 4V4a5 5 0 1 0-5 5h4"/></svg>',
-            pinterest: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pinterest"><path d="M12 12c-2.25 0-4.43.9-6.13 2.45-.5.4-.44 1.25.08 1.65l2.29 1.78c.45.35 1.1.2 1.45-.25.5-.63.85-1.4 1.03-2.2.14-.64.04-1.34-.3-1.96-.3-.54.21-1.2.78-1.22.63-.03 1.2.3 1.28.98.08.7-.3 1.4-.7 1.9-.44.55-.22 1.34.3 1.6l2.32 1.83c.53.41 1.28.2 1.68-.25 2.4-2.7 3.1-6.4 2.2-9.6-1-3.5-3.8-6.1-7.2-6.5-4.5-.4-8.4 2.1-9.4 6.2-.9 3.5.7 7.5 4.1 9.4 1.4.7 2.9 1 4.4 1.1"/></svg>',
-            snapchat: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-snapchat"><path d="M15 17a8 8 0 1 0-8.5-8H12v10Z"/><path d="M12 12c-2-2-2-4-2-4-2 0-2 2-2 4s2 4 4 4 2-2 2-4-2-4-2-4Z"/></svg>',
-        };
-
-        const iconsHtml = Object.keys(links)
-            .filter(key => links[key])
-            .map(key => `
-                <a href="${links[key]}" target="_blank" class="social-icon" aria-label="${key}">
-                    ${socialSvgs[key as keyof typeof socialSvgs] || ''}
-                </a>
-            `).join('');
-
-        return `<div class="social-icons-container" style="text-align: ${align}; ${styleString}" data-icon-size="${iconSize}">${iconsHtml}</div>`;
-    }
-    case 'Columns':
-        return `<div class="columns-container" style="--column-count: ${component.props.columnCount || 2}; ${styleString}">${childrenHtml}</div>`;
-    case 'WhatsApp': {
-        const { phoneNumber, defaultMessage, position = 'bottom-right' } = component.props;
-        const encodedMessage = encodeURIComponent(defaultMessage);
-        const href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-        return `
-            <a href="${href}" target="_blank" class="whatsapp-float-btn ${position}" aria-label="Fale conosco no WhatsApp">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-            </a>`;
-    }
-    case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, formAlign, thankYouAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
-        const { meta } = pageState;
-        
-        const animationUrls = {
-            confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
-        };
-        const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
-        
-        const lucideIconSvgs: Record<string, string> = {
-            none: '',
-            send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
-            'arrow-right': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
-            'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
-            'plus': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
-            'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
-            'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-            'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
-        };
-        
-        const iconHtml = buttonProps.icon && lucideIconSvgs[buttonProps.icon] ? lucideIconSvgs[buttonProps.icon] : '';
-
-        const buttonContent = buttonProps.iconPosition === 'right' 
-            ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
-            : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
-        
-        const redirectUrl = submission?.url || meta.redirectUrl ||'';
-
-        return `
-            %%[ Set @thankYouMessage = "${submission?.message || 'Obrigado!'}" ]%%
-            %%[ IF @showThanks != "true" THEN ]%%
-            <div id="form-wrapper-${component.id}" class="form-container" style="text-align: ${formAlign || 'left'}; ${styleString}">
-                <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
-                     <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
-                     <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                     <input type="hidden" name="__successUrl" value="${redirectUrl}">
-                     <input type="hidden" name="__isPost" value="true">
-    
-                     <div class="row">
-                      ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
-                      ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional, !!fields.email.prefillFromUrl) : ''}
-                     </div>
-                     <div class="row">
-                      ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional, !!fields.phone.prefillFromUrl) : ''}
-                      ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional, !!fields.cpf.prefillFromUrl) : ''}
-                     </div>
-                     <div class="row">
-                      ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, false) : ''}
-                      ${fields.city?.enabled ? renderCityDropdown(component.props.cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
-                     </div>
-                     
-                     <div class="custom-fields-wrapper">
-                      ${customFields.map(renderCustomField).join('\n')}
-                     </div>
-               
-                    ${fields.optin?.enabled ? `
-                    <div class="consent" id="wrapper-optin" style="display: ${fields.optin.conditional ? 'none' : 'flex'}" ${fields.optin.conditional ? `data-conditional-on="${fields.optin.conditional.field}" data-conditional-value="${fields.optin.conditional.value}"` : ''}>
-                        <input type="checkbox" id="OPTIN" name="OPTIN" value="on" required="required">
-                        <label for="OPTIN">
-                            ${consentText || 'Quero receber novidades e promoções...'}
-                        </label>
-                      <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
-                    </div>
-                    ` : ''}
-                    <div class="form-submit-wrapper" style="text-align: ${buttonAlign || 'center'};">
-                        <button type="submit"
-                          class="form-submit-button"
-                          style="
-                              background-color: ${buttonProps.bgColor || 'var(--theme-color)'};
-                              color: ${buttonProps.textColor || '#FFFFFF'};
-                          "
-                          onmouseover="this.style.backgroundColor='${buttonProps.hoverBgColor || 'var(--theme-color-hover)'}'"
-                          onmouseout="this.style.backgroundColor='${buttonProps.bgColor || 'var(--theme-color)'}'"
-                          ${buttonProps.enableWhenValid ? 'disabled' : ''}
-                        >
-                            ${buttonContent}
-                        </button>
-                    </div>
-                </form>
-            </div>
-            %%[ ELSE ]%%
-                <div class="thank-you-message" style="text-align: ${thankYouAlign || 'center'};">
-                    ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
-                    <div class="thank-you-text">%%=TreatAsContent(@thankYouMessage)=%%</div>
-                </div>
-            %%[ ENDIF ]%%
-        `;
-      }
-    case 'Footer':
-      return `
-      <footer style="${styleString}">
-        <div class="MuiGrid-root natds602 MuiGrid-container">
-            <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText1 || `© ${new Date().getFullYear()} Natura. Todos os direitos reservados.`}</span></div>
-            <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText2 || 'NATURA COSMÉTICOS S/A...'}</span></div>
-            <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText3 || 'Todos os preços e condições...'}</span></div>
-        </div>
-      </footer>`;
+    case 'Header': return renderHeader(component);
+    case 'Banner': return renderBanner(component);
+    case 'Title': return renderTitle(component, isForPreview);
+    case 'Subtitle': return renderSubtitle(component, isForPreview);
+    case 'Paragraph': return renderParagraph(component, isForPreview);
+    case 'Divider': return renderDivider(component);
+    case 'Image': return renderImage(component);
+    case 'Video': return renderVideo(component);
+    case 'Countdown': return renderCountdown(component);
+    case 'Spacer': return renderSpacer(component);
+    case 'Button': return renderButton(component);
+    case 'DownloadButton': return renderDownloadButton(component);
+    case 'Accordion': return renderAccordion(component);
+    case 'Tabs': return renderTabs(component);
+    case 'Voting': return renderVoting(component);
+    case 'Stripe': return renderStripe(component);
+    case 'NPS': return renderNPS(component);
+    case 'Map': return renderMap(component);
+    case 'SocialIcons': return renderSocialIcons(component);
+    case 'Columns': return renderColumns(component, childrenHtml);
+    case 'WhatsApp': return renderWhatsApp(component);
+    case 'Form': return renderForm(component, pageState);
+    case 'Footer': return renderFooter(component);
     default:
-      // This will cause a compile-time error if a new component type is added and not handled here.
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
   }
@@ -724,7 +114,6 @@ const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): { he
     let headScripts = '';
     let bodyScripts = '';
 
-    // Google Tag Manager
     if (trackingConfig.gtm?.enabled && trackingConfig.gtm.id) {
         const gtmId = trackingConfig.gtm.id;
         headScripts += `
@@ -743,7 +132,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->`;
     }
 
-    // Google Analytics 4
     if (trackingConfig.ga4?.enabled && trackingConfig.ga4.id) {
         const ga4Id = trackingConfig.ga4.id;
         headScripts += `
@@ -758,7 +146,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </script>`;
     }
 
-    // Meta Pixel
     if (trackingConfig.meta?.enabled && trackingConfig.meta.id) {
         const metaId = trackingConfig.meta.id;
         headScripts += `
@@ -781,7 +168,6 @@ src="https://www.facebook.com/tr?id=${metaId}&ev=PageView&noscript=1"
 <!-- End Meta Pixel Code -->`;
     }
 
-    // LinkedIn Insight Tag
     if (trackingConfig.linkedin?.enabled && trackingConfig.linkedin.id) {
         const linkedinId = trackingConfig.linkedin.id;
         headScripts += `
@@ -913,7 +299,6 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
       SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
       IF @submittedPassword == @correctPassword THEN
           SET @isAuthenticated = true
-          /* You might want to set a cookie here for persistent login */
       ENDIF
   ENDIF
 `;
@@ -1084,7 +469,6 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
             const submitButton = form.querySelector('button[type="submit"]');
             
-            // Setup button loader
             if (submitButton && !submitButton.querySelector('.button-loader')) {
                 const buttonContent = submitButton.innerHTML;
                 
@@ -1114,7 +498,6 @@ const getClientSideScripts = (pageState: CloudPage): string => {
                 }
             });
             
-            // Enable/disable button logic
             if (submitButton?.hasAttribute('disabled')) {
                 const requiredInputs = Array.from(form.querySelectorAll('[required]'));
                 const checkFormValidity = () => {
@@ -1149,7 +532,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
             }
 
             form.addEventListener('input', checkConditions);
-            checkConditions(); // Initial check on load
+            checkConditions();
         });
     }
 
@@ -1176,7 +559,6 @@ const getClientSideScripts = (pageState: CloudPage): string => {
             emailInput.addEventListener('blur', function() { validateEmail(this); });
         }
         
-        // Mobile menu toggle for headers
         document.querySelectorAll('.mobile-menu-toggle').forEach(button => {
             button.addEventListener('click', function() {
                 const header = this.closest('.page-header');
@@ -1203,7 +585,7 @@ const getPrefillAmpscript = (pageState: CloudPage): string => {
     if (!formComponent) return '';
 
     const fieldsToPrefill: {name: string, param: string}[] = [];
-    const fields = formComponent.props.fields as Record<string, FormFieldConfig>;
+    const fields = formComponent.props.fields;
 
     if (fields?.name?.prefillFromUrl) fieldsToPrefill.push({name: 'NOME', param: 'nome'});
     if (fields?.email?.prefillFromUrl) fieldsToPrefill.push({name: 'EMAIL', param: 'email'});
@@ -1229,13 +611,11 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const ssjsScript = getFormSubmissionScript(pageState);
 
-  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
-  
   const security = getSecurityScripts(pageState);
   
   const clientSideScripts = getClientSideScripts(pageState);
   
-  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
+  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview)).join('\n');
   const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
   
   const trackingScripts = getTrackingScripts(meta.tracking);
@@ -1447,7 +827,7 @@ ${trackingScripts.head}
         position: relative;
         overflow: hidden;
         width: 100%;
-        padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        padding-top: 56.25%;
     }
 
     .video-container iframe {
@@ -1680,7 +1060,6 @@ ${trackingScripts.head}
         gap: 10px;
     }
 
-    /* Accordion Styles */
     .accordion-container {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -1733,7 +1112,6 @@ ${trackingScripts.head}
         padding: 15px;
     }
 
-    /* Tabs Styles */
     .tabs-container { }
     .tab-list {
         display: flex;
@@ -1761,7 +1139,6 @@ ${trackingScripts.head}
         text-align: left;
     }
 
-    /* Voting Component Styles */
     .voting-container {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -1826,7 +1203,7 @@ ${trackingScripts.head}
         font-weight: bold;
         width: 50px;
     }
-    /* Stripe Styles */
+
     .stripe-container {
         width: 100%;
         padding: 10px 20px;
@@ -1853,7 +1230,7 @@ ${trackingScripts.head}
         position: absolute;
         right: 10px;
     }
-    /* NPS Component Styles */
+
     .nps-container {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -1915,17 +1292,17 @@ ${trackingScripts.head}
         font-weight: bold;
         color: var(--theme-color);
     }
-    /* Map Component Styles */
+
     .map-container {
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid #e0e0e0;
     }
-    /* Social Icons Styles */
+
     .social-icons-container {
         display: flex;
         gap: 15px;
-        justify-content: center; /* Default, can be overridden by inline style */
+        justify-content: center;
     }
     .social-icon {
         display: inline-block;
@@ -1937,11 +1314,10 @@ ${trackingScripts.head}
         color: var(--theme-color);
     }
     .social-icon svg {
-        width: 24px; /* Default size */
+        width: 24px;
         height: 24px;
     }
 
-    /* Columns Styles */
     .columns-container {
         display: flex;
         gap: 20px;
@@ -1951,7 +1327,7 @@ ${trackingScripts.head}
         flex: 1;
         min-width: 0;
     }
-    /* WhatsApp Button Styles */
+
     .whatsapp-float-btn {
         position: fixed;
         width: 60px;
@@ -1980,7 +1356,6 @@ ${trackingScripts.head}
         height: 32px;
     }
 
-    /* Password Protection Styles */
     .password-protection-container {
         display: flex;
         align-items: center;
@@ -2035,7 +1410,6 @@ ${trackingScripts.head}
     }
 
 
-    /* Custom CSS */
     ${styles.customCss || ''}
 </style>
 ${clientSideScripts}
@@ -2052,7 +1426,7 @@ ${ssjsScript}
   <main>
     ${mainContentHtml}
   </main>
-  ${whatsAppComponent ? renderComponent(whatsAppComponent, pageState, isForPreview) : ''}
+  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview) : ''}
   ${cookieBannerHtml}
   ${trackingPixel}
   %%[ ELSE ]%%

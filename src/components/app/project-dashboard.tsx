@@ -683,11 +683,11 @@ export function ProjectDashboard() {
                 <CardContent className="grid grid-cols-2 gap-4">
                    <div className="flex items-center gap-3 rounded-lg bg-green-500/10 p-4 border border-green-500/20">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20">
-                            <Link className="h-5 w-5 text-green-600" />
+                            <Link className="h-5 w-5 text-green-500" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-green-600">{dashboardStats.activePageCount}</div>
-                            <p className="text-xs text-green-700">Páginas Ativas</p>
+                            <div className="text-2xl font-bold text-green-500">{dashboardStats.activePageCount}</div>
+                            <p className="text-xs text-green-600">Páginas Ativas</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors" onClick={handleNextStepClick}>

@@ -155,6 +155,7 @@ function ComponentItem({
   dndAttributes,
   dndListeners,
   children,
+  isDraggable = true,
 }: {
   component: PageComponent;
   selectedComponentId: string | null;
@@ -164,6 +165,7 @@ function ComponentItem({
   dndAttributes?: any;
   dndListeners?: any;
   children?: React.ReactNode;
+  isDraggable?: boolean;
 }) {
   const Icon = componentIcons[component.type] || Text;
   const isContainer = component.type === 'Columns';
@@ -182,7 +184,7 @@ function ComponentItem({
         isContainer ? "flex flex-col items-stretch gap-1.5" : "flex items-center gap-1"
       )}>
           <div className="flex items-center min-w-0"> {/* Allow shrinking */}
-            <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8 flex-shrink-0" aria-label={`Arrastar componente ${component.type}`}>
+            <Button asChild variant="ghost" size="icon" {...(isDraggable ? dndListeners : {})} {...(isDraggable ? dndAttributes : {})} className={cn("h-8 w-8 flex-shrink-0", isDraggable ? "cursor-grab" : "cursor-not-allowed")} aria-label={`Arrastar componente ${component.type}`}>
                 <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
             </Button>
             <Button
@@ -495,7 +497,7 @@ export function SettingsPanel({
                       break;
                   case 'NPS':
                       newComponent.props = {
-                          question: 'Em uma escala de 0 a 10, o quão provável você é de recomendar nosso produto/serviço a um amigo ou colega?',
+                          question: 'Em uma escala de 0 a 10, o quão provável você é de nos recomendar a um amigo ou colega?',
                           type: 'numeric',
                           lowLabel: 'Pouco Provável',
                           highLabel: 'Muito Provável',
@@ -738,7 +740,7 @@ export function SettingsPanel({
 
   const renderComponents = (parentId: string | null) => {
     const componentsToRender = pageState.components
-      .filter(c => c.parentId === parentId)
+      .filter(c => c.parentId === parentId && c.type !== 'Stripe')
       .sort((a, b) => a.order - b.order);
   
     return componentsToRender.map(component => {
@@ -799,6 +801,10 @@ export function SettingsPanel({
         </SortableContext>
     );
   };
+  
+  const stripeComponents = pageState.components.filter(c => c.type === 'Stripe');
+  const otherComponents = pageState.components.filter(c => c.type !== 'Stripe');
+
 
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
@@ -957,12 +963,27 @@ export function SettingsPanel({
                  </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  {stripeComponents.map(component => (
+                    <ComponentItem
+                        key={component.id}
+                        component={component}
+                        selectedComponentId={selectedComponentId}
+                        setSelectedComponentId={setSelectedComponentId}
+                        removeComponent={removeComponent}
+                        duplicateComponent={duplicateComponent}
+                        isDraggable={false}
+                    />
+                  ))}
+                  {stripeComponents.length > 0 && <Separator />}
+                </div>
+
                 <DndContext 
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                    <SortableContext items={pageState.components.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                    <SortableContext items={otherComponents.map(c => c.id)} strategy={verticalListSortingStrategy}>
                       <div className="space-y-2">
                           {renderComponents(null)}
                       </div>

@@ -142,7 +142,7 @@ export const updateProject = async (projectId: string, data: Partial<Project>): 
 
 export const getProjectsForUser = async (workspaceId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
     if (!workspaceId) {
-        throw new Error("Workspace ID is required to fetch projects.");
+        return { projects: [], pages: [] };
     }
     const db = getDbInstance();
     const projectsQuery = query(collection(db, "projects"), where("workspaceId", "==", workspaceId));

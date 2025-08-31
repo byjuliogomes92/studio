@@ -62,8 +62,10 @@ export default function AccountPage() {
   }, [activeWorkspace, toast]);
 
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+    if(activeWorkspace) {
+        fetchMembers();
+    }
+  }, [activeWorkspace, fetchMembers]);
   
   const handleInviteUser = async () => {
     if (!activeWorkspace || !inviteEmail) {
@@ -73,7 +75,7 @@ export default function AccountPage() {
     setIsInviting(true);
     try {
         await inviteUserToWorkspace(activeWorkspace.id, inviteEmail, inviteRole);
-        toast({ title: 'Usuário convidado!', description: `${inviteEmail} foi convidado para o workspace.` });
+        toast({ title: 'Usuário convidado!', description: `${inviteEmail} foi convidado para o seu workspace.` });
         setInviteEmail('');
         fetchMembers(); // Refresh member list
     } catch (error: any) {
@@ -207,7 +209,7 @@ export default function AccountPage() {
         {activeWorkspace && (
              <Card>
                 <CardHeader>
-                    <CardTitle>Gerenciamento do Workspace</CardTitle>
+                    <CardTitle>Colaboradores do Workspace</CardTitle>
                     <CardDescription>Convide e gerencie os membros do seu workspace "{activeWorkspace.name}".</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -288,7 +290,7 @@ export default function AccountPage() {
                                                       </AlertDialog>
                                                     </>
                                                 ) : (
-                                                    member.role === 'owner' && member.userId !== user.uid && (
+                                                    member.role === 'owner' && (
                                                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                           <ShieldCheck className="h-4 w-4" />
                                                           <span>Dono</span>

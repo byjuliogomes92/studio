@@ -122,6 +122,7 @@ export interface CloudPage {
     metaKeywords: string;
     customAmpscript?: string;
     tracking?: {
+      gtm?: { enabled: boolean; id?: string };
       ga4: { enabled: boolean; id?: string };
       meta: { enabled: boolean; id?: string };
       linkedin: { enabled: boolean; id?: string };

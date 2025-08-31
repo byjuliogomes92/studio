@@ -704,15 +704,35 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
   }
 };
 
-const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): string => {
-    if (!trackingConfig) return '';
+const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): { head: string, body: string } => {
+    if (!trackingConfig) return { head: '', body: '' };
 
-    let scripts = '';
+    let headScripts = '';
+    let bodyScripts = '';
+
+    // Google Tag Manager
+    if (trackingConfig.gtm?.enabled && trackingConfig.gtm.id) {
+        const gtmId = trackingConfig.gtm.id;
+        headScripts += `
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${gtmId}');</script>
+<!-- End Google Tag Manager -->`;
+        
+        bodyScripts += `
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${gtmId}"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->`;
+    }
 
     // Google Analytics 4
     if (trackingConfig.ga4?.enabled && trackingConfig.ga4.id) {
         const ga4Id = trackingConfig.ga4.id;
-        scripts += `
+        headScripts += `
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=${ga4Id}"></script>
 <script>
@@ -727,7 +747,7 @@ const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): stri
     // Meta Pixel
     if (trackingConfig.meta?.enabled && trackingConfig.meta.id) {
         const metaId = trackingConfig.meta.id;
-        scripts += `
+        headScripts += `
 <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -750,7 +770,7 @@ src="https://www.facebook.com/tr?id=${metaId}&ev=PageView&noscript=1"
     // LinkedIn Insight Tag
     if (trackingConfig.linkedin?.enabled && trackingConfig.linkedin.id) {
         const linkedinId = trackingConfig.linkedin.id;
-        scripts += `
+        headScripts += `
 <!-- LinkedIn Insight Tag -->
 <script type="text/javascript">
 _linkedin_partner_id = "${linkedinId}";
@@ -772,7 +792,7 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
 <!-- End LinkedIn Insight Tag -->`;
     }
 
-    return scripts;
+    return { head: headScripts, body: bodyScripts };
 };
 
 const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeColor: string): string => {
@@ -1233,7 +1253,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-${trackingScripts}
+${trackingScripts.head}
 <style>
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
@@ -1947,6 +1967,7 @@ ${trackingScripts}
 ${clientSideScripts}
 </head>
 <body>
+${trackingScripts.body}
 ${initialAmpscript}
 ${ssjsScript}
   %%[ IF @isAuthenticated == true THEN ]%%

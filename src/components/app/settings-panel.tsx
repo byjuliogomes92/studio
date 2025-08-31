@@ -357,7 +357,7 @@ export function SettingsPanel({
   }
 
   const handleTrackingChange = (
-    pixel: 'ga4' | 'meta' | 'linkedin',
+    pixel: 'gtm' | 'ga4' | 'meta' | 'linkedin',
     prop: 'enabled' | 'id',
     value: boolean | string
   ) => {
@@ -369,6 +369,7 @@ export function SettingsPanel({
                 ...prev.meta,
                 tracking: {
                     ...(prev.meta.tracking || { 
+                        gtm: { enabled: false, id: '' },
                         ga4: { enabled: false, id: '' },
                         meta: { enabled: false, id: '' },
                         linkedin: { enabled: false, id: '' }
@@ -1114,6 +1115,16 @@ SET @name = AttributeValue("FirstName")
                 
                 <div className="space-y-4">
                   <h4 className="font-medium">Tracking & Pixels</h4>
+                  {/* GTM */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="gtm-enabled">Google Tag Manager</Label>
+                      <Switch id="gtm-enabled" checked={tracking?.gtm?.enabled} onCheckedChange={(checked) => handleTrackingChange('gtm', 'enabled', checked)} />
+                    </div>
+                    {tracking?.gtm?.enabled && (
+                      <Input placeholder="ID do Contêiner (GTM-XXXXXXX)" value={tracking?.gtm?.id || ''} onChange={(e) => handleTrackingChange('gtm', 'id', e.target.value)} />
+                    )}
+                  </div>
                   {/* GA4 */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">

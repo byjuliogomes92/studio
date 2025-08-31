@@ -34,7 +34,7 @@ const publicRoutes = ['/login', '/signup', '/debug-workspace', '/welcome'];
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Default to true
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (loading) return; // Don't redirect while loading
 
-    if (!user && !publicRoutes.includes(pathname)) {
+    if (!user && !publicRoutes.some(route => pathname.startsWith(route))) {
       router.push('/login');
     } else if (user && pathname !== '/welcome') {
       const checkProfile = async () => {
@@ -221,7 +221,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updateWorkspaceName,
     reloadWorkspaces: () => fetchWorkspaces(user!.uid),
   };
-
+  
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">

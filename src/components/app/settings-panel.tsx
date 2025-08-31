@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Badge } from "../ui/badge";
+import { MediaLibraryDialog } from "./media-library-dialog";
 
 
 interface SettingsPanelProps {
@@ -1111,7 +1112,19 @@ SET @name = AttributeValue("FirstName")
                  {pageState.meta.loaderType === 'image' && (
                     <div className="space-y-2">
                         <Label htmlFor="loader-url">URL da Imagem de Carregamento</Label>
-                        <Input id="loader-url" value={pageState.meta.loaderImageUrl} onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} />
+                        <div className="flex items-center gap-2">
+                            <Input 
+                                id="loader-url"
+                                value={pageState.meta.loaderImageUrl} 
+                                onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} 
+                                className="flex-grow"
+                            />
+                            <MediaLibraryDialog onSelectImage={(url) => handleMetaChange('loaderImageUrl', url)}>
+                                <Button variant="outline" size="icon">
+                                    <Image className="h-4 w-4" />
+                                </Button>
+                            </MediaLibraryDialog>
+                        </div>
                     </div>
                  )}
                  {pageState.meta.loaderType === 'animation' && (

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save, Copy, Users, Activity, Settings } from 'lucide-react';
+import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save, Copy, Users, Activity, Settings, EyeOff } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +26,7 @@ import { Logo } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getWorkspaceMembers, removeUserFromWorkspace, updateUserRole, getInvitesForWorkspace, createInvite, getActivityLogsForWorkspace } from '@/lib/firestore';
+import { getWorkspaceMembers, removeUserFromWorkspace, updateUserRole, getInvitesForWorkspace, inviteUserToWorkspace, acceptInvite, declineInvite, getActivityLogsForWorkspace } from '@/lib/firestore';
 import type { WorkspaceMember, WorkspaceMemberRole, Invite, ActivityLog } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
@@ -70,7 +70,7 @@ function MemberManagement({ activeWorkspace, user, members, fetchMembers }: { ac
         }
         setIsInviting(true);
         try {
-            await createInvite(activeWorkspace.id, activeWorkspace.name, user.displayName, inviteEmail, inviteRole);
+            await inviteUserToWorkspace(activeWorkspace.id, inviteEmail, inviteRole, user.displayName || user.email);
             toast({ title: 'Usuário convidado!', description: `${inviteEmail} foi convidado para o seu workspace.` });
             setInviteEmail('');
             fetchInvites();
@@ -159,7 +159,7 @@ function MemberManagement({ activeWorkspace, user, members, fetchMembers }: { ac
                  <div className="space-y-3">
                     {members.map(member => {
                         const isCurrentUser = member.userId === user.uid;
-                        const memberName = isCurrentUser ? user.displayName : (member.email || "Usuário");
+                        const memberName = isCurrentUser ? (user.displayName || user.email) : (member.email || "Usuário");
                         const memberAvatar = isCurrentUser ? user.photoURL : `https://api.dicebear.com/8.x/thumbs/svg?seed=${member.userId}`;
                         const memberInitial = (memberName?.[0] || 'U').toUpperCase();
 
@@ -277,7 +277,7 @@ function ActivityLogDisplay({ activeWorkspace }: { activeWorkspace: any; }) {
                             <span className="font-semibold">{log.userName}</span> {renderLogDetails(log)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {format(log.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm")}
+                            {log.timestamp?.toDate ? format(log.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm") : '...'}
                         </p>
                     </div>
                 </div>
@@ -288,7 +288,7 @@ function ActivityLogDisplay({ activeWorkspace }: { activeWorkspace: any; }) {
 
 
 export default function AccountPage() {
-  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, updateWorkspaceName, updateUserName } = useAuth();
+  const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, updateWorkspaceName, updateUserName, refreshUserWorkspaces } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);

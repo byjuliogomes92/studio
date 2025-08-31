@@ -3,7 +3,7 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, Invite, ActivityLog, ActivityLogAction } from "./types";
 
 const getDbInstance = (): Firestore => {
     const db = getDb();
@@ -61,10 +61,12 @@ export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]>
     return workspaceSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Workspace));
 };
 
-export const updateWorkspaceName = async (workspaceId: string, newName: string): Promise<void> => {
+export const updateWorkspaceName = async (workspaceId: string, newName: string, user: { uid: string, displayName?: string | null }): Promise<void> => {
     const db = getDbInstance();
     const workspaceRef = doc(db, 'workspaces', workspaceId);
     await updateDoc(workspaceRef, { name: newName });
+
+    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName: '', newName });
 };
 
 
@@ -75,54 +77,116 @@ export const getWorkspaceMembers = async (workspaceId: string): Promise<Workspac
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkspaceMember));
 };
 
-export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole): Promise<void> => {
+export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole, inviterName: string | null): Promise<void> => {
     const db = getDbInstance();
-    // This is a simplified invite system. In a real app, you'd use a Cloud Function
-    // to look up the user's UID by email or create a pending invite.
-    // For now, we'll find the user by email, which is not ideal for security/privacy.
-    // This assumes a `users` collection exists mapping email to UID. Since it doesn't,
-    // we'll simulate finding a user and creating a membership.
-    // THIS IS A PLACEHOLDER for a more robust invitation flow.
-    const usersRef = collection(db, "users"); // This collection doesn't exist, so this is a simplification
-    const q = query(usersRef, where("email", "==", email));
-    const querySnapshot = await getDocs(q);
-
-    let userId = '';
-    // A real app would have a users collection. We'll simulate finding one.
-    if (querySnapshot.empty) {
-        // For the sake of this demo, we'll throw an error.
-        // A real app would handle creating a pending invite.
-        throw new Error("Usuário não encontrado. Em uma aplicação real, um convite seria enviado.");
-    } else {
-       userId = querySnapshot.docs[0].id;
-    }
-
-    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceId}`);
-    const memberDoc = await getDoc(memberRef);
-
-    if (memberDoc.exists()) {
+    
+    // Check if user is already a member
+    const qMembers = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("email", "==", email));
+    const memberSnap = await getDocs(qMembers);
+    if (!memberSnap.empty) {
         throw new Error("Este usuário já é membro do workspace.");
     }
+    
+    // Check for an existing pending invite
+    const qInvites = query(collection(db, "invites"), 
+        where("workspaceId", "==", workspaceId), 
+        where("toEmail", "==", email),
+        where("status", "==", "pending")
+    );
+    const inviteSnap = await getDocs(qInvites);
+    if (!inviteSnap.empty) {
+        throw new Error("Já existe um convite pendente para este e-mail.");
+    }
+    
+    const workspaceSnap = await getDoc(doc(db, 'workspaces', workspaceId));
+    if (!workspaceSnap.exists()) {
+        throw new Error("Workspace não encontrado.");
+    }
 
-    await setDoc(memberRef, {
-        userId,
-        email,
+    const inviteData: Omit<Invite, 'id'> = {
         workspaceId,
-        role,
+        workspaceName: workspaceSnap.data().name,
+        fromUserName: inviterName || 'Um membro',
+        toEmail: email,
+        role: role,
+        status: 'pending',
         createdAt: serverTimestamp(),
-    });
+    };
+
+    await addDoc(collection(db, 'invites'), inviteData);
 };
 
-export const removeUserFromWorkspace = async (workspaceId: string, userId: string): Promise<void> => {
+
+export const getPendingInvitesForUser = async (email: string): Promise<Invite[]> => {
+    if (!email) return [];
+    const db = getDbInstance();
+    const q = query(
+        collection(db, "invites"),
+        where("toEmail", "==", email),
+        where("status", "==", "pending")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invite));
+};
+
+export const acceptInvite = async (inviteId: string, user: { uid: string, email?: string | null, displayName?: string | null }): Promise<void> => {
+    const db = getDbInstance();
+    const inviteRef = doc(db, 'invites', inviteId);
+    const inviteSnap = await getDoc(inviteRef);
+
+    if (!inviteSnap.exists()) {
+        throw new Error("Convite não encontrado ou inválido.");
+    }
+    const inviteData = inviteSnap.data() as Invite;
+
+    const batch = writeBatch(db);
+
+    // Create the membership document
+    const memberRef = doc(db, 'workspaceMembers', `${user.uid}_${inviteData.workspaceId}`);
+    batch.set(memberRef, {
+        userId: user.uid,
+        email: user.email,
+        workspaceId: inviteData.workspaceId,
+        role: inviteData.role,
+        createdAt: serverTimestamp(),
+    });
+
+    // Update the invite status
+    batch.update(inviteRef, { status: 'accepted' });
+
+    await batch.commit();
+
+    await logActivity(inviteData.workspaceId, user.uid, user.displayName, 'MEMBER_JOINED', {});
+};
+
+export const declineInvite = async (inviteId: string): Promise<void> => {
+    const db = getDbInstance();
+    const inviteRef = doc(db, 'invites', inviteId);
+    await updateDoc(inviteRef, { status: 'declined' });
+};
+
+
+export const getInvitesForWorkspace = async (workspaceId: string): Promise<Invite[]> => {
+    const db = getDbInstance();
+    const invitesQuery = query(collection(db, "invites"), where("workspaceId", "==", workspaceId));
+    const querySnapshot = await getDocs(invitesQuery);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invite));
+};
+
+
+export const removeUserFromWorkspace = async (workspaceId: string, userId: string, removerUser: any, removedUser: WorkspaceMember): Promise<void> => {
     const db = getDbInstance();
     const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceId}`);
     await deleteDoc(memberRef);
+    await logActivity(workspaceId, removerUser.uid, removerUser.displayName, 'MEMBER_REMOVED', { removedMemberEmail: removedUser.email });
 }
 
-export const updateUserRole = async (workspaceId: string, userId: string, role: WorkspaceMemberRole): Promise<void> => {
+export const updateUserRole = async (workspaceId: string, userId: string, role: WorkspaceMemberRole, updaterUser: any, updatedUser: WorkspaceMember): Promise<void> => {
     const db = getDbInstance();
     const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceId}`);
     await updateDoc(memberRef, { role });
+
+    await logActivity(workspaceId, updaterUser.uid, updaterUser.displayName, 'MEMBER_ROLE_CHANGED', { memberName: updatedUser.email, newRole: role });
 }
 
 
@@ -135,6 +199,8 @@ export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>)
         createdAt: serverTimestamp(),
     };
     const projectRef = await addDoc(collection(db, "projects"), newProjectData);
+
+    await logActivity(projectData.workspaceId, projectData.userId, '', 'PROJECT_CREATED', { projectName: projectData.name });
     
     return {
         id: projectRef.id,
@@ -183,7 +249,7 @@ export const getProjectWithPages = async (projectId: string, workspaceId: string
 };
 
 
-export const deleteProject = async (projectId: string): Promise<void> => {
+export const deleteProject = async (projectId: string, user: { uid: string, displayName?: string | null }, projectName: string, workspaceId: string): Promise<void> => {
     const db = getDbInstance();
     const projectDocRef = doc(db, "projects", projectId);
     
@@ -202,12 +268,13 @@ export const deleteProject = async (projectId: string): Promise<void> => {
     batch.delete(projectDocRef);
 
     await batch.commit();
+    await logActivity(workspaceId, user.uid, user.displayName, 'PROJECT_DELETED', { projectName });
 };
 
 
 // Pages
 
-export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>, user: { uid: string, displayName?: string | null }): Promise<string> => {
     const db = getDbInstance();
     const pageId = doc(collection(db, 'dummy_id_generator')).id; // Generate a unique ID
 
@@ -227,6 +294,7 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
         setDoc(publishedRef, pageWithTimestamps)
     ]);
 
+    await logActivity(pageData.workspaceId, user.uid, user.displayName, 'PAGE_CREATED', { pageName: pageData.name });
     return pageId;
 };
 
@@ -240,7 +308,7 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
     });
 };
 
-export const publishPage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
+export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, user: { uid: string, displayName?: string | null }): Promise<void> => {
     const db = getDbInstance();
     const publishedRef = doc(db, "pages_published", pageId);
     // Overwrite the published document with the current draft data
@@ -248,6 +316,8 @@ export const publishPage = async (pageId: string, pageData: Partial<CloudPage>):
         ...pageData,
         updatedAt: serverTimestamp(), // Record the publish time
     }, { merge: true });
+
+    await logActivity(pageData.workspaceId!, user.uid, user.displayName, 'PAGE_PUBLISHED', { pageName: pageData.name });
 };
 
 
@@ -281,15 +351,17 @@ export const getPagesForProject = async (projectId: string, workspaceId: string)
 };
 
 
-export const deletePage = async (pageId: string): Promise<void> => {
+export const deletePage = async (pageId: string, user: { uid: string, displayName?: string | null }, pageName: string, workspaceId: string): Promise<void> => {
     const db = getDbInstance();
     // Delete both the draft and the published version
     const draftRef = doc(db, "pages_drafts", pageId);
     const publishedRef = doc(db, "pages_published", pageId);
     await Promise.all([deleteDoc(draftRef), deleteDoc(publishedRef)]);
+
+    await logActivity(workspaceId, user.uid, user.displayName, 'PAGE_DELETED', { pageName });
 };
 
-export const duplicatePage = async (pageId: string): Promise<CloudPage> => {
+export const duplicatePage = async (pageId: string, user: { uid: string, displayName?: string | null }): Promise<CloudPage> => {
     // Always duplicate from the draft version, as it's the most current state
     const originalPage = await getPage(pageId, 'drafts');
     if (!originalPage) {
@@ -302,7 +374,7 @@ export const duplicatePage = async (pageId: string): Promise<CloudPage> => {
     // Create a new name for the duplicated page
     pageDataToCopy.name = `Cópia de ${originalPage.name}`;
     
-    const newPageId = await addPage(pageDataToCopy);
+    const newPageId = await addPage(pageDataToCopy, user);
     
     const newPage = await getPage(newPageId, 'drafts');
     if (!newPage) {
@@ -558,3 +630,46 @@ export const getFormSubmissions = async (pageId: string): Promise<FormSubmission
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FormSubmission));
 };
+
+
+// Activity Logs
+export const logActivity = async (
+    workspaceId: string, 
+    userId: string, 
+    userName: string | null, 
+    action: ActivityLogAction, 
+    details: { [key: string]: any }
+): Promise<void> => {
+    const db = getDbInstance();
+    
+    // In a real app, you might get the user's avatar from their profile
+    const userAvatarUrl = `https://api.dicebear.com/8.x/thumbs/svg?seed=${userId}`;
+
+    const logEntry: Omit<ActivityLog, 'id'> = {
+        workspaceId,
+        userId,
+        userName: userName || 'Usuário Anônimo',
+        userAvatarUrl,
+        action,
+        details,
+        timestamp: serverTimestamp(),
+    };
+
+    try {
+        await addDoc(collection(db, 'activityLogs'), logEntry);
+    } catch (error) {
+        console.error("Failed to log activity:", error);
+        // Don't block the main action if logging fails
+    }
+};
+
+export const getActivityLogsForWorkspace = async (workspaceId: string): Promise<ActivityLog[]> => {
+    const db = getDbInstance();
+    const q = query(
+        collection(db, 'activityLogs'),
+        where('workspaceId', '==', workspaceId),
+        orderBy('timestamp', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
+}

@@ -27,12 +27,29 @@ import { renderCarousel } from './html-components/carousel';
 import { renderForm } from './html-components/form';
 import { renderFooter } from './html-components/footer';
 
+const wrapInPreviewBlock = (content: string, title: string, isForPreview: boolean) => {
+    if (!isForPreview || !content.trim()) {
+        return content;
+    }
+    const escapedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<div class="ampscript-preview-block" title="${title}"><pre>${escapedContent}</pre></div>`;
+};
+
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
         .sort((a, b) => a.order - b.order)
         .map(component => {
-            const isFullWidth = !!component.props.styles?.isFullWidth;
+            const styles = component.props.styles || {};
+            const animationType = styles.animationType || 'none';
+            const animationDuration = styles.animationDuration || 1;
+            const animationDelay = styles.animationDelay || 0;
+            
+            const animationAttrs = animationType !== 'none'
+              ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
+              : '';
+
+            const isFullWidth = !!styles?.isFullWidth;
             const sectionClass = isFullWidth ? 'section-wrapper section-wrapper--full-width' : 'section-wrapper';
             const containerClass = isFullWidth ? 'section-container' : '';
 
@@ -45,16 +62,16 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                 }
                 const renderedComponent = renderSingleComponent(component, pageState, isForPreview, columnsHtml);
                 
-                const wrapperStyle = isFullWidth ? `background-color: ${component.props.styles?.backgroundColor || 'transparent'};` : '';
+                const wrapperStyle = isFullWidth ? `background-color: ${styles?.backgroundColor || 'transparent'};` : '';
 
-                return `<div class="${sectionClass}" style="${wrapperStyle}">
+                return `<div class="${sectionClass}" style="${wrapperStyle}" ${animationAttrs}>
                            <div class="${containerClass}">
                              ${renderedComponent}
                            </div>
                         </div>`;
             }
 
-             return `<div class="${sectionClass}">
+             return `<div class="${sectionClass}" ${animationAttrs}>
                         <div class="section-container">
                           ${renderComponent(component, pageState, isForPreview)}
                         </div>
@@ -354,6 +371,27 @@ const getClientSideScripts = (pageState: CloudPage): string => {
 
     const script = `
     <script>
+    function setupAnimations() {
+        const animatedElements = document.querySelectorAll('[data-animation]');
+        if (!animatedElements.length) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    el.style.animationDuration = el.dataset.animationDuration;
+                    el.style.animationDelay = el.dataset.animationDelay;
+                    el.classList.add('animate-' + el.dataset.animation, 'is-visible');
+                    observer.unobserve(el);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        animatedElements.forEach(el => {
+            observer.observe(el);
+        });
+    }
+
     function setupAccordions() {
         document.querySelectorAll('.accordion-container').forEach(container => {
             container.addEventListener('click', function(event) {
@@ -678,6 +716,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         handleConditionalFields();
         setupStickyHeader();
         setupCarousels();
+        setupAnimations();
     });
     </script>
     `;
@@ -750,7 +789,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null), components, pageState, isForPreview);
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe'), components, pageState, isForPreview);
 
   const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
 
@@ -856,7 +895,12 @@ ${trackingScripts.head}
         width: 100%;
         display: flex;
         justify-content: center;
+        opacity: 0; /* Hidden by default for animation */
     }
+    .section-wrapper.is-visible {
+        opacity: 1;
+    }
+
     .section-wrapper--full-width {
         /* This element will have the background color */
     }
@@ -864,7 +908,7 @@ ${trackingScripts.head}
     .section-container {
         width: 100%;
         max-width: 1200px;
-        padding: 0 20px;
+        padding: 20px;
         box-sizing: border-box;
     }
     
@@ -1031,6 +1075,48 @@ ${trackingScripts.head}
         font-weight: bold;
     }
 
+    .ampscript-preview-block {
+        background-color: rgba(22, 11, 56, 0.05);
+        color: #333;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 12px;
+        padding: 1rem 1rem 1rem 2.5rem;
+        border-radius: 8px;
+        margin: 0;
+        border: 1px dashed #ccc;
+        position: relative;
+        overflow: hidden;
+    }
+    .ampscript-preview-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .ampscript-preview-block::before {
+        content: '</>';
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background-color: #e2e8f0;
+        color: #4a5568;
+        padding: 1rem 0.5rem;
+        font-size: 14px;
+        font-family: sans-serif;
+        font-weight: bold;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+        border-right: 1px solid #ccc;
+    }
+    .ampscript-inline-preview {
+        background-color: #e0f2fe;
+        color: #0c4a6e;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.9em;
+    }
 
     .video-container {
         position: relative;
@@ -1066,7 +1152,14 @@ ${trackingScripts.head}
     }
     .custom-button--default { background-color: var(--theme-color); }
     .custom-button--default:hover { background-color: var(--theme-color-hover); }
-
+    .custom-button--destructive { background-color: #ef4444; }
+    .custom-button--destructive:hover { background-color: #dc2626; }
+    .custom-button--outline { background-color: transparent; border: 1px solid var(--theme-color); color: var(--theme-color) !important; }
+    .custom-button--outline:hover { background-color: var(--theme-color); color: white !important; }
+    .custom-button--secondary { background-color: #64748b; }
+    .custom-button--secondary:hover { background-color: #475569; }
+    .custom-button--ghost { background-color: transparent; color: var(--theme-color) !important; }
+    .custom-button--ghost:hover { background-color: #f1f5f9; }
     .custom-button--link {
         background-color: transparent !important;
         color: var(--theme-color) !important;
@@ -1711,6 +1804,20 @@ ${trackingScripts.head}
         display: block;
         margin-top: 10px;
     }
+    
+    @keyframes fadeInUp { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+    @keyframes fadeInLeft { from { opacity: 0; transform: translate3d(-50px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+    @keyframes fadeInRight { from { opacity: 0; transform: translate3d(50px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .animate-fadeInUp { animation-name: fadeInUp; }
+    .animate-fadeInLeft { animation-name: fadeInLeft; }
+    .animate-fadeInRight { animation-name: fadeInRight; }
+    .animate-fadeIn { animation-name: fadeIn; }
+
+    [data-animation].is-visible {
+        animation-fill-mode: both;
+    }
 
 
     @media (max-width: 768px) {
@@ -1741,9 +1848,9 @@ ${trackingScripts.head}
 ${clientSideScripts}
 </head>
 <body>
-${trackingScripts.body}
-${initialAmpscript}
-${ssjsScript}
+${wrapInPreviewBlock(trackingScripts.body, 'Tracking Scripts (Body)', isForPreview)}
+${wrapInPreviewBlock(initialAmpscript, 'Initial AMPScript', isForPreview)}
+${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   %%[ IF @isAuthenticated == true THEN ]%%
   ${renderLoader(meta, styles.themeColor)}
   ${stripeComponents}

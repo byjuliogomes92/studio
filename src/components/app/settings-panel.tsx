@@ -3,7 +3,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import type { CloudPage, ComponentType, PageComponent, SecurityType } from "@/lib/types";
+import type { CloudPage, ComponentType, PageComponent, SecurityType, AnimationType } from "@/lib/types";
 import React, { useState } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type Active, type Over } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -1048,6 +1048,45 @@ SET @name = AttributeValue("FirstName")
                     </div>
                 </AccordionContent>
             </AccordionItem>
+            
+            <AccordionItem value="animation">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Animações</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Animação de Entrada</Label>
+                    <Select value={pageState.styles.animationType || 'none'} onValueChange={(value: AnimationType) => handleStyleChange('animationType', value)}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Sem animação" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">Nenhuma</SelectItem>
+                            <SelectItem value="fadeIn">Surgir (Fade In)</SelectItem>
+                            <SelectItem value="fadeInUp">Surgir de Baixo</SelectItem>
+                            <SelectItem value="fadeInLeft">Surgir da Esquerda</SelectItem>
+                            <SelectItem value="fadeInRight">Surgir da Direita</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  {(pageState.styles.animationType && pageState.styles.animationType !== 'none') && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="animation-duration">Duração (s)</Label>
+                        <Input id="animation-duration" type="number" step="0.1" value={pageState.styles.animationDuration || 1} onChange={e => handleStyleChange('animationDuration', e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="animation-delay">Atraso (s)</Label>
+                        <Input id="animation-delay" type="number" step="0.1" value={pageState.styles.animationDelay || 0} onChange={e => handleStyleChange('animationDelay', e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+                </AccordionContent>
+            </AccordionItem>
+
 
             <AccordionItem value="meta">
               <AccordionTrigger>

@@ -73,8 +73,8 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Map: MapPin,
     SocialIcons: Share2,
     Columns: Columns,
-    Carousel: View,
     WhatsApp: Zap,
+    Carousel: View,
     FTPUpload: UploadCloud,
 };
 
@@ -913,7 +913,7 @@ export function SettingsPanel({
                             {userBrands.map(brand => (
                                 <SelectItem key={brand.id} value={brand.id}>
                                      <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.themeColor }}></div>
+                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.colors.light.primary }}></div>
                                         {brand.name}
                                     </div>
                                 </SelectItem>

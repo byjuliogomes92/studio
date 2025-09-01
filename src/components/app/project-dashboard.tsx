@@ -679,13 +679,13 @@ export function ProjectDashboard() {
 
       <main className="p-4 md:p-6">
         {isAnnouncementOpen && (
-            <div className="relative rounded-lg overflow-hidden mb-6 group">
+            <div className="relative rounded-lg overflow-hidden mb-6 group h-40 md:h-52">
                 <Image 
-                    src="https://picsum.photos/1200/200"
+                    src="https://images.unsplash.com/photo-1711540846697-56b9f66d17f1"
                     alt="Banner de anúncio de nova funcionalidade"
-                    width={1200}
-                    height={200}
-                    className="w-full h-auto object-cover"
+                    layout="fill"
+                    objectFit="cover"
+                    className="w-full h-full"
                     data-ai-hint="abstract banner"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/20 flex items-center p-6 md:p-10">

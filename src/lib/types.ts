@@ -1,5 +1,4 @@
 
-
 import { Timestamp } from "firebase/firestore";
 
 export type ComponentType =
@@ -26,7 +25,8 @@ export type ComponentType =
   | 'Columns'
   | 'WhatsApp'
   | 'Carousel'
-  | 'DownloadButton';
+  | 'DownloadButton'
+  | 'FTPUpload';
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';
 
@@ -138,6 +138,9 @@ export interface CloudPage {
     themeColorHover: string;
     fontFamily: string;
     customCss: string;
+    animationType?: AnimationType;
+    animationDuration?: number;
+    animationDelay?: number;
   };
   components: PageComponent[];
   meta: {

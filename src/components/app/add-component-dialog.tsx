@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import {
@@ -44,6 +43,7 @@ import {
   View,
   Mail,
   HelpCircle,
+  UploadCloud,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -111,6 +111,7 @@ const componentList: {
       { name: "Tabs", icon: PanelTop, enabled: true },
       { name: "Voting", icon: Vote, enabled: true },
       { name: "NPS", icon: Smile, enabled: true },
+      { name: "FTPUpload", icon: UploadCloud, enabled: true },
       { name: "Chart", icon: BarChart, enabled: false },
     ],
   },

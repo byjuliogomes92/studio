@@ -25,6 +25,7 @@ import { renderWhatsApp } from './html-components/whatsapp';
 import { renderCarousel } from './html-components/carousel';
 import { renderForm } from './html-components/form';
 import { renderFooter } from './html-components/footer';
+import { renderFTPUpload } from './html-components/ftpupload';
 
 const wrapInPreviewBlock = (content: string, title: string, isForPreview: boolean) => {
     if (!isForPreview || !content.trim()) {
@@ -49,19 +50,15 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
               ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
               : '';
 
-            const isFullWidth = !!styles?.isFullWidth;
-            let sectionClass = isFullWidth ? 'section-wrapper section-wrapper--full-width' : 'section-wrapper';
-            sectionClass += ' animate-on-scroll';
-            
-            const containerClass = isFullWidth ? 'section-container' : '';
+            const sectionClass = 'section-wrapper animate-on-scroll';
             
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
 
             // For Columns, the background is on the outer wrapper.
-            if (component.type === 'Columns' && isFullWidth) {
+            if (component.type === 'Columns' && styles?.isFullWidth) {
                  const wrapperStyle = `background-color: ${styles?.backgroundColor || 'transparent'};`;
                  return `<div class="${sectionClass}" style="${wrapperStyle}" ${animationAttrs}>
-                           <div class="${containerClass}">
+                           <div class="section-container">
                              ${renderedComponent}
                            </div>
                         </div>`;
@@ -146,6 +143,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'WhatsApp': return renderWhatsApp(component);
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState);
+    case 'FTPUpload': return renderFTPUpload(component);
     case 'Footer': return renderFooter(component);
     default:
       const exhaustiveCheck: never = component.type;
@@ -909,14 +907,14 @@ ${trackingScripts.head}
         display: flex;
         justify-content: center;
     }
-    .section-wrapper.animate-on-scroll {
+    .animate-on-scroll {
         opacity: 0;
     }
-    .section-wrapper.is-visible {
+    .animate-on-scroll.is-visible {
         opacity: 1;
     }
 
-    .section-wrapper--full-width {
+    .section-wrapper[style*="background-color"] {
         /* This element will have the background color */
     }
 
@@ -1355,6 +1353,30 @@ ${trackingScripts.head}
         width: 100%;
     }
 
+    .ftp-upload-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .ftp-upload-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .ftp-upload-form button {
+        background-color: var(--theme-color);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .ftp-upload-form button:disabled {
+        background-color: #ccc;
+    }
+
+
     footer {
         -webkit-font-smoothing: antialiased;
         color: rgba(0, 0, 0, 0.87);
@@ -1693,7 +1715,7 @@ ${trackingScripts.head}
         display: block; /* Override grid for background image hero */
         padding: 0;
     }
-    .hero-section .columns-container[style*="background-image"] {
+    .columns-container[style*="background-image"] {
         background-size: cover;
         background-position: center center;
         position: relative;
@@ -1702,13 +1724,13 @@ ${trackingScripts.head}
         align-items: center;
         justify-content: center;
     }
-    .hero-section .columns-container[style*="background-image"]::before {
+    .columns-container[style*="background-image"]::before {
         content: '';
         position: absolute;
         top: 0; right: 0; bottom: 0; left: 0;
         background-color: rgba(0,0,0,0.5); /* Dimming overlay */
     }
-    .hero-section .columns-container[style*="background-image"] > .column {
+    .columns-container[style*="background-image"] > .column {
         position: relative; /* Ensure text is above the overlay */
         z-index: 1;
     }
@@ -1830,6 +1852,9 @@ ${trackingScripts.head}
     .animate-fadeInRight { animation-name: fadeInRight; }
     .animate-fadeIn { animation-name: fadeIn; }
 
+    .animate-on-scroll {
+        opacity: 0;
+    }
     .animate-on-scroll.is-visible {
         animation-fill-mode: both;
     }

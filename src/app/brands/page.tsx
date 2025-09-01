@@ -30,24 +30,59 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2 } from "lucide-react";
+import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2, Sun, Moon, Type, Square, Circle, Hand, Image as ImageIcon, Text } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import Image from "next/image";
 
 const googleFonts = ["Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Source Sans Pro", "Raleway", "Poppins", "Nunito", "Merriweather"];
 
-const initialBrandState: Omit<Brand, "id" | "workspaceId" | "createdAt"> = {
+const initialBrandState: Omit<Brand, "id" | "createdAt"> = {
+  workspaceId: '',
   name: "",
-  logoUrl: "",
-  faviconUrl: "",
-  loaderImageUrl: "",
-  themeColor: "#000000",
-  themeColorHover: "#333333",
-  fontFamily: "Roboto",
-  ftpConfig: { host: "", user: "", encryptedPassword: "" },
-  bitlyConfig: { encryptedAccessToken: "" },
+  logos: {
+    horizontalLight: "",
+    horizontalDark: "",
+    iconLight: "",
+    iconDark: "",
+    favicon: ""
+  },
+  typography: {
+    fontFamilyHeadings: "Poppins",
+    fontFamilyBody: "Roboto"
+  },
+  colors: {
+    theme: "light",
+    light: {
+      background: "#FFFFFF",
+      foreground: "#020817",
+      primary: "#3b82f6",
+      primaryHover: "#2563eb",
+      primaryForeground: "#FFFFFF"
+    },
+    dark: {
+      background: "#020817",
+      foreground: "#FFFFFF",
+      primary: "#3b82f6",
+      primaryHover: "#60a5fa",
+      primaryForeground: "#FFFFFF"
+    }
+  },
+  components: {
+    button: { borderRadius: "0.5rem" },
+    input: {
+      borderRadius: "0.5rem",
+      backgroundColor: "#FFFFFF",
+      borderColor: "#e5e7eb",
+      textColor: "#020817"
+    }
+  },
+  integrations: {
+    ftp: { host: "", user: "", encryptedPassword: "" },
+    bitly: { encryptedAccessToken: "" },
+  },
 };
 
 export default function BrandsPage() {
@@ -107,49 +142,40 @@ export default function BrandsPage() {
     }
     setIsSaving(true);
     try {
-      if (currentBrand.id) {
-        // Update existing brand
-        const { id, ...dataToUpdate } = currentBrand;
+        const brandData = { ...currentBrand };
         
-        if (ftpPassword) {
-            (dataToUpdate.ftpConfig as FtpConfig).password = ftpPassword;
-        }
-        if (bitlyToken) {
-            if (!dataToUpdate.bitlyConfig) dataToUpdate.bitlyConfig = {};
-            (dataToUpdate.bitlyConfig as BitlyConfig).accessToken = bitlyToken;
+        // Ensure workspaceId is set for new brands
+        if (!brandData.id) {
+            brandData.workspaceId = activeWorkspace.id;
         }
 
-        await updateBrand(id, dataToUpdate);
-        setBrands(brands.map((b) => (b.id === id ? { ...b, ...dataToUpdate } : b)));
-        toast({ title: "Marca atualizada!", description: `A marca "${currentBrand.name}" foi atualizada.` });
-      } else {
-        // Create new brand
-        const newBrandData: Omit<Brand, "id" | "createdAt"> = {
-            workspaceId: activeWorkspace.id,
-            name: currentBrand.name,
-            logoUrl: currentBrand.logoUrl || '',
-            faviconUrl: currentBrand.faviconUrl || '',
-            loaderImageUrl: currentBrand.loaderImageUrl || '',
-            themeColor: currentBrand.themeColor || '#000000',
-            themeColorHover: currentBrand.themeColorHover || '#333333',
-            fontFamily: currentBrand.fontFamily || 'Roboto',
-            ftpConfig: {
-              host: currentBrand.ftpConfig?.host || '',
-              user: currentBrand.ftpConfig?.user || '',
-              password: ftpPassword,
-            },
-            bitlyConfig: {
-              accessToken: bitlyToken,
-            }
-        };
-        const newBrand = await addBrand(newBrandData);
-        setBrands([newBrand, ...brands]);
-        toast({ title: "Marca criada!", description: `A marca "${currentBrand.name}" foi criada com sucesso.` });
-      }
-      setIsModalOpen(false);
+        // Handle secrets
+        if (ftpPassword) {
+            if (!brandData.integrations) brandData.integrations = {};
+            if (!brandData.integrations.ftp) brandData.integrations.ftp = {} as FtpConfig;
+            (brandData.integrations.ftp as FtpConfig).password = ftpPassword;
+        }
+        if (bitlyToken) {
+            if (!brandData.integrations) brandData.integrations = {};
+            if (!brandData.integrations.bitly) brandData.integrations.bitly = {} as BitlyConfig;
+            (brandData.integrations.bitly as BitlyConfig).accessToken = bitlyToken;
+        }
+
+        if (brandData.id) {
+            // Update existing brand
+            await updateBrand(brandData.id, brandData as Brand);
+            setBrands(brands.map((b) => (b.id === brandData.id ? { ...b, ...brandData } as Brand : b)));
+            toast({ title: "Marca atualizada!", description: `A marca "${brandData.name}" foi atualizada.` });
+        } else {
+            // Create new brand
+            const newBrand = await addBrand(brandData as Omit<Brand, "id" | "createdAt">);
+            setBrands([newBrand, ...brands]);
+            toast({ title: "Marca criada!", description: `A marca "${brandData.name}" foi criada com sucesso.` });
+        }
+        setIsModalOpen(false);
     } catch (error) {
-      console.error("Failed to save brand:", error);
-      toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar a marca." });
+        console.error("Failed to save brand:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar a marca." });
     } finally {
       setIsSaving(false);
     }
@@ -165,6 +191,24 @@ export default function BrandsPage() {
           toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a marca." });
       }
   }
+  
+  const handleBrandFieldChange = (fieldPath: string, value: any) => {
+    setCurrentBrand(prev => {
+      if (!prev) return null;
+      const newBrand = { ...prev };
+      let currentLevel: any = newBrand;
+      const pathParts = fieldPath.split('.');
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        if (!currentLevel[pathParts[i]]) {
+          currentLevel[pathParts[i]] = {};
+        }
+        currentLevel = currentLevel[pathParts[i]];
+      }
+      currentLevel[pathParts[pathParts.length - 1]] = value;
+      return newBrand;
+    });
+  };
+
 
   if (isLoading || authLoading) {
     return (
@@ -208,14 +252,14 @@ export default function BrandsPage() {
               <Card key={brand.id} className="flex flex-col">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-full border-2" style={{ backgroundColor: brand.themeColor, borderColor: brand.themeColorHover }}></div>
+                     <div className="w-8 h-8 rounded-full border-2" style={{ backgroundColor: brand.colors.light.primary, borderColor: brand.colors.light.primaryHover }}></div>
                      {brand.name}
                   </CardTitle>
                   <CardDescription>Kit de identidade visual para a marca.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
                     <div className="flex justify-center items-center h-24 bg-muted rounded-md p-2">
-                        <img src={brand.logoUrl || 'https://placehold.co/150x50/FFFFFF/CCCCCC?text=Logo'} alt={`Logo de ${brand.name}`} className="max-h-full max-w-full object-contain" />
+                        <Image src={brand.logos.horizontalLight || 'https://placehold.co/150x50/FFFFFF/CCCCCC?text=Logo'} alt={`Logo de ${brand.name}`} width={150} height={50} className="max-h-full max-w-full object-contain" />
                     </div>
                 </CardContent>
                 <CardFooter className="border-t pt-4 flex justify-end gap-2">
@@ -245,7 +289,7 @@ export default function BrandsPage() {
       </main>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{currentBrand?.id ? 'Editar Marca' : 'Criar Nova Marca'}</DialogTitle>
             <DialogDescription>
@@ -254,55 +298,121 @@ export default function BrandsPage() {
           </DialogHeader>
           {currentBrand && (
             <Tabs defaultValue="visual" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="visual"><Palette className="mr-2 h-4 w-4" />Identidade Visual</TabsTrigger>
+                <TabsTrigger value="typography"><Type className="mr-2 h-4 w-4" />Tipografia</TabsTrigger>
+                <TabsTrigger value="components"><Hand className="mr-2 h-4 w-4" />Componentes</TabsTrigger>
                 <TabsTrigger value="integrations"><Server className="mr-2 h-4 w-4" />Integrações</TabsTrigger>
               </TabsList>
-              <TabsContent value="visual" className="py-4">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <TabsContent value="visual" className="py-4 space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="brand-name">Nome da Marca</Label>
+                    <Input id="brand-name" value={currentBrand.name || ''} onChange={(e) => handleBrandFieldChange('name', e.target.value)} />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
+                        <h4 className="font-semibold text-lg">Logos</h4>
                         <div className="space-y-2">
-                        <Label htmlFor="brand-name">Nome da Marca</Label>
-                        <Input id="brand-name" value={currentBrand.name || ''} onChange={(e) => setCurrentBrand({ ...currentBrand, name: e.target.value })} />
+                            <Label htmlFor="logo-hl">Logo Horizontal (Fundo Claro)</Label>
+                            <Input id="logo-hl" value={currentBrand.logos?.horizontalLight || ''} onChange={(e) => handleBrandFieldChange('logos.horizontalLight', e.target.value)} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="logo-hd">Logo Horizontal (Fundo Escuro)</Label>
+                            <Input id="logo-hd" value={currentBrand.logos?.horizontalDark || ''} onChange={(e) => handleBrandFieldChange('logos.horizontalDark', e.target.value)} />
                         </div>
                         <div className="space-y-2">
-                        <Label htmlFor="font-family">Fonte Principal</Label>
-                        <Select value={currentBrand.fontFamily} onValueChange={(value) => setCurrentBrand({ ...currentBrand, fontFamily: value })}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione uma fonte" />
-                                </SelectTrigger>
+                            <Label htmlFor="logo-il">Ícone (Fundo Claro)</Label>
+                            <Input id="logo-il" value={currentBrand.logos?.iconLight || ''} onChange={(e) => handleBrandFieldChange('logos.iconLight', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="logo-id">Ícone (Fundo Escuro)</Label>
+                            <Input id="logo-id" value={currentBrand.logos?.iconDark || ''} onChange={(e) => handleBrandFieldChange('logos.iconDark', e.target.value)} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="logo-favicon">Favicon</Label>
+                            <Input id="logo-favicon" value={currentBrand.logos?.favicon || ''} onChange={(e) => handleBrandFieldChange('logos.favicon', e.target.value)} />
+                        </div>
+                    </div>
+                     <div className="space-y-4">
+                        <h4 className="font-semibold text-lg">Esquema de Cores</h4>
+                         <div className="space-y-2">
+                            <Label>Modo de Tema</Label>
+                             <Select value={currentBrand.colors?.theme} onValueChange={(value) => handleBrandFieldChange('colors.theme', value)}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
                                 <SelectContent>
-                                    {googleFonts.map(font => (
-                                        <SelectItem key={font} value={font}>{font}</SelectItem>
-                                    ))}
+                                    <SelectItem value="light"><div className="flex items-center gap-2"><Sun className="h-4 w-4"/> Apenas Claro</div></SelectItem>
+                                    <SelectItem value="dark"><div className="flex items-center gap-2"><Moon className="h-4 w-4"/> Apenas Escuro</div></SelectItem>
+                                    <SelectItem value="both"><div className="flex items-center gap-2"><Sun className="h-4 w-4"/><Moon className="h-4 w-4"/> Ambos</div></SelectItem>
                                 </SelectContent>
-                            </Select>
+                             </Select>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="theme-color">Cor Principal</Label>
-                                <Input id="theme-color" type="color" value={currentBrand.themeColor} onChange={(e) => setCurrentBrand({ ...currentBrand, themeColor: e.target.value })} className="p-1 h-10" />
+
+                         <div className="p-4 border rounded-md space-y-3">
+                            <h5 className="font-medium flex items-center gap-2"><Sun className="h-4 w-4"/> Tema Claro</h5>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Input type="color" value={currentBrand.colors?.light?.primary} onChange={e => handleBrandFieldChange('colors.light.primary', e.target.value)} title="Cor Primária"/>
+                                <Input type="color" value={currentBrand.colors?.light?.primaryHover} onChange={e => handleBrandFieldChange('colors.light.primaryHover', e.target.value)} title="Cor Primária (Hover)"/>
+                                <Input type="color" value={currentBrand.colors?.light?.background} onChange={e => handleBrandFieldChange('colors.light.background', e.target.value)} title="Fundo"/>
+                                <Input type="color" value={currentBrand.colors?.light?.foreground} onChange={e => handleBrandFieldChange('colors.light.foreground', e.target.value)} title="Texto"/>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="theme-color-hover">Cor Principal (Hover)</Label>
-                                <Input id="theme-color-hover" type="color" value={currentBrand.themeColorHover} onChange={(e) => setCurrentBrand({ ...currentBrand, themeColorHover: e.target.value })} className="p-1 h-10"/>
+                        </div>
+
+                         <div className="p-4 border rounded-md space-y-3">
+                            <h5 className="font-medium flex items-center gap-2"><Moon className="h-4 w-4"/> Tema Escuro</h5>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Input type="color" value={currentBrand.colors?.dark?.primary} onChange={e => handleBrandFieldChange('colors.dark.primary', e.target.value)} title="Cor Primária"/>
+                                <Input type="color" value={currentBrand.colors?.dark?.primaryHover} onChange={e => handleBrandFieldChange('colors.dark.primaryHover', e.target.value)} title="Cor Primária (Hover)"/>
+                                <Input type="color" value={currentBrand.colors?.dark?.background} onChange={e => handleBrandFieldChange('colors.dark.background', e.target.value)} title="Fundo"/>
+                                <Input type="color" value={currentBrand.colors?.dark?.foreground} onChange={e => handleBrandFieldChange('colors.dark.foreground', e.target.value)} title="Texto"/>
                             </div>
                         </div>
                     </div>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                        <Label htmlFor="logo-url">URL do Logo</Label>
-                        <Input id="logo-url" value={currentBrand.logoUrl} onChange={(e) => setCurrentBrand({ ...currentBrand, logoUrl: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                        <Label htmlFor="favicon-url">URL do Favicon</Label>
-                        <Input id="favicon-url" value={currentBrand.faviconUrl} onChange={(e) => setCurrentBrand({ ...currentBrand, faviconUrl: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                        <Label htmlFor="loader-url">URL da Imagem de Carregamento</Label>
-                        <Input id="loader-url" value={currentBrand.loaderImageUrl} onChange={(e) => setCurrentBrand({ ...currentBrand, loaderImageUrl: e.target.value })} />
-                        </div>
-                    </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="typography" className="py-4 space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="font-headings">Fonte para Títulos</Label>
+                    <Select value={currentBrand.typography?.fontFamilyHeadings} onValueChange={(value) => handleBrandFieldChange('typography.fontFamilyHeadings', value)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {googleFonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="font-body">Fonte para Corpo do Texto</Label>
+                    <Select value={currentBrand.typography?.fontFamilyBody} onValueChange={(value) => handleBrandFieldChange('typography.fontFamilyBody', value)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {googleFonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+              </TabsContent>
+               <TabsContent value="components" className="py-4 space-y-6">
+                 <div className="space-y-4 p-4 border rounded-md">
+                    <h4 className="font-semibold text-lg">Botões</h4>
+                     <div className="space-y-2">
+                        <Label>Cantos do Botão</Label>
+                        <ToggleGroup type="single" value={currentBrand.components?.button?.borderRadius} onValueChange={(value) => value && handleBrandFieldChange('components.button.borderRadius', value)} className="w-full">
+                            <ToggleGroupItem value="0.25rem" aria-label="Reto"><Square className="h-5 w-5"/></ToggleGroupItem>
+                            <ToggleGroupItem value="0.5rem" aria-label="Curvado"><div className="w-5 h-5 border-2 border-current rounded-md"></div></ToggleGroupItem>
+                            <ToggleGroupItem value="9999px" aria-label="Redondo"><Circle className="h-5 w-5"/></ToggleGroupItem>
+                        </ToggleGroup>
+                     </div>
+                 </div>
+                  <div className="space-y-4 p-4 border rounded-md">
+                    <h4 className="font-semibold text-lg">Campos de Formulário</h4>
+                     <div className="space-y-2">
+                        <Label>Cantos do Input</Label>
+                        <ToggleGroup type="single" value={currentBrand.components?.input?.borderRadius} onValueChange={(value) => value && handleBrandFieldChange('components.input.borderRadius', value)} className="w-full">
+                            <ToggleGroupItem value="0.25rem" aria-label="Reto"><Square className="h-5 w-5"/></ToggleGroupItem>
+                            <ToggleGroupItem value="0.5rem" aria-label="Curvado"><div className="w-5 h-5 border-2 border-current rounded-md"></div></ToggleGroupItem>
+                            <ToggleGroupItem value="9999px" aria-label="Redondo"><Circle className="h-5 w-5"/></ToggleGroupItem>
+                        </ToggleGroup>
+                     </div>
                  </div>
               </TabsContent>
               <TabsContent value="integrations" className="py-4 space-y-6">
@@ -310,11 +420,11 @@ export default function BrandsPage() {
                     <h4 className="font-semibold text-lg mb-2">Credenciais de FTP</h4>
                     <div className="space-y-2">
                         <Label htmlFor="ftp-host">Host</Label>
-                        <Input id="ftp-host" value={currentBrand.ftpConfig?.host || ''} onChange={(e) => setCurrentBrand({ ...currentBrand, ftpConfig: { ...currentBrand.ftpConfig, host: e.target.value } as FtpConfig })} placeholder="Ex: ftp.s10.marketingcloudapps.com" />
+                        <Input id="ftp-host" value={currentBrand.integrations?.ftp?.host || ''} onChange={(e) => handleBrandFieldChange('integrations.ftp.host', e.target.value)} placeholder="Ex: ftp.s10.marketingcloudapps.com" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="ftp-user">Usuário</Label>
-                        <Input id="ftp-user" value={currentBrand.ftpConfig?.user || ''} onChange={(e) => setCurrentBrand({ ...currentBrand, ftpConfig: { ...currentBrand.ftpConfig, user: e.target.value } as FtpConfig })} />
+                        <Input id="ftp-user" value={currentBrand.integrations?.ftp?.user || ''} onChange={(e) => handleBrandFieldChange('integrations.ftp.user', e.target.value)} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="ftp-password">Senha</Label>

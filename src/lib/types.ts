@@ -61,18 +61,51 @@ export interface BitlyConfig {
   encryptedAccessToken?: string; // Stored in Firestore
 }
 
+export interface ColorScheme {
+  background: string;
+  foreground: string;
+  primary: string;
+  primaryHover: string;
+  primaryForeground: string;
+}
+
 export interface Brand {
   id: string;
   workspaceId: string;
   name: string;
-  logoUrl: string;
-  faviconUrl: string;
-  loaderImageUrl: string;
-  themeColor: string;
-  themeColorHover: string;
-  fontFamily: string;
-  ftpConfig?: FtpConfig;
-  bitlyConfig?: BitlyConfig;
+  // Visual Identity
+  logos: {
+    horizontalLight: string;
+    horizontalDark: string;
+    iconLight: string;
+    iconDark: string;
+    favicon: string;
+  };
+  typography: {
+    fontFamilyHeadings: string;
+    fontFamilyBody: string;
+  };
+  colors: {
+    theme: 'light' | 'dark' | 'both';
+    light: ColorScheme;
+    dark: ColorScheme;
+  };
+  components: {
+    button: {
+      borderRadius: string;
+    };
+    input: {
+      borderRadius: string;
+      backgroundColor: string;
+      borderColor: string;
+      textColor: string;
+    };
+  };
+  // Integrations
+  integrations: {
+    ftp?: FtpConfig;
+    bitly?: BitlyConfig;
+  };
   createdAt: any;
 }
 

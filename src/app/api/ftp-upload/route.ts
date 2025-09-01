@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch brand details to get FTP credentials
     const brand = await getBrand(brandId);
-    if (!brand || !brand.ftpConfig || !brand.ftpConfig.host || !brand.ftpConfig.user || !brand.ftpConfig.encryptedPassword) {
+    if (!brand || !brand.integrations?.ftp || !brand.integrations.ftp.host || !brand.integrations.ftp.user || !brand.integrations.ftp.encryptedPassword) {
         return NextResponse.json({ success: false, message: 'Configurações de FTP não encontradas para esta marca.' }, { status: 400 });
     }
     
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
     // Upload to FTP using brand-specific credentials
-    await uploadToFtp(fileBuffer, path, filename, brand.ftpConfig);
+    await uploadToFtp(fileBuffer, path, filename, brand.integrations.ftp);
 
     return NextResponse.json({ success: true, message: 'Arquivo enviado com sucesso!' });
   } catch (error: any) {

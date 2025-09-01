@@ -1,6 +1,3 @@
-
-"use server";
-
 import crypto from 'crypto-js';
 
 const getEncryptionKey = (): string => {

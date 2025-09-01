@@ -12,12 +12,20 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage):
     const { brandId } = pageState;
     const formId = `ftp-upload-form-${component.id}`;
 
+    // This AMPScript block will execute on the SFMC server, resolving any dynamic variables in the filename.
+    const ampscriptBlock = `%%[
+      VAR @finalFilename
+      SET @finalFilename = Concat("${destinationFilename}")
+    ]%%`;
+
     return `
+        ${ampscriptBlock}
         <div class="ftp-upload-container">
             <h3>Upload de Arquivo para FTP</h3>
-            <p><strong>Destino:</strong> ${destinationPath}/${destinationFilename}</p>
+            <p><strong>Destino:</strong> ${destinationPath}/%%=v(@finalFilename)=%%</p>
             ${dataExtensionName ? `<p><strong>Data Extension Alvo:</strong> ${dataExtensionName}</p>` : ''}
             <form id="${formId}" class="ftp-upload-form">
+                <input type="hidden" name="resolvedFilename" value="%%=v(@finalFilename)=%%">
                 <label for="file-input-${component.id}">${label}</label>
                 <input type="file" id="file-input-${component.id}" name="file" accept=".csv" required>
                 <button type="submit">Enviar</button>
@@ -34,6 +42,7 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage):
 
                 const statusEl = document.getElementById('status-${component.id}');
                 const fileInput = document.getElementById('file-input-${component.id}');
+                const resolvedFilenameInput = form.querySelector('input[name="resolvedFilename"]');
                 const submitBtn = form.querySelector('button');
 
                 if (!fileInput.files || fileInput.files.length === 0) {
@@ -49,7 +58,7 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage):
                 const formData = new FormData();
                 formData.append('file', fileInput.files[0]);
                 formData.append('path', '${destinationPath}');
-                formData.append('filename', '%%=v(@finalFilename)=%%'); // Use AMPScript variable
+                formData.append('filename', resolvedFilenameInput.value); // Use the resolved filename
                 formData.append('brandId', '${brandId}');
 
 
@@ -77,10 +86,5 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage):
             });
         })();
         </script>
-        %%[
-            /* This AMPScript block resolves the dynamic filename on the server before rendering */
-            VAR @finalFilename
-            SET @finalFilename = "${destinationFilename}"
-        ]%%
     `;
 }

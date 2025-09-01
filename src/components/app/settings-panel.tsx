@@ -3,8 +3,8 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import type { CloudPage, ComponentType, PageComponent, SecurityType, AnimationType } from "@/lib/types";
-import React, { useState } from 'react';
+import type { CloudPage, ComponentType, PageComponent, SecurityType, AnimationType, Brand } from "@/lib/types";
+import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type Active, type Over } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -36,6 +36,9 @@ import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Badge } from "../ui/badge";
 import { MediaLibraryDialog } from "./media-library-dialog";
+import { getBrandsForUser } from "@/lib/firestore";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface SettingsPanelProps {
@@ -72,6 +75,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Columns: Columns,
     Carousel: View,
     WhatsApp: Zap,
+    FTPUpload: UploadCloud,
 };
 
 const googleFonts = [
@@ -240,9 +244,23 @@ export function SettingsPanel({
   setPageName,
 }: SettingsPanelProps) {
 
+  const { activeWorkspace } = useAuth();
+  const { toast } = useToast();
   const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
   const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState.publishDate || !!pageState.expiryDate);
   const [tagInput, setTagInput] = useState('');
+  const [userBrands, setUserBrands] = useState<Brand[]>([]);
+
+  useEffect(() => {
+    if (activeWorkspace) {
+        getBrandsForUser(activeWorkspace.id)
+            .then(setUserBrands)
+            .catch(err => {
+                console.error("Failed to fetch brands", err);
+                toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os Kits de Marca.' });
+            });
+    }
+  }, [activeWorkspace, toast]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -385,6 +403,40 @@ export function SettingsPanel({
                 }
             }
         }
+    });
+  };
+
+  const handleBrandChange = (brandId: string) => {
+    const selectedBrand = userBrands.find(b => b.id === brandId);
+    setPageState(prev => {
+        if (!prev) return null;
+        return produce(prev, draft => {
+            if (selectedBrand) {
+                draft.brandId = selectedBrand.id;
+                draft.brandName = selectedBrand.name;
+                // Apply brand styles
+                draft.styles.themeColor = selectedBrand.themeColor;
+                draft.styles.themeColorHover = selectedBrand.themeColorHover;
+                draft.styles.fontFamily = selectedBrand.fontFamily;
+                draft.meta.faviconUrl = selectedBrand.faviconUrl;
+                draft.meta.loaderImageUrl = selectedBrand.loaderImageUrl;
+
+                // Update Header logo if it exists
+                const header = draft.components.find(c => c.type === 'Header');
+                if (header) {
+                    header.props.logoUrl = selectedBrand.logoUrl;
+                }
+                 // Update Footer text if it exists
+                const footer = draft.components.find(c => c.type === 'Footer');
+                if (footer) {
+                    footer.props.footerText1 = `© ${new Date().getFullYear()} ${selectedBrand.name}. Todos os direitos reservados.`;
+                }
+
+            } else {
+                draft.brandId = '';
+                draft.brandName = 'Sem Marca';
+            }
+        });
     });
   };
 
@@ -533,6 +585,14 @@ export function SettingsPanel({
                           phoneNumber: '5511999999999',
                           defaultMessage: 'Olá! Gostaria de mais informações.',
                           position: 'bottom-right'
+                      };
+                      break;
+                   case 'FTPUpload':
+                      newComponent.props = {
+                        label: "Enviar Arquivo CSV",
+                        destinationPath: "/Import",
+                        destinationFilename: "arquivo_%%Date%%.csv",
+                        dataExtensionName: "",
                       };
                       break;
               }
@@ -841,6 +901,25 @@ export function SettingsPanel({
                     onChange={(e) => setPageName(e.target.value)}
                     placeholder="Ex: Campanha Dia das Mães"
                   />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="brand-id">Kit de Marca</Label>
+                    <Select onValueChange={handleBrandChange} value={pageState.brandId || 'none'}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma marca..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                             <SelectItem value="none">Nenhuma</SelectItem>
+                            {userBrands.map(brand => (
+                                <SelectItem key={brand.id} value={brand.id}>
+                                     <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.themeColor }}></div>
+                                        {brand.name}
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                  <div className="space-y-2">
                     <div className="flex items-center gap-1.5">

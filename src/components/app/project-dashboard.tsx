@@ -687,11 +687,12 @@ export function ProjectDashboard() {
                     objectFit="cover"
                     className="w-full h-full"
                     data-ai-hint="abstract banner"
+                    objectPosition="left 53%"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/20 flex items-center p-6 md:p-10">
                     <div className="max-w-md text-white">
                         <h3 className="text-xl md:text-2xl font-bold">
-                            <span className="text-primary">Nova Funcionalidade:</span> Testes A/B para Componentes
+                            <span className="text-primary">Nova Funcionalidade:<br></br></span> Testes A/B para Componentes
                         </h3>
                         <p className="mt-2 text-sm md:text-base opacity-90">
                             Agora você pode testar diferentes versões dos seus componentes e otimizar a performance das suas páginas.

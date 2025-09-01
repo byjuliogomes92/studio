@@ -1151,13 +1151,16 @@ ${trackingScripts.head}
         height: 100%;
     }
 
-    .countdown {
-        font-size: 2em;
-        font-weight: bold;
-        color: ${styles.themeColor};
-        text-align: center;
-    }
-    
+    .countdown-wrapper { display: flex; justify-content: center; }
+    .countdown-item { display: flex; flex-direction: column; align-items: center; }
+    .countdown-value { display: flex; align-items: center; justify-content: center; }
+    .countdown-label { text-transform: uppercase; }
+    .countdown-blocks .countdown-value { padding: 1rem; border-radius: 0.375rem; }
+    .countdown-circles .countdown-value { width: 80px; height: 80px; border-radius: 50%; position: relative; }
+    .countdown-circle-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotateY(-180deg) rotateZ(-90deg); }
+    .countdown-circle-svg circle { fill: none; stroke-width: 4; }
+    .countdown-circle-svg .countdown-circle-progress { stroke: var(--theme-color); stroke-dasharray: 113; transition: stroke-dashoffset 1s linear; }
+
     .custom-button, .thank-you-message a.custom-button {
       color: white !important;
       padding: 10px 20px;
@@ -1975,3 +1978,5 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
 </html>
 `
 }
+
+    

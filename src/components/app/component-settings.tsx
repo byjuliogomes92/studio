@@ -1073,7 +1073,54 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
               />
             </div>
             <Separator />
-            <TextStyleSettings props={props} onPropChange={onPropChange} />
+            <div className="space-y-2">
+              <Label>Estilo do Contador</Label>
+              <Select value={props.style || 'blocks'} onValueChange={(value) => onPropChange('style', value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="blocks">Blocos</SelectItem>
+                      <SelectItem value="circles">Círculos</SelectItem>
+                      <SelectItem value="simple">Minimalista</SelectItem>
+                  </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-2">
+                <Label>Cor do Fundo</Label>
+                <Input type="color" value={props.backgroundColor || '#000000'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
+              </div>
+              <div className="space-y-2">
+                <Label>Cor dos Dígitos</Label>
+                <Input type="color" value={props.digitColor || '#FFFFFF'} onChange={(e) => onPropChange('digitColor', e.target.value)} className="p-1 h-10"/>
+              </div>
+              <div className="space-y-2">
+                <Label>Cor dos Rótulos</Label>
+                <Input type="color" value={props.labelColor || '#374151'} onChange={(e) => onPropChange('labelColor', e.target.value)} className="p-1 h-10"/>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                  <Label>Tamanho dos Dígitos</Label>
+                  <Input value={props.digitFontSize || '2rem'} onChange={(e) => onPropChange('digitFontSize', e.target.value)} />
+               </div>
+                <div className="space-y-2">
+                    <Label>Tamanho dos Rótulos</Label>
+                    <Input value={props.labelFontSize || '0.8rem'} onChange={(e) => onPropChange('labelFontSize', e.target.value)} />
+                </div>
+            </div>
+             <div className="space-y-2">
+                <Label>Espaçamento</Label>
+                <Input value={props.gap || '1rem'} onChange={(e) => onPropChange('gap', e.target.value)} placeholder="Ex: 10px ou 1rem"/>
+             </div>
+             <div className="space-y-2">
+                <Label>Rótulos (Labels)</Label>
+                <div className="grid grid-cols-4 gap-2">
+                    <Input value={props.labelDays || 'Dias'} onChange={(e) => onPropChange('labelDays', e.target.value)} />
+                    <Input value={props.labelHours || 'Horas'} onChange={(e) => onPropChange('labelHours', e.target.value)} />
+                    <Input value={props.labelMinutes || 'Min'} onChange={(e) => onPropChange('labelMinutes', e.target.value)} />
+                    <Input value={props.labelSeconds || 'Seg'} onChange={(e) => onPropChange('labelSeconds', e.target.value)} />
+                </div>
+             </div>
           </div>
         );
       case 'Divider':
@@ -2092,3 +2139,5 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
+
+    

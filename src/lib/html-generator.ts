@@ -44,12 +44,15 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             const animationDuration = pageState.styles.animationDuration || 1;
             const animationDelay = pageState.styles.animationDelay || 0;
             
-            const animationAttrs = animationType !== 'none'
+            const hasAnimation = animationType !== 'none';
+            const animationAttrs = hasAnimation
               ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
               : '';
 
             const isFullWidth = !!styles?.isFullWidth;
-            const sectionClass = isFullWidth ? 'section-wrapper section-wrapper--full-width' : 'section-wrapper';
+            let sectionClass = isFullWidth ? 'section-wrapper section-wrapper--full-width' : 'section-wrapper';
+            sectionClass += ' animate-on-scroll';
+            
             const containerClass = isFullWidth ? 'section-container' : '';
             
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
@@ -377,16 +380,21 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     const script = `
     <script>
     function setupAnimations() {
-        const animatedElements = document.querySelectorAll('[data-animation]');
+        const animatedElements = document.querySelectorAll('.animate-on-scroll');
         if (!animatedElements.length) return;
 
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const el = entry.target;
-                    el.style.animationDuration = el.dataset.animationDuration;
-                    el.style.animationDelay = el.dataset.animationDelay;
-                    el.classList.add('animate-' + el.dataset.animation, 'is-visible');
+                    const animationName = el.dataset.animation;
+                    if (animationName && animationName !== 'none') {
+                        el.style.animationDuration = el.dataset.animationDuration;
+                        el.style.animationDelay = el.dataset.animationDelay;
+                        el.classList.add('animate-' + animationName, 'is-visible');
+                    } else {
+                        el.classList.add('is-visible');
+                    }
                     observer.unobserve(el);
                 }
             });
@@ -900,7 +908,9 @@ ${trackingScripts.head}
         width: 100%;
         display: flex;
         justify-content: center;
-        opacity: 0; /* Hidden by default for animation */
+    }
+    .section-wrapper.animate-on-scroll {
+        opacity: 0;
     }
     .section-wrapper.is-visible {
         opacity: 1;
@@ -1820,7 +1830,7 @@ ${trackingScripts.head}
     .animate-fadeInRight { animation-name: fadeInRight; }
     .animate-fadeIn { animation-name: fadeIn; }
 
-    [data-animation].is-visible {
+    .animate-on-scroll.is-visible {
         animation-fill-mode: both;
     }
 

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
@@ -415,16 +414,16 @@ export function SettingsPanel({
                 draft.brandId = selectedBrand.id;
                 draft.brandName = selectedBrand.name;
                 // Apply brand styles
-                draft.styles.themeColor = selectedBrand.themeColor;
-                draft.styles.themeColorHover = selectedBrand.themeColorHover;
-                draft.styles.fontFamily = selectedBrand.fontFamily;
-                draft.meta.faviconUrl = selectedBrand.faviconUrl;
-                draft.meta.loaderImageUrl = selectedBrand.loaderImageUrl;
+                draft.styles.themeColor = selectedBrand.colors.light.primary;
+                draft.styles.themeColorHover = selectedBrand.colors.light.primaryHover;
+                draft.styles.fontFamily = selectedBrand.typography.fontFamilyBody;
+                draft.meta.faviconUrl = selectedBrand.logos.favicon;
+                draft.meta.loaderImageUrl = selectedBrand.logos.iconLight;
 
                 // Update Header logo if it exists
                 const header = draft.components.find(c => c.type === 'Header');
                 if (header) {
-                    header.props.logoUrl = selectedBrand.logoUrl;
+                    header.props.logoUrl = selectedBrand.logos.horizontalLight;
                 }
                  // Update Footer text if it exists
                 const footer = draft.components.find(c => c.type === 'Footer');
@@ -882,17 +881,17 @@ export function SettingsPanel({
     return (
     <ScrollArea className="h-full">
       <TooltipProvider>
-        <div className="p-4 space-y-6">
-          <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full">
+        <div className="p-4 space-y-2">
+          <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full space-y-2">
             
-            <AccordionItem value="page-settings">
-              <AccordionTrigger>
+            <AccordionItem value="page-settings" className="bg-card rounded-lg border">
+              <AccordionTrigger className="p-4">
                 <div className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   <span>Configurações da Página</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
+              <AccordionContent className="space-y-4 pt-2 px-4">
                 <div className="space-y-2">
                   <Label htmlFor="page-name">Nome da Página</Label>
                   <Input
@@ -954,14 +953,14 @@ export function SettingsPanel({
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="styles">
-              <AccordionTrigger>
+            <AccordionItem value="styles" className="bg-card rounded-lg border">
+              <AccordionTrigger className="p-4">
                 <div className="flex items-center gap-2">
                   <Palette className="h-4 w-4" />
                   <span>Estilos Globais</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
+              <AccordionContent className="space-y-4 pt-2 px-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label>Cor de Fundo</Label>
@@ -1035,14 +1034,14 @@ export function SettingsPanel({
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="components">
-              <AccordionTrigger>
+            <AccordionItem value="components" className="bg-card rounded-lg border">
+              <AccordionTrigger className="p-4">
                  <div className="flex items-center gap-2">
                   <LayoutGrid className="h-4 w-4" />
                   <span>Componentes</span>
                  </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
+              <AccordionContent className="space-y-4 pt-2 px-4">
                 <div className="space-y-2">
                   {stripeComponents.map(component => (
                     <ComponentItem
@@ -1073,14 +1072,14 @@ export function SettingsPanel({
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="ampscript">
-                <AccordionTrigger>
+            <AccordionItem value="ampscript" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4" />
                     <span>AMPScript Personalizado</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                     <div className="space-y-2">
                         <div className="flex items-center justify-between gap-1.5">
                            <div className="flex items-center gap-1.5">
@@ -1128,14 +1127,14 @@ SET @name = AttributeValue("FirstName")
                 </AccordionContent>
             </AccordionItem>
             
-            <AccordionItem value="animation">
-                <AccordionTrigger>
+            <AccordionItem value="animation" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
                     <span>Animações</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                   <div className="space-y-2">
                     <Label>Animação de Entrada</Label>
                     <Select value={pageState.styles.animationType || 'none'} onValueChange={(value: AnimationType) => handleStyleChange('animationType', value)}>
@@ -1167,14 +1166,14 @@ SET @name = AttributeValue("FirstName")
             </AccordionItem>
 
 
-            <AccordionItem value="meta">
-              <AccordionTrigger>
+            <AccordionItem value="meta" className="bg-card rounded-lg border">
+              <AccordionTrigger className="p-4">
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   <span>Configurações, SEO & Pixels</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
+              <AccordionContent className="space-y-4 pt-2 px-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label>Título da Página</Label>
@@ -1345,14 +1344,14 @@ SET @name = AttributeValue("FirstName")
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="cookie-banner">
-                <AccordionTrigger>
+            <AccordionItem value="cookie-banner" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <Cookie className="h-4 w-4"/>
                     <span>Banner de Cookies</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="cookie-enabled" className="flex items-center gap-2">
                             Ativar Banner de Cookies
@@ -1387,14 +1386,14 @@ SET @name = AttributeValue("FirstName")
                 </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="security">
-                <AccordionTrigger>
+            <AccordionItem value="security" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <Lock className="h-4 w-4" />
                     <span>Segurança & Acesso</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                      <div className="space-y-2">
                         <Label htmlFor="security-type">Tipo de Proteção</Label>
                         <Select value={security.type} onValueChange={(value: SecurityType) => handleSecurityChange('type', value)}>
@@ -1440,14 +1439,14 @@ SET @name = AttributeValue("FirstName")
                 </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="scheduling">
-                <AccordionTrigger>
+            <AccordionItem value="scheduling" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <CalendarClock className="h-4 w-4" />
                     <span>Agendamento</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="scheduling-enabled">Ativar Agendamento</Label>
                         <Switch
@@ -1487,3 +1486,5 @@ SET @name = AttributeValue("FirstName")
     </ScrollArea>
   );
 }
+
+    

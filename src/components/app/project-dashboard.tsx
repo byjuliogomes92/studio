@@ -672,7 +672,7 @@ export function ProjectDashboard() {
                     <CardDescription>Resumo das suas atividades na plataforma.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
+                    <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                             <Briefcase className="h-6 w-6 text-primary" />
                         </div>
@@ -681,7 +681,7 @@ export function ProjectDashboard() {
                             <p className="text-xs text-muted-foreground">Projetos</p>
                         </div>
                     </div>
-                     <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
+                     <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                             <FileText className="h-6 w-6 text-primary" />
                         </div>
@@ -690,7 +690,7 @@ export function ProjectDashboard() {
                             <p className="text-xs text-muted-foreground">Páginas</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
+                    <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                            <Library className="h-6 w-6 text-primary" />
                         </div>

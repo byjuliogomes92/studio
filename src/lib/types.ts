@@ -49,6 +49,13 @@ export interface WorkspaceMember {
   createdAt: any;
 }
 
+export interface FtpConfig {
+  host: string;
+  user: string;
+  password?: string; // Only used for sending updates, not stored
+  encryptedPassword?: string; // Stored in Firestore
+}
+
 export interface Brand {
   id: string;
   workspaceId: string;
@@ -59,6 +66,7 @@ export interface Brand {
   themeColor: string;
   themeColorHover: string;
   fontFamily: string;
+  ftpConfig?: FtpConfig;
   createdAt: any;
 }
 

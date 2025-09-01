@@ -1,7 +1,7 @@
 
-import type { PageComponent } from '@/lib/types';
+import type { PageComponent, CloudPage } from '@/lib/types';
 
-export function renderFTPUpload(component: PageComponent): string {
+export function renderFTPUpload(component: PageComponent, pageState: CloudPage): string {
     const { 
         label = "Enviar Arquivo CSV",
         destinationPath = "/Import",
@@ -9,6 +9,7 @@ export function renderFTPUpload(component: PageComponent): string {
         dataExtensionName = ""
     } = component.props;
 
+    const { brandId } = pageState;
     const formId = `ftp-upload-form-${component.id}`;
 
     return `
@@ -49,6 +50,8 @@ export function renderFTPUpload(component: PageComponent): string {
                 formData.append('file', fileInput.files[0]);
                 formData.append('path', '${destinationPath}');
                 formData.append('filename', '%%=v(@finalFilename)=%%'); // Use AMPScript variable
+                formData.append('brandId', '${brandId}');
+
 
                 try {
                     const response = await fetch('/api/ftp-upload', {

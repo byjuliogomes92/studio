@@ -2,8 +2,9 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig } from "./types";
 import { updateProfile, type User } from "firebase/auth";
+import { encryptPassword } from "./crypto";
 
 
 const getDbInstance = (): Firestore => {
@@ -406,6 +407,13 @@ export const deleteTemplate = async (templateId: string): Promise<void> => {
 // Brands
 export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>): Promise<Brand> => {
     const db = getDbInstance();
+    
+    // Encrypt password if it exists
+    if (brandData.ftpConfig?.password) {
+        brandData.ftpConfig.encryptedPassword = encryptPassword(brandData.ftpConfig.password);
+        delete brandData.ftpConfig.password; // Remove plain text password
+    }
+
     const dataWithTimestamp = { ...brandData, createdAt: serverTimestamp() };
     const docRef = await addDoc(collection(db, 'brands'), dataWithTimestamp);
     return { ...brandData, id: docRef.id, createdAt: Timestamp.now() };
@@ -429,6 +437,13 @@ export const getBrand = async (brandId: string): Promise<Brand | null> => {
 export const updateBrand = async (brandId: string, data: Partial<Brand>): Promise<void> => {
     const db = getDbInstance();
     const brandRef = doc(db, 'brands', brandId);
+    
+    // Encrypt password if it is being updated
+    if (data.ftpConfig?.password) {
+        data.ftpConfig.encryptedPassword = encryptPassword(data.ftpConfig.password);
+        delete data.ftpConfig.password;
+    }
+
     await updateDoc(brandRef, data);
 };
 

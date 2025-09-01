@@ -143,7 +143,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'WhatsApp': return renderWhatsApp(component);
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState);
-    case 'FTPUpload': return renderFTPUpload(component);
+    case 'FTPUpload': return renderFTPUpload(component, pageState);
     case 'Footer': return renderFooter(component);
     default:
       const exhaustiveCheck: never = component.type;
@@ -1906,5 +1906,3 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
-}

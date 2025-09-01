@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant } from "@/lib/types";
@@ -1913,6 +1912,27 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                             <SelectItem value="bottom-left">Canto Inferior Esquerdo</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+            </div>
+        );
+      case 'FTPUpload':
+        return (
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="ftp-label">Rótulo do Campo</Label>
+                    <Input id="ftp-label" value={props.label || ''} onChange={e => onPropChange('label', e.target.value)} placeholder="Envie seu arquivo CSV" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="ftp-path">Caminho de Destino no FTP</Label>
+                    <Input id="ftp-path" value={props.destinationPath || ''} onChange={e => onPropChange('destinationPath', e.target.value)} placeholder="/Import" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="ftp-filename">Nome do Arquivo no FTP</Label>
+                    <Input id="ftp-filename" value={props.destinationFilename || ''} onChange={e => onPropChange('destinationFilename', e.target.value)} placeholder="arquivo_%%Date%%.csv" />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="ftp-de">Data Extension Alvo (Informativo)</Label>
+                    <Input id="ftp-de" value={props.dataExtensionName || ''} onChange={e => onPropChange('dataExtensionName', e.target.value)} placeholder="Nome da DE que receberá os dados" />
                 </div>
             </div>
         );

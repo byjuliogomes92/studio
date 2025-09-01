@@ -1,24 +1,27 @@
 
 import * as ftp from 'basic-ftp';
 import { Readable } from 'stream';
+import type { FtpConfig } from './types';
+import { decryptPassword } from './crypto';
 
-export async function uploadToFtp(fileBuffer: Buffer, path: string, filename: string): Promise<void> {
+export async function uploadToFtp(fileBuffer: Buffer, path: string, filename: string, ftpConfig: FtpConfig): Promise<void> {
   const client = new ftp.Client();
   // client.ftp.verbose = true; // Uncomment for debugging FTP connection
 
   try {
-    const ftpHost = process.env.FTP_HOST;
-    const ftpUser = process.env.FTP_USER;
-    const ftpPassword = process.env.FTP_PASSWORD;
-
-    if (!ftpHost || !ftpUser || !ftpPassword) {
-      throw new Error('As credenciais de FTP não estão configuradas no servidor.');
+    const { host, user, encryptedPassword } = ftpConfig;
+    
+    if (!host || !user || !encryptedPassword) {
+      throw new Error('As credenciais de FTP não estão configuradas para esta marca.');
     }
 
+    // Decrypt the password right before use
+    const password = decryptPassword(encryptedPassword);
+
     await client.access({
-      host: ftpHost,
-      user: ftpUser,
-      password: ftpPassword,
+      host: host,
+      user: user,
+      password: password,
       secure: false, // Use true for FTPS
     });
 

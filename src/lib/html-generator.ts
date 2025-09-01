@@ -1358,22 +1358,89 @@ ${trackingScripts.head}
         border-radius: 8px;
         padding: 20px;
         margin: 20px 0;
+        background-color: #f9fafb;
+    }
+    .ftp-upload-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .ftp-upload-header h4 {
+      font-size: 1.25rem;
+      font-weight: bold;
+      margin: 0 0 5px 0;
+    }
+    .ftp-upload-header p {
+      font-size: 0.9rem;
+      color: #666;
+      margin: 0;
     }
     .ftp-upload-form {
         display: flex;
         flex-direction: column;
         gap: 15px;
     }
-    .ftp-upload-form button {
-        background-color: var(--theme-color);
-        color: white;
-        border: none;
-        padding: 10px;
-        border-radius: 5px;
+    .ftp-upload-drop-area {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 40px 20px;
+        text-align: center;
         cursor: pointer;
+        transition: background-color 0.2s ease;
     }
-    .ftp-upload-form button:disabled {
-        background-color: #ccc;
+    .ftp-upload-drop-area.active {
+        background-color: #e9e9e9;
+        border-color: var(--theme-color);
+    }
+    .ftp-upload-drop-area input[type="file"] {
+        display: none;
+    }
+    .ftp-upload-icon svg {
+        width: 48px;
+        height: 48px;
+        color: var(--theme-color);
+        margin: 0 auto 10px auto;
+    }
+    .ftp-upload-instruction {
+        font-weight: bold;
+        color: #333;
+    }
+    .ftp-upload-filename {
+        display: block;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: #555;
+    }
+    .ftp-upload-progress-wrapper {
+        display: none;
+        width: 100%;
+        height: 8px;
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .ftp-upload-progress-bar {
+        width: 0%;
+        height: 100%;
+        background-color: var(--theme-color);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    .ftp-upload-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+    }
+    .ftp-upload-status {
+        font-size: 0.9rem;
+    }
+    .ftp-upload-form .custom-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 5px;
     }
 
 
@@ -1847,11 +1914,6 @@ ${trackingScripts.head}
     @keyframes fadeInRight { from { opacity: 0; transform: translate3d(50px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    .animate-fadeInUp { animation-name: fadeInUp; }
-    .animate-fadeInLeft { animation-name: fadeInLeft; }
-    .animate-fadeInRight { animation-name: fadeInRight; }
-    .animate-fadeIn { animation-name: fadeIn; }
-
     .animate-on-scroll {
         opacity: 0;
     }
@@ -1906,4 +1968,5 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   %%[ ENDIF ]%%
 </body>
 </html>
-`}
+`
+}

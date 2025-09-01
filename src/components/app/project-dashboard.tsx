@@ -52,6 +52,7 @@ import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../ui/select";
+import Image from 'next/image';
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -678,18 +679,38 @@ export function ProjectDashboard() {
 
       <main className="p-4 md:p-6">
         {isAnnouncementOpen && (
-            <div className="relative bg-primary/10 border-t border-b border-primary/20 px-6 py-3 mb-6 text-sm text-primary-foreground/90 flex items-center justify-center text-center rounded-lg">
-                <Megaphone className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                <p>
-                    <span className="font-semibold text-primary">Nova Funcionalidade:</span> Testes A/B agora disponíveis para todos os componentes! 
-                    <a href="#" className="underline ml-2 font-medium text-primary">Saiba mais</a>
-                </p>
-                <button 
+            <div className="relative rounded-lg overflow-hidden mb-6 group">
+                <Image 
+                    src="https://picsum.photos/1200/200"
+                    alt="Banner de anúncio de nova funcionalidade"
+                    width={1200}
+                    height={200}
+                    className="w-full h-auto object-cover"
+                    data-ai-hint="abstract banner"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/20 flex items-center p-6 md:p-10">
+                    <div className="max-w-md text-white">
+                        <h3 className="text-xl md:text-2xl font-bold">
+                            <span className="text-primary">Nova Funcionalidade:</span> Testes A/B para Componentes
+                        </h3>
+                        <p className="mt-2 text-sm md:text-base opacity-90">
+                            Agora você pode testar diferentes versões dos seus componentes e otimizar a performance das suas páginas.
+                        </p>
+                        <Button 
+                            variant="secondary"
+                            className="mt-4"
+                            onClick={() => window.open('#', '_blank')}
+                        >
+                            Saiba Mais
+                        </Button>
+                    </div>
+                </div>
+                 <button 
                     onClick={handleCloseAnnouncement} 
-                    className="absolute top-1/2 right-4 -translate-y-1/2 text-primary/70 hover:text-primary"
+                    className="absolute top-4 right-4 text-white/70 hover:text-white transition-opacity group-hover:opacity-100 md:opacity-0"
                     aria-label="Fechar anúncio"
                 >
-                    <X className="h-5 w-5" />
+                    <X className="h-6 w-6" />
                 </button>
             </div>
         )}

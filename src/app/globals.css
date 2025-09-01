@@ -61,8 +61,8 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
  
-    --border: 223 39% 18%; /* A slightly lighter shade of the card color for borders */
-    --input: 222 81% 5%;      /* A slightly darker shade of the background for depth */
+    --border: 223 39% 18%;
+    --input: 223 39% 18%; /* Cor da borda do input */
     --ring: 210 90% 40%;
   }
 }

@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress, Template, PageView, Workspace } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette, Image as ImageIcon, ShieldCheck } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette, Image as ImageIcon, ShieldCheck, Megaphone } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -125,6 +125,7 @@ export function ProjectDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
 
   // Notifications state
   const [notifications, setNotifications] = useState([
@@ -152,6 +153,12 @@ export function ProjectDashboard() {
   const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
+  // Check announcement banner state from localStorage on mount
+  useEffect(() => {
+    if (localStorage.getItem('announcementClosed_20240725') !== 'true') {
+      setIsAnnouncementOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (localStorage.getItem('onboardingGuideClosed') === 'true') {
@@ -300,6 +307,11 @@ export function ProjectDashboard() {
 
   const markAllAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleCloseAnnouncement = () => {
+    setIsAnnouncementOpen(false);
+    localStorage.setItem('announcementClosed_20240725', 'true');
   };
 
   const filteredAndSortedProjects = useMemo((): EnrichedProject[] => {
@@ -665,6 +677,23 @@ export function ProjectDashboard() {
       </header>
 
       <main className="p-4 md:p-6">
+        {isAnnouncementOpen && (
+            <div className="relative bg-primary/10 border-t border-b border-primary/20 px-6 py-3 mb-6 text-sm text-primary-foreground/90 flex items-center justify-center text-center rounded-lg">
+                <Megaphone className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
+                <p>
+                    <span className="font-semibold text-primary">Nova Funcionalidade:</span> Testes A/B agora disponíveis para todos os componentes! 
+                    <a href="#" className="underline ml-2 font-medium text-primary">Saiba mais</a>
+                </p>
+                <button 
+                    onClick={handleCloseAnnouncement} 
+                    className="absolute top-1/2 right-4 -translate-y-1/2 text-primary/70 hover:text-primary"
+                    aria-label="Fechar anúncio"
+                >
+                    <X className="h-5 w-5" />
+                </button>
+            </div>
+        )}
+
         <div className="mb-6 grid gap-4 lg:grid-cols-5">
             <Card className="lg:col-span-3">
                  <CardHeader>

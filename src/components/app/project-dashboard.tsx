@@ -773,7 +773,7 @@ export function ProjectDashboard() {
             {filteredAndSortedProjects.map((project) => (
               <div
                 key={project.id}
-                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md hover:bg-accent transition-shadow"
               >
                 <div onClick={() => handleNavigateToProject(project.id)} className="cursor-pointer">
                     <ProjectIcon iconName={project.icon} color={project.color} className="mb-4" />

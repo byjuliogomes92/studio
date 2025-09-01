@@ -2,7 +2,7 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword } from "./crypto";
 
@@ -413,6 +413,10 @@ export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>): Prom
         brandData.ftpConfig.encryptedPassword = encryptPassword(brandData.ftpConfig.password);
         delete brandData.ftpConfig.password; // Remove plain text password
     }
+    if (brandData.bitlyConfig?.accessToken) {
+        brandData.bitlyConfig.encryptedAccessToken = encryptPassword(brandData.bitlyConfig.accessToken);
+        delete brandData.bitlyConfig.accessToken;
+    }
 
     const dataWithTimestamp = { ...brandData, createdAt: serverTimestamp() };
     const docRef = await addDoc(collection(db, 'brands'), dataWithTimestamp);
@@ -438,10 +442,14 @@ export const updateBrand = async (brandId: string, data: Partial<Brand>): Promis
     const db = getDbInstance();
     const brandRef = doc(db, 'brands', brandId);
     
-    // Encrypt password if it is being updated
+    // Encrypt secrets if they are being updated
     if (data.ftpConfig?.password) {
         data.ftpConfig.encryptedPassword = encryptPassword(data.ftpConfig.password);
         delete data.ftpConfig.password;
+    }
+    if (data.bitlyConfig?.accessToken) {
+        data.bitlyConfig.encryptedAccessToken = encryptPassword(data.bitlyConfig.accessToken);
+        delete data.bitlyConfig.accessToken;
     }
 
     await updateDoc(brandRef, data);

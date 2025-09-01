@@ -56,6 +56,11 @@ export interface FtpConfig {
   encryptedPassword?: string; // Stored in Firestore
 }
 
+export interface BitlyConfig {
+  accessToken?: string; // Only used for sending updates
+  encryptedAccessToken?: string; // Stored in Firestore
+}
+
 export interface Brand {
   id: string;
   workspaceId: string;
@@ -67,6 +72,7 @@ export interface Brand {
   themeColorHover: string;
   fontFamily: string;
   ftpConfig?: FtpConfig;
+  bitlyConfig?: BitlyConfig;
   createdAt: any;
 }
 

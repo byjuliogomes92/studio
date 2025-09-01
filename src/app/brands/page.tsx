@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { getBrandsForUser, addBrand, updateBrand, deleteBrand } from "@/lib/firestore";
-import type { Brand, FtpConfig } from "@/lib/types";
+import type { Brand, FtpConfig, BitlyConfig } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff } from "lucide-react";
+import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2 } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,7 +46,8 @@ const initialBrandState: Omit<Brand, "id" | "workspaceId" | "createdAt"> = {
   themeColor: "#000000",
   themeColorHover: "#333333",
   fontFamily: "Roboto",
-  ftpConfig: { host: "", user: "", encryptedPassword: "" }
+  ftpConfig: { host: "", user: "", encryptedPassword: "" },
+  bitlyConfig: { encryptedAccessToken: "" },
 };
 
 export default function BrandsPage() {
@@ -61,7 +62,9 @@ export default function BrandsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentBrand, setCurrentBrand] = useState<Partial<Brand> | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showBitlyToken, setShowBitlyToken] = useState(false);
   const [ftpPassword, setFtpPassword] = useState("");
+  const [bitlyToken, setBitlyToken] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -92,6 +95,7 @@ export default function BrandsPage() {
 
   const openModal = (brand: Partial<Brand> | null = null) => {
     setFtpPassword("");
+    setBitlyToken("");
     setCurrentBrand(brand ? { ...brand } : { ...initialBrandState });
     setIsModalOpen(true);
   };
@@ -106,9 +110,13 @@ export default function BrandsPage() {
       if (currentBrand.id) {
         // Update existing brand
         const { id, ...dataToUpdate } = currentBrand;
-        // If the user entered a new password, include it for encryption. Otherwise, don't send it.
+        
         if (ftpPassword) {
             (dataToUpdate.ftpConfig as FtpConfig).password = ftpPassword;
+        }
+        if (bitlyToken) {
+            if (!dataToUpdate.bitlyConfig) dataToUpdate.bitlyConfig = {};
+            (dataToUpdate.bitlyConfig as BitlyConfig).accessToken = bitlyToken;
         }
 
         await updateBrand(id, dataToUpdate);
@@ -129,6 +137,9 @@ export default function BrandsPage() {
               host: currentBrand.ftpConfig?.host || '',
               user: currentBrand.ftpConfig?.user || '',
               password: ftpPassword,
+            },
+            bitlyConfig: {
+              accessToken: bitlyToken,
             }
         };
         const newBrand = await addBrand(newBrandData);
@@ -294,26 +305,39 @@ export default function BrandsPage() {
                     </div>
                  </div>
               </TabsContent>
-              <TabsContent value="integrations" className="py-4">
-                <h4 className="font-semibold text-lg mb-4">Credenciais de FTP</h4>
+              <TabsContent value="integrations" className="py-4 space-y-6">
                 <div className="space-y-4 p-4 border rounded-md bg-muted/30">
-                  <div className="space-y-2">
-                    <Label htmlFor="ftp-host">Host</Label>
-                    <Input id="ftp-host" value={currentBrand.ftpConfig?.host || ''} onChange={(e) => setCurrentBrand({ ...currentBrand, ftpConfig: { ...currentBrand.ftpConfig, host: e.target.value } as FtpConfig })} placeholder="Ex: ftp.s10.marketingcloudapps.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ftp-user">Usuário</Label>
-                    <Input id="ftp-user" value={currentBrand.ftpConfig?.user || ''} onChange={(e) => setCurrentBrand({ ...currentBrand, ftpConfig: { ...currentBrand.ftpConfig, user: e.target.value } as FtpConfig })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ftp-password">Senha</Label>
-                    <div className="relative">
-                      <Input id="ftp-password" type={showPassword ? 'text' : 'password'} value={ftpPassword} onChange={(e) => setFtpPassword(e.target.value)} placeholder={currentBrand.id ? 'Deixe em branco para não alterar' : ''} />
-                      <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
+                    <h4 className="font-semibold text-lg mb-2">Credenciais de FTP</h4>
+                    <div className="space-y-2">
+                        <Label htmlFor="ftp-host">Host</Label>
+                        <Input id="ftp-host" value={currentBrand.ftpConfig?.host || ''} onChange={(e) => setCurrentBrand({ ...currentBrand, ftpConfig: { ...currentBrand.ftpConfig, host: e.target.value } as FtpConfig })} placeholder="Ex: ftp.s10.marketingcloudapps.com" />
                     </div>
-                  </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="ftp-user">Usuário</Label>
+                        <Input id="ftp-user" value={currentBrand.ftpConfig?.user || ''} onChange={(e) => setCurrentBrand({ ...currentBrand, ftpConfig: { ...currentBrand.ftpConfig, user: e.target.value } as FtpConfig })} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="ftp-password">Senha</Label>
+                        <div className="relative">
+                        <Input id="ftp-password" type={showPassword ? 'text' : 'password'} value={ftpPassword} onChange={(e) => setFtpPassword(e.target.value)} placeholder={currentBrand.id ? 'Deixe em branco para não alterar' : ''} />
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-4 p-4 border rounded-md bg-muted/30">
+                    <h4 className="font-semibold text-lg mb-2 flex items-center gap-2"><Link2 className="h-5 w-5" />Integração com Bitly</h4>
+                     <div className="space-y-2">
+                        <Label htmlFor="bitly-token">Generic Access Token</Label>
+                        <div className="relative">
+                        <Input id="bitly-token" type={showBitlyToken ? 'text' : 'password'} value={bitlyToken} onChange={(e) => setBitlyToken(e.target.value)} placeholder={currentBrand.id ? 'Deixe em branco para não alterar' : ''} />
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowBitlyToken(!showBitlyToken)}>
+                            {showBitlyToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                        </div>
+                    </div>
                 </div>
               </TabsContent>
             </Tabs>

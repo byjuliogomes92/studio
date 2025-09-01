@@ -913,6 +913,11 @@ ${trackingScripts.head}
     .animate-on-scroll.is-visible {
         opacity: 1;
     }
+    .animate-on-scroll.is-visible.animate-fadeIn { animation-name: fadeInUp; }
+    .animate-on-scroll.is-visible.animate-fadeInUp { animation-name: fadeInUp; }
+    .animate-on-scroll.is-visible.animate-fadeInLeft { animation-name: fadeInLeft; }
+    .animate-on-scroll.is-visible.animate-fadeInRight { animation-name: fadeInRight; }
+
 
     .section-wrapper[style*="background-color"] {
         /* This element will have the background color */

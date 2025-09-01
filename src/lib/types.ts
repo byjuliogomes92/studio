@@ -73,6 +73,7 @@ export interface Brand {
   id: string;
   workspaceId: string;
   name: string;
+  description?: string;
   // Visual Identity
   logos: {
     horizontalLight: string;

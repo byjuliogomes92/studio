@@ -36,12 +36,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import Image from "next/image";
+import { Textarea } from "../ui/textarea";
 
 const googleFonts = ["Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Source Sans Pro", "Raleway", "Poppins", "Nunito", "Merriweather"];
 
 const initialBrandState: Omit<Brand, "id" | "createdAt"> = {
   workspaceId: '',
   name: "",
+  description: "",
   logos: {
     horizontalLight: "",
     horizontalDark: "",
@@ -255,7 +257,7 @@ export default function BrandsPage() {
                      <div className="w-8 h-8 rounded-full border-2" style={{ backgroundColor: brand.colors.light.primary, borderColor: brand.colors.light.primaryHover }}></div>
                      {brand.name}
                   </CardTitle>
-                  <CardDescription>Kit de identidade visual para a marca.</CardDescription>
+                  <CardDescription>{brand.description || 'Kit de identidade visual para a marca.'}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
                     <div className="flex justify-center items-center h-24 bg-muted rounded-md p-2">
@@ -309,6 +311,16 @@ export default function BrandsPage() {
                 <div className="space-y-2">
                     <Label htmlFor="brand-name">Nome da Marca</Label>
                     <Input id="brand-name" value={currentBrand.name || ''} onChange={(e) => handleBrandFieldChange('name', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="brand-description">Descrição da Marca (Contexto para IA)</Label>
+                    <Textarea 
+                      id="brand-description"
+                      value={currentBrand.description || ''} 
+                      onChange={(e) => handleBrandFieldChange('description', e.target.value)}
+                      placeholder="Descreva o tom de voz, público-alvo, produtos principais e objetivos da marca. Quanto mais detalhes, melhor a IA irá gerar conteúdo."
+                      rows={4}
+                    />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

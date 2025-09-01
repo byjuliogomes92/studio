@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -673,20 +672,32 @@ export function ProjectDashboard() {
                     <CardDescription>Resumo das suas atividades na plataforma.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
-                        <Briefcase className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-2xl font-bold">{dashboardStats.projectCount}</span>
-                        <span className="text-xs text-muted-foreground">Projetos</span>
+                    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <Briefcase className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-bold">{dashboardStats.projectCount}</div>
+                            <p className="text-xs text-muted-foreground">Projetos</p>
+                        </div>
                     </div>
-                     <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
-                        <FileText className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-2xl font-bold">{dashboardStats.pageCount}</span>
-                        <span className="text-xs text-muted-foreground">Páginas</span>
+                     <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <FileText className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-bold">{dashboardStats.pageCount}</div>
+                            <p className="text-xs text-muted-foreground">Páginas</p>
+                        </div>
                     </div>
-                    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
-                        <Library className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-2xl font-bold">{dashboardStats.templateCount}</span>
-                        <span className="text-xs text-muted-foreground">Templates</span>
+                    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                           <Library className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-bold">{dashboardStats.templateCount}</div>
+                            <p className="text-xs text-muted-foreground">Templates</p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

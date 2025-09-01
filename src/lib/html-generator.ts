@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
@@ -41,9 +40,9 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
         .sort((a, b) => a.order - b.order)
         .map(component => {
             const styles = component.props.styles || {};
-            const animationType = styles.animationType || 'none';
-            const animationDuration = styles.animationDuration || 1;
-            const animationDelay = styles.animationDelay || 0;
+            const animationType = pageState.styles.animationType || 'none';
+            const animationDuration = pageState.styles.animationDuration || 1;
+            const animationDelay = pageState.styles.animationDelay || 0;
             
             const animationAttrs = animationType !== 'none'
               ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
@@ -52,37 +51,43 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             const isFullWidth = !!styles?.isFullWidth;
             const sectionClass = isFullWidth ? 'section-wrapper section-wrapper--full-width' : 'section-wrapper';
             const containerClass = isFullWidth ? 'section-container' : '';
+            
+            const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
 
-            if (component.type === 'Columns') {
-                const columnCount = component.props.columnCount || 2;
-                let columnsHtml = '';
-                for (let i = 0; i < columnCount; i++) {
-                    const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
-                    columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
-                }
-                const renderedComponent = renderSingleComponent(component, pageState, isForPreview, columnsHtml);
-                
-                const wrapperStyle = isFullWidth ? `background-color: ${styles?.backgroundColor || 'transparent'};` : '';
-
-                return `<div class="${sectionClass}" style="${wrapperStyle}" ${animationAttrs}>
+            // For Columns, the background is on the outer wrapper.
+            if (component.type === 'Columns' && isFullWidth) {
+                 const wrapperStyle = `background-color: ${styles?.backgroundColor || 'transparent'};`;
+                 return `<div class="${sectionClass}" style="${wrapperStyle}" ${animationAttrs}>
                            <div class="${containerClass}">
                              ${renderedComponent}
                            </div>
                         </div>`;
             }
 
-             return `<div class="${sectionClass}" ${animationAttrs}>
-                        <div class="section-container">
-                          ${renderComponent(component, pageState, isForPreview)}
-                        </div>
-                     </div>`;
+            return `<div class="${sectionClass}" ${animationAttrs}>
+                       <div class="section-container">
+                         ${renderedComponent}
+                       </div>
+                    </div>`;
         })
         .join('\n');
 }
 
-const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean): string => {
+const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, allComponents: PageComponent[]): string => {
+  const childrenHtml = component.type === 'Columns'
+    ? (() => {
+        const columnCount = component.props.columnCount || 2;
+        let columnsContent = '';
+        for (let i = 0; i < columnCount; i++) {
+          const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
+          columnsContent += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
+        }
+        return columnsContent;
+      })()
+    : '';
+    
   if (isForPreview) {
-    return renderSingleComponent(component, pageState, isForPreview);
+    return renderSingleComponent(component, pageState, isForPreview, childrenHtml);
   }
 
   if (component.abTestEnabled) {
@@ -90,8 +95,8 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     const propsA = component.props;
     const propsB = { ...propsA, ...variantB };
 
-    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview);
-    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview);
+    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview, childrenHtml);
+    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview, childrenHtml);
 
     const randomVar = `v(@Random_${component.id.slice(-5)})`;
     const hiddenInput = `<input type="hidden" name="VARIANTE_${component.id.toUpperCase()}" value="%%=v(@VARIANTE_${component.id.toUpperCase()})=%%">`;
@@ -110,7 +115,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     ${hiddenInput}
     `;
   }
-  return renderSingleComponent(component, pageState, isForPreview);
+  return renderSingleComponent(component, pageState, isForPreview, childrenHtml);
 };
 
 const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = ''): string => {
@@ -782,7 +787,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const clientSideScripts = getClientSideScripts(pageState);
   
-  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview)).join('\n');
+  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '')).join('\n');
   const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
   
   const trackingScripts = getTrackingScripts(meta.tracking);
@@ -1858,7 +1863,7 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   <main>
     ${mainContentHtml}
   </main>
-  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview) : ''}
+  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '') : ''}
   ${cookieBannerHtml}
   ${trackingPixel}
   %%[ ELSE ]%%

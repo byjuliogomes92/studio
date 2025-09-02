@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import type { CloudPage, ComponentType, PageComponent, SecurityType, AnimationType, Brand } from "@/lib/types";
+import type { CloudPage, ComponentType, PageComponent, SecurityType, AnimationType, Brand, Action } from "@/lib/types";
 import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type Active, type Over } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -46,7 +47,8 @@ interface SettingsPanelProps {
   selectedComponentId: string | null;
   setSelectedComponentId: Dispatch<SetStateAction<string | null>>;
   pageName: string;
-  setPageName: Dispatch<SetStateAction<string>>;
+  onPageNameChange: (newName: string) => void;
+  projectPages: CloudPage[];
 }
 
 const componentIcons: Record<ComponentType, React.ElementType> = {
@@ -241,7 +243,7 @@ export function SettingsPanel({
   selectedComponentId,
   setSelectedComponentId,
   pageName,
-  setPageName,
+  onPageNameChange,
 }: SettingsPanelProps) {
 
   const { activeWorkspace } = useAuth();
@@ -516,7 +518,7 @@ export function SettingsPanel({
                       newComponent.props = { thickness: 1, style: 'solid', color: '#cccccc', margin: 20 };
                       break;
                   case 'Button':
-                      newComponent.props = { text: 'Clique Aqui', href: '#', align: 'center' };
+                      newComponent.props = { text: 'Clique Aqui', action: { type: 'URL', url: '#'}, align: 'center' };
                       break;
                   case 'DownloadButton':
                       newComponent.props = { text: 'Download', fileUrl: '', fileName: 'arquivo', align: 'center' };
@@ -904,7 +906,7 @@ export function SettingsPanel({
                   <Input
                     id="page-name"
                     value={pageName}
-                    onChange={(e) => setPageName(e.target.value)}
+                    onChange={(e) => onPageNameChange(e.target.value)}
                     placeholder="Ex: Campanha Dia das Mães"
                   />
                 </div>

@@ -10,7 +10,7 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity, getPagesForProject } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,6 +26,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { ToastAction } from "../ui/toast";
 import { Switch } from "../ui/switch";
 import { shortenUrl } from "@/ai/flows/shorten-url-flow";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
 
 interface CloudPageForgeProps {
@@ -270,7 +271,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
               resetState(finalPageState);
           }
           // Pass the user to the publishPage function for logging
-          await publishPage(pageId, finalPageState);
+          await publishPage(pageId, finalPageState, user);
 
           if (useBitly && hasBitlyConfig) {
               const result = await shortenUrl({ brandId: pageState.brandId, longUrl: pageUrl });
@@ -311,7 +312,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             meta: restOfMeta,
         };
 
-        await addTemplate(templateData);
+        await addTemplate(templateData, user);
         toast({ title: "Template salvo!", description: `O template "${templateName}" foi criado com sucesso.` });
         setSaveTemplateModalOpen(false);
         setTemplateName("");
@@ -403,46 +404,9 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={undo} disabled={!canUndo}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Desfazer
-            </Button>
-            <Dialog open={isSaveTemplateModalOpen} onOpenChange={setSaveTemplateModalOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <CopyPlus className="mr-2 h-4 w-4" />
-                  Salvar como Template
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Salvar como Template</DialogTitle>
-                  <DialogDescription>
-                    Salve a estrutura e o conteúdo desta página como um template reutilizável.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="template-name">Nome do Template</Label>
-                    <Input id="template-name" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="template-description">Descrição</Label>
-                    <Textarea id="template-description" value={templateDescription} onChange={(e) => setTemplateDescription(e.target.value)} />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setSaveTemplateModalOpen(false)}>Cancelar</Button>
-                  <Button onClick={handleSaveAsTemplate} disabled={isSavingTemplate}>
-                    {isSavingTemplate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Salvar Template
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
             <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} variant="secondary">
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isSaving ? 'Salvando...' : 'Salvar Rascunho'}
+                {isSaving ? 'Salvando...' : 'Salvar'}
             </Button>
              <Dialog open={isPublishModalOpen} onOpenChange={setIsPublishModalOpen}>
               <DialogTrigger asChild>
@@ -508,6 +472,53 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Mais opções</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={undo} disabled={!canUndo}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Desfazer
+                    </DropdownMenuItem>
+                    <Dialog open={isSaveTemplateModalOpen} onOpenChange={setSaveTemplateModalOpen}>
+                        <DialogTrigger asChild>
+                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <CopyPlus className="mr-2 h-4 w-4" />
+                                Salvar como Template
+                            </DropdownMenuItem>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                            <DialogTitle>Salvar como Template</DialogTitle>
+                            <DialogDescription>
+                                Salve a estrutura e o conteúdo desta página como um template reutilizável.
+                            </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="template-name">Nome do Template</Label>
+                                <Input id="template-name" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="template-description">Descrição</Label>
+                                <Textarea id="template-description" value={templateDescription} onChange={(e) => setTemplateDescription(e.target.value)} />
+                            </div>
+                            </div>
+                            <DialogFooter>
+                            <Button variant="outline" onClick={() => setSaveTemplateModalOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleSaveAsTemplate} disabled={isSavingTemplate}>
+                                {isSavingTemplate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Salvar Template
+                            </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
       </header>
       <div className="flex flex-grow overflow-hidden">
@@ -520,7 +531,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         selectedComponentId={selectedComponentId}
                         setSelectedComponentId={setSelectedComponentId}
                         pageName={pageState.name}
-                        setPageName={handlePageNameChange}
+                        onPageNameChange={handlePageNameChange}
                         projectPages={projectPages}
                     />
                 </aside>

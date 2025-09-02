@@ -858,7 +858,6 @@ export function PageList({ projectId }: PageListProps) {
                 </TabsList>
                 <TabsContent value="pages">
                     <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        { /* Search bar removed to be replaced by command palette */ }
                         <div></div>
                         <div className="flex items-center gap-2 flex-wrap justify-between">
                             <div className="flex items-center gap-2">

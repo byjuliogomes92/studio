@@ -114,7 +114,7 @@ function WorkspaceSwitcher() {
 
 export function ProjectDashboard() {
   const router = useRouter();
-  const { user, logout, loading: authLoading, activeWorkspace, projects, pages, templates } = useAuth();
+  const { user, logout, loading: authLoading, activeWorkspace, projects, pages, templates, setProjects } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -194,7 +194,8 @@ export function ProjectDashboard() {
     try {
       const newProject = await addProject({
         name: newProjectName, 
-        workspaceId: activeWorkspace.id, 
+        workspaceId: activeWorkspace.id,
+        userId: user.uid,
         icon: selectedIcon, 
         color: selectedColor
       });
@@ -601,8 +602,8 @@ export function ProjectDashboard() {
                     src="https://images.unsplash.com/photo-1711540846697-56b9f66d17f1"
                     alt="Banner de anúncio de nova funcionalidade"
                     fill
-                    objectFit="cover"
-                    className="w-full h-full"
+                    sizes="100vw"
+                    className="w-full h-full object-cover"
                     data-ai-hint="abstract banner"
                     objectPosition="left 53%"
                 />

@@ -44,7 +44,6 @@ export function renderCarousel(component: PageComponent): string {
             <div class="carousel-viewport">
                 <div class="carousel-inner">
                     ${slidesHtml}
-                    ${carouselType === 'logo' ? slidesHtml : ''}
                 </div>
             </div>
             ${arrowsHtml}

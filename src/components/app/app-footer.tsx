@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 
 export function AppFooter() {
   const pathname = usePathname();
@@ -13,15 +14,23 @@ export function AppFooter() {
 
   return (
     <footer className="py-4 px-6 text-center text-sm text-muted-foreground border-t bg-card mt-auto" aria-hidden="false">
-      Desenvolvido por:{" "}
-      <Link
-        href="https://www.linkedin.com/in/byjuliogomes/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-medium underline underline-offset-4 hover:text-primary"
-      >
-        Júlio Cesar Gomes
-      </Link>
+       <div className="flex justify-center items-center gap-4">
+         <span>
+            Desenvolvido por:{" "}
+            <Link
+                href="https://www.linkedin.com/in/byjuliogomes/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline underline-offset-4 hover:text-primary"
+            >
+                Júlio Cesar Gomes
+            </Link>
+         </span>
+         <Separator orientation="vertical" className="h-4" />
+         <Link href="/support" className="font-medium underline underline-offset-4 hover:text-primary">
+            Suporte
+         </Link>
+       </div>
     </footer>
   );
 }

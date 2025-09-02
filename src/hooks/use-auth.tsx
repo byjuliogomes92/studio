@@ -7,8 +7,8 @@ import { app } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
-import type { Workspace, UserProfileType, Project, CloudPage, Template } from '@/lib/types';
-import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete, getProjectsForUser, getTemplates } from '@/lib/firestore';
+import type { Workspace, UserProfileType, Project, CloudPage, Template, Brand } from '@/lib/types';
+import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete, getProjectsForUser, getTemplates, getBrandsForUser } from '@/lib/firestore';
 import { produce } from 'immer';
 
 interface AuthContextType {
@@ -20,6 +20,8 @@ interface AuthContextType {
   projects: Project[];
   pages: CloudPage[];
   templates: Template[];
+  brands: Brand[];
+  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   switchWorkspace: (workspaceId: string) => void;
   updateWorkspaceName: (workspaceId: string, newName: string) => Promise<void>;
   login: (email: string, password: string) => Promise<any>;
@@ -47,6 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -54,13 +57,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchGlobalData = useCallback(async (userId: string, workspaceId: string) => {
     try {
-        const [{ projects, pages }, templates] = await Promise.all([
+        const [{ projects, pages }, templates, brands] = await Promise.all([
           getProjectsForUser(workspaceId),
           getTemplates(workspaceId),
+          getBrandsForUser(workspaceId),
         ]);
         setProjects(projects);
         setPages(pages);
         setTemplates(templates);
+        setBrands(brands);
       } catch (error) {
         console.error("Failed to fetch global data:", error);
         toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar os dados do seu workspace.' });
@@ -243,6 +248,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     projects,
     pages,
     templates,
+    brands,
+    setProjects,
     switchWorkspace,
     updateWorkspaceName,
     reloadWorkspaces: () => user ? fetchWorkspaces(user.uid) : Promise.resolve(),

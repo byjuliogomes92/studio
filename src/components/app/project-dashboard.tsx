@@ -114,7 +114,7 @@ function WorkspaceSwitcher() {
 
 export function ProjectDashboard() {
   const router = useRouter();
-  const { user, logout, loading: authLoading, activeWorkspace, projects, pages, templates, setProjects } = useAuth();
+  const { user, logout, loading: authLoading, activeWorkspace, projects, pages, templates, brands, setProjects } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -353,8 +353,9 @@ export function ProjectDashboard() {
         pageCount: pages.length,
         activePageCount: activePages.length,
         templateCount: templates.length,
+        brandCount: brands.length,
     }
-  }, [projects, pages, templates]);
+  }, [projects, pages, templates, brands]);
 
 
   if (isLoading || authLoading || !activeWorkspace) {
@@ -652,7 +653,7 @@ export function ProjectDashboard() {
                     <CardTitle>Visão Geral</CardTitle>
                     <CardDescription>Resumo das suas atividades na plataforma.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                             <Briefcase className="h-6 w-6 text-primary" />
@@ -671,13 +672,22 @@ export function ProjectDashboard() {
                             <p className="text-xs text-muted-foreground">Páginas</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
+                     <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                            <Library className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <div className="text-2xl font-bold">{dashboardStats.templateCount}</div>
                             <p className="text-xs text-muted-foreground">Templates</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                           <Palette className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-bold">{dashboardStats.brandCount}</div>
+                            <p className="text-xs text-muted-foreground">Marcas</p>
                         </div>
                     </div>
                 </CardContent>

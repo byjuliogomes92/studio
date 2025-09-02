@@ -12,6 +12,7 @@ export function renderDataExtensionUpload(component: PageComponent): string {
     const formId = `de-upload-form-${component.id}`;
 
     return `
+        %%[ IF @showThanks != "true" THEN ]%%
         <div class="de-upload-container">
             <form id="${formId}" class="de-upload-form" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                 <input type="hidden" name="__isCsvUpload" value="true">
@@ -42,6 +43,13 @@ export function renderDataExtensionUpload(component: PageComponent): string {
                 </div>
             </form>
         </div>
+        %%[ ELSE ]%%
+            <div class="thank-you-message" style="text-align: center;">
+                <h2>Upload Concluído!</h2>
+                <p>Os dados do seu arquivo CSV foram enviados para processamento no Marketing Cloud.</p>
+            </div>
+        %%[ ENDIF ]%%
+
         <script>
         (function() {
             const form = document.getElementById('${formId}');
@@ -100,13 +108,13 @@ export function renderDataExtensionUpload(component: PageComponent): string {
                     const csv = event.target.result;
                     const lines = csv.split(/\\r\\n|\\n/);
                     const result = [];
-                    const headers = lines[0].split(/,|;/).map(h => h.trim());
+                    const headers = lines[0].split(/,|;/).map(h => h.trim().replace(/^"|"$/g, ''));
                     for (let i = 1; i < lines.length; i++) {
                         if (!lines[i]) continue;
                         const obj = {};
-                        const currentline = lines[i].split(/,|;/);
+                        const currentline = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)|;(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                         for (let j = 0; j < headers.length; j++) {
-                            obj[headers[j]] = currentline[j] ? currentline[j].trim() : '';
+                            obj[headers[j]] = currentline[j] ? currentline[j].trim().replace(/^"|"$/g, '') : '';
                         }
                         result.push(obj);
                     }

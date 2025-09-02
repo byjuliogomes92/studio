@@ -120,7 +120,7 @@ export function renderForm(component: PageComponent, pageState: CloudPage): stri
                  <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
                  <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
                  <input type="hidden" name="__successUrl" value="${redirectUrl}">
-                 <input type="hidden" name="__isPost" value="true">
+                 <input type="hidden" name="__isFormSubmission" value="true">
 
                  <div class="row">
                   ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}

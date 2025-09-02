@@ -15,6 +15,7 @@ function AdminSidebar() {
     const { user, logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+    const { state: sidebarState } = useSidebar();
 
     const userInitials = user?.displayName?.split(' ').map(n => n[0]).join('') || user?.email?.[0].toUpperCase() || 'A';
     
@@ -33,17 +34,17 @@ function AdminSidebar() {
     return (
         <Sidebar>
             <SidebarHeader>
-                <div className="flex items-center gap-2">
+                <div className={cn("flex items-center gap-2", sidebarState === 'collapsed' && 'justify-center')}>
                     <Logo className="size-7 text-primary" />
-                    <h1 className="text-lg font-semibold">Admin</h1>
+                    <h1 className={cn("text-lg font-semibold", sidebarState === 'collapsed' && 'sr-only')}>Admin</h1>
                 </div>
                  <SidebarTrigger />
             </SidebarHeader>
-            <SidebarContent className="p-2">
+            <SidebarContent>
                 <SidebarMenu>
                     {navItems.map((item, index) => {
                        if (item.type === 'label') {
-                           return <SidebarGroupLabel key={`label-${index}`} className="mt-4">{item.label}</SidebarGroupLabel>;
+                           return <SidebarGroupLabel key={`label-${index}`}>{sidebarState === 'expanded' ? item.label : '—'}</SidebarGroupLabel>;
                        }
                        return (
                            <SidebarMenuItem key={item.path}>
@@ -60,7 +61,7 @@ function AdminSidebar() {
                     })}
                 </SidebarMenu>
             </SidebarContent>
-            <SidebarFooter className="p-2">
+            <SidebarFooter>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton onClick={() => router.push('/')} tooltip="Voltar ao App">
@@ -69,18 +70,18 @@ function AdminSidebar() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                      <SidebarMenuItem>
-                        <div className="flex items-center gap-2 p-2">
+                        <div className={cn("flex items-center gap-3 p-2", sidebarState === 'collapsed' && "justify-center")}>
                              <Avatar className="h-8 w-8">
                                 <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'Avatar'} />
                                 <AvatarFallback>{userInitials}</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col truncate">
+                            <div className={cn("flex flex-col truncate", sidebarState === 'collapsed' && "hidden")}>
                                 <span className="text-sm font-semibold truncate">{user?.displayName}</span>
                                 <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
                             </div>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <button className="ml-auto text-muted-foreground hover:text-foreground">
+                                     <button className={cn("ml-auto text-muted-foreground hover:text-foreground", sidebarState === 'collapsed' && "hidden")}>
                                         <LogOut className="h-5 w-5"/>
                                     </button>
                                 </AlertDialogTrigger>
@@ -157,10 +158,14 @@ export default function AdminLayout({
 
   return (
     <SidebarProvider>
-        <AdminSidebar />
-        <main className="flex-1 p-6 bg-muted/40">
-            {children}
-        </main>
+        <div className="flex">
+            <AdminSidebar />
+            <main className="flex-1 p-6 bg-muted/40">
+                {children}
+            </main>
+        </div>
     </SidebarProvider>
   )
 }
+
+    

@@ -51,12 +51,12 @@ const getInitialPage = (name: string, projectId: string, workspaceId: string, br
     
     const brandName = brand ? brand.name : 'Sem Marca';
     const brandId = brand ? brand.id : '';
-    const themeColor = brand ? brand.themeColor : '#000000';
-    const themeColorHover = brand ? brand.themeColorHover : '#333333';
-    const fontFamily = brand ? brand.fontFamily : 'Roboto';
-    const faviconUrl = brand ? brand.faviconUrl : '';
-    const loaderImageUrl = brand ? brand.loaderImageUrl : '';
-    const logoUrl = brand ? brand.logoUrl : '';
+    const themeColor = brand ? brand.colors.light.primary : '#000000';
+    const themeColorHover = brand ? brand.colors.light.primaryHover : '#333333';
+    const fontFamily = brand ? brand.typography.fontFamilyBody : 'Roboto';
+    const faviconUrl = brand ? brand.logos.favicon : '';
+    const loaderImageUrl = brand ? brand.logos.iconLight : '';
+    const logoUrl = brand ? brand.logos.horizontalLight : '';
 
     const hasBrand = !!brand;
 
@@ -247,17 +247,17 @@ export function CreatePageFromTemplateDialog({
                 tags: [],
                 styles: selectedBrand ? {
                     ...template.styles,
-                    themeColor: selectedBrand.themeColor,
-                    themeColorHover: selectedBrand.themeColorHover,
-                    fontFamily: selectedBrand.fontFamily,
+                    themeColor: selectedBrand.colors.light.primary,
+                    themeColorHover: selectedBrand.colors.light.primaryHover,
+                    fontFamily: selectedBrand.typography.fontFamilyBody,
                 } : template.styles,
                 components: newComponents,
                 cookieBanner: template.cookieBanner,
                 meta: {
                     ...template.meta,
                     title: `${selectedBrand.name} - ${newPageName}`,
-                    faviconUrl: selectedBrand.faviconUrl,
-                    loaderImageUrl: selectedBrand.loaderImageUrl,
+                    faviconUrl: selectedBrand.logos.favicon,
+                    loaderImageUrl: selectedBrand.logos.iconLight,
                     redirectUrl: 'https://www.google.com',
                     dataExtensionKey: 'CHANGE-ME',
                     tracking: {
@@ -383,7 +383,7 @@ export function CreatePageFromTemplateDialog({
                                 {userBrands.map(brand => (
                                     <SelectItem key={brand.id} value={brand.id}>
                                         <div className="flex items-center gap-2">
-                                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.themeColor }}></div>
+                                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.colors.light.primary }}></div>
                                             {brand.name}
                                         </div>
                                     </SelectItem>

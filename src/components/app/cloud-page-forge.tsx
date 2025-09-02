@@ -12,7 +12,7 @@ import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand } from "@/lib/firestore";
+import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { produce } from "immer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -264,6 +264,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
               setSavedPageState(finalPageState);
               resetState(finalPageState);
           }
+          // Pass the user to the publishPage function for logging
           await publishPage(pageId, finalPageState);
 
           if (useBitly && hasBitlyConfig) {

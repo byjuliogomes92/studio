@@ -1,4 +1,5 @@
 
+
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -293,6 +294,8 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
         setDoc(draftRef, pageWithTimestamps),
         setDoc(publishedRef, pageWithTimestamps)
     ]);
+    
+    await logActivity(pageData.workspaceId, '', null, 'PAGE_CREATED', { pageName: pageData.name });
 
     return pageId;
 };
@@ -313,6 +316,10 @@ export const publishPage = async (pageId: string, pageData: Partial<CloudPage>):
         ...pageData,
         updatedAt: serverTimestamp(), 
     }, { merge: true });
+    
+    if (pageData.workspaceId) {
+        await logActivity(pageData.workspaceId, '', null, 'PAGE_PUBLISHED', { pageName: pageData.name });
+    }
 };
 
 
@@ -397,8 +404,17 @@ export const getPagesForProject = async (projectId: string, workspaceId: string)
 export const deletePage = async (pageId: string): Promise<void> => {
     const db = getDbInstance();
     const draftRef = doc(db, "pages_drafts", pageId);
+    
+    // Get page data before deleting to log it
+    const pageSnap = await getDoc(draftRef);
+    const pageData = pageSnap.data();
+
     const publishedRef = doc(db, "pages_published", pageId);
     await Promise.all([deleteDoc(draftRef), deleteDoc(publishedRef)]);
+    
+    if(pageData && pageData.workspaceId) {
+       await logActivity(pageData.workspaceId, '', null, 'PAGE_DELETED', { pageName: pageData.name });
+    }
 };
 
 export const duplicatePage = async (pageId: string): Promise<CloudPage> => {

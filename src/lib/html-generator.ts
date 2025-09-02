@@ -26,6 +26,7 @@ import { renderCarousel } from './html-components/carousel';
 import { renderForm } from './html-components/form';
 import { renderFooter } from './html-components/footer';
 import { renderFTPUpload } from './html-components/ftpupload';
+import { renderDataExtensionUpload } from './html-components/data-extension-upload';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -136,6 +137,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState);
     case 'FTPUpload': return renderFTPUpload(component, pageState);
+    case 'DataExtensionUpload': return renderDataExtensionUpload(component);
     case 'Footer': return renderFooter(component);
     default:
       const exhaustiveCheck: never = component.type;
@@ -1329,33 +1331,33 @@ ${trackingScripts.head}
         width: 100%;
     }
 
-    .ftp-upload-container {
+    .ftp-upload-container, .de-upload-container {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
         padding: 20px;
         margin: 20px 0;
         background-color: #f9fafb;
     }
-    .ftp-upload-header {
+    .ftp-upload-header, .de-upload-header {
       text-align: center;
       margin-bottom: 20px;
     }
-    .ftp-upload-header h4 {
+    .ftp-upload-header h4, .de-upload-header h4 {
       font-size: 1.25rem;
       font-weight: bold;
       margin: 0 0 5px 0;
     }
-    .ftp-upload-header p {
+    .ftp-upload-header p, .de-upload-header p {
       font-size: 0.9rem;
       color: #666;
       margin: 0;
     }
-    .ftp-upload-form {
+    .ftp-upload-form, .de-upload-form {
         display: flex;
         flex-direction: column;
         gap: 15px;
     }
-    .ftp-upload-drop-area {
+    .ftp-upload-drop-area, .de-upload-drop-area {
         border: 2px dashed #ccc;
         border-radius: 8px;
         padding: 40px 20px;
@@ -1363,30 +1365,30 @@ ${trackingScripts.head}
         cursor: pointer;
         transition: background-color 0.2s ease;
     }
-    .ftp-upload-drop-area.active {
+    .ftp-upload-drop-area.active, .de-upload-drop-area.active {
         background-color: #e9e9e9;
         border-color: var(--theme-color);
     }
-    .ftp-upload-drop-area input[type="file"] {
+    .ftp-upload-drop-area input[type="file"], .de-upload-drop-area input[type="file"] {
         display: none;
     }
-    .ftp-upload-icon svg {
+    .ftp-upload-icon svg, .de-upload-icon svg {
         width: 48px;
         height: 48px;
         color: var(--theme-color);
         margin: 0 auto 10px auto;
     }
-    .ftp-upload-instruction {
+    .ftp-upload-instruction, .de-upload-instruction {
         font-weight: bold;
         color: #333;
     }
-    .ftp-upload-filename {
+    .ftp-upload-filename, .de-upload-filename {
         display: block;
         margin-top: 10px;
         font-size: 0.9rem;
         color: #555;
     }
-    .ftp-upload-progress-wrapper {
+    .ftp-upload-progress-wrapper, .de-upload-progress-wrapper {
         display: none;
         width: 100%;
         height: 8px;
@@ -1394,23 +1396,23 @@ ${trackingScripts.head}
         border-radius: 4px;
         margin-top: 10px;
     }
-    .ftp-upload-progress-bar {
+    .ftp-upload-progress-bar, .de-upload-progress-bar {
         width: 0%;
         height: 100%;
         background-color: var(--theme-color);
         border-radius: 4px;
         transition: width 0.3s ease;
     }
-    .ftp-upload-footer {
+    .ftp-upload-footer, .de-upload-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-top: 15px;
     }
-    .ftp-upload-status {
+    .ftp-upload-status, .de-upload-status {
         font-size: 0.9rem;
     }
-    .ftp-upload-form .custom-button {
+    .ftp-upload-form .custom-button, .de-upload-form .custom-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -1943,10 +1945,7 @@ ${trackingScripts.body}
 </body>
 </html>`;
 
-  // For non-preview (final publish), replace escaped HTML entities
-  if (!isForPreview) {
-      finalHtml = finalHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-  }
+  finalHtml = finalHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
   return finalHtml;
 }

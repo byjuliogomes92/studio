@@ -75,6 +75,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     WhatsApp: Zap,
     Carousel: View,
     FTPUpload: UploadCloud,
+    DataExtensionUpload: UploadCloud,
 };
 
 const googleFonts = [
@@ -592,6 +593,12 @@ export function SettingsPanel({
                         destinationPath: "/Import",
                         destinationFilename: "arquivo_%%Date%%.csv",
                         dataExtensionName: "",
+                      };
+                      break;
+                  case 'DataExtensionUpload':
+                      newComponent.props = {
+                        label: "Upload para Data Extension",
+                        dataExtensionKey: "",
                       };
                       break;
               }
@@ -1486,5 +1493,3 @@ SET @name = AttributeValue("FirstName")
     </ScrollArea>
   );
 }
-
-    

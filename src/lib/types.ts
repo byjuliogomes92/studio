@@ -26,7 +26,8 @@ export type ComponentType =
   | 'WhatsApp'
   | 'Carousel'
   | 'DownloadButton'
-  | 'FTPUpload';
+  | 'FTPUpload'
+  | 'DataExtensionUpload';
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';
 

@@ -115,6 +115,7 @@ const componentList: {
       { name: "Voting", icon: Vote, enabled: true },
       { name: "NPS", icon: Smile, enabled: true },
       { name: "FTPUpload", icon: UploadCloud, enabled: true },
+      { name: "DataExtensionUpload", icon: UploadCloud, enabled: true },
       { name: "Chart", icon: BarChart, enabled: false },
     ],
   },

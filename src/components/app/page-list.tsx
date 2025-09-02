@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart, Calendar, Smile, Code } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart, Calendar, Smile, Code, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -128,6 +128,48 @@ function PlatformIcon({ platformId }: { platformId?: string }) {
 function ProjectIcon({ iconName, color, className }: { iconName?: string; color?: string, className?: string }) {
     const Icon = projectIcons.find(i => i.name === iconName)?.icon || Folder;
     return <Icon className={cn("h-6 w-6", className)} style={{ color: color || 'hsl(var(--primary))' }} />;
+}
+
+function CopyLinkButton({ page }: { page: CloudPage }) {
+    const { toast } = useToast();
+    const [pageUrl, setPageUrl] = useState('');
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const pageIdentifier = page.slug || page.id;
+            setPageUrl(`${window.location.origin}/api/pages/${pageIdentifier}`);
+        }
+    }, [page.id, page.slug]);
+
+    const handleCopy = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!pageUrl) return;
+        navigator.clipboard.writeText(pageUrl);
+        toast({ title: "URL da página copiada!" });
+    };
+
+    if (page.status !== 'published' || !pageUrl) {
+        return null;
+    }
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 data-[state=open]:bg-muted"
+                    onClick={handleCopy}
+                    aria-label="Copiar URL da página"
+                >
+                    <Link className="h-4 w-4" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Copiar URL da página publicada</p>
+            </TooltipContent>
+        </Tooltip>
+    );
 }
 
 function QuickSnippetPopover({ pageId }: { pageId: string }) {
@@ -978,6 +1020,7 @@ export function PageList({ projectId }: PageListProps) {
                                     <PlatformIcon platformId={page.platform} />
                                 </div>
                                 <div className="absolute top-1 right-1 z-10 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <CopyLinkButton page={page} />
                                     <QuickSnippetPopover pageId={page.id} />
                                     {pageActions(page)}
                                 </div>
@@ -1093,6 +1136,7 @@ export function PageList({ projectId }: PageListProps) {
                                 <TableCell>{page.updatedAt?.toDate ? format(page.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
                                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex items-center justify-end">
+                                      <CopyLinkButton page={page} />
                                       <QuickSnippetPopover pageId={page.id} />
                                       {pageActions(page)}
                                     </div>
@@ -1165,6 +1209,7 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+
 
 
 

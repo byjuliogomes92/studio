@@ -799,16 +799,33 @@ export const getActivityLogsForWorkspace = async (workspaceId: string): Promise<
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
 }
 
-// Notifications
-export const addNotification = async (notificationData: Omit<AppNotification, 'id' | 'readBy' | 'createdAt'>, user: User): Promise<void> => {
+// Notifications (Admin)
+export const addNotification = async (notificationData: Omit<AppNotification, 'id' | 'createdAt' | 'readBy'>): Promise<string> => {
     const db = getDbInstance();
-    const newNotificationData = {
+    const dataWithTimestamp = {
         ...notificationData,
-        readBy: [],
         createdAt: serverTimestamp(),
+        readBy: [],
     };
-    await addDoc(collection(db, 'notifications'), newNotificationData);
-    
-    // No workspace to log to for global notifications, so we might skip this or log to a global admin workspace
-    // For now, skipping logging for notifications.
+    const docRef = await addDoc(collection(db, 'notifications'), dataWithTimestamp);
+    return docRef.id;
+};
+
+export const getNotifications = async (): Promise<AppNotification[]> => {
+    const db = getDbInstance();
+    const q = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppNotification));
+};
+
+export const updateNotification = async (notificationId: string, data: Partial<AppNotification>): Promise<void> => {
+    const db = getDbInstance();
+    const docRef = doc(db, 'notifications', notificationId);
+    await updateDoc(docRef, data);
+};
+
+export const deleteNotification = async (notificationId: string): Promise<void> => {
+    const db = getDbInstance();
+    const docRef = doc(db, 'notifications', notificationId);
+    await deleteDoc(docRef);
 };

@@ -373,7 +373,10 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
 
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
-    const carouselScript = hasCarousel ? '<script src="https://cdn.jsdelivr.net/npm/embla-carousel@8.1.5/embla-carousel.umd.js"></script><script src="https://cdn.jsdelivr.net/npm/embla-carousel-autoplay@8.1.5/embla-carousel-autoplay.umd.js"></script>' : '';
+    const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
+    const autoplayPluginScript = (hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay)) 
+      ? '<script src="https://unpkg.com/embla-carousel-autoplay@latest/embla-carousel-autoplay.umd.js"></script>' 
+      : '';
 
 
     const script = `
@@ -733,7 +736,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     </script>
     `;
 
-    return `${lottiePlayerScript}${carouselScript}${script}`;
+    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${script}`;
 };
 
 
@@ -1978,5 +1981,5 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`;
+</html>`
 }

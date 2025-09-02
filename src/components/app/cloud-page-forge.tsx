@@ -457,7 +457,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         <Label htmlFor="page-slug">Slug da URL</Label>
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground p-2 rounded-md bg-muted whitespace-nowrap">.../api/pages/</span>
-                            <Input id="page-slug" value={pageSlug} onChange={(e) => setPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} />
+                            <Input id="page-slug" value={pageSlug} onChange={(e) => setPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} className="min-w-0" />
                         </div>
                     </div>
                     {hasBitlyConfig && (
@@ -473,7 +473,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 <div className="space-y-1">
                                     <Label className="text-xs text-muted-foreground">URL Curta (Bitly)</Label>
                                     <div className="flex items-center justify-between gap-2">
-                                        <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline">{shortUrl}</a>
+                                        <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0">{shortUrl}</a>
                                         <div className="flex items-center gap-1 flex-shrink-0">
                                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(shortUrl)}><Copy className="h-4 w-4"/></Button>
                                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(shortUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
@@ -484,7 +484,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                              <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">URL Completa</Label>
                                 <div className="flex items-center justify-between gap-2">
-                                    <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline">{pageUrl}</a>
+                                    <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0">{pageUrl}</a>
                                     <div className="flex items-center gap-1 flex-shrink-0">
                                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(pageUrl)}><Copy className="h-4 w-4"/></Button>
                                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(pageUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>

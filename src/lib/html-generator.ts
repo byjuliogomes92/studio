@@ -29,11 +29,14 @@ import { renderFooter } from './html-components/footer';
 import { renderFTPUpload } from './html-components/ftpupload';
 
 const wrapInPreviewBlock = (content: string, title: string, isForPreview: boolean) => {
-    if (!isForPreview || !content.trim()) {
-        return content;
+    if (!content.trim()) {
+        return '';
     }
-    const escapedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return `<div class="ampscript-preview-block" title="${title}"><pre>${escapedContent}</pre></div>`;
+    if (isForPreview) {
+        const escapedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<div class="ampscript-preview-block" title="${title}"><pre>${escapedContent}</pre></div>`;
+    }
+    return content;
 };
 
 
@@ -454,7 +457,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     
     function setupCarousels() {
         if (typeof EmblaCarousel !== 'undefined') {
-            const autoplayPlugin = typeof EmblaCarouselAutoplay !== 'undefined' ? EmblaCarouselAutoplay.default : null;
+            const autoplayPlugin = typeof EmblaCarouselAutoplay !== 'undefined' ? EmblaCarouselAutoplay : null;
             document.querySelectorAll('.carousel-container').forEach(container => {
                 const viewport = container.querySelector('.carousel-viewport');
                 const optionsStr = container.dataset.options || '{}';
@@ -467,7 +470,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
 
                 const plugins = [];
                 if (options.autoplay && autoplayPlugin) {
-                    plugins.push(autoplayPlugin({ delay: options.delay || 4000, stopOnInteraction: false }));
+                    plugins.push(autoplayPlugin(options.autoplay));
                 }
 
                 if(options.loop && container.classList.contains('logo-carousel')) {
@@ -2015,5 +2018,4 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`
-}
+</html>

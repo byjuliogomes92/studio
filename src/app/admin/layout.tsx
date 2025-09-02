@@ -1,7 +1,8 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
@@ -13,8 +14,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 function AdminSidebar() {
     const { user, logout } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     const userInitials = user?.displayName?.split(' ').map(n => n[0]).join('') || user?.email?.[0].toUpperCase() || 'A';
+    
+    const navItems = [
+      { path: '/admin', icon: BarChart, label: 'Dashboard' },
+      { path: '/admin/users', icon: Users, label: 'Usuários' },
+      { path: '/admin/notifications', icon: Bell, label: 'Notificações' },
+      { path: '/admin/settings', icon: Settings, label: 'Configurações' }
+    ];
 
     return (
         <Sidebar>
@@ -27,30 +36,18 @@ function AdminSidebar() {
             </SidebarHeader>
             <SidebarContent className="p-2">
                 <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => router.push('/admin')} tooltip="Dashboard" isActive={true}>
-                            <BarChart />
-                            <span>Dashboard</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => {}} tooltip="Notificações">
-                            <Bell />
-                            <span>Notificações</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => {}} tooltip="Usuários">
-                            <Users />
-                            <span>Usuários</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => {}} tooltip="Configurações">
-                            <Settings />
-                            <span>Configurações</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    {navItems.map(item => (
+                       <SidebarMenuItem key={item.path}>
+                            <SidebarMenuButton 
+                                onClick={() => router.push(item.path)} 
+                                tooltip={item.label}
+                                isActive={pathname === item.path}
+                            >
+                                <item.icon />
+                                <span>{item.label}</span>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter className="p-2">

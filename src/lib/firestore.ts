@@ -115,7 +115,10 @@ export const getWorkspaceMembers = async (workspaceId: string): Promise<Workspac
 export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole, inviterName: string | null): Promise<void> => {
     const db = getDbInstance();
     
-    const userQuery = query(collection(db, "users"), where("email", "==", email));
+    // This is a simplified approach. In a real app, you'd use a callable function to find the user by email.
+    // Firestore security rules would prevent this client-side query across the 'users' collection.
+    // For this prototype, we assume a 'users' collection where doc ID is UID and it has an 'email' field.
+    const userQuery = query(collection(db, "users"), where("email", "==", email), limit(1));
     const userSnap = await getDocs(userQuery);
 
     if (userSnap.empty) {
@@ -124,6 +127,7 @@ export const inviteUserToWorkspace = async (workspaceId: string, email: string, 
     const userDoc = userSnap.docs[0];
     const userId = userDoc.id;
 
+    // Check if user is already a member
     const qMembers = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
     const memberSnap = await getDocs(qMembers);
     if (!memberSnap.empty) {
@@ -132,14 +136,15 @@ export const inviteUserToWorkspace = async (workspaceId: string, email: string, 
     
     const newMemberData: Omit<WorkspaceMember, 'id'> = {
         userId: userId,
-        email: email,
+        email: email, // Store email for display purposes
         workspaceId: workspaceId,
         role: role,
         createdAt: serverTimestamp(),
     };
 
     await addDoc(collection(db, 'workspaceMembers'), newMemberData);
-
+    
+    // Assuming the inviter's user object is passed in
     await logActivity(workspaceId, inviterName || 'System', null, 'MEMBER_INVITED', { invitedEmail: email, role });
 };
 
@@ -686,7 +691,10 @@ export const logActivity = async (
 ): Promise<void> => {
     const db = getDbInstance();
     
-    const userAvatarUrl = `https://api.dicebear.com/8.x/thumbs/svg?seed=${userId}`;
+    // For now, we assume the user's photoURL is available when calling this.
+    // A more robust solution might fetch it from a 'users' collection if needed.
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    const userAvatarUrl = userDoc.exists() ? userDoc.data().photoURL : `https://api.dicebear.com/8.x/thumbs/svg?seed=${userId}`;
 
     const logEntry: Omit<ActivityLog, 'id'> = {
         workspaceId,
@@ -710,7 +718,8 @@ export const getActivityLogsForWorkspace = async (workspaceId: string): Promise<
     const q = query(
         collection(db, 'activityLogs'),
         where('workspaceId', '==', workspaceId),
-        orderBy('timestamp', 'desc')
+        orderBy('timestamp', 'desc'),
+        limit(50) // Limit to the last 50 activities for performance
     );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));

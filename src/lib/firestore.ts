@@ -2,7 +2,7 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { UAParser } from 'ua-parser-js';
@@ -913,4 +913,82 @@ export const updatePlatformSettings = async (settings: PlatformSettings): Promis
     const db = getDbInstance();
     const docRef = doc(db, 'platformSettings', 'global');
     await setDoc(docRef, settings, { merge: true });
+};
+
+// Support Tickets
+export const createSupportTicket = async (ticketData: Omit<SupportTicket, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+    const db = getDbInstance();
+    const dataWithDefaults = {
+        ...ticketData,
+        status: 'aberto' as TicketStatus,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    };
+    const docRef = await addDoc(collection(db, 'supportTickets'), dataWithDefaults);
+    return docRef.id;
+};
+
+export const getTicketsForUser = async (userId: string, workspaceId: string): Promise<SupportTicket[]> => {
+    const db = getDbInstance();
+    const q = query(
+        collection(db, 'supportTickets'),
+        where('userId', '==', userId),
+        where('workspaceId', '==', workspaceId),
+        orderBy('updatedAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupportTicket));
+};
+
+export const getAllTicketsForAdmin = async (): Promise<SupportTicket[]> => {
+    const db = getDbInstance();
+    const q = query(collection(db, 'supportTickets'), orderBy('updatedAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupportTicket));
+};
+
+
+export const getTicketById = async (ticketId: string): Promise<SupportTicket | null> => {
+    const db = getDbInstance();
+    const docRef = doc(db, 'supportTickets', ticketId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as SupportTicket : null;
+};
+
+export const addTicketComment = async (commentData: Omit<TicketComment, 'id' | 'createdAt'>, lastCommentBy: 'user' | 'admin'): Promise<string> => {
+    const db = getDbInstance();
+    const batch = writeBatch(db);
+
+    const commentRef = doc(collection(db, 'ticketComments'));
+    const dataWithTimestamp = {
+        ...commentData,
+        createdAt: serverTimestamp(),
+    };
+    batch.set(commentRef, dataWithTimestamp);
+
+    const ticketRef = doc(db, 'supportTickets', commentData.ticketId);
+    batch.update(ticketRef, { 
+        updatedAt: serverTimestamp(),
+        lastCommentBy: lastCommentBy
+    });
+
+    await batch.commit();
+    return commentRef.id;
+};
+
+export const getTicketComments = async (ticketId: string): Promise<TicketComment[]> => {
+    const db = getDbInstance();
+    const q = query(
+        collection(db, 'ticketComments'),
+        where('ticketId', '==', ticketId),
+        orderBy('createdAt', 'asc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TicketComment));
+};
+
+export const updateTicketStatus = async (ticketId: string, status: TicketStatus, userId: string): Promise<void> => {
+    const db = getDbInstance();
+    const ticketRef = doc(db, 'supportTickets', ticketId);
+    await updateDoc(ticketRef, { status: status, updatedAt: serverTimestamp() });
 };

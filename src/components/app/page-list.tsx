@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -7,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon, GitFork } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -72,6 +71,7 @@ import { Label } from "../ui/label";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ProjectFlowView } from "./project-flow-view";
 
 
 interface PageListProps {
@@ -349,7 +349,7 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
         };
         
         const deviceData = countTop('deviceType', filteredViews);
-        const totalSubmissions = filteredSubmissions.length;
+        const totalSubmissions = filteredData.filteredSubmissions.length;
         const calculatedConversionRate = totalViews > 0 ? ((totalSubmissions / totalViews) * 100) : 0;
         
         return {
@@ -1040,6 +1040,7 @@ export function PageList({ projectId }: PageListProps) {
             <Tabs defaultValue="pages" value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-4">
                     <TabsTrigger value="pages">Páginas</TabsTrigger>
+                    <TabsTrigger value="flow">Fluxo do Projeto</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 </TabsList>
                 <TabsContent value="pages">
@@ -1263,6 +1264,9 @@ export function PageList({ projectId }: PageListProps) {
                         </Table>
                         </div>
                     )}
+                </TabsContent>
+                <TabsContent value="flow">
+                   <ProjectFlowView pages={pages} />
                 </TabsContent>
                 <TabsContent value="analytics">
                     {pages.length > 0 ? (

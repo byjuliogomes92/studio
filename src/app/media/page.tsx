@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -19,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save } from 'lucide-react';
+import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -27,6 +28,9 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (bytes === 0) return '0 Bytes';
@@ -185,7 +189,7 @@ function UploadDropzone({ onUpload, disabled }: { onUpload: (files: FileList) =>
 
 export default function MediaLibraryPage() {
   const router = useRouter();
-  const { user, loading: authLoading, activeWorkspace } = useAuth();
+  const { user, logout, loading: authLoading, activeWorkspace } = useAuth();
   const { toast } = useToast();
 
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
@@ -194,6 +198,23 @@ export default function MediaLibraryPage() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Nova funcionalidade: Kits de Marca!', slug: 'kits-de-marca-consistencia-visual', read: false },
+    { id: 2, title: 'Melhoria no alinhamento de formulários.', slug: 'melhoria-alinhamento-formularios', read: true },
+    { id: 3, title: 'Bem-vindo ao CloudPage Studio!', slug: 'bem-vindo-cloudpage-studio', read: true },
+  ]);
+  const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
+  
+  const handleNotificationClick = (notificationId: number, slug: string) => {
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
+    window.open(`https://blog.cloudpagestudio.app/${slug}`, '_blank');
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
 
   const fetchMedia = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -323,6 +344,8 @@ export default function MediaLibraryPage() {
       </div>
     );
   }
+  
+  const userInitials = user?.displayName?.split(' ').map(n => n[0]).join('') || user?.email?.[0].toUpperCase() || 'U';
 
   return (
     <>
@@ -332,12 +355,110 @@ export default function MediaLibraryPage() {
             <Logo className="h-6 w-6 text-primary" />
             <h1>Biblioteca de Mídia</h1>
           </div>
+            <Button variant="outline" size="sm" onClick={() => {
+                const input = document.querySelector('.cmdk-input') as HTMLInputElement;
+                input?.focus();
+                document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'metaKey': true}));
+            }}>
+                <Search className="mr-2 h-4 w-4"/>
+                Buscar...
+                <kbd className="pointer-events-none ml-4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+             </Button>
         </div>
-        <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => router.push('/')}>
+        <div className="flex items-center gap-2 md:gap-4">
+           <Button variant="ghost" onClick={() => router.push('/brands')}>
+            <Palette className="mr-2 h-4 w-4" />
+            Marcas
+          </Button>
+          <Button variant="ghost" onClick={() => router.push('/templates')}>
+            <Library className="mr-2 h-4 w-4" />
+            Templates
+          </Button>
+           <Button variant="outline" onClick={() => router.push('/')}>
                 <Home className="mr-2 h-4 w-4" />
                 Voltar aos Projetos
             </Button>
+          <Separator orientation="vertical" className="h-6 mx-2 hidden md:block" />
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative" aria-label={`Notificações: ${unreadCount} não lidas`}>
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                    </span>
+                    )}
+                </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel className="flex justify-between items-center">
+                    Notificações
+                    {unreadCount > 0 && (
+                        <button onClick={markAllAsRead} className="text-xs font-normal text-primary hover:underline">
+                        <CheckCheck className="mr-1 h-3 w-3 inline-block" />
+                        Marcar todas como lidas
+                        </button>
+                    )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications.map(notification => (
+                    <DropdownMenuItem 
+                    key={notification.id} 
+                    onSelect={(e) => e.preventDefault()}
+                    onClick={() => handleNotificationClick(notification.id, notification.slug)}
+                    className="flex items-center gap-3 cursor-pointer"
+                    >
+                    {!notification.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
+                    <span className={cn("flex-grow", notification.read && "pl-5")}>{notification.title}</span>
+                    </DropdownMenuItem>
+                ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+         </div>
+          {user && (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full" aria-label="Menu do usuário">
+                         <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar do usuário'} />
+                            <AvatarFallback>{userInitials}</AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/account')}>
+                        <User className="mr-2 h-4 w-4" />
+                        Gerenciar Conta
+                    </DropdownMenuItem>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Sair
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                Você será desconectado da sua conta.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={logout} className="bg-destructive hover:bg-destructive/90">Sair</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </header>
      

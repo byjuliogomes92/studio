@@ -844,6 +844,17 @@ export function PageList({ projectId }: PageListProps) {
                 <ProjectIcon iconName={project.icon} color={project.color} />
                 <h2 className="text-base md:text-lg">{project.name}</h2>
             </div>
+             <Button variant="outline" size="sm" onClick={() => {
+                const input = document.querySelector('.cmdk-input') as HTMLInputElement;
+                input?.focus();
+                document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'metaKey': true}));
+            }}>
+                <Search className="mr-2 h-4 w-4"/>
+                Buscar...
+                <kbd className="pointer-events-none ml-4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+             </Button>
           </div>
           <div className="flex items-center gap-2">
             {renderHeaderActions()}

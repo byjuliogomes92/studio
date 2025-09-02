@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon } from 'lucide-react';
+import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -131,6 +131,17 @@ export default function MediaLibraryPage() {
             <Logo className="h-6 w-6 text-primary" />
             <h1>Biblioteca de Mídia</h1>
           </div>
+          <Button variant="outline" size="sm" onClick={() => {
+                const input = document.querySelector('.cmdk-input') as HTMLInputElement;
+                input?.focus();
+                document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'metaKey': true}));
+            }}>
+                <Search className="mr-2 h-4 w-4"/>
+                Buscar...
+                <kbd className="pointer-events-none ml-4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+             </Button>
         </div>
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push('/')}>

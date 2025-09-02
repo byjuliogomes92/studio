@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2, Sun, Moon, Type, Square, Circle, Hand, Image as ImageIcon, Text } from "lucide-react";
+import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2, Sun, Moon, Type, Square, Circle, Hand, Image as ImageIcon, Text, Search } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -228,6 +228,17 @@ export default function BrandsPage() {
             <Logo className="h-6 w-6 text-primary" />
             <h1>Kits de Marca</h1>
           </div>
+          <Button variant="outline" size="sm" onClick={() => {
+                const input = document.querySelector('.cmdk-input') as HTMLInputElement;
+                input?.focus();
+                document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'metaKey': true}));
+            }}>
+                <Search className="mr-2 h-4 w-4"/>
+                Buscar...
+                <kbd className="pointer-events-none ml-4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+             </Button>
         </div>
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push('/')}>

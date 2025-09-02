@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save, Copy, Users, Activity, Settings, EyeOff } from 'lucide-react';
+import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save, Copy, Users, Activity, Settings, EyeOff, Search } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -372,6 +372,17 @@ export default function AccountPage() {
             <Logo className="h-6 w-6 text-primary" />
             <h1>Minha Conta</h1>
           </div>
+          <Button variant="outline" size="sm" onClick={() => {
+                const input = document.querySelector('.cmdk-input') as HTMLInputElement;
+                input?.focus();
+                document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'metaKey': true}));
+            }}>
+                <Search className="mr-2 h-4 w-4"/>
+                Buscar...
+                <kbd className="pointer-events-none ml-4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+             </Button>
         </div>
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push('/')}>

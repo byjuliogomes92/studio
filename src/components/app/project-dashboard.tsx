@@ -145,7 +145,6 @@ export function ProjectDashboard() {
 
   // State for search, sort, and view
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
@@ -588,7 +587,20 @@ export function ProjectDashboard() {
             <h1 className="hidden md:block">Meus Projetos</h1>
           </div>
           <Separator orientation="vertical" className="h-6 mx-2 hidden md:block" />
-          <WorkspaceSwitcher />
+           <div className="flex items-center gap-2">
+            <WorkspaceSwitcher />
+             <Button variant="outline" size="sm" onClick={() => {
+                const input = document.querySelector('.cmdk-input') as HTMLInputElement;
+                input?.focus();
+                document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'metaKey': true}));
+            }}>
+                <Search className="mr-2 h-4 w-4"/>
+                Buscar...
+                <kbd className="pointer-events-none ml-4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+             </Button>
+           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
           {renderHeaderActions()}
@@ -700,7 +712,25 @@ export function ProjectDashboard() {
 
 
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <div></div>
+            <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar projetos..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                 {searchTerm && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setSearchTerm("")}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 rounded-md border bg-background p-1">
                 <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8" aria-label="Visualização em grade">

@@ -677,28 +677,37 @@ const parseUserAgent = (ua: string): { os: string, browser: string, deviceType: 
     let os = 'N/A', browser = 'N/A', deviceType = 'Desktop';
 
     // Device Type
-    if (/Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+        deviceType = "Tablet";
+    } else if (/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
         deviceType = 'Mobile';
     }
 
     // OS
-    if (/Windows NT 10.0/i.test(ua)) os = "Windows 11/10";
-    else if (/Windows NT 6.3/i.test(ua)) os = "Windows 8.1";
-    else if (/Windows NT 6.2/i.test(ua)) os = "Windows 8";
-    else if (/Windows NT 6.1/i.test(ua)) os = "Windows 7";
-    else if (/Windows/i.test(ua)) os = "Windows";
-    else if (/Android/i.test(ua)) os = "Android";
-    else if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS";
-    else if (/Mac OS X/i.test(ua)) os = "macOS";
-    else if (/Linux/i.test(ua)) os = "Linux";
+    if (/windows phone/i.test(ua)) os = "Windows Phone";
+    else if (/windows nt 10/i.test(ua)) os = "Windows";
+    else if (/windows nt 6.3/i.test(ua)) os = "Windows";
+    else if (/windows nt 6.2/i.test(ua)) os = "Windows";
+    else if (/windows nt 6.1/i.test(ua)) os = "Windows";
+    else if (/windows nt 6.0/i.test(ua)) os = "Windows";
+    else if (/windows nt 5.1/i.test(ua)) os = "Windows";
+    else if (/windows nt 5.0/i.test(ua)) os = "Windows";
+    else if (/macintosh|mac os x/i.test(ua)) os = "macOS";
+    else if (/android/i.test(ua)) os = "Android";
+    else if (/iphone|ipad|ipod/i.test(ua)) os = "iOS";
+    else if (/linux/i.test(ua)) os = "Linux";
+    else if (/cros/i.test(ua)) os = "Chrome OS";
+
 
     // Browser
-    if (/Edg/i.test(ua)) browser = "Edge";
-    else if (/Chrome/i.test(ua) && !/Chromium/i.test(ua)) browser = "Chrome";
-    else if (/Firefox/i.test(ua)) browser = "Firefox";
-    else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = "Safari";
-    else if (/MSIE|Trident/i.test(ua)) browser = "Internet Explorer";
-    
+    if (/edg/i.test(ua)) browser = "Edge";
+    else if (/chrome|crios/i.test(ua) && !/edg/i.test(ua)) browser = "Chrome";
+    else if (/firefox|fxios/i.test(ua)) browser = "Firefox";
+    else if (/safari/i.test(ua) && !/chrome|crios|edg/i.test(ua)) browser = "Safari";
+    else if (/msie/i.test(ua) || /trident/i.test(ua)) browser = "Internet Explorer";
+    else if (/opr/i.test(ua)) browser = "Opera";
+
+
     return { os, browser, deviceType };
 };
 

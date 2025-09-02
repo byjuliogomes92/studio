@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { Folder, FileText, Library, User, Palette, Image as ImageIcon, Plus } from 'lucide-react';
 import { defaultTemplates } from '@/lib/default-templates';
+import { DialogTitle } from '../ui/dialog';
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -45,6 +46,7 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
+        <DialogTitle className="sr-only">Paleta de Comandos</DialogTitle>
       <CommandInput placeholder="Digite um comando ou busque..." />
       <CommandList>
         <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
@@ -86,7 +88,7 @@ export function CommandPalette() {
         {projects.length > 0 && (
             <CommandGroup heading="Projetos">
             {projects.map((project) => (
-                <CommandItem key={project.id} value={project.id} onSelect={(value) => runCommand(() => router.push(`/project/${value}`))}>
+                <CommandItem key={`project-${project.id}`} onSelect={() => runCommand(() => router.push(`/project/${project.id}`))}>
                 <Folder className="mr-2 h-4 w-4" />
                 <span>{project.name}</span>
                 </CommandItem>
@@ -97,7 +99,7 @@ export function CommandPalette() {
         {pages.length > 0 && (
           <CommandGroup heading="Páginas">
             {pages.map((page) => (
-              <CommandItem key={page.id} value={page.id} onSelect={(value) => runCommand(() => router.push(`/editor/${value}`))}>
+              <CommandItem key={`page-${page.id}`} onSelect={() => runCommand(() => router.push(`/editor/${page.id}`))}>
                 <FileText className="mr-2 h-4 w-4" />
                 <span>{page.name}</span>
               </CommandItem>
@@ -108,10 +110,9 @@ export function CommandPalette() {
         {allTemplates.length > 0 && (
             <CommandGroup heading="Templates">
                 {allTemplates.map((template) => (
-                <CommandItem key={template.id} value={template.id} onSelect={(value) => {
-                    const selectedTemplate = allTemplates.find(t => t.id === value);
-                    if (selectedTemplate && !selectedTemplate.isDefault) {
-                        runCommand(() => router.push(`/editor/${value}?isTemplate=true`));
+                <CommandItem key={`template-${template.id}`} onSelect={() => {
+                    if (!template.isDefault) {
+                        runCommand(() => router.push(`/editor/${template.id}?isTemplate=true`));
                     }
                 }} disabled={template.isDefault}>
                     <Library className="mr-2 h-4 w-4" />

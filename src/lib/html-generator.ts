@@ -1941,8 +1941,7 @@ ${trackingScripts.body}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>
-`;
+</html>`;
 
   // For non-preview (final publish), replace escaped HTML entities
   if (!isForPreview) {

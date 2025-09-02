@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant } from "@/lib/types";
@@ -1331,7 +1330,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
             for (const fieldKey of Object.keys(props.fields || {})) {
                 const fieldValue = props.fields[fieldKey];
                 if (typeof fieldValue === 'boolean' || fieldValue === undefined) {
-                    fieldsConfig[fieldKey] = { enabled: !!fieldValue, conditional: null };
+                    fieldsConfig[fieldKey] = { enabled: !!fieldValue, conditional: null, prefillFromUrl: false };
                 } else {
                     fieldsConfig[fieldKey] = fieldValue;
                 }

@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2 } from 'lucide-react';
+import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -22,7 +22,8 @@ function AdminSidebar() {
       { path: '/admin', icon: BarChart, label: 'Dashboard' },
       { path: '/admin/users', icon: Users, label: 'Usuários' },
       { path: '/admin/notifications', icon: Bell, label: 'Notificações' },
-      { path: '/admin/settings', icon: Settings, label: 'Configurações' }
+      { path: '/admin/settings', icon: Settings, label: 'Configurações' },
+      { path: '/admin/set-admin', icon: ShieldQuestion, label: 'Tornar Admin' }
     ];
 
     return (
@@ -105,12 +106,20 @@ export default function AdminLayout({
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (authLoading) return;
 
     if (!user) {
       router.replace('/'); 
+      return;
+    }
+    
+    // The set-admin page is a special case that doesn't require the user to be an admin already.
+    if (pathname === '/admin/set-admin') {
+      setIsAdmin(true);
+      setIsVerifying(false);
       return;
     }
 
@@ -123,7 +132,7 @@ export default function AdminLayout({
       setIsVerifying(false);
     });
 
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, pathname]);
 
 
   if (isVerifying || !isAdmin) {

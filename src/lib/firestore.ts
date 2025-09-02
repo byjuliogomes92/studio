@@ -1,7 +1,7 @@
 
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
@@ -577,29 +577,48 @@ export const deleteBrand = async (brandId: string, user: User): Promise<void> =>
 
 
 // Media Library
-export const uploadMedia = async (file: File, workspaceId: string, userId: string): Promise<MediaAsset> => {
+export const uploadMedia = async (file: File, workspaceId: string, userId: string, onProgress?: (progress: number) => void): Promise<MediaAsset> => {
     const db = getDbInstance();
     
     const storagePath = `${workspaceId}/${userId}/${Date.now()}-${file.name}`;
     const storageRef = ref(storage, storagePath);
 
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
+    const uploadTask = uploadBytesResumable(storageRef, file);
 
-    const mediaData: Omit<MediaAsset, 'id' | 'tags'> = {
-        workspaceId,
-        userId,
-        fileName: file.name,
-        url: downloadURL,
-        storagePath,
-        contentType: file.type,
-        size: file.size,
-        createdAt: serverTimestamp(),
-    };
+    return new Promise((resolve, reject) => {
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                onProgress?.(progress);
+            }, 
+            (error) => {
+                console.error("Upload failed in task:", error);
+                reject(error);
+            }, 
+            async () => {
+                try {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
 
-    const docRef = await addDoc(collection(db, 'media'), mediaData);
+                    const mediaData: Omit<MediaAsset, 'id' | 'tags'> = {
+                        workspaceId,
+                        userId,
+                        fileName: file.name,
+                        url: downloadURL,
+                        storagePath,
+                        contentType: file.type,
+                        size: file.size,
+                        createdAt: serverTimestamp(),
+                    };
 
-    return { ...mediaData, id: docRef.id, createdAt: Timestamp.now() };
+                    const docRef = await addDoc(collection(db, 'media'), mediaData);
+                    resolve({ ...mediaData, id: docRef.id, createdAt: Timestamp.now() });
+                } catch(error) {
+                    console.error("Firestore document creation failed:", error);
+                    reject(error);
+                }
+            }
+        );
+    });
 }
 
 export const updateMedia = async (mediaId: string, data: Partial<Pick<MediaAsset, 'fileName' | 'tags'>>): Promise<void> => {

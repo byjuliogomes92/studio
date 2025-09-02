@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -16,7 +17,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save } from 'lucide-react';
@@ -121,6 +121,68 @@ function FileNameEditor({ asset, onNameUpdate }: { asset: MediaAsset; onNameUpda
     )
 }
 
+function UploadDropzone({ onUpload, disabled }: { onUpload: (files: FileList) => void, disabled: boolean }) {
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setIsDragging(true);
+        } else if (e.type === "dragleave") {
+            setIsDragging(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            onUpload(e.dataTransfer.files);
+        }
+    };
+    
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            onUpload(e.target.files);
+        }
+    }
+
+    const handleClick = () => {
+        fileInputRef.current?.click();
+    }
+
+    return (
+        <div 
+            onDragEnter={handleDrag}
+            onDragOver={handleDrag}
+            onDragLeave={handleDrag}
+            onDrop={handleDrop}
+            onClick={handleClick}
+            className={cn(
+                "w-full h-48 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer transition-colors",
+                isDragging ? "border-primary bg-primary/10" : "border-muted-foreground/30 hover:border-primary",
+                disabled && "cursor-not-allowed opacity-50"
+            )}
+        >
+            <input 
+                ref={fileInputRef}
+                type="file" 
+                className="sr-only" 
+                multiple
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={disabled}
+            />
+            <UploadCloud className="h-12 w-12 text-muted-foreground" />
+            <p className="mt-4 font-semibold">Arraste e solte seus arquivos aqui</p>
+            <p className="text-sm text-muted-foreground">ou clique para selecionar (Max 5MB por arquivo)</p>
+        </div>
+    );
+}
+
 export default function MediaLibraryPage() {
   const router = useRouter();
   const { user, loading: authLoading, activeWorkspace } = useAuth();
@@ -128,7 +190,8 @@ export default function MediaLibraryPage() {
 
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<Map<string, { progress: number; file: File; tempUrl: string }>>(new Map());
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
@@ -159,32 +222,52 @@ export default function MediaLibraryPage() {
     }
   }, [user, authLoading, router, activeWorkspace, fetchMedia]);
   
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0 || !user || !activeWorkspace) {
-        return;
+  const handleFileUpload = async (files: FileList) => {
+    if (!user || !activeWorkspace) return;
+
+    for (const file of Array.from(files)) {
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            toast({ variant: 'destructive', title: 'Arquivo muito grande', description: `O arquivo "${file.name}" excede o limite de 5MB.` });
+            continue;
+        }
+        if (!file.type.startsWith('image/')) {
+            toast({ variant: 'destructive', title: 'Tipo de arquivo inválido', description: `O arquivo "${file.name}" não é uma imagem.` });
+            continue;
+        }
+
+        const tempId = `uploading-${file.name}-${Date.now()}`;
+        const tempUrl = URL.createObjectURL(file);
+
+        setUploadingFiles(prev => {
+            const newMap = new Map(prev);
+            newMap.set(tempId, { progress: 0, file, tempUrl });
+            return newMap;
+        });
+
+        try {
+            await uploadMedia(file, activeWorkspace.id, user.uid, (progress) => {
+                setUploadingFiles(prev => {
+                    const newMap = new Map(prev);
+                    const existing = newMap.get(tempId);
+                    if (existing) {
+                        newMap.set(tempId, { ...existing, progress });
+                    }
+                    return newMap;
+                });
+            });
+        } catch (error: any) {
+            console.error("Upload failed:", error);
+            toast({ variant: "destructive", title: "Erro no Upload", description: `Falha no upload de "${file.name}": ${error.message}` });
+        } finally {
+            setUploadingFiles(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(tempId);
+                return newMap;
+            });
+            fetchMedia(); // Refresh list after each upload completes or fails
+        }
     }
-    const file = event.target.files[0];
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      toast({ variant: 'destructive', title: 'Arquivo muito grande', description: 'O tamanho máximo do arquivo é 5MB.' });
-      return;
-    }
-     if (!file.type.startsWith('image/')) {
-        toast({ variant: 'destructive', title: 'Tipo de arquivo inválido', description: 'Apenas imagens são permitidas.' });
-        return;
-    }
-    
-    setIsUploading(true);
-    try {
-        await uploadMedia(file, activeWorkspace.id, user.uid);
-        toast({ title: 'Upload concluído!', description: `O arquivo "${file.name}" foi salvo.` });
-        fetchMedia();
-    } catch (error: any) {
-        console.error("Upload failed:", error);
-        toast({ variant: "destructive", title: "Erro no Upload", description: error.message });
-    } finally {
-        setIsUploading(false);
-    }
-  }
+  };
 
   const handleDeleteMedia = async (asset: MediaAsset) => {
     try {
@@ -231,6 +314,8 @@ export default function MediaLibraryPage() {
     });
   }, [mediaAssets, searchTerm, activeTag]);
 
+  const isUploading = uploadingFiles.size > 0;
+
   if (isLoading || authLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -253,23 +338,13 @@ export default function MediaLibraryPage() {
                 <Home className="mr-2 h-4 w-4" />
                 Voltar aos Projetos
             </Button>
-            <Button asChild>
-                <label htmlFor="file-upload" className="cursor-pointer">
-                    <UploadCloud className="mr-2 h-4 w-4" />
-                    Fazer Upload
-                    <input id="file-upload" type="file" className="sr-only" onChange={handleFileUpload} disabled={isUploading || !activeWorkspace} accept="image/*" />
-                </label>
-            </Button>
         </div>
       </header>
-       {isUploading && (
-          <div className="fixed top-16 left-0 w-full h-1 bg-muted">
-            <div className="h-full bg-primary animate-pulse" />
-          </div>
-        )}
-
-      <main className="p-6">
-        <div className="mb-6 flex flex-col md:flex-row gap-4 justify-between">
+     
+      <main className="p-6 space-y-6">
+         <UploadDropzone onUpload={handleFileUpload} disabled={isUploading || !activeWorkspace} />
+        
+        <div className="flex flex-col md:flex-row gap-4 justify-between">
             <div className="relative w-full max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -290,81 +365,101 @@ export default function MediaLibraryPage() {
             </div>
         </div>
         
-        {filteredAssets.length === 0 ? (
-          <div className="text-center py-16 border-2 border-dashed rounded-lg">
-            <ImageIcon size={48} className="mx-auto text-muted-foreground" />
-            <h2 className="mt-4 text-xl font-semibold">{mediaAssets.length === 0 ? "Sua biblioteca está vazia" : "Nenhum arquivo encontrado"}</h2>
-            <p className="mt-2 text-muted-foreground">
-              {mediaAssets.length === 0 ? "Comece fazendo o upload de suas imagens, logos e outros assets." : "Tente limpar seus filtros de busca."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-            {filteredAssets.map((asset) => (
-              <Card key={asset.id} className="group relative overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+          {Array.from(uploadingFiles.entries()).map(([tempId, { progress, tempUrl, file }]) => (
+              <Card key={tempId} className="group relative overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-square w-full bg-muted flex items-center justify-center">
                     <Image
-                      src={asset.url}
-                      alt={asset.fileName}
+                      src={tempUrl}
+                      alt={file.name}
                       width={200}
                       height={200}
                       className="object-cover w-full h-full"
                     />
                   </div>
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                     <div className="flex justify-end gap-1">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                            </PopoverTrigger>
-                            <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
-                        </Popover>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                    <Tag className="h-4 w-4" />
-                                </Button>
-                            </PopoverTrigger>
-                            <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
-                        </Popover>
-                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => handleCopyUrl(asset.url)}>
-                            <Copy className="h-4 w-4" />
-                        </Button>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="destructive" className="h-8 w-8">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Excluir Arquivo?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Tem certeza que deseja excluir "{asset.fileName}"? Esta ação não pode ser desfeita.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteMedia(asset)}>Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                     </div>
-                     <div className="text-white text-xs p-1 bg-black/50 rounded-md">
-                        <p className="font-bold truncate">{asset.fileName}</p>
-                        <p>{formatBytes(asset.size)}</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                            {(asset.tags || []).map(tag => <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>)}
-                        </div>
-                     </div>
+                  <div className="absolute inset-0 bg-black/70 flex flex-col justify-between p-2 text-white">
+                      <div className="space-y-1 text-center">
+                          <Loader2 className="h-6 w-6 mx-auto animate-spin" />
+                          <p className="text-xs font-medium">Enviando...</p>
+                      </div>
+                      <div className="w-full bg-white/20 rounded-full h-1.5">
+                          <div className="bg-white h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                      </div>
+                      <p className="text-xs font-bold truncate text-center">{file.name}</p>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+          ))}
+          {filteredAssets.map((asset) => (
+            <Card key={asset.id} className="group relative overflow-hidden">
+              <CardContent className="p-0">
+                <div className="aspect-square w-full bg-muted flex items-center justify-center">
+                  <Image
+                    src={asset.url}
+                    alt={asset.fileName}
+                    width={200}
+                    height={200}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                   <div className="flex justify-end gap-1">
+                      <Popover>
+                          <PopoverTrigger asChild>
+                              <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                  <Edit className="h-4 w-4" />
+                              </Button>
+                          </PopoverTrigger>
+                          <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
+                      </Popover>
+                      <Popover>
+                          <PopoverTrigger asChild>
+                              <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                  <Tag className="h-4 w-4" />
+                              </Button>
+                          </PopoverTrigger>
+                          <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
+                      </Popover>
+                      <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => handleCopyUrl(asset.url)}>
+                          <Copy className="h-4 w-4" />
+                      </Button>
+                       <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="destructive" className="h-8 w-8">
+                                  <Trash2 className="h-4 w-4" />
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Arquivo?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Tem certeza que deseja excluir "{asset.fileName}"? Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteMedia(asset)}>Excluir</AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                   </div>
+                   <div className="text-white text-xs p-1 bg-black/50 rounded-md">
+                      <p className="font-bold truncate">{asset.fileName}</p>
+                      <p>{formatBytes(asset.size)}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                          {(asset.tags || []).map(tag => <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>)}
+                      </div>
+                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        {mediaAssets.length === 0 && !isUploading && (
+             <div className="text-center py-10">
+                <p className="text-muted-foreground">Sua biblioteca está vazia. Use a área acima para começar.</p>
+            </div>
         )}
       </main>
     </>

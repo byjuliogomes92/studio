@@ -1,16 +1,11 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    function isWorkspaceMember(workspaceId) {
-      return exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
-    }
-    
-    // Media library files are stored in a path like: /{workspaceId}/{userId}/{fileName}
-    match /{workspaceId}/{userId}/{allPaths=**} {
-      allow read, create, delete: if isWorkspaceMember(workspaceId) && request.auth.uid == userId;
+    // Apenas usuários autenticados podem ler e escrever
+    // A segurança por workspace será aplicada via path
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

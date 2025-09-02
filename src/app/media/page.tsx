@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { uploadMedia, getMediaForWorkspace, deleteMedia, updateMedia } from '@/lib/firestore';
@@ -17,6 +16,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save } from 'lucide-react';
@@ -123,7 +123,7 @@ function FileNameEditor({ asset, onNameUpdate }: { asset: MediaAsset; onNameUpda
 
 function UploadDropzone({ onUpload, disabled }: { onUpload: (files: FileList) => void, disabled: boolean }) {
     const [isDragging, setIsDragging] = useState(false);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();

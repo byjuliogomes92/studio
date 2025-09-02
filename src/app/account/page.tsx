@@ -218,6 +218,9 @@ function ActivityLogDisplay({ activeWorkspace }: { activeWorkspace: any; }) {
             case 'BRAND_DELETED': return `excluiu a marca "${details.brandName}"`;
             case 'TEMPLATE_CREATED': return `criou o template "${details.templateName}"`;
             case 'TEMPLATE_DELETED': return `excluiu o template "${details.templateName}"`;
+            case 'MEDIA_UPLOADED': return `fez upload do arquivo "${details.fileName}"`;
+            case 'MEDIA_DELETED': return `excluiu o arquivo "${details.fileName}"`;
+            case 'MEDIA_UPDATED': return `atualizou o ${details.updatedField} do arquivo "${details.fileName || details.oldValue}"`;
             default: return `realizou uma ação desconhecida.`;
         }
     };

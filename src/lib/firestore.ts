@@ -579,7 +579,7 @@ export const deleteBrand = async (brandId: string, user: User): Promise<void> =>
 // Media Library
 export const STORAGE_LIMIT_BYTES = 100 * 1024 * 1024; // 100 MB
 
-export const uploadMedia = async (file: File, workspaceId: string, userId: string, onProgress?: (progress: number) => void): Promise<MediaAsset> => {
+export const uploadMedia = async (file: File, workspaceId: string, user: User, onProgress?: (progress: number) => void): Promise<MediaAsset> => {
     const db = getDbInstance();
 
     // Check storage limit before upload
@@ -589,7 +589,7 @@ export const uploadMedia = async (file: File, workspaceId: string, userId: strin
         throw new Error(`Limite de armazenamento de ${STORAGE_LIMIT_BYTES / 1024 / 1024}MB excedido.`);
     }
     
-    const storagePath = `${workspaceId}/${userId}/${Date.now()}-${file.name}`;
+    const storagePath = `${workspaceId}/${user.uid}/${Date.now()}-${file.name}`;
     const storageRef = ref(storage, storagePath);
 
     const uploadTask = uploadBytesResumable(storageRef, file);
@@ -610,7 +610,7 @@ export const uploadMedia = async (file: File, workspaceId: string, userId: strin
 
                     const mediaData: Omit<MediaAsset, 'id' | 'tags'> = {
                         workspaceId,
-                        userId,
+                        userId: user.uid,
                         fileName: file.name,
                         url: downloadURL,
                         storagePath,
@@ -620,6 +620,7 @@ export const uploadMedia = async (file: File, workspaceId: string, userId: strin
                     };
 
                     const docRef = await addDoc(collection(db, 'media'), mediaData);
+                    await logActivity(workspaceId, user, 'MEDIA_UPLOADED', { fileName: file.name });
                     resolve({ ...mediaData, id: docRef.id, createdAt: Timestamp.now(), size: file.size } as MediaAsset);
                 } catch(error) {
                     console.error("Firestore document creation failed:", error);
@@ -630,10 +631,29 @@ export const uploadMedia = async (file: File, workspaceId: string, userId: strin
     });
 }
 
-export const updateMedia = async (mediaId: string, data: Partial<Pick<MediaAsset, 'fileName' | 'tags'>>): Promise<void> => {
+export const updateMedia = async (mediaId: string, data: Partial<Pick<MediaAsset, 'fileName' | 'tags'>>, user: User): Promise<void> => {
     const db = getDbInstance();
     const mediaRef = doc(db, 'media', mediaId);
+    
+    const originalDoc = await getDoc(mediaRef);
+    if (!originalDoc.exists()) throw new Error("Mídia não encontrada.");
+    const originalData = originalDoc.data();
+
     await updateDoc(mediaRef, data);
+
+    const logDetails: { [key: string]: any } = {};
+    if (data.fileName && data.fileName !== originalData.fileName) {
+        logDetails.updatedField = 'nome';
+        logDetails.oldValue = originalData.fileName;
+        logDetails.newValue = data.fileName;
+    } else if (data.tags) {
+        logDetails.updatedField = 'tags';
+        logDetails.fileName = originalData.fileName;
+    }
+
+    if (Object.keys(logDetails).length > 0) {
+        await logActivity(originalData.workspaceId, user, 'MEDIA_UPDATED', logDetails);
+    }
 }
 
 export const getMediaForWorkspace = async (workspaceId: string): Promise<MediaAsset[]> => {
@@ -644,13 +664,14 @@ export const getMediaForWorkspace = async (workspaceId: string): Promise<MediaAs
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaAsset));
 }
 
-export const deleteMedia = async (mediaAsset: MediaAsset): Promise<void> => {
+export const deleteMedia = async (mediaAsset: MediaAsset, user: User): Promise<void> => {
     const db = getDbInstance();
     
     const fileRef = ref(storage, mediaAsset.storagePath);
 
     await deleteObject(fileRef);
     await deleteDoc(doc(db, 'media', mediaAsset.id));
+    await logActivity(mediaAsset.workspaceId, user, 'MEDIA_DELETED', { fileName: mediaAsset.fileName });
 }
 
 

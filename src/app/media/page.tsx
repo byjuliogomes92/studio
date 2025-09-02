@@ -34,8 +34,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -303,7 +303,7 @@ export default function MediaLibraryPage() {
         });
 
         try {
-            await uploadMedia(file, activeWorkspace.id, user.uid, (progress) => {
+            await uploadMedia(file, activeWorkspace.id, user, (progress) => {
                 setUploadingFiles(prev => {
                     const newMap = new Map(prev);
                     const existing = newMap.get(tempId);
@@ -328,9 +328,9 @@ export default function MediaLibraryPage() {
   };
 
   const handleDeleteMedia = async (assetsToDelete: MediaAsset[]) => {
-      if (assetsToDelete.length === 0) return;
+      if (assetsToDelete.length === 0 || !user) return;
       try {
-          const deletePromises = assetsToDelete.map(asset => deleteMedia(asset));
+          const deletePromises = assetsToDelete.map(asset => deleteMedia(asset, user));
           await Promise.all(deletePromises);
           
           setMediaAssets(prev => prev.filter(m => !assetsToDelete.some(a => a.id === m.id)));
@@ -349,8 +349,9 @@ export default function MediaLibraryPage() {
   }
 
   const handleMediaUpdate = async (assetId: string, data: Partial<Pick<MediaAsset, 'fileName' | 'tags'>>) => {
+      if (!user) return;
       try {
-          await updateMedia(assetId, data);
+          await updateMedia(assetId, data, user);
           setMediaAssets(prev => prev.map(asset => 
               asset.id === assetId ? { ...asset, ...data } : asset
           ));

@@ -326,6 +326,7 @@ export type ActivityLogAction =
     | 'WORKSPACE_RENAMED'
     | 'TEMPLATE_CREATED' | 'TEMPLATE_DELETED'
     | 'BRAND_CREATED' | 'BRAND_DELETED' | 'BRAND_UPDATED'
+    | 'MEDIA_UPLOADED' | 'MEDIA_DELETED' | 'MEDIA_UPDATED'
     | 'NOTIFICATION_CREATED';
 
 export interface ActivityLog {

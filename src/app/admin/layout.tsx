@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useEffect, useState } from 'react';
@@ -6,10 +5,11 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarGroupLabel, useSidebar } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion, MessageSquare } from 'lucide-react';
+import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion, MessageSquare, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 
 function AdminSidebar() {
@@ -45,7 +45,7 @@ function AdminSidebar() {
                 <SidebarMenu>
                     {navItems.map((item, index) => {
                        if (item.type === 'label') {
-                           return <SidebarGroupLabel key={`label-${index}`}>{sidebarState === 'expanded' ? item.label : '—'}</SidebarGroupLabel>;
+                           return <SidebarGroupLabel key={`label-${index}`}>{item.label}</SidebarGroupLabel>;
                        }
                        return (
                            <SidebarMenuItem key={item.path}>
@@ -107,6 +107,26 @@ function AdminSidebar() {
     );
 }
 
+function AdminHeader() {
+  const { isMobile, setIsOpenMobile } = useSidebar();
+  if (!isMobile) return null;
+
+  return (
+    <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:hidden">
+        <div className="flex items-center gap-2">
+            <Logo className="size-7 text-primary" />
+            <h1 className="text-lg font-semibold">Admin</h1>
+        </div>
+        <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Abrir Menu</span>
+            </Button>
+        </SheetTrigger>
+    </header>
+  );
+}
+
 
 export default function AdminLayout({
   children,
@@ -161,9 +181,12 @@ export default function AdminLayout({
     <SidebarProvider>
         <div className="flex">
             <AdminSidebar />
-            <main className="flex-1 p-6 bg-muted/40">
-                {children}
-            </main>
+            <div className="flex flex-1 flex-col">
+                <AdminHeader />
+                <main className="flex-1 p-6 bg-muted/40 overflow-auto">
+                    {children}
+                </main>
+            </div>
         </div>
     </SidebarProvider>
   )

@@ -1,10 +1,9 @@
 
-
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import type { CloudPage, ComponentType, PageComponent, SecurityType } from "@/lib/types";
-import React, { useState } from 'react';
+import type { CloudPage, ComponentType, PageComponent, SecurityType, AnimationType, Brand } from "@/lib/types";
+import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type Active, type Over } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -18,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -35,6 +34,10 @@ import { cn } from "@/lib/utils";
 import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Badge } from "../ui/badge";
+import { MediaLibraryDialog } from "./media-library-dialog";
+import { getBrandsForUser } from "@/lib/firestore";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface SettingsPanelProps {
@@ -70,6 +73,8 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     SocialIcons: Share2,
     Columns: Columns,
     WhatsApp: Zap,
+    Carousel: View,
+    FTPUpload: UploadCloud,
 };
 
 const googleFonts = [
@@ -154,6 +159,7 @@ function ComponentItem({
   dndAttributes,
   dndListeners,
   children,
+  isDraggable = true,
 }: {
   component: PageComponent;
   selectedComponentId: string | null;
@@ -163,6 +169,7 @@ function ComponentItem({
   dndAttributes?: any;
   dndListeners?: any;
   children?: React.ReactNode;
+  isDraggable?: boolean;
 }) {
   const Icon = componentIcons[component.type] || Text;
   const isContainer = component.type === 'Columns';
@@ -181,7 +188,7 @@ function ComponentItem({
         isContainer ? "flex flex-col items-stretch gap-1.5" : "flex items-center gap-1"
       )}>
           <div className="flex items-center min-w-0"> {/* Allow shrinking */}
-            <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className="cursor-grab h-8 w-8 flex-shrink-0">
+            <Button asChild variant="ghost" size="icon" {...(isDraggable ? dndListeners : {})} {...(isDraggable ? dndAttributes : {})} className={cn("h-8 w-8 flex-shrink-0", isDraggable ? "cursor-grab" : "cursor-not-allowed")} aria-label={`Arrastar componente ${component.type}`}>
                 <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
             </Button>
             <Button
@@ -200,6 +207,7 @@ function ComponentItem({
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 flex-shrink-0"
                 onClick={() => duplicateComponent(component.id)}
+                aria-label={`Duplicar componente ${component.type}`}
             >
                 <Copy className="h-4 w-4" />
             </Button>
@@ -208,6 +216,7 @@ function ComponentItem({
                 size="icon"
                 className="h-8 w-8 text-destructive/80 hover:text-destructive opacity-0 group-hover:opacity-100 flex-shrink-0"
                 onClick={() => removeComponent(component.id)}
+                aria-label={`Remover componente ${component.type}`}
             >
                 <Trash2 className="h-4 w-4" />
             </Button>
@@ -234,9 +243,23 @@ export function SettingsPanel({
   setPageName,
 }: SettingsPanelProps) {
 
+  const { activeWorkspace } = useAuth();
+  const { toast } = useToast();
   const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
   const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState.publishDate || !!pageState.expiryDate);
   const [tagInput, setTagInput] = useState('');
+  const [userBrands, setUserBrands] = useState<Brand[]>([]);
+
+  useEffect(() => {
+    if (activeWorkspace) {
+        getBrandsForUser(activeWorkspace.id)
+            .then(setUserBrands)
+            .catch(err => {
+                console.error("Failed to fetch brands", err);
+                toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os Kits de Marca.' });
+            });
+    }
+  }, [activeWorkspace, toast]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -355,7 +378,7 @@ export function SettingsPanel({
   }
 
   const handleTrackingChange = (
-    pixel: 'ga4' | 'meta' | 'linkedin',
+    pixel: 'gtm' | 'ga4' | 'meta' | 'linkedin',
     prop: 'enabled' | 'id',
     value: boolean | string
   ) => {
@@ -367,6 +390,7 @@ export function SettingsPanel({
                 ...prev.meta,
                 tracking: {
                     ...(prev.meta.tracking || { 
+                        gtm: { enabled: false, id: '' },
                         ga4: { enabled: false, id: '' },
                         meta: { enabled: false, id: '' },
                         linkedin: { enabled: false, id: '' }
@@ -378,6 +402,40 @@ export function SettingsPanel({
                 }
             }
         }
+    });
+  };
+
+  const handleBrandChange = (brandId: string) => {
+    const selectedBrand = userBrands.find(b => b.id === brandId);
+    setPageState(prev => {
+        if (!prev) return null;
+        return produce(prev, draft => {
+            if (selectedBrand) {
+                draft.brandId = selectedBrand.id;
+                draft.brandName = selectedBrand.name;
+                // Apply brand styles
+                draft.styles.themeColor = selectedBrand.colors.light.primary;
+                draft.styles.themeColorHover = selectedBrand.colors.light.primaryHover;
+                draft.styles.fontFamily = selectedBrand.typography.fontFamilyBody;
+                draft.meta.faviconUrl = selectedBrand.logos.favicon;
+                draft.meta.loaderImageUrl = selectedBrand.logos.iconLight;
+
+                // Update Header logo if it exists
+                const header = draft.components.find(c => c.type === 'Header');
+                if (header) {
+                    header.props.logoUrl = selectedBrand.logos.horizontalLight;
+                }
+                 // Update Footer text if it exists
+                const footer = draft.components.find(c => c.type === 'Footer');
+                if (footer) {
+                    footer.props.footerText1 = `© ${new Date().getFullYear()} ${selectedBrand.name}. Todos os direitos reservados.`;
+                }
+
+            } else {
+                draft.brandId = '';
+                draft.brandName = 'Sem Marca';
+            }
+        });
     });
   };
 
@@ -420,6 +478,18 @@ export function SettingsPanel({
               switch(type) {
                   case 'Columns':
                       newComponent.props = { columnCount: 2 };
+                      break;
+                  case 'Carousel':
+                      newComponent.props = {
+                          images: [
+                              { id: '1', url: 'https://placehold.co/800x400.png?text=Slide+1', alt: 'Slide 1' },
+                              { id: '2', url: 'https://placehold.co/800x400.png?text=Slide+2', alt: 'Slide 2' },
+                              { id: '3', url: 'https://placehold.co/800x400.png?text=Slide+3', alt: 'Slide 3' },
+                          ],
+                          options: { loop: true, slidesPerView: 1 },
+                          showArrows: true,
+                          showDots: true,
+                      };
                       break;
                   case 'Form':
                       newComponent.props = {
@@ -479,7 +549,7 @@ export function SettingsPanel({
                       break;
                   case 'NPS':
                       newComponent.props = {
-                          question: 'Em uma escala de 0 a 10, o quão provável você é de recomendar nosso produto/serviço a um amigo ou colega?',
+                          question: 'Em uma escala de 0 a 10, o quão provável você é de nos recomendar a um amigo ou colega?',
                           type: 'numeric',
                           lowLabel: 'Pouco Provável',
                           highLabel: 'Muito Provável',
@@ -488,7 +558,7 @@ export function SettingsPanel({
                       break;
                   case 'Map':
                       newComponent.props = {
-                          embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f2!3i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
+                          embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f2!3i1024!4i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
                       };
                       break;
                   case 'SocialIcons':
@@ -514,6 +584,14 @@ export function SettingsPanel({
                           phoneNumber: '5511999999999',
                           defaultMessage: 'Olá! Gostaria de mais informações.',
                           position: 'bottom-right'
+                      };
+                      break;
+                   case 'FTPUpload':
+                      newComponent.props = {
+                        label: "Enviar Arquivo CSV",
+                        destinationPath: "/Import",
+                        destinationFilename: "arquivo_%%Date%%.csv",
+                        dataExtensionName: "",
                       };
                       break;
               }
@@ -722,7 +800,7 @@ export function SettingsPanel({
 
   const renderComponents = (parentId: string | null) => {
     const componentsToRender = pageState.components
-      .filter(c => c.parentId === parentId)
+      .filter(c => c.parentId === parentId && c.type !== 'Stripe')
       .sort((a, b) => a.order - b.order);
   
     return componentsToRender.map(component => {
@@ -783,6 +861,10 @@ export function SettingsPanel({
         </SortableContext>
     );
   };
+  
+  const stripeComponents = pageState.components.filter(c => c.type === 'Stripe');
+  const otherComponents = pageState.components.filter(c => c.type !== 'Stripe');
+
 
   const tracking = pageState.meta.tracking;
   const cookieBanner = pageState.cookieBanner;
@@ -799,17 +881,17 @@ export function SettingsPanel({
     return (
     <ScrollArea className="h-full">
       <TooltipProvider>
-        <div className="p-4 space-y-6">
-          <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full">
+        <div className="p-4 space-y-2">
+          <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full space-y-2">
             
-            <AccordionItem value="page-settings">
-              <AccordionTrigger>
+            <AccordionItem value="page-settings" className="bg-card rounded-lg border">
+              <AccordionTrigger className="p-4">
                 <div className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   <span>Configurações da Página</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
+              <AccordionContent className="space-y-4 pt-2 px-4">
                 <div className="space-y-2">
                   <Label htmlFor="page-name">Nome da Página</Label>
                   <Input
@@ -818,6 +900,25 @@ export function SettingsPanel({
                     onChange={(e) => setPageName(e.target.value)}
                     placeholder="Ex: Campanha Dia das Mães"
                   />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="brand-id">Kit de Marca</Label>
+                    <Select onValueChange={handleBrandChange} value={pageState.brandId || 'none'}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma marca..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                             <SelectItem value="none">Nenhuma</SelectItem>
+                            {userBrands.map(brand => (
+                                <SelectItem key={brand.id} value={brand.id}>
+                                     <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.colors.light.primary }}></div>
+                                        {brand.name}
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                  <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
@@ -852,14 +953,14 @@ export function SettingsPanel({
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="styles">
-              <AccordionTrigger>
+            <AccordionItem value="styles" className="bg-card rounded-lg border">
+              <AccordionTrigger className="p-4">
                 <div className="flex items-center gap-2">
                   <Palette className="h-4 w-4" />
                   <span>Estilos Globais</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
+              <AccordionContent className="space-y-4 pt-2 px-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label>Cor de Fundo</Label>
@@ -933,20 +1034,35 @@ export function SettingsPanel({
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="components">
-              <AccordionTrigger>
+            <AccordionItem value="components" className="bg-card rounded-lg border">
+              <AccordionTrigger className="p-4">
                  <div className="flex items-center gap-2">
                   <LayoutGrid className="h-4 w-4" />
                   <span>Componentes</span>
                  </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
+              <AccordionContent className="space-y-4 pt-2 px-4">
+                <div className="space-y-2">
+                  {stripeComponents.map(component => (
+                    <ComponentItem
+                        key={component.id}
+                        component={component}
+                        selectedComponentId={selectedComponentId}
+                        setSelectedComponentId={setSelectedComponentId}
+                        removeComponent={removeComponent}
+                        duplicateComponent={duplicateComponent}
+                        isDraggable={false}
+                    />
+                  ))}
+                  {stripeComponents.length > 0 && <Separator />}
+                </div>
+
                 <DndContext 
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                    <SortableContext items={pageState.components.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                    <SortableContext items={otherComponents.map(c => c.id)} strategy={verticalListSortingStrategy}>
                       <div className="space-y-2">
                           {renderComponents(null)}
                       </div>
@@ -956,14 +1072,14 @@ export function SettingsPanel({
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="ampscript">
-                <AccordionTrigger>
+            <AccordionItem value="ampscript" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4" />
                     <span>AMPScript Personalizado</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                     <div className="space-y-2">
                         <div className="flex items-center justify-between gap-1.5">
                            <div className="flex items-center gap-1.5">
@@ -1010,15 +1126,54 @@ SET @name = AttributeValue("FirstName")
                     </div>
                 </AccordionContent>
             </AccordionItem>
+            
+            <AccordionItem value="animation" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Animações</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2 px-4">
+                  <div className="space-y-2">
+                    <Label>Animação de Entrada</Label>
+                    <Select value={pageState.styles.animationType || 'none'} onValueChange={(value: AnimationType) => handleStyleChange('animationType', value)}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Sem animação" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">Nenhuma</SelectItem>
+                            <SelectItem value="fadeIn">Surgir (Fade In)</SelectItem>
+                            <SelectItem value="fadeInUp">Surgir de Baixo</SelectItem>
+                            <SelectItem value="fadeInLeft">Surgir da Esquerda</SelectItem>
+                            <SelectItem value="fadeInRight">Surgir da Direita</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  {(pageState.styles.animationType && pageState.styles.animationType !== 'none') && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="animation-duration">Duração (s)</Label>
+                        <Input id="animation-duration" type="number" step="0.1" value={pageState.styles.animationDuration || 1} onChange={e => handleStyleChange('animationDuration', e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="animation-delay">Atraso (s)</Label>
+                        <Input id="animation-delay" type="number" step="0.1" value={pageState.styles.animationDelay || 0} onChange={e => handleStyleChange('animationDelay', e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+                </AccordionContent>
+            </AccordionItem>
 
-            <AccordionItem value="meta">
-              <AccordionTrigger>
+
+            <AccordionItem value="meta" className="bg-card rounded-lg border">
+              <AccordionTrigger className="p-4">
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   <span>Configurações, SEO & Pixels</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
+              <AccordionContent className="space-y-4 pt-2 px-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label>Título da Página</Label>
@@ -1059,16 +1214,49 @@ SET @name = AttributeValue("FirstName")
                   </div>
                   <Input value={pageState.meta.faviconUrl} onChange={(e) => handleMetaChange('faviconUrl', e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <Label>URL da Imagem de Carregamento</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground" /></TooltipTrigger>
-                      <TooltipContent><p>Imagem para exibir durante o carregamento da página.</p></TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Input value={pageState.meta.loaderImageUrl} onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} />
-                </div>
+                
+                 <div className="space-y-2">
+                    <Label>Configuração do Loader</Label>
+                    <Select value={pageState.meta.loaderType || 'image'} onValueChange={(v) => handleMetaChange('loaderType', v)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">Nenhum</SelectItem>
+                            <SelectItem value="image">Imagem Personalizada</SelectItem>
+                            <SelectItem value="animation">Animação Padrão</SelectItem>
+                        </SelectContent>
+                    </Select>
+                 </div>
+                 {pageState.meta.loaderType === 'image' && (
+                    <div className="space-y-2">
+                        <Label htmlFor="loader-url">URL da Imagem de Carregamento</Label>
+                        <div className="flex items-center gap-2">
+                            <Input 
+                                id="loader-url"
+                                value={pageState.meta.loaderImageUrl} 
+                                onChange={(e) => handleMetaChange('loaderImageUrl', e.target.value)} 
+                                className="flex-grow"
+                            />
+                            <MediaLibraryDialog onSelectImage={(url) => handleMetaChange('loaderImageUrl', url)}>
+                                <Button variant="outline" size="icon">
+                                    <Image className="h-4 w-4" />
+                                </Button>
+                            </MediaLibraryDialog>
+                        </div>
+                    </div>
+                 )}
+                 {pageState.meta.loaderType === 'animation' && (
+                    <div className="space-y-2">
+                         <Label>Animação</Label>
+                         <Select value={pageState.meta.loaderAnimation || 'pulse'} onValueChange={(v) => handleMetaChange('loaderAnimation', v)}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="pulse">Pulse</SelectItem>
+                                <SelectItem value="spin">Spin</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                 )}
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label>URL de Redirecionamento</Label>
@@ -1112,6 +1300,16 @@ SET @name = AttributeValue("FirstName")
                 
                 <div className="space-y-4">
                   <h4 className="font-medium">Tracking & Pixels</h4>
+                  {/* GTM */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="gtm-enabled">Google Tag Manager</Label>
+                      <Switch id="gtm-enabled" checked={tracking?.gtm?.enabled} onCheckedChange={(checked) => handleTrackingChange('gtm', 'enabled', checked)} />
+                    </div>
+                    {tracking?.gtm?.enabled && (
+                      <Input placeholder="ID do Contêiner (GTM-XXXXXXX)" value={tracking?.gtm?.id || ''} onChange={(e) => handleTrackingChange('gtm', 'id', e.target.value)} />
+                    )}
+                  </div>
                   {/* GA4 */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1146,14 +1344,14 @@ SET @name = AttributeValue("FirstName")
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="cookie-banner">
-                <AccordionTrigger>
+            <AccordionItem value="cookie-banner" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <Cookie className="h-4 w-4"/>
                     <span>Banner de Cookies</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="cookie-enabled" className="flex items-center gap-2">
                             Ativar Banner de Cookies
@@ -1188,14 +1386,14 @@ SET @name = AttributeValue("FirstName")
                 </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="security">
-                <AccordionTrigger>
+            <AccordionItem value="security" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <Lock className="h-4 w-4" />
                     <span>Segurança & Acesso</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                      <div className="space-y-2">
                         <Label htmlFor="security-type">Tipo de Proteção</Label>
                         <Select value={security.type} onValueChange={(value: SecurityType) => handleSecurityChange('type', value)}>
@@ -1241,14 +1439,14 @@ SET @name = AttributeValue("FirstName")
                 </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="scheduling">
-                <AccordionTrigger>
+            <AccordionItem value="scheduling" className="bg-card rounded-lg border">
+                <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">
                     <CalendarClock className="h-4 w-4" />
                     <span>Agendamento</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
+                <AccordionContent className="space-y-4 pt-2 px-4">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="scheduling-enabled">Ativar Agendamento</Label>
                         <Switch
@@ -1288,3 +1486,5 @@ SET @name = AttributeValue("FirstName")
     </ScrollArea>
   );
 }
+
+    

@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Project, CloudPage, UserProgress, Template, PageView, Workspace } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette } from "lucide-react";
+import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette, Image as ImageIcon, ShieldCheck, Megaphone } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,7 @@ import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../ui/select";
+import Image from 'next/image';
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -96,12 +97,17 @@ function WorkspaceSwitcher() {
 
     return (
         <Select onValueChange={switchWorkspace} value={activeWorkspace.id}>
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-auto md:w-[220px] border-none shadow-none focus:ring-0">
                 <SelectValue placeholder="Selecione um workspace..." />
             </SelectTrigger>
             <SelectContent>
                 {workspaces.map(ws => (
-                    <SelectItem key={ws.id} value={ws.id}>{ws.name}</SelectItem>
+                    <SelectItem key={ws.id} value={ws.id}>
+                        <div className="flex items-center gap-2">
+                             {ws.profileType === 'owner' && <ShieldCheck className="h-4 w-4 text-primary" />}
+                            <span>{ws.name}</span>
+                        </div>
+                    </SelectItem>
                 ))}
             </SelectContent>
         </Select>
@@ -120,6 +126,7 @@ export function ProjectDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
 
   // Notifications state
   const [notifications, setNotifications] = useState([
@@ -147,6 +154,12 @@ export function ProjectDashboard() {
   const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
+  // Check announcement banner state from localStorage on mount
+  useEffect(() => {
+    if (localStorage.getItem('announcementClosed_20240725') !== 'true') {
+      setIsAnnouncementOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (localStorage.getItem('onboardingGuideClosed') === 'true') {
@@ -297,6 +310,11 @@ export function ProjectDashboard() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const handleCloseAnnouncement = () => {
+    setIsAnnouncementOpen(false);
+    localStorage.setItem('announcementClosed_20240725', 'true');
+  };
+
   const filteredAndSortedProjects = useMemo((): EnrichedProject[] => {
     return projects
       .map(project => {
@@ -411,7 +429,7 @@ export function ProjectDashboard() {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" aria-label="Abrir menu principal">
               <Menu className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -419,6 +437,10 @@ export function ProjectDashboard() {
              <DropdownMenuItem onClick={() => router.push('/brands')}>
               <Palette className="mr-2 h-4 w-4" />
               Marcas
+            </DropdownMenuItem>
+             <DropdownMenuItem onClick={() => router.push('/media')}>
+              <ImageIcon className="mr-2 h-4 w-4" />
+              Mídia
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/templates')}>
               <Library className="mr-2 h-4 w-4" />
@@ -467,6 +489,10 @@ export function ProjectDashboard() {
             <Palette className="mr-2 h-4 w-4" />
             Marcas
           </Button>
+          <Button variant="ghost" onClick={() => router.push('/media')}>
+            <ImageIcon className="mr-2 h-4 w-4" />
+            Mídia
+          </Button>
           <Button variant="ghost" onClick={() => router.push('/templates')}>
             <Library className="mr-2 h-4 w-4" />
             Templates
@@ -478,7 +504,7 @@ export function ProjectDashboard() {
           <div className="flex items-center gap-2">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
+                <Button variant="ghost" size="icon" className="relative" aria-label={`Notificações: ${unreadCount} não lidas`}>
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -516,7 +542,7 @@ export function ProjectDashboard() {
           {user && (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full" aria-label="Menu do usuário">
                          <Avatar className="h-8 w-8">
                             <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar do usuário'} />
                             <AvatarFallback>{userInitials}</AvatarFallback>
@@ -575,6 +601,7 @@ export function ProjectDashboard() {
                           size="icon" 
                           className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                           onClick={() => setSearchTerm("")}
+                          aria-label="Limpar busca"
                       >
                           <X className="h-4 w-4" />
                       </Button>
@@ -609,7 +636,7 @@ export function ProjectDashboard() {
             {isSearchVisible ? (
                 <div className="flex items-center gap-2">
                     {searchInput}
-                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)}>
+                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)} aria-label="Fechar busca">
                         <X className="h-4 w-4"/>
                     </Button>
                 </div>
@@ -651,6 +678,44 @@ export function ProjectDashboard() {
       </header>
 
       <main className="p-4 md:p-6">
+        {isAnnouncementOpen && (
+            <div className="relative rounded-lg overflow-hidden mb-6 group h-40 md:h-52">
+                <Image 
+                    src="https://images.unsplash.com/photo-1711540846697-56b9f66d17f1"
+                    alt="Banner de anúncio de nova funcionalidade"
+                    fill
+                    objectFit="cover"
+                    className="w-full h-full"
+                    data-ai-hint="abstract banner"
+                    objectPosition="left 53%"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#131C35] to-transparent flex items-center p-6 md:p-10">
+                    <div className="max-w-md text-white">
+                        <h3 className="text-xl md:text-2xl font-bold">
+                            <span className="text-primary">Nova Funcionalidade:<br></br></span> Testes A/B para Componentes
+                        </h3>
+                        <p className="mt-2 text-sm md:text-base opacity-90">
+                            Agora você pode testar diferentes versões dos seus componentes e otimizar a performance das suas páginas.
+                        </p>
+                        <Button 
+                            variant="secondary"
+                            className="mt-4"
+                            onClick={() => window.open('#', '_blank')}
+                        >
+                            Saiba Mais
+                        </Button>
+                    </div>
+                </div>
+                 <button 
+                    onClick={handleCloseAnnouncement} 
+                    className="absolute top-4 right-4 text-white/70 hover:text-white transition-opacity group-hover:opacity-100 md:opacity-0"
+                    aria-label="Fechar anúncio"
+                >
+                    <X className="h-6 w-6" />
+                </button>
+            </div>
+        )}
+
         <div className="mb-6 grid gap-4 lg:grid-cols-5">
             <Card className="lg:col-span-3">
                  <CardHeader>
@@ -658,20 +723,32 @@ export function ProjectDashboard() {
                     <CardDescription>Resumo das suas atividades na plataforma.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
-                        <Briefcase className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-2xl font-bold">{dashboardStats.projectCount}</span>
-                        <span className="text-xs text-muted-foreground">Projetos</span>
+                    <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <Briefcase className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-bold">{dashboardStats.projectCount}</div>
+                            <p className="text-xs text-muted-foreground">Projetos</p>
+                        </div>
                     </div>
-                     <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
-                        <FileText className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-2xl font-bold">{dashboardStats.pageCount}</span>
-                        <span className="text-xs text-muted-foreground">Páginas</span>
+                     <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <FileText className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-bold">{dashboardStats.pageCount}</div>
+                            <p className="text-xs text-muted-foreground">Páginas</p>
+                        </div>
                     </div>
-                    <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-4">
-                        <Library className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-2xl font-bold">{dashboardStats.templateCount}</span>
-                        <span className="text-xs text-muted-foreground">Templates</span>
+                    <div className="flex items-center gap-4 rounded-lg bg-accent p-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                           <Library className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-bold">{dashboardStats.templateCount}</div>
+                            <p className="text-xs text-muted-foreground">Templates</p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -686,8 +763,8 @@ export function ProjectDashboard() {
                             <Link className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-green-600">{dashboardStats.activePageCount}</div>
-                            <p className="text-xs text-green-700">Páginas Ativas</p>
+                            <div className="text-2xl font-bold text-green-700">{dashboardStats.activePageCount}</div>
+                            <p className="text-xs text-green-600">Páginas Ativas</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 rounded-lg bg-primary/10 p-4 border border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors" onClick={handleNextStepClick}>
@@ -695,9 +772,7 @@ export function ProjectDashboard() {
                             <Target className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                           <div className="text-lg font-bold text-primary">
-                                {projects.length === 0 ? "Crie um Projeto" : "Crie uma Página"}
-                            </div>
+                           <div className="text-lg font-bold text-primary">{projects.length === 0 ? "Crie um Projeto" : "Crie uma Página"}</div>
                             <p className="text-xs text-primary/80">Próximo Passo</p>
                         </div>
                     </div>
@@ -710,10 +785,10 @@ export function ProjectDashboard() {
             {renderSearch()}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 rounded-md border bg-background p-1">
-                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
+                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8" aria-label="Visualização em grade">
                   <LayoutGrid className="h-4 w-4"/>
                 </Button>
-                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
+                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8" aria-label="Visualização em lista">
                   <List className="h-4 w-4"/>
                 </Button>
               </div>
@@ -749,7 +824,7 @@ export function ProjectDashboard() {
             {filteredAndSortedProjects.map((project) => (
               <div
                 key={project.id}
-                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:bg-accent transition-shadow"
               >
                 <div onClick={() => handleNavigateToProject(project.id)} className="cursor-pointer">
                     <ProjectIcon iconName={project.icon} color={project.color} className="mb-4" />
@@ -767,7 +842,7 @@ export function ProjectDashboard() {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações para o projeto ${project.name}`}>
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -835,7 +910,7 @@ export function ProjectDashboard() {
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações para o projeto ${project.name}`}>
                                   <MoreVertical className="h-4 w-4" />
                               </Button>
                           </DropdownMenuTrigger>

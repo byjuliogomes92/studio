@@ -1,134 +1,102 @@
 
-
-import type { CloudPage, PageComponent, ComponentType, CustomFormField, CustomFormFieldType, FormFieldConfig } from './types';
+import type { CloudPage, PageComponent, ComponentType } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
+import { renderHeader } from './html-components/header';
+import { renderBanner } from './html-components/banner';
+import { renderTitle } from './html-components/title';
+import { renderSubtitle } from './html-components/subtitle';
+import { renderParagraph } from './html-components/paragraph';
+import { renderDivider } from './html-components/divider';
+import { renderImage } from './html-components/image';
+import { renderVideo } from './html-components/video';
+import { renderCountdown } from './html-components/countdown';
+import { renderSpacer } from './html-components/spacer';
+import { renderButton } from './html-components/button';
+import { renderDownloadButton } from './html-components/download-button';
+import { renderAccordion } from './html-components/accordion';
+import { renderTabs } from './html-components/tabs';
+import { renderVoting } from './html-components/voting';
+import { renderStripe } from './html-components/stripe';
+import { renderNPS } from './html-components/nps';
+import { renderMap } from './html-components/map';
+import { renderSocialIcons } from './html-components/social-icons';
+import { renderColumns } from './html-components/columns';
+import { renderWhatsApp } from './html-components/whatsapp';
+import { renderCarousel } from './html-components/carousel';
+import { renderForm } from './html-components/form';
+import { renderFooter } from './html-components/footer';
+import { renderFTPUpload } from './html-components/ftpupload';
+
+const wrapInPreviewBlock = (content: string, title: string, isForPreview: boolean) => {
+    if (!isForPreview || !content.trim()) {
+        return content;
+    }
+    const escapedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<div class="ampscript-preview-block" title="${title}"><pre>${escapedContent}</pre></div>`;
+};
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
     return components
         .sort((a, b) => a.order - b.order)
         .map(component => {
-            if (component.type === 'Columns') {
-                const columnCount = component.props.columnCount || 2;
-                let columnsHtml = '';
-                for (let i = 0; i < columnCount; i++) {
-                    const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
-                    columnsHtml += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
-                }
-                return renderSingleComponent(component, pageState, isForPreview, columnsHtml);
+            const styles = component.props.styles || {};
+            const animationType = pageState.styles.animationType || 'none';
+            const animationDuration = pageState.styles.animationDuration || 1;
+            const animationDelay = pageState.styles.animationDelay || 0;
+            
+            const hasAnimation = animationType !== 'none';
+            const animationAttrs = hasAnimation
+              ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
+              : '';
+
+            const sectionClass = 'section-wrapper animate-on-scroll';
+            
+            const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
+
+            // For Columns, the background is on the outer wrapper.
+            if (component.type === 'Columns' && styles?.isFullWidth) {
+                 const wrapperStyle = `background-color: ${styles?.backgroundColor || 'transparent'};`;
+                 return `<div class="${sectionClass}" style="${wrapperStyle}" ${animationAttrs}>
+                           <div class="section-container">
+                             ${renderedComponent}
+                           </div>
+                        </div>`;
             }
-            return `<div class="component-wrapper">${renderComponent(component, pageState, isForPreview)}</div>`;
+
+            return `<div class="${sectionClass}" ${animationAttrs}>
+                       <div class="section-container">
+                         ${renderedComponent}
+                       </div>
+                    </div>`;
         })
         .join('\n');
 }
 
-const renderField = (
-    id: string, 
-    fieldName: string, 
-    type: string, 
-    dataType: string, 
-    placeholder: string,
-    conditionalLogic: any,
-    prefill: boolean,
-    required: boolean = true
-  ): string => {
-    const conditionalAttrs = conditionalLogic
-      ? `data-conditional-on="${conditionalLogic.field}" data-conditional-value="${conditionalLogic.value}"`
-      : '';
+const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, allComponents: PageComponent[]): string => {
+  const childrenHtml = component.type === 'Columns'
+    ? (() => {
+        const columnCount = component.props.columnCount || 2;
+        let columnsContent = '';
+        for (let i = 0; i < columnCount; i++) {
+          const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
+          columnsContent += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
+        }
+        return columnsContent;
+      })()
+    : '';
     
-    // The AMPScript variable name will be based on the field's 'name' property
-    const prefillValue = prefill ? ` value="%%=v(@${fieldName})=%%"` : '';
-  
-    return `
-      <div class="input-wrapper" id="wrapper-${id}" style="display: ${conditionalLogic ? 'none' : 'block'};" ${conditionalAttrs}>
-        <input 
-          type="${type}" 
-          id="${fieldName}" 
-          name="${fieldName}" 
-          placeholder="${placeholder}" 
-          ${required ? 'required="required"' : ''}
-          ${prefillValue}
-        >
-        <div class="error-message" id="error-${fieldName.toLowerCase()}">Por favor, preencha este campo.</div>
-      </div>
-    `;
-  };
-
-  const renderCustomField = (field: CustomFormField): string => {
-      const { id, name, label, type, required, placeholder = '' } = field;
-      const inputId = `custom-field-${id}`;
-  
-      if (type === 'checkbox') {
-          return `
-              <div class="input-wrapper consent">
-                  <input type="checkbox" id="${inputId}" name="${name}" value="true" ${required ? 'required="required"' : ''}>
-                  <label for="${inputId}">${label}</label>
-                  <div class="error-message" id="error-${name.toLowerCase()}">É necessário aceitar para continuar.</div>
-              </div>
-          `;
-      }
-  
-      return `
-          <div class="input-wrapper">
-              <label for="${inputId}">${label}</label>
-              <input 
-                  type="${type}" 
-                  id="${inputId}" 
-                  name="${name}" 
-                  placeholder="${placeholder}" 
-                  ${required ? 'required="required"' : ''}
-              >
-              <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
-          </div>
-      `;
-  };
-  
-  const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, prefill: boolean, required: boolean = false): string => {
-      const cities = citiesString.split('\n').filter(city => city.trim() !== '');
-      const options = cities.map(city => `<option value="${city}">%%[ IF @CIDADE == "${city}" THEN]%%selected%%[ENDIF]%%${city}</option>`).join('');
-      const conditionalAttrs = conditionalLogic
-        ? `data-conditional-on="${conditionalLogic.field}" data-conditional-value="${conditionalLogic.value}"`
-        : '';
-  
-      return `
-          <div class="input-wrapper" id="wrapper-city" style="display: ${conditionalLogic ? 'none' : 'block'};" ${conditionalAttrs}>
-              <select
-                  id="CIDADE"
-                  name="CIDADE"
-                  ${required ? 'required="required"' : ''}
-              >
-                  <option value="" disabled selected>Selecione sua cidade</option>
-                  ${options}
-              </select>
-              <div class="error-message" id="error-cidade">Por favor, seleciona uma cidade.</div>
-          </div>
-      `;
-  };
-
-const getStyleString = (styles: any = {}): string => {
-    return Object.entries(styles)
-      .map(([key, value]) => {
-        if (!value) return '';
-        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-        return `${cssKey}: ${value};`;
-      })
-      .join(' ');
-};
-
-
-const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean): string => {
   if (isForPreview) {
-    // For preview, we don't want the A/B testing logic with AMPScript
-    return renderSingleComponent(component, pageState, isForPreview);
+    return renderSingleComponent(component, pageState, isForPreview, childrenHtml);
   }
 
   if (component.abTestEnabled) {
     const variantB = (component.abTestVariants && component.abTestVariants[0]) || {};
     const propsA = component.props;
-    const propsB = { ...propsA, ...variantB }; // Variant B props override Variant A
+    const propsB = { ...propsA, ...variantB };
 
-    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview);
-    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview);
+    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview, childrenHtml);
+    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview, childrenHtml);
 
     const randomVar = `v(@Random_${component.id.slice(-5)})`;
     const hiddenInput = `<input type="hidden" name="VARIANTE_${component.id.toUpperCase()}" value="%%=v(@VARIANTE_${component.id.toUpperCase()})=%%">`;
@@ -147,572 +115,69 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     ${hiddenInput}
     `;
   }
-  return renderSingleComponent(component, pageState, isForPreview);
+  return renderSingleComponent(component, pageState, isForPreview, childrenHtml);
 };
 
 const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = ''): string => {
-  const styles = component.props.styles || {};
-  const styleString = getStyleString(styles);
-  const editableAttrs = (propName: string) => isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="${propName}"` : '';
-  const dataBinding = component.props.dataBinding;
-
-
   switch (component.type) {
-    case 'Header':
-      return `
-        <div class="logo" style="${styleString}">
-          <img src="${component.props.logoUrl || 'https://i.postimg.cc/Z5TpsSsB/natura-logo-branco.png'}" alt="Logo">
-        </div>`;
-    case 'Banner':
-        return `
-        <div class="banner" style="${styleString}">
-            <img src="${component.props.imageUrl || 'https://images.rede.natura.net/html/crm/campanha/20250819/44760-banner-topo.png'}" alt="Banner">
-        </div>`;
-    case 'Title':
-        const titleText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Título Principal');
-        return `<h1 style="${styleString}" ${editableAttrs('text')}>${titleText}</h1>`;
-    case 'Subtitle':
-        const subtitleText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Subtítulo');
-        return `<h2 style="${styleString}" ${editableAttrs('text')}>${subtitleText}</h2>`;
-    case 'Paragraph':
-        const paragraphText = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.');
-        return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs('text')}>${paragraphText}</div>`;
-    case 'Divider':
-        return `<hr style="border-top: ${component.props.thickness || 1}px ${component.props.style || 'solid'} ${component.props.color || '#cccccc'}; margin: ${component.props.margin || 20}px 0; ${styleString}" />`;
-    case 'Image':
-        return `
-            <div style="text-align: center; ${styleString}">
-                <img src="${component.props.src || 'https://placehold.co/800x200.png'}" alt="${component.props.alt || 'Placeholder image'}" style="max-width: 100%; height: auto; border-radius: 8px;" data-ai-hint="website abstract">
-            </div>`;
-    case 'Video':
-        const videoUrl = component.props.url || '';
-        let embedUrl = '';
-        if (videoUrl.includes('youtube.com/watch?v=')) {
-            const videoId = videoUrl.split('v=')[1].split('&')[0];
-            embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        } else if (videoUrl.includes('youtu.be/')) {
-            const videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
-            embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        }
-        return embedUrl ? `<div class="video-container" style="${styleString}"><iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '<p>URL do vídeo inválida.</p>';
-    case 'Countdown':
-        const targetDate = component.props.targetDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-        return `
-            <div id="countdown-${component.id}" class="countdown" style="${styleString}"></div>
-            <script>
-              (function() {
-                var target = new Date("${targetDate}").getTime();
-                var el = document.getElementById("countdown-${component.id}");
-                if (!el) return;
-                var x = setInterval(function() {
-                  var now = new Date().getTime();
-                  var distance = target - now;
-                  var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                  var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                  var minutes = Math.floor((distance % (1000 * 60 * 60)) / 1000 / 60);
-                  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                  el.innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
-                  if (distance < 0) {
-                    clearInterval(x);
-                    el.innerHTML = "EXPIRADO";
-                  }
-                }, 1000);
-              })();
-            </script>`;
-    case 'Spacer':
-        return `<div style="height: ${component.props.height || 20}px; ${styleString}"></div>`;
-    case 'Button':
-         return `<div style="text-align: ${component.props.align || 'center'}; ${styleString}"><a href="${component.props.href || '#'}" target="_blank" class="custom-button">${component.props.text || 'Clique Aqui'}</a></div>`;
-    case 'DownloadButton': {
-        const { text = 'Download', fileUrl = '', fileName = '', align = 'center', conditionalDisplay } = component.props;
-        const containerId = `download-container-${component.id}`;
-        const buttonId = `download-btn-${component.id}`;
-        
-        const isConditional = conditionalDisplay?.enabled && conditionalDisplay?.trigger === 'form_submission';
-        const containerStyle = isConditional ? 'display: none;' : '';
-
-        return `
-            <div id="${containerId}" class="download-component-container" style="${containerStyle}">
-                <div style="text-align: ${align}; ${styleString}">
-                    <button id="${buttonId}" class="custom-button">${text}</button>
-                    <div id="progress-container-${component.id}" class="progress-container" style="display: none;">
-                        <div id="progress-bar-${component.id}" class="progress-bar"></div>
-                    </div>
-                </div>
-            </div>
-            <script>
-            (function() {
-                const downloadBtn = document.getElementById('${buttonId}');
-                if (!downloadBtn) return;
-                
-                downloadBtn.addEventListener('click', async function() {
-                    const url = '${fileUrl}';
-                    const filename = '${fileName}';
-                    if (!url) {
-                        alert('URL do arquivo não definida.');
-                        return;
-                    }
-
-                    const progressContainer = document.getElementById('progress-container-${component.id}');
-                    const progressBar = document.getElementById('progress-bar-${component.id}');
-                    
-                    if (progressContainer) progressContainer.style.display = 'block';
-                    if (downloadBtn) downloadBtn.style.display = 'none';
-
-                    try {
-                        const response = await fetch(url);
-                        if (!response.ok) {
-                            throw new Error('Falha na rede ao tentar baixar o arquivo.');
-                        }
-
-                        const contentLength = response.headers.get('content-length');
-                        const total = contentLength ? parseInt(contentLength, 10) : 0;
-                        let loaded = 0;
-
-                        const stream = new ReadableStream({
-                            async start(controller) {
-                                const reader = response.body.getReader();
-                                for (;;) {
-                                    const { done, value } = await reader.read();
-                                    if (done) break;
-                                    loaded += value.byteLength;
-                                    if(total && progressBar) {
-                                       const percentage = Math.round((loaded / total) * 100);
-                                       progressBar.style.width = percentage + '%';
-                                       progressBar.textContent = percentage + '%';
-                                    }
-                                    controller.enqueue(value);
-                                }
-                                controller.close();
-                            },
-                        });
-
-                        const newResponse = new Response(stream);
-                        const blob = await newResponse.blob();
-                        const blobUrl = window.URL.createObjectURL(blob);
-                        
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = blobUrl;
-                        a.download = filename || url.split('/').pop();
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(blobUrl);
-                        document.body.removeChild(a);
-
-                    } catch (error) {
-                        console.error('Erro no download:', error);
-                        alert('Não foi possível baixar o arquivo.');
-                    } finally {
-                        if (progressContainer) progressContainer.style.display = 'none';
-                        if (downloadBtn) downloadBtn.style.display = 'inline-block';
-                        if (progressBar) {
-                            progressBar.style.width = '0%';
-                            progressBar.textContent = '';
-                        }
-                    }
-                });
-            })();
-            </script>`;
-    }
-    case 'Accordion': {
-        const items = component.props.items || [];
-        const itemsHtml = items
-          .map(
-            (item: { id: string; title: string; content: string }) => `
-          <div class="accordion-item">
-            <button class="accordion-header" aria-expanded="false" aria-controls="content-${item.id}">
-              ${item.title}
-              <span class="accordion-icon"></span>
-            </button>
-            <div id="content-${item.id}" class="accordion-content">
-              ${item.content}
-            </div>
-          </div>`
-          )
-          .join('');
-        return `<div class="accordion-container" style="${styleString}">${itemsHtml}</div>`;
-    }
-    case 'Tabs': {
-        const items = component.props.items || [];
-        const tabsId = `tabs-${component.id}`;
-        const triggersHtml = items
-          .map(
-            (item: { id: string; title: string }, index: number) => `
-          <button class="tab-trigger" data-tab="${item.id}" role="tab" aria-controls="panel-${item.id}" aria-selected="${index === 0 ? 'true' : 'false'}">
-            ${item.title}
-          </button>`
-          )
-          .join('');
-        const panelsHtml = items
-          .map(
-            (item: { id: string; content: string }, index: number) => `
-          <div id="panel-${item.id}" class="tab-panel" role="tabpanel" ${index !== 0 ? 'hidden' : ''}>
-            ${item.content}
-          </div>`
-          )
-          .join('');
-        return `
-          <div class="tabs-container" id="${tabsId}" style="${styleString}">
-            <div class="tab-list" role="tablist">${triggersHtml}</div>
-            ${panelsHtml}
-          </div>`;
-    }
-    case 'Voting': {
-        const { question, options = [] } = component.props;
-        const votingId = `voting-${component.id}`;
-
-        const optionsHtml = options.map((opt: { id: string; text: string; }) => `
-            <button class="voting-option" data-option-id="${opt.id}">${opt.text}</button>
-        `).join('');
-
-        const resultsHtml = options.map((opt: { id: string; text: string; }) => `
-            <div class="voting-result">
-                <div class="result-label">${opt.text}</div>
-                <div class="result-bar-container">
-                    <div class="result-bar" id="result-bar-${opt.id}" style="width: 0%;"></div>
-                </div>
-                <div class="result-percentage" id="result-percentage-${opt.id}">0%</div>
-            </div>
-        `).join('');
-
-        return `
-            <div id="${votingId}" class="voting-container" style="${styleString}">
-                <h3 class="voting-question">${question || 'Sua pergunta aqui'}</h3>
-                <div class="voting-options">${optionsHtml}</div>
-                <div class="voting-results" style="display: none;">${resultsHtml}</div>
-            </div>
-            <script>
-                (function() {
-                    const votingContainer = document.getElementById('${votingId}');
-                    if (!votingContainer) return;
-
-                    const optionsContainer = votingContainer.querySelector('.voting-options');
-                    const resultsContainer = votingContainer.querySelector('.voting-results');
-                    const storageKey = 'voting_data_${votingId}';
-                    const hasVotedKey = 'has_voted_${votingId}';
-
-                    let votes = JSON.parse(localStorage.getItem(storageKey)) || {};
-                    const hasVoted = localStorage.getItem(hasVotedKey) === 'true';
-
-                    function updateResults() {
-                        const totalVotes = Object.values(votes).reduce((sum, count) => sum + count, 0);
-                        if (totalVotes === 0) return;
-
-                        Object.keys(votes).forEach(optionId => {
-                            const voteCount = votes[optionId] || 0;
-                            const percentage = ((voteCount / totalVotes) * 100).toFixed(1);
-                            const bar = resultsContainer.querySelector(\`#result-bar-\${optionId}\`);
-                            const percentageEl = resultsContainer.querySelector(\`#result-percentage-\${optionId}\`);
-
-                            if (bar) bar.style.width = \`\${percentage}%\`;
-                            if (percentageEl) percentageEl.textContent = \`\${percentage}%\`;
-                        });
-                    }
-
-                    function showResults() {
-                        optionsContainer.style.display = 'none';
-                        resultsContainer.style.display = 'block';
-                        updateResults();
-                    }
-
-                    if (hasVoted) {
-                        showResults();
-                    }
-
-                    optionsContainer.addEventListener('click', function(event) {
-                        if (event.target.classList.contains('voting-option')) {
-                            if (localStorage.getItem(hasVotedKey) === 'true') {
-                                alert('Você já votou.');
-                                return;
-                            }
-                            
-                            const optionId = event.target.dataset.optionId;
-                            votes[optionId] = (votes[optionId] || 0) + 1;
-                            
-                            localStorage.setItem(storageKey, JSON.stringify(votes));
-                            localStorage.setItem(hasVotedKey, 'true');
-                            
-                            showResults();
-                        }
-                    });
-                })();
-            </script>
-        `;
-    }
-    case 'Stripe': {
-        const { text, isClosable, backgroundColor, textColor, linkUrl } = component.props;
-        const stripeId = `stripe-${component.id}`;
-
-        const closeButton = isClosable ? `<button id="close-${stripeId}" class="stripe-close-btn">&times;</button>` : '';
-        const content = linkUrl ? `<a href="${linkUrl}" target="_blank" style="color: inherit; text-decoration: none;">${text}</a>` : text;
-
-        return `
-            <div id="${stripeId}" class="stripe-container" style="background-color: ${backgroundColor}; color: ${textColor};">
-                <p>${content}</p>
-                ${closeButton}
-            </div>
-            <script>
-                (function() {
-                    const stripe = document.getElementById('${stripeId}');
-                    if (!stripe) return;
-                    const closeBtn = document.getElementById('close-${stripeId}');
-                    const storageKey = 'stripe_closed_${stripeId}';
-
-                    if (localStorage.getItem(storageKey) === 'true') {
-                        stripe.style.display = 'none';
-                    } else {
-                        stripe.style.display = 'flex';
-                    }
-
-                    if (closeBtn) {
-                        closeBtn.addEventListener('click', function() {
-                            stripe.style.display = 'none';
-                            localStorage.setItem(storageKey, 'true');
-                        });
-                    }
-                })();
-            </script>
-        `;
-    }
-    case 'NPS': {
-        const { question, type = 'numeric', lowLabel, highLabel, thankYouMessage } = component.props;
-        const npsId = `nps-${component.id}`;
-
-        let optionsHtml = '';
-        if (type === 'numeric') {
-            for (let i = 0; i <= 10; i++) {
-                optionsHtml += `<button class="nps-option nps-numeric" data-score="${i}">${i}</button>`;
-            }
-        } else { // faces
-            const faces = ['😡', '😠', '😑', '😐', '🙂', '😄', '😁'];
-            optionsHtml = faces.map((face, i) => `<button class="nps-option nps-face" data-score="${i}">${face}</button>`).join('');
-        }
-        
-        return `
-            <div id="${npsId}" class="nps-container" style="${styleString}">
-                <div class="nps-content">
-                    <p class="nps-question">${question}</p>
-                    <div class="nps-options-wrapper">${optionsHtml}</div>
-                    <div class="nps-labels">
-                        <span>${lowLabel}</span>
-                        <span>${highLabel}</span>
-                    </div>
-                </div>
-                <div class="nps-thanks" style="display: none;">
-                    <p>${thankYouMessage}</p>
-                </div>
-            </div>
-            <script>
-                (function() {
-                    const npsContainer = document.getElementById('${npsId}');
-                    if (!npsContainer) return;
-                    
-                    const mainForm = document.querySelector('form[id^="smartcapture-form-"]');
-                    let npsScoreInput;
-
-                    if (mainForm) {
-                        npsScoreInput = mainForm.querySelector('input[name="NPS_SCORE"]');
-                        if (!npsScoreInput) {
-                            npsScoreInput = document.createElement('input');
-                            npsScoreInput.type = 'hidden';
-                            npsScoreInput.name = 'NPS_SCORE';
-                            mainForm.appendChild(npsScoreInput);
-                        }
-                    }
-
-                    const options = npsContainer.querySelectorAll('.nps-option');
-                    options.forEach(option => {
-                        option.addEventListener('click', function() {
-                            const score = this.dataset.score;
-                            
-                            if (npsScoreInput) {
-                                npsScoreInput.value = score;
-                            }
-
-                            // Visual feedback
-                            options.forEach(opt => opt.classList.remove('selected'));
-                            this.classList.add('selected');
-                            
-                            // Show thanks message
-                            const content = npsContainer.querySelector('.nps-content');
-                            const thanks = npsContainer.querySelector('.nps-thanks');
-                            if (content) content.style.display = 'none';
-                            if (thanks) thanks.style.display = 'block';
-                        });
-                    });
-                })();
-            </script>
-        `;
-    }
-    case 'Map': {
-        const { embedUrl } = component.props;
-        if (!embedUrl) {
-            return '<p>URL de incorporação do mapa não fornecida.</p>';
-        }
-        return `
-            <div class="map-container" style="${styleString}">
-                <iframe
-                    src="${embedUrl}"
-                    width="100%"
-                    height="450"
-                    style="border:0;"
-                    allowfullscreen=""
-                    loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade">
-                </iframe>
-            </div>
-        `;
-    }
-    case 'SocialIcons': {
-        const { links = {}, styles: iconStyles = {} } = component.props;
-        const { align = 'center', iconSize = '24px' } = iconStyles;
-        
-        const socialSvgs: Record<string, string> = {
-            facebook: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>',
-            instagram: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>',
-            twitter: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter"><path d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3.3 4.9-6.1 1.2-18 5-18 5s-2.7-7.1 2.5-11.2c-1.4 1.3-2.8 2.5-2.8 2.5s-2.8-7.4 9.1-3.8c.9 2.1 3.3 2.6 3.3 2.6Z"/></svg>',
-            linkedin: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>',
-            youtube: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-youtube"><path d="M2.5 17a24.12 24.12 0 0 1 0-10C2.5 4.24 4.24 2.5 7 2.5h10c2.76 0 4.5 1.74 4.5 4.5v10c0 2.76-1.74 4.5-4.5 4.5H7c-2.76 0-4.5-1.74-4.5-4.5Z"/><path d="m10 15 5-3-5-3z"/></svg>',
-            tiktok: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tiktok"><path d="M12 12a4 4 0 1 0 4 4V4a5 5 0 1 0-5 5h4"/></svg>',
-            pinterest: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pinterest"><path d="M12 12c-2.25 0-4.43.9-6.13 2.45-.5.4-.44 1.25.08 1.65l2.29 1.78c.45.35 1.1.2 1.45-.25.5-.63.85-1.4 1.03-2.2.14-.64.04-1.34-.3-1.96-.3-.54.21-1.2.78-1.22.63-.03 1.2.3 1.28.98.08.7-.3 1.4-.7 1.9-.44.55-.22 1.34.3 1.6l2.32 1.83c.53.41 1.28.2 1.68-.25 2.4-2.7 3.1-6.4 2.2-9.6-1-3.5-3.8-6.1-7.2-6.5-4.5-.4-8.4 2.1-9.4 6.2-.9 3.5.7 7.5 4.1 9.4 1.4.7 2.9 1 4.4 1.1"/></svg>',
-            snapchat: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-snapchat"><path d="M15 17a8 8 0 1 0-8.5-8H12v10Z"/><path d="M12 12c-2-2-2-4-2-4-2 0-2 2-2 4s2 4 4 4 2-2 2-4-2-4-2-4Z"/></svg>',
-        };
-
-        const iconsHtml = Object.keys(links)
-            .filter(key => links[key])
-            .map(key => `
-                <a href="${links[key]}" target="_blank" class="social-icon" aria-label="${key}">
-                    ${socialSvgs[key as keyof typeof socialSvgs] || ''}
-                </a>
-            `).join('');
-
-        return `<div class="social-icons-container" style="text-align: ${align}; ${styleString}" data-icon-size="${iconSize}">${iconsHtml}</div>`;
-    }
-    case 'Columns':
-        return `<div class="columns-container" style="--column-count: ${component.props.columnCount || 2}; ${styleString}">${childrenHtml}</div>`;
-    case 'WhatsApp': {
-        const { phoneNumber, defaultMessage, position = 'bottom-right' } = component.props;
-        const encodedMessage = encodeURIComponent(defaultMessage);
-        const href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-        return `
-            <a href="${href}" target="_blank" class="whatsapp-float-btn ${position}" aria-label="Fale conosco no WhatsApp">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-            </a>`;
-    }
-    case 'Form': {
-        const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, formAlign, thankYouAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
-        const { meta } = pageState;
-        
-        const animationUrls = {
-            confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
-        };
-        const animationUrl = thankYouAnimation && animationUrls[thankYouAnimation as keyof typeof animationUrls];
-        
-        const lucideIconSvgs: Record<string, string> = {
-            none: '',
-            send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
-            'arrow-right': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
-            'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
-            'plus': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
-            'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
-            'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-            'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
-        };
-        
-        const iconHtml = buttonProps.icon && lucideIconSvgs[buttonProps.icon] ? lucideIconSvgs[buttonProps.icon] : '';
-
-        const buttonContent = buttonProps.iconPosition === 'right' 
-            ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
-            : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
-        
-        const redirectUrl = submission?.url || meta.redirectUrl ||'';
-
-        return `
-            %%[ Set @thankYouMessage = "${submission?.message || 'Obrigado!'}" ]%%
-            %%[ IF @showThanks != "true" THEN ]%%
-            <div id="form-wrapper-${component.id}" class="form-container" style="text-align: ${formAlign || 'left'}; ${styleString}">
-                <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
-                     <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
-                     <input type="hidden" name="__de_method" value="${meta.dataExtensionTargetMethod || 'key'}">
-                     <input type="hidden" name="__successUrl" value="${redirectUrl}">
-                     <input type="hidden" name="__isPost" value="true">
-    
-                     <div class="row">
-                      ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
-                      ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional, !!fields.email.prefillFromUrl) : ''}
-                     </div>
-                     <div class="row">
-                      ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional, !!fields.phone.prefillFromUrl) : ''}
-                      ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional, !!fields.cpf.prefillFromUrl) : ''}
-                     </div>
-                     <div class="row">
-                      ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, false) : ''}
-                      ${fields.city?.enabled ? renderCityDropdown(component.props.cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
-                     </div>
-                     
-                     <div class="custom-fields-wrapper">
-                      ${customFields.map(renderCustomField).join('\n')}
-                     </div>
-               
-                    ${fields.optin?.enabled ? `
-                    <div class="consent" id="wrapper-optin" style="display: ${fields.optin.conditional ? 'none' : 'flex'}" ${fields.optin.conditional ? `data-conditional-on="${fields.optin.conditional.field}" data-conditional-value="${fields.optin.conditional.value}"` : ''}>
-                        <input type="checkbox" id="OPTIN" name="OPTIN" value="on" required="required">
-                        <label for="OPTIN">
-                            ${consentText || 'Quero receber novidades e promoções...'}
-                        </label>
-                      <div class="error-message" id="error-consent">É necessário aceitar para continuar.</div>
-                    </div>
-                    ` : ''}
-                    <div class="form-submit-wrapper" style="text-align: ${buttonAlign || 'center'};">
-                        <button type="submit"
-                          class="form-submit-button"
-                          style="
-                              background-color: ${buttonProps.bgColor || 'var(--theme-color)'};
-                              color: ${buttonProps.textColor || '#FFFFFF'};
-                          "
-                          onmouseover="this.style.backgroundColor='${buttonProps.hoverBgColor || 'var(--theme-color-hover)'}'"
-                          onmouseout="this.style.backgroundColor='${buttonProps.bgColor || 'var(--theme-color)'}'"
-                          ${buttonProps.enableWhenValid ? 'disabled' : ''}
-                        >
-                            ${buttonContent}
-                        </button>
-                    </div>
-                </form>
-            </div>
-            %%[ ELSE ]%%
-                <div class="thank-you-message" style="text-align: ${thankYouAlign || 'center'};">
-                    ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}
-                    <div class="thank-you-text">%%=TreatAsContent(@thankYouMessage)=%%</div>
-                </div>
-            %%[ ENDIF ]%%
-        `;
-      }
-    case 'Footer':
-      return `
-      <footer style="${styleString}">
-        <div class="MuiGrid-root natds602 MuiGrid-container">
-            <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText1 || `© ${new Date().getFullYear()} Natura. Todos os direitos reservados.`}</span></div>
-            <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText2 || 'NATURA COSMÉTICOS S/A...'}</span></div>
-            <div class="MuiGrid-root MuiGrid-item"><span class="MuiTypography-root MuiTypography-caption MuiTypography-colorInherit MuiTypography-alignCenter">${component.props.footerText3 || 'Todos os preços e condições...'}</span></div>
-        </div>
-      </footer>`;
+    case 'Header': return renderHeader(component);
+    case 'Banner': return renderBanner(component);
+    case 'Title': return renderTitle(component, isForPreview);
+    case 'Subtitle': return renderSubtitle(component, isForPreview);
+    case 'Paragraph': return renderParagraph(component, isForPreview);
+    case 'Divider': return renderDivider(component);
+    case 'Image': return renderImage(component);
+    case 'Video': return renderVideo(component);
+    case 'Countdown': return renderCountdown(component);
+    case 'Spacer': return renderSpacer(component);
+    case 'Button': return renderButton(component);
+    case 'DownloadButton': return renderDownloadButton(component);
+    case 'Accordion': return renderAccordion(component);
+    case 'Tabs': return renderTabs(component);
+    case 'Voting': return renderVoting(component);
+    case 'Stripe': return renderStripe(component);
+    case 'NPS': return renderNPS(component);
+    case 'Map': return renderMap(component);
+    case 'SocialIcons': return renderSocialIcons(component);
+    case 'Columns': return renderColumns(component, childrenHtml);
+    case 'WhatsApp': return renderWhatsApp(component);
+    case 'Carousel': return renderCarousel(component);
+    case 'Form': return renderForm(component, pageState);
+    case 'FTPUpload': return renderFTPUpload(component, pageState);
+    case 'Footer': return renderFooter(component);
     default:
-      // This will cause a compile-time error if a new component type is added and not handled here.
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
   }
 };
 
-const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): string => {
-    if (!trackingConfig) return '';
+const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): { head: string, body: string } => {
+    if (!trackingConfig) return { head: '', body: '' };
 
-    let scripts = '';
+    let headScripts = '';
+    let bodyScripts = '';
 
-    // Google Analytics 4
+    if (trackingConfig.gtm?.enabled && trackingConfig.gtm.id) {
+        const gtmId = trackingConfig.gtm.id;
+        headScripts += `
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${gtmId}');</script>
+<!-- End Google Tag Manager -->`;
+        
+        bodyScripts += `
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${gtmId}"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->`;
+    }
+
     if (trackingConfig.ga4?.enabled && trackingConfig.ga4.id) {
         const ga4Id = trackingConfig.ga4.id;
-        scripts += `
+        headScripts += `
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=${ga4Id}"></script>
 <script>
@@ -724,10 +189,9 @@ const getTrackingScripts = (trackingConfig: CloudPage['meta']['tracking']): stri
 </script>`;
     }
 
-    // Meta Pixel
     if (trackingConfig.meta?.enabled && trackingConfig.meta.id) {
         const metaId = trackingConfig.meta.id;
-        scripts += `
+        headScripts += `
 <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -747,10 +211,9 @@ src="https://www.facebook.com/tr?id=${metaId}&ev=PageView&noscript=1"
 <!-- End Meta Pixel Code -->`;
     }
 
-    // LinkedIn Insight Tag
     if (trackingConfig.linkedin?.enabled && trackingConfig.linkedin.id) {
         const linkedinId = trackingConfig.linkedin.id;
-        scripts += `
+        headScripts += `
 <!-- LinkedIn Insight Tag -->
 <script type="text/javascript">
 _linkedin_partner_id = "${linkedinId}";
@@ -772,7 +235,7 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
 <!-- End LinkedIn Insight Tag -->`;
     }
 
-    return scripts;
+    return { head: headScripts, body: bodyScripts };
 };
 
 const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeColor: string): string => {
@@ -879,7 +342,6 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
       SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
       IF @submittedPassword == @correctPassword THEN
           SET @isAuthenticated = true
-          /* You might want to set a cookie here for persistent login */
       ENDIF
   ENDIF
 `;
@@ -905,12 +367,42 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
     return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
 }
 
-const getClientSideScripts = (pageState: CloudPage) => {
+const getClientSideScripts = (pageState: CloudPage): string => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
+    const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
+
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
+    const carouselScript = hasCarousel ? '<script src="https://cdn.jsdelivr.net/npm/embla-carousel@8.1.5/embla-carousel.umd.js"></script><script src="https://cdn.jsdelivr.net/npm/embla-carousel-autoplay@8.1.5/embla-carousel-autoplay.umd.js"></script>' : '';
+
 
     const script = `
     <script>
+    function setupAnimations() {
+        const animatedElements = document.querySelectorAll('.animate-on-scroll');
+        if (!animatedElements.length) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const animationName = el.dataset.animation;
+                    if (animationName && animationName !== 'none') {
+                        el.style.animationDuration = el.dataset.animationDuration;
+                        el.style.animationDelay = el.dataset.animationDelay;
+                        el.classList.add('animate-' + animationName, 'is-visible');
+                    } else {
+                        el.classList.add('is-visible');
+                    }
+                    observer.unobserve(el);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        animatedElements.forEach(el => {
+            observer.observe(el);
+        });
+    }
+
     function setupAccordions() {
         document.querySelectorAll('.accordion-container').forEach(container => {
             container.addEventListener('click', function(event) {
@@ -1050,7 +542,6 @@ const getClientSideScripts = (pageState: CloudPage) => {
         document.querySelectorAll('form[id^="smartcapture-form-"]').forEach(form => {
             const submitButton = form.querySelector('button[type="submit"]');
             
-            // Setup button loader
             if (submitButton && !submitButton.querySelector('.button-loader')) {
                 const buttonContent = submitButton.innerHTML;
                 
@@ -1080,7 +571,6 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 }
             });
             
-            // Enable/disable button logic
             if (submitButton?.hasAttribute('disabled')) {
                 const requiredInputs = Array.from(form.querySelectorAll('[required]'));
                 const checkFormValidity = () => {
@@ -1115,7 +605,94 @@ const getClientSideScripts = (pageState: CloudPage) => {
             }
 
             form.addEventListener('input', checkConditions);
-            checkConditions(); // Initial check on load
+            checkConditions();
+        });
+    }
+
+    function setupStickyHeader() {
+        const header = document.querySelector('.page-header[data-sticky="true"]');
+        if (!header) return;
+
+        const setHeaderStyle = (isScrolled) => {
+            const bgColor = isScrolled ? header.dataset.bgScroll : header.dataset.bgTop;
+            const textColor = isScrolled ? header.dataset.textColorScroll : header.dataset.textColorTop;
+            header.style.backgroundColor = bgColor;
+            header.style.color = textColor;
+            if (isScrolled) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        };
+        
+        setHeaderStyle(false); // Set initial styles
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                setHeaderStyle(true);
+            } else {
+                setHeaderStyle(false);
+            }
+        }, { passive: true });
+    }
+
+    function setupMobileMenu() {
+        const body = document.body;
+        const pageHeader = document.querySelector('.page-header');
+        if (!pageHeader) return;
+        
+        const behavior = pageHeader.dataset.mobileMenuBehavior || 'push';
+
+        document.querySelectorAll('.mobile-menu-toggle').forEach(button => {
+            button.addEventListener('click', function() {
+                const header = this.closest('.page-header');
+                if (header) {
+                    const navContainer = header.querySelector('.header-nav-container');
+                    
+                    if (behavior === 'push') {
+                        header.classList.toggle('mobile-menu-open');
+                        if (header.classList.contains('mobile-menu-open')) {
+                            navContainer.style.maxHeight = navContainer.scrollHeight + 'px';
+                        } else {
+                            navContainer.style.maxHeight = '0';
+                        }
+                    } else if (behavior === 'drawer') {
+                         body.classList.toggle('menu-drawer-open');
+                    } else if (behavior === 'overlay') {
+                         body.classList.toggle('menu-overlay-open');
+                    }
+                }
+            });
+        });
+        
+        const overlay = document.getElementById('mobile-menu-overlay');
+        if(overlay) {
+            overlay.addEventListener('click', () => {
+                body.classList.remove('menu-drawer-open');
+            });
+        }
+    }
+
+    function setupCarousels() {
+        if (typeof EmblaCarousel === 'undefined') return;
+
+        document.querySelectorAll('.carousel-container').forEach(container => {
+            const viewport = container.querySelector('.carousel-viewport');
+            if (!viewport) return;
+
+            const options = JSON.parse(container.dataset.options || '{}');
+            const plugins = [];
+            if (options.autoplay) {
+                plugins.push(EmblaCarouselAutoplay(options.autoplay));
+            }
+
+            const emblaApi = EmblaCarousel(viewport, options, plugins);
+
+            const prevBtn = container.querySelector('.carousel-prev');
+            const nextBtn = container.querySelector('.carousel-next');
+
+            if (prevBtn) prevBtn.addEventListener('click', () => emblaApi.scrollPrev());
+            if (nextBtn) nextBtn.addEventListener('click', () => emblaApi.scrollNext());
         });
     }
 
@@ -1142,16 +719,20 @@ const getClientSideScripts = (pageState: CloudPage) => {
             emailInput.addEventListener('blur', function() { validateEmail(this); });
         }
         
+        setupMobileMenu();
         setupForms();
         setupAccordions();
         setupTabs();
         setSocialIconStyles();
         handleConditionalFields();
+        setupStickyHeader();
+        setupCarousels();
+        setupAnimations();
     });
-</script>
+    </script>
     `;
 
-    return `${lottiePlayerScript}${script}`;
+    return `${lottiePlayerScript}${carouselScript}${script}`;
 };
 
 const getPrefillAmpscript = (pageState: CloudPage): string => {
@@ -1159,7 +740,7 @@ const getPrefillAmpscript = (pageState: CloudPage): string => {
     if (!formComponent) return '';
 
     const fieldsToPrefill: {name: string, param: string}[] = [];
-    const fields = formComponent.props.fields as Record<string, FormFieldConfig>;
+    const fields = formComponent.props.fields;
 
     if (fields?.name?.prefillFromUrl) fieldsToPrefill.push({name: 'NOME', param: 'nome'});
     if (fields?.email?.prefillFromUrl) fieldsToPrefill.push({name: 'EMAIL', param: 'email'});
@@ -1180,29 +761,49 @@ ${setStatements}
 `;
 }
 
+const renderLoader = (meta: CloudPage['meta'], themeColor: string): string => {
+    if (meta.loaderType === 'none') {
+        return '';
+    }
+
+    if (meta.loaderType === 'image' && meta.loaderImageUrl) {
+        return `
+            <div id="loader" style="background-color: ${themeColor};">
+                <img src="${meta.loaderImageUrl}" alt="Carregando...">
+            </div>
+        `;
+    }
+    
+    // Default to animation
+    const animationClass = meta.loaderAnimation === 'spin' ? 'loader-spin' : 'loader-pulse';
+    return `
+        <div id="loader" style="background-color: ${themeColor};">
+            <div class="${animationClass}" style="--loader-color: #FFFFFF"></div>
+        </div>
+    `;
+};
+
+
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string {
-  const { id, styles, components, meta, cookieBanner } = pageState;
+  const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
   const ssjsScript = getFormSubmissionScript(pageState);
 
-  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
-  
   const security = getSecurityScripts(pageState);
   
   const clientSideScripts = getClientSideScripts(pageState);
   
-  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
+  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '')).join('\n');
   const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
-  const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
-  const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
-  const footerComponent = components.find(c => c.type === 'Footer' && c.parentId === null);
+  
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState, isForPreview);
-  
-  const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe'), components, pageState, isForPreview);
+
+  const pageIdentifier = slug || id;
+  const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${pageIdentifier}" alt="" width="1" height="1" style="display:none" />`;
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
@@ -1233,7 +834,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-${trackingScripts}
+${trackingScripts.head}
 <style>
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
@@ -1266,79 +867,224 @@ ${trackingScripts}
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        background-color: ${styles.themeColor};
     }
-
     #loader img {
         width: 150px;
         height: 150px;
         object-fit: contain;
         border-radius: 0%;
         animation: pulse 2s infinite;
-        filter: brightness(0) invert(1);
+    }
+    .loader-pulse {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--loader-color, #FFF);
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+    .loader-spin {
+        width: 60px;
+        height: 60px;
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-top-color: var(--loader-color, #FFF);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
     }
 
     @keyframes pulse {
-        0% {
-            transform: scale(1);
-            opacity: 1;
-        }
-        50% {
-            transform: scale(1.1);
-            opacity: 0.8;
-        }
-        100% {
-            transform: scale(1);
-            opacity: 1;
-        }
+        0% { transform: scale(0.8); opacity: 0.7; }
+        50% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0.8); opacity: 0.7; }
     }
-  
   
     @keyframes spin {
         100% {
             transform: rotate(360deg);
         }
     }
+    
+    .section-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .animate-on-scroll {
+        opacity: 0;
+    }
+    .animate-on-scroll.is-visible {
+        opacity: 1;
+    }
+    .animate-on-scroll.is-visible.animate-fadeIn { animation-name: fadeInUp; }
+    .animate-on-scroll.is-visible.animate-fadeInUp { animation-name: fadeInUp; }
+    .animate-on-scroll.is-visible.animate-fadeInLeft { animation-name: fadeInLeft; }
+    .animate-on-scroll.is-visible.animate-fadeInRight { animation-name: fadeInRight; }
 
-    .logo {
-        margin-top: 10px;
-        margin-bottom: 20px;
-        text-align: center;
+
+    .section-wrapper[style*="background-color"] {
+        /* This element will have the background color */
     }
 
-    .logo img {
-        width: 150px;
+    .section-container {
+        width: 100%;
+        max-width: 1200px;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 1rem;
+        box-sizing: border-box;
+        transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+    .page-header[data-sticky="true"] {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+    .page-header.scrolled {
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    .page-header .header-logo img {
+        width: auto;
+    }
+    .header-nav-container {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    .page-header .header-nav ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        gap: 1.5rem;
+    }
+    .page-header .header-nav a {
+        text-decoration: none;
+        color: inherit;
+        font-weight: 500;
+    }
+    .page-header .header-button {
+        background-color: var(--theme-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .page-header[data-layout="logo-center-menu-below"] {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .page-header[data-layout="logo-only-left"] .header-logo { margin-right: auto; }
+    .page-header[data-layout="logo-only-center"] { justify-content: center; }
+
+    .mobile-menu-toggle { display: none; background: none; border: none; cursor: pointer; color: inherit; }
+
+    @media (max-width: 768px) {
+        .page-header .header-nav-container {
+            display: flex; /* Keep it flex for drawer/overlay */
+        }
+        .page-header .header-nav ul {
+            flex-direction: column;
+            width: 100%;
+            gap: 1rem !important;
+        }
+        .mobile-menu-toggle { display: block; margin-left: auto; }
+        
+        /* Push Down Behavior */
+        .page-header[data-mobile-menu-behavior="push"] .header-nav-container {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            align-items: flex-start;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .page-header[data-mobile-menu-behavior="push"].mobile-menu-open .header-nav-container {
+            display: flex;
+        }
+
+        /* Drawer Behavior */
+        body.menu-drawer-open { overflow: hidden; }
+        .page-header[data-mobile-menu-behavior="drawer"] .header-nav-container {
+            position: fixed;
+            top: 0;
+            right: -80%;
+            width: 80%;
+            height: 100%;
+            background-color: #fff;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+            flex-direction: column;
+            padding: 2rem;
+            box-sizing: border-box;
+            transition: right 0.3s ease-in-out;
+            z-index: 1001;
+        }
+        body.menu-drawer-open .page-header[data-mobile-menu-behavior="drawer"] .header-nav-container {
+            right: 0;
+        }
+        
+        /* Overlay Behavior */
+        body.menu-overlay-open { overflow: hidden; }
+        .page-header[data-mobile-menu-behavior="overlay"] .header-nav-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            color: white;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            z-index: 1001;
+        }
+         body.menu-overlay-open .page-header[data-mobile-menu-behavior="overlay"] .header-nav-container {
+            opacity: 1;
+            visibility: visible;
+        }
+        .page-header[data-mobile-menu-behavior="overlay"] .header-nav ul,
+        .page-header[data-mobile-menu-behavior="drawer"] .header-nav ul {
+            align-items: center;
+        }
+        .page-header[data-mobile-menu-behavior="overlay"] .header-nav a {
+            font-size: 1.5rem;
+        }
     }
 
-    .container {
-        background-color: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        width: 90%;
-        max-width: 800px;
-        text-align: center;
-        margin-top: 20px;
-        margin-bottom: 20px;
+    #mobile-menu-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        display: none;
+    }
+    body.menu-drawer-open #mobile-menu-overlay {
+        display: block;
     }
 
-    .banner img {
+    .banner-container {
+        display: block;
+        width: 100%;
+    }
+    .banner-media {
         width: 100%;
         height: 100%;
+        display: block;
         object-fit: cover;
     }
-    
-    .content-wrapper {
-        padding: 20px 40px;
-        color: #333;
+    .banner-container:hover {
+        filter: brightness(1.05);
+        transition: filter 0.3s;
     }
     
-    .content-wrapper .component-wrapper > * {
-        text-align: left;
-        margin-top: 1em;
-        margin-bottom: 1em;
-    }
-
     [contenteditable="true"]:focus {
       outline: 2px solid ${styles.themeColor};
       box-shadow: 0 0 5px ${styles.themeColor};
@@ -1348,12 +1094,54 @@ ${trackingScripts}
         font-weight: bold;
     }
 
+    .ampscript-preview-block {
+        background-color: rgba(22, 11, 56, 0.05);
+        color: #333;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 12px;
+        padding: 1rem 1rem 1rem 2.5rem;
+        border-radius: 8px;
+        margin: 0;
+        border: 1px dashed #ccc;
+        position: relative;
+        overflow: hidden;
+    }
+    .ampscript-preview-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .ampscript-preview-block::before {
+        content: '</>';
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background-color: #e2e8f0;
+        color: #4a5568;
+        padding: 1rem 0.5rem;
+        font-size: 14px;
+        font-family: sans-serif;
+        font-weight: bold;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+        border-right: 1px solid #ccc;
+    }
+    .ampscript-inline-preview {
+        background-color: #e0f2fe;
+        color: #0c4a6e;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.9em;
+    }
 
     .video-container {
         position: relative;
         overflow: hidden;
         width: 100%;
-        padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        padding-top: 56.25%;
     }
 
     .video-container iframe {
@@ -1364,15 +1152,17 @@ ${trackingScripts}
         height: 100%;
     }
 
-    .countdown {
-        font-size: 2em;
-        font-weight: bold;
-        color: ${styles.themeColor};
-        text-align: center;
-    }
-    
+    .countdown-wrapper { display: flex; justify-content: center; }
+    .countdown-item { display: flex; flex-direction: column; align-items: center; }
+    .countdown-value { display: flex; align-items: center; justify-content: center; }
+    .countdown-label { text-transform: uppercase; }
+    .countdown-blocks .countdown-value { padding: 1rem; border-radius: 0.375rem; }
+    .countdown-circles .countdown-value { width: 80px; height: 80px; border-radius: 50%; position: relative; }
+    .countdown-circle-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotateY(-180deg) rotateZ(-90deg); }
+    .countdown-circle-svg circle { fill: none; stroke-width: 4; }
+    .countdown-circle-svg .countdown-circle-progress { stroke: var(--theme-color); stroke-dasharray: 113; transition: stroke-dashoffset 1s linear; }
+
     .custom-button, .thank-you-message a.custom-button {
-      background-color: var(--theme-color);
       color: white !important;
       padding: 10px 20px;
       text-decoration: none;
@@ -1381,6 +1171,26 @@ ${trackingScripts}
       transition: background-color 0.3s ease;
       border: none;
       cursor: pointer;
+    }
+    .custom-button--default { background-color: var(--theme-color); }
+    .custom-button--default:hover { background-color: var(--theme-color-hover); }
+    .custom-button--destructive { background-color: #ef4444; }
+    .custom-button--destructive:hover { background-color: #dc2626; }
+    .custom-button--outline { background-color: transparent; border: 1px solid var(--theme-color); color: var(--theme-color) !important; }
+    .custom-button--outline:hover { background-color: var(--theme-color); color: white !important; }
+    .custom-button--secondary { background-color: #64748b; }
+    .custom-button--secondary:hover { background-color: #475569; }
+    .custom-button--ghost { background-color: transparent; color: var(--theme-color) !important; }
+    .custom-button--ghost:hover { background-color: #f1f5f9; }
+    .custom-button--link {
+        background-color: transparent !important;
+        color: var(--theme-color) !important;
+        padding: 0 !important;
+        text-decoration: none !important;
+        border-radius: 0 !important;
+    }
+    .custom-button--link:hover {
+        text-decoration: underline !important;
     }
     
     .custom-button:hover, .thank-you-message a.custom-button:hover {
@@ -1552,6 +1362,97 @@ ${trackingScripts}
         width: 100%;
     }
 
+    .ftp-upload-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        background-color: #f9fafb;
+    }
+    .ftp-upload-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .ftp-upload-header h4 {
+      font-size: 1.25rem;
+      font-weight: bold;
+      margin: 0 0 5px 0;
+    }
+    .ftp-upload-header p {
+      font-size: 0.9rem;
+      color: #666;
+      margin: 0;
+    }
+    .ftp-upload-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .ftp-upload-drop-area {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    .ftp-upload-drop-area.active {
+        background-color: #e9e9e9;
+        border-color: var(--theme-color);
+    }
+    .ftp-upload-drop-area input[type="file"] {
+        display: none;
+    }
+    .ftp-upload-icon svg {
+        width: 48px;
+        height: 48px;
+        color: var(--theme-color);
+        margin: 0 auto 10px auto;
+    }
+    .ftp-upload-instruction {
+        font-weight: bold;
+        color: #333;
+    }
+    .ftp-upload-filename {
+        display: block;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: #555;
+    }
+    .ftp-upload-progress-wrapper {
+        display: none;
+        width: 100%;
+        height: 8px;
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    .ftp-upload-progress-bar {
+        width: 0%;
+        height: 100%;
+        background-color: var(--theme-color);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    .ftp-upload-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+    }
+    .ftp-upload-status {
+        font-size: 0.9rem;
+    }
+    .ftp-upload-form .custom-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 5px;
+    }
+
+
     footer {
         -webkit-font-smoothing: antialiased;
         color: rgba(0, 0, 0, 0.87);
@@ -1586,7 +1487,6 @@ ${trackingScripts}
         gap: 10px;
     }
 
-    /* Accordion Styles */
     .accordion-container {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -1639,7 +1539,6 @@ ${trackingScripts}
         padding: 15px;
     }
 
-    /* Tabs Styles */
     .tabs-container { }
     .tab-list {
         display: flex;
@@ -1667,7 +1566,6 @@ ${trackingScripts}
         text-align: left;
     }
 
-    /* Voting Component Styles */
     .voting-container {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -1732,7 +1630,7 @@ ${trackingScripts}
         font-weight: bold;
         width: 50px;
     }
-    /* Stripe Styles */
+
     .stripe-container {
         width: 100%;
         padding: 10px 20px;
@@ -1740,13 +1638,40 @@ ${trackingScripts}
         display: flex;
         align-items: center;
         justify-content: center;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
+        position: relative;
+        gap: 1rem;
     }
-    .stripe-container p {
-        margin: 0;
+    .stripe-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
         flex-grow: 1;
+        justify-content: center;
+    }
+    .stripe-content p {
+        margin: 0;
+    }
+    .stripe-icon svg {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+    .stripe-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .stripe-button {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: inherit;
+        text-decoration: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+    .stripe-button:hover {
+        background-color: rgba(255, 255, 255, 0.3);
     }
     .stripe-close-btn {
         background: none;
@@ -1755,11 +1680,13 @@ ${trackingScripts}
         font-size: 24px;
         line-height: 1;
         cursor: pointer;
-        padding: 0 10px;
-        position: absolute;
-        right: 10px;
+        padding: 0 5px;
+        opacity: 0.7;
     }
-    /* NPS Component Styles */
+     .stripe-close-btn:hover {
+        opacity: 1;
+    }
+
     .nps-container {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -1821,17 +1748,17 @@ ${trackingScripts}
         font-weight: bold;
         color: var(--theme-color);
     }
-    /* Map Component Styles */
+
     .map-container {
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid #e0e0e0;
     }
-    /* Social Icons Styles */
+
     .social-icons-container {
         display: flex;
         gap: 15px;
-        justify-content: center; /* Default, can be overridden by inline style */
+        justify-content: center;
     }
     .social-icon {
         display: inline-block;
@@ -1843,21 +1770,84 @@ ${trackingScripts}
         color: var(--theme-color);
     }
     .social-icon svg {
-        width: 24px; /* Default size */
+        width: 24px;
         height: 24px;
     }
 
-    /* Columns Styles */
     .columns-container {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(var(--column-count, 2), 1fr);
         gap: 20px;
         width: 100%;
+        position: relative; /* For hero text overlay */
     }
-    .column {
+    .columns-container .column {
         flex: 1;
         min-width: 0;
     }
-    /* WhatsApp Button Styles */
+
+    /* Hero Specific Styles */
+    .hero-section > .columns-container[style*="--column-count: 1"] {
+        display: block; /* Override grid for background image hero */
+        padding: 0;
+    }
+    .columns-container[style*="background-image"] {
+        background-size: cover;
+        background-position: center center;
+        position: relative;
+        min-height: 50vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .columns-container[style*="background-image"]::before {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; bottom: 0; left: 0;
+        background-color: rgba(0,0,0,0.5); /* Dimming overlay */
+    }
+    .columns-container[style*="background-image"] > .column {
+        position: relative; /* Ensure text is above the overlay */
+        z-index: 1;
+    }
+
+    .carousel-container { position: relative; }
+    .carousel-viewport { overflow: hidden; }
+    .carousel-inner { display: flex; }
+    .carousel-slide { flex: 0 0 auto; min-width: 0; }
+    .carousel-slide img { display: block; width: 100%; object-fit: contain; }
+    .carousel-prev, .carousel-next {
+        cursor: pointer; position: absolute; top: 50%; transform: translateY(-50%);
+        background-color: rgba(255,255,255,0.7); border: none; border-radius: 50%;
+        width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    }
+    .carousel-prev { left: 10px; }
+    .carousel-next { right: 10px; }
+    .carousel-dots { text-align: center; padding-top: 10px; }
+    .carousel-dot {
+        cursor: pointer; height: 12px; width: 12px; margin: 0 5px;
+        background-color: #bbb; border-radius: 50%; display: inline-block;
+        transition: background-color 0.6s ease;
+    }
+    .carousel-dot.is-selected { background-color: var(--theme-color); }
+
+    .logo-carousel .carousel-slide {
+        padding: 0 20px;
+    }
+    .logo-carousel img {
+        max-height: 60px;
+        width: auto;
+        margin: 0 auto;
+        filter: grayscale(100%);
+        opacity: 0.6;
+        transition: all 0.3s ease;
+    }
+    .logo-carousel img:hover {
+        filter: grayscale(0%);
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
     .whatsapp-float-btn {
         position: fixed;
         width: 60px;
@@ -1886,7 +1876,6 @@ ${trackingScripts}
         height: 32px;
     }
 
-    /* Password Protection Styles */
     .password-protection-container {
         display: flex;
         align-items: center;
@@ -1928,42 +1917,59 @@ ${trackingScripts}
         display: block;
         margin-top: 10px;
     }
+    
+    @keyframes fadeInUp { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+    @keyframes fadeInLeft { from { opacity: 0; transform: translate3d(-50px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+    @keyframes fadeInRight { from { opacity: 0; transform: translate3d(50px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .animate-on-scroll {
+        opacity: 0;
+    }
+    .animate-on-scroll.is-visible {
+        animation-fill-mode: both;
+    }
 
 
     @media (max-width: 768px) {
-        .columns-container {
-            flex-direction: column;
+        .columns-container:not([style*="--column-count: 1"]) {
+            grid-template-columns: 1fr;
         }
         .form-container .row {
             flex-direction: column;
             gap: 10px;
         }
+        .footer-section .columns-container {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+        .footer-section .columns-container .column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+         .footer-section .social-icons-container {
+            justify-content: center;
+        }
     }
 
 
-    /* Custom CSS */
     ${styles.customCss || ''}
 </style>
 ${clientSideScripts}
 </head>
 <body>
-${initialAmpscript}
-${ssjsScript}
+${wrapInPreviewBlock(trackingScripts.body, 'Tracking Scripts (Body)', isForPreview)}
+${wrapInPreviewBlock(initialAmpscript, 'Initial AMPScript', isForPreview)}
+${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   %%[ IF @isAuthenticated == true THEN ]%%
-  <div id="loader">
-    <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
-  </div>
+  ${renderLoader(meta, styles.themeColor)}
   ${stripeComponents}
-  <div class="container">
-    ${headerComponent ? renderComponent(headerComponent, pageState, isForPreview) : ''}
-    ${bannerComponent ? renderComponent(bannerComponent, pageState, isForPreview) : ''}
-    <div class="content-wrapper">
-      ${mainComponents}
-    </div>
-    ${footerComponent ? renderComponent(footerComponent, pageState, isForPreview) : ''}
-  </div>
-
-  ${whatsAppComponent ? renderComponent(whatsAppComponent, pageState, isForPreview) : ''}
+  <div id="mobile-menu-overlay"></div>
+  <main>
+    ${mainContentHtml}
+  </main>
+  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '') : ''}
   ${cookieBannerHtml}
   ${trackingPixel}
   %%[ ELSE ]%%

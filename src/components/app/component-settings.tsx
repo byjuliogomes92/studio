@@ -2,12 +2,12 @@
 
 "use client";
 
-import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant } from "@/lib/types";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download, Send, ArrowRight, CheckCircle, GripVertical } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Trash2, Plus, Star, Scaling, Facebook, Instagram, Linkedin, MessageCircle, Youtube, Twitter, Zap, Wand2, Loader2, Download, Send, ArrowRight, CheckCircle, GripVertical, Library, Megaphone } from "lucide-react";
 import {
   Tooltip,
   TooltipProvider,
@@ -35,6 +35,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
+import { MediaLibraryDialog } from "./media-library-dialog";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -59,6 +60,22 @@ const lucideIcons = [
     { value: 'download', label: 'Download' },
     { value: 'star', label: 'Estrela' },
     { value: 'zap', label: 'Raio' },
+];
+
+const stripeIcons = [
+    { value: 'none', label: 'Sem ícone' },
+    { value: 'megaphone', label: 'Megafone' },
+    { value: 'star', label: 'Estrela' },
+    { value: 'zap', label: 'Raio (Promoção)' },
+];
+
+const headerLayouts: { value: HeaderLayout; label: string; viz: React.ReactNode }[] = [
+    { value: 'logo-left-menu-right', label: 'Logo Esquerda, Menu Direita', viz: <div className="space-y-1 w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
+    { value: 'logo-left-menu-button-right', label: 'Logo Esquerda, Menu e Botão Direita', viz: <div className="space-y-1 w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div><div className="w-4 h-2 ml-auto rounded-sm bg-primary"></div></div> },
+    { value: 'logo-center-menu-below', label: 'Logo Central, Menu Abaixo', viz: <div className="flex flex-col items-center w-full space-y-1"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
+    { value: 'logo-left-button-right', label: 'Logo Esquerda, Botão Direita', viz: <div className="flex justify-between w-full items-center"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-4 h-2 rounded-sm bg-primary"></div></div> },
+    { value: 'logo-only-center', label: 'Apenas Logo (Centro)', viz: <div className="flex justify-center w-full"><div className="w-6 h-3 rounded-sm bg-current"></div></div> },
+    { value: 'logo-only-left', label: 'Apenas Logo (Esquerda)', viz: <div className="flex justify-start w-full"><div className="w-6 h-3 rounded-sm bg-current"></div></div> },
 ];
 
 function SpacingSettings({ props, onPropChange }: { props: any, onPropChange: (prop: string, value: any) => void }) {
@@ -485,6 +502,125 @@ function AnimationPreview({ animation }: { animation: keyof typeof animationUrls
     );
 }
 
+function ImageInput({ label, value, onPropChange, propName, tooltipText }: { label: string, value: string, onPropChange: (prop: string, value: any) => void, propName: string, tooltipText: string }) {
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+                <Label htmlFor={`image-url-${propName}`}>{label}</Label>
+                <Tooltip>
+                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                    <TooltipContent><p>{tooltipText}</p></TooltipContent>
+                </Tooltip>
+            </div>
+            <div className="flex items-center gap-2">
+                <Input
+                    id={`image-url-${propName}`}
+                    value={value || ""}
+                    onChange={(e) => onPropChange(propName, e.target.value)}
+                    className="flex-grow"
+                />
+                <MediaLibraryDialog onSelectImage={(url) => onPropChange(propName, url)}>
+                    <Button variant="outline" size="icon">
+                        <Library className="h-4 w-4" />
+                    </Button>
+                </MediaLibraryDialog>
+            </div>
+        </div>
+    );
+}
+
+function HeaderLinksManager({ links, onPropChange }: { links: HeaderLink[], onPropChange: (prop: string, value: any) => void }) {
+    const handleLinkChange = (index: number, field: keyof HeaderLink, value: string) => {
+        const newLinks = produce(links, draft => {
+            draft[index][field] = value;
+        });
+        onPropChange('links', newLinks);
+    };
+
+    const addLink = () => {
+        const newLink: HeaderLink = { id: `link-${Date.now()}`, text: 'Novo Link', url: '#' };
+        onPropChange('links', [...(links || []), newLink]);
+    };
+
+    const removeLink = (index: number) => {
+        const newLinks = links.filter((_, i) => i !== index);
+        onPropChange('links', newLinks);
+    };
+
+    return (
+        <div className="space-y-4">
+            <Label>Itens de Menu</Label>
+            {links?.map((link, index) => (
+                <div key={link.id} className="p-3 border rounded-md space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-end">
+                        <Button variant="ghost" size="icon" onClick={() => removeLink(index)} className="h-7 w-7 text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor={`link-text-${link.id}`} className="text-xs">Texto</Label>
+                            <Input id={`link-text-${link.id}`} value={link.text} onChange={e => handleLinkChange(index, 'text', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor={`link-url-${link.id}`} className="text-xs">URL</Label>
+                            <Input id={`link-url-${link.id}`} value={link.url} onChange={e => handleLinkChange(index, 'url', e.target.value)} />
+                        </div>
+                    </div>
+                </div>
+            ))}
+            <Button variant="outline" className="w-full" onClick={addLink}>
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Item de Menu
+            </Button>
+        </div>
+    );
+}
+
+function CarouselImageManager({ images, onPropChange }: { images: { id: string; url: string; alt: string }[], onPropChange: (prop: string, value: any) => void }) {
+    const handleImageChange = (id: string, field: 'url' | 'alt', value: string) => {
+        const newImages = images.map(img => img.id === id ? { ...img, [field]: value } : img);
+        onPropChange('images', newImages);
+    };
+
+    const addImage = () => {
+        const newImage = { id: `slide-${Date.now()}`, url: 'https://placehold.co/800x400.png', alt: 'Novo Slide' };
+        onPropChange('images', [...(images || []), newImage]);
+    };
+
+    const removeImage = (id: string) => {
+        onPropChange('images', images.filter(img => img.id !== id));
+    };
+
+    return (
+        <div className="space-y-4">
+            <Label>Slides do Carrossel</Label>
+            {images?.map(image => (
+                <div key={image.id} className="p-3 border rounded-md space-y-3 bg-muted/30">
+                     <div className="flex items-center justify-end">
+                        <Button variant="ghost" size="icon" onClick={() => removeImage(image.id)} className="h-7 w-7 text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <ImageInput
+                        label="URL da Imagem"
+                        value={image.url}
+                        onPropChange={(_, value) => handleImageChange(image.id, 'url', value)}
+                        propName={`url-${image.id}`}
+                        tooltipText="URL da imagem para este slide."
+                    />
+                    <div className="space-y-2">
+                        <Label htmlFor={`alt-${image.id}`}>Texto Alternativo</Label>
+                        <Input id={`alt-${image.id}`} value={image.alt} onChange={e => handleImageChange(image.id, 'alt', e.target.value)} />
+                    </div>
+                </div>
+            ))}
+            <Button variant="outline" className="w-full" onClick={addImage}>
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Slide
+            </Button>
+        </div>
+    );
+}
+
 
 const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
     
@@ -534,39 +670,269 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
     const activeFormFields = getActiveFormFields();
 
     switch (type) {
-      case "Header":
+      case "Header": {
+        const layout = props.layout || 'logo-left-menu-right';
+        const showMenu = layout.includes('menu');
+        const showButton = layout.includes('button');
         return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Label htmlFor="logo-url">URL do Logo</Label>
-              <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>URL para a imagem do logo no cabeçalho.</p></TooltipContent>
-              </Tooltip>
+            <div className="space-y-4">
+                <ImageInput 
+                    label="URL do Logo"
+                    value={props.logoUrl || ""}
+                    onPropChange={onPropChange}
+                    propName="logoUrl"
+                    tooltipText="URL para a imagem do logo no cabeçalho."
+                />
+                 <div className="space-y-2">
+                    <Label htmlFor="header-logo-height">Altura do Logo (px)</Label>
+                    <Input 
+                        id="header-logo-height"
+                        type="number"
+                        value={props.logoHeight || 40} 
+                        onChange={(e) => onPropChange('logoHeight', parseInt(e.target.value, 10))}
+                        placeholder="40"
+                    />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="header-layout">Layout do Cabeçalho</Label>
+                    <RadioGroup 
+                        value={layout} 
+                        onValueChange={(value) => onPropChange('layout', value)} 
+                        className="grid grid-cols-2 gap-2"
+                    >
+                        {headerLayouts.map(item => (
+                             <Label
+                                key={item.value}
+                                htmlFor={`layout-${item.value}`}
+                                className={cn(
+                                    "flex flex-col items-start gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all text-foreground",
+                                    "hover:bg-accent/50 hover:border-primary/50",
+                                    layout === item.value && "border-primary bg-primary/5"
+                                )}
+                            >
+                                <RadioGroupItem value={item.value} id={`layout-${item.value}`} className="sr-only" />
+                                <div className="h-10 w-full flex items-center text-muted-foreground">{item.viz}</div>
+                                <span className="text-xs font-semibold">{item.label}</span>
+                            </Label>
+                        ))}
+                    </RadioGroup>
+                </div>
+                {showMenu && (
+                    <HeaderLinksManager links={props.links || []} onPropChange={onPropChange} />
+                )}
+                {showButton && (
+                    <div className="p-3 border rounded-md space-y-3 bg-muted/30">
+                         <h4 className="font-medium text-sm">Botão de Ação</h4>
+                         <div className="space-y-2">
+                            <Label htmlFor="header-button-text">Texto do Botão</Label>
+                            <Input id="header-button-text" value={props.buttonText || ''} onChange={(e) => onPropChange('buttonText', e.target.value)} />
+                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="header-button-url">URL do Botão</Label>
+                            <Input id="header-button-url" value={props.buttonUrl || ''} onChange={(e) => onPropChange('buttonUrl', e.target.value)} />
+                         </div>
+                    </div>
+                )}
+                 <Separator />
+                <h4 className="font-medium text-sm pt-2">Comportamento Fixo (Sticky)</h4>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="header-sticky">Fixo no Topo</Label>
+                    <Switch
+                        id="header-sticky"
+                        checked={props.isSticky || false}
+                        onCheckedChange={(checked) => onPropChange('isSticky', checked)}
+                    />
+                </div>
+                {props.isSticky && (
+                    <div className="space-y-4 pt-2">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="header-bg">Fundo (Topo)</Label>
+                                <Input id="header-bg" type="color" value={props.backgroundColor || '#ffffff00'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="header-text-color">Texto (Topo)</Label>
+                                <Input id="header-text-color" type="color" value={props.textColor || '#000000'} onChange={(e) => onPropChange('textColor', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="header-bg-scroll">Fundo (Rolagem)</Label>
+                                <Input id="header-bg-scroll" type="color" value={props.backgroundColorOnScroll || '#ffffffff'} onChange={(e) => onPropChange('backgroundColorOnScroll', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="header-text-scroll">Texto (Rolagem)</Label>
+                                <Input id="header-text-scroll" type="color" value={props.textColorOnScroll || '#000000'} onChange={(e) => onPropChange('textColorOnScroll', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <Separator />
+                <h4 className="font-medium text-sm pt-2">Menu Mobile</h4>
+                <div className="space-y-2">
+                    <Label>Comportamento do Menu Mobile</Label>
+                    <Select value={props.mobileMenuBehavior || 'push'} onValueChange={(value: MobileMenuBehavior) => onPropChange('mobileMenuBehavior', value)}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="push">Empurrar Conteúdo</SelectItem>
+                            <SelectItem value="drawer">Deslizar da Direita (Drawer)</SelectItem>
+                            <SelectItem value="overlay">Tela Cheia (Overlay)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
-            <Input
-              id="logo-url"
-              value={props.logoUrl || ""}
-              onChange={(e) => onPropChange("logoUrl", e.target.value)}
-            />
-          </div>
         );
+      }
+      case "Columns": {
+        const styles = props.styles || {};
+        return (
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="columns-full-width" className="font-semibold">Largura Total da Seção</Label>
+                    <Switch
+                        id="columns-full-width"
+                        checked={styles.isFullWidth || false}
+                        onCheckedChange={(checked) => onSubPropChange('styles', 'isFullWidth', checked)}
+                    />
+                </div>
+                 {styles.isFullWidth && (
+                    <div className="space-y-2">
+                        <Label htmlFor="columns-bg-color">Cor de Fundo da Seção</Label>
+                        <Input 
+                          id="columns-bg-color"
+                          type="color"
+                          value={styles.backgroundColor || '#ffffff'}
+                          onChange={(e) => onSubPropChange('styles', 'backgroundColor', e.target.value)}
+                          className="p-1 h-10"
+                        />
+                    </div>
+                )}
+            </div>
+        );
+      }
       case "Banner":
         return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Label htmlFor="image-url">URL da Imagem</Label>
-              <Tooltip>
-                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                  <TooltipContent><p>URL para a imagem principal do banner.</p></TooltipContent>
-              </Tooltip>
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Tipo de Mídia</Label>
+                    <Select value={props.mediaType || 'image'} onValueChange={(value) => onPropChange('mediaType', value)}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="image">Imagem / GIF</SelectItem>
+                            <SelectItem value="video">Vídeo</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {props.mediaType === 'video' ? (
+                    <ImageInput 
+                        label="URL do Vídeo (MP4)"
+                        value={props.videoUrl || ""}
+                        onPropChange={onPropChange}
+                        propName="videoUrl"
+                        tooltipText="URL para o arquivo de vídeo .mp4."
+                    />
+                ) : (
+                    <>
+                        <ImageInput 
+                            label="URL da Imagem (Desktop)"
+                            value={props.imageUrl || ""}
+                            onPropChange={onPropChange}
+                            propName="imageUrl"
+                            tooltipText="URL para a imagem principal do banner."
+                        />
+                         <ImageInput 
+                            label="URL da Imagem (Mobile)"
+                            value={props.mobileImageUrl || ""}
+                            onPropChange={onPropChange}
+                            propName="mobileImageUrl"
+                            tooltipText="Opcional. Uma imagem vertical para melhor visualização em celulares."
+                        />
+                    </>
+                )}
+
+                <Separator />
+                <div className="space-y-2">
+                    <Label htmlFor="banner-link-url">URL do Link (Opcional)</Label>
+                    <Input
+                        id="banner-link-url"
+                        value={props.linkUrl || ""}
+                        onChange={(e) => onPropChange("linkUrl", e.target.value)}
+                        placeholder="https://exemplo.com"
+                    />
+                </div>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="banner-full-width">Largura Total</Label>
+                    <Switch
+                        id="banner-full-width"
+                        checked={props.isFullWidth || false}
+                        onCheckedChange={(checked) => onPropChange('isFullWidth', checked)}
+                    />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="banner-padding">Espaçamento Interno</Label>
+                    <Input
+                        id="banner-padding"
+                        value={props.padding || "0"}
+                        onChange={(e) => onPropChange("padding", e.target.value)}
+                        placeholder="Ex: 20px ou 1rem 2rem"
+                    />
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="banner-height-desktop">Altura (Desktop)</Label>
+                        <Input
+                            id="banner-height-desktop"
+                            value={props.height || ""}
+                            onChange={(e) => onPropChange("height", e.target.value)}
+                            placeholder="Ex: 500px, 60vh"
+                        />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="banner-height-mobile">Altura (Mobile)</Label>
+                        <Input
+                            id="banner-height-mobile"
+                            value={props.mobileHeight || ""}
+                            onChange={(e) => onPropChange("mobileHeight", e.target.value)}
+                            placeholder="Ex: 300px, 50vh"
+                        />
+                    </div>
+                </div>
             </div>
-            <Input
-              id="image-url"
-              value={props.imageUrl || ""}
-              onChange={(e) => onPropChange("imageUrl", e.target.value)}
-            />
-          </div>
+        );
+      case "Footer":
+        return (
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="footer-text1">Texto de Copyright (Linha 1)</Label>
+                    <DebouncedTextInput
+                        id="footer-text1"
+                        value={props.footerText1 || ''}
+                        onBlur={(value) => onPropChange('footerText1', value)}
+                        rows={3}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="footer-text2">Informações da Empresa (Linha 2)</Label>
+                    <DebouncedTextInput
+                        id="footer-text2"
+                        value={props.footerText2 || ''}
+                        onBlur={(value) => onPropChange('footerText2', value)}
+                        rows={3}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="footer-text3">Avisos Legais (Linha 3)</Label>
+                    <DebouncedTextInput
+                        id="footer-text3"
+                        value={props.footerText3 || ''}
+                        onBlur={(value) => onPropChange('footerText3', value)}
+                        rows={3}
+                    />
+                </div>
+            </div>
         );
       case "Title":
       case "Subtitle":
@@ -632,21 +998,13 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
       case "Image":
         return (
           <div className="space-y-4">
-             <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Label htmlFor="image-src">URL da Imagem</Label>
-                   <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>URL de origem para a imagem.</p></TooltipContent>
-                  </Tooltip>
-                </div>
-                <Input
-                    id="image-src"
-                    value={props.src || ""}
-                    onChange={(e) => onPropChange("src", e.target.value)}
-                    placeholder="https://placehold.co/800x200.png"
-                />
-             </div>
+             <ImageInput 
+                label="URL da Imagem"
+                value={props.src || ""}
+                onPropChange={onPropChange}
+                propName="src"
+                tooltipText="URL de origem para a imagem."
+            />
               <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Label htmlFor="image-alt">Texto Alternativo</Label>
@@ -676,6 +1034,32 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
             />
           </div>
         );
+      case 'Carousel':
+        return (
+            <div className="space-y-4">
+                <CarouselImageManager images={props.images || []} onPropChange={onPropChange} />
+                <Separator />
+                <h4 className="font-medium text-sm pt-2">Opções do Carrossel</h4>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="carousel-loop">Loop Infinito</Label>
+                    <Switch id="carousel-loop" checked={props.options?.loop || false} onCheckedChange={(checked) => onSubPropChange('options', 'loop', checked)} />
+                </div>
+                 <div className="flex items-center justify-between">
+                    <Label htmlFor="carousel-autoplay">Autoplay</Label>
+                    <Switch id="carousel-autoplay" checked={props.options?.autoplay?.delay > 0} onCheckedChange={(checked) => onSubPropChange('options', 'autoplay', checked ? { delay: 4000 } : null)} />
+                </div>
+                {props.options?.autoplay && (
+                    <div className="space-y-2">
+                        <Label htmlFor="carousel-speed">Velocidade do Autoplay (ms)</Label>
+                        <Input id="carousel-speed" type="number" value={props.options.autoplay.delay} onChange={(e) => onSubPropChange('options', 'autoplay', { delay: parseInt(e.target.value) })} />
+                    </div>
+                )}
+                 <div className="flex items-center justify-between">
+                    <Label htmlFor="carousel-arrows">Mostrar Setas</Label>
+                    <Switch id="carousel-arrows" checked={props.showArrows !== false} onCheckedChange={(checked) => onPropChange('showArrows', checked)} />
+                </div>
+            </div>
+        );
       case 'Countdown':
         return (
           <div className="space-y-4">
@@ -689,7 +1073,54 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
               />
             </div>
             <Separator />
-            <TextStyleSettings props={props} onPropChange={onPropChange} />
+            <div className="space-y-2">
+              <Label>Estilo do Contador</Label>
+              <Select value={props.style || 'blocks'} onValueChange={(value) => onPropChange('style', value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="blocks">Blocos</SelectItem>
+                      <SelectItem value="circles">Círculos</SelectItem>
+                      <SelectItem value="simple">Minimalista</SelectItem>
+                  </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-2">
+                <Label>Cor do Fundo</Label>
+                <Input type="color" value={props.backgroundColor || '#000000'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
+              </div>
+              <div className="space-y-2">
+                <Label>Cor dos Dígitos</Label>
+                <Input type="color" value={props.digitColor || '#FFFFFF'} onChange={(e) => onPropChange('digitColor', e.target.value)} className="p-1 h-10"/>
+              </div>
+              <div className="space-y-2">
+                <Label>Cor dos Rótulos</Label>
+                <Input type="color" value={props.labelColor || '#374151'} onChange={(e) => onPropChange('labelColor', e.target.value)} className="p-1 h-10"/>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                  <Label>Tamanho dos Dígitos</Label>
+                  <Input value={props.digitFontSize || '2rem'} onChange={(e) => onPropChange('digitFontSize', e.target.value)} />
+               </div>
+                <div className="space-y-2">
+                    <Label>Tamanho dos Rótulos</Label>
+                    <Input value={props.labelFontSize || '0.8rem'} onChange={(e) => onPropChange('labelFontSize', e.target.value)} />
+                </div>
+            </div>
+             <div className="space-y-2">
+                <Label>Espaçamento</Label>
+                <Input value={props.gap || '1rem'} onChange={(e) => onPropChange('gap', e.target.value)} placeholder="Ex: 10px ou 1rem"/>
+             </div>
+             <div className="space-y-2">
+                <Label>Rótulos (Labels)</Label>
+                <div className="grid grid-cols-4 gap-2">
+                    <Input value={props.labelDays || 'Dias'} onChange={(e) => onPropChange('labelDays', e.target.value)} />
+                    <Input value={props.labelHours || 'Horas'} onChange={(e) => onPropChange('labelHours', e.target.value)} />
+                    <Input value={props.labelMinutes || 'Min'} onChange={(e) => onPropChange('labelMinutes', e.target.value)} />
+                    <Input value={props.labelSeconds || 'Seg'} onChange={(e) => onPropChange('labelSeconds', e.target.value)} />
+                </div>
+             </div>
           </div>
         );
       case 'Divider':
@@ -783,6 +1214,22 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         onChange={(e) => onPropChange('href', e.target.value)}
                         placeholder="https://exemplo.com"
                     />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="button-variant">Variante</Label>
+                     <Select value={props.variant || 'default'} onValueChange={(value: ButtonVariant) => onPropChange('variant', value)}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">Padrão</SelectItem>
+                            <SelectItem value="destructive">Destrutivo</SelectItem>
+                            <SelectItem value="outline">Contorno</SelectItem>
+                            <SelectItem value="secondary">Secundário</SelectItem>
+                            <SelectItem value="ghost">Fantasma</SelectItem>
+                            <SelectItem value="link">Link</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="button-align">Alinhamento</Label>
@@ -1249,7 +1696,8 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     </div>
                 </div>
             );
-        case 'Stripe':
+        case 'Stripe': {
+            const backgroundType = props.backgroundType || 'solid';
             return (
                 <div className="space-y-4">
                     <div className="space-y-2">
@@ -1261,47 +1709,94 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                             rows={3}
                         />
                     </div>
+
+                    <Separator />
+                    <h4 className="font-medium text-sm pt-2">Estilo</h4>
                     <div className="space-y-2">
-                        <Label htmlFor="stripe-link">URL do Link (Opcional)</Label>
-                        <Input
-                            id="stripe-link"
-                            value={props.linkUrl || ''}
-                            onChange={(e) => onPropChange('linkUrl', e.target.value)}
-                            placeholder="https://exemplo.com"
+                        <Label>Tipo de Fundo</Label>
+                        <Select value={backgroundType} onValueChange={(value) => onPropChange('backgroundType', value)}>
+                           <SelectTrigger><SelectValue /></SelectTrigger>
+                           <SelectContent>
+                               <SelectItem value="solid">Cor Sólida</SelectItem>
+                               <SelectItem value="gradient">Gradiente</SelectItem>
+                               <SelectItem value="image">Imagem</SelectItem>
+                           </SelectContent>
+                        </Select>
+                    </div>
+
+                    {backgroundType === 'solid' && (
+                         <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="stripe-bg-color">Cor de Fundo</Label>
+                                <Input id="stripe-bg-color" type="color" value={props.backgroundColor || '#000000'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10" />
+                            </div>
+                        </div>
+                    )}
+                     {backgroundType === 'gradient' && (
+                         <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Cor Inicial</Label>
+                                <Input type="color" value={props.gradientFrom || '#000000'} onChange={(e) => onPropChange('gradientFrom', e.target.value)} className="p-1 h-10" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Cor Final</Label>
+                                <Input type="color" value={props.gradientTo || '#434343'} onChange={(e) => onPropChange('gradientTo', e.target.value)} className="p-1 h-10" />
+                            </div>
+                        </div>
+                    )}
+                     {backgroundType === 'image' && (
+                        <ImageInput 
+                            label="URL da Imagem de Fundo"
+                            value={props.backgroundImageUrl || ""}
+                            onPropChange={onPropChange}
+                            propName="backgroundImageUrl"
+                            tooltipText="URL para a imagem de fundo da faixa."
                         />
+                    )}
+
+                    <div className="space-y-2">
+                        <Label htmlFor="stripe-text-color">Cor do Texto</Label>
+                        <Input id="stripe-text-color" type="color" value={props.textColor || '#FFFFFF'} onChange={(e) => onPropChange('textColor', e.target.value)} className="p-1 h-10" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="stripe-bg-color">Cor de Fundo</Label>
-                            <Input
-                                id="stripe-bg-color"
-                                type="color"
-                                value={props.backgroundColor || '#000000'}
-                                onChange={(e) => onPropChange('backgroundColor', e.target.value)}
-                                className="p-1 h-10"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="stripe-text-color">Cor do Texto</Label>
-                            <Input
-                                id="stripe-text-color"
-                                type="color"
-                                value={props.textColor || '#FFFFFF'}
-                                onChange={(e) => onPropChange('textColor', e.target.value)}
-                                className="p-1 h-10"
-                            />
-                        </div>
+
+                    <Separator />
+                    <h4 className="font-medium text-sm pt-2">Elementos</h4>
+                     <div className="space-y-2">
+                        <Label>Ícone</Label>
+                        <Select value={props.icon || 'none'} onValueChange={(value) => onPropChange('icon', value)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {stripeIcons.map(icon => <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                     </div>
-                    <div className="flex items-center justify-between">
+                     <div className="flex items-center justify-between">
+                        <Label htmlFor="stripe-button-enabled">Adicionar Botão</Label>
+                        <Switch id="stripe-button-enabled" checked={props.buttonEnabled} onCheckedChange={(checked) => onPropChange('buttonEnabled', checked)} />
+                    </div>
+
+                    {props.buttonEnabled && (
+                        <div className="p-3 border rounded-md space-y-3 bg-muted/30">
+                            <div className="space-y-2">
+                                <Label htmlFor="stripe-button-text">Texto do Botão</Label>
+                                <Input id="stripe-button-text" value={props.buttonText || ''} onChange={(e) => onPropChange('buttonText', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="stripe-button-url">URL do Botão</Label>
+                                <Input id="stripe-button-url" value={props.buttonUrl || ''} onChange={(e) => onPropChange('buttonUrl', e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+
+
+                    <Separator />
+                     <div className="flex items-center justify-between">
                         <Label htmlFor="stripe-closable">Permitir Fechar</Label>
-                        <Switch
-                            id="stripe-closable"
-                            checked={props.isClosable}
-                            onCheckedChange={(checked) => onPropChange('isClosable', checked)}
-                        />
+                        <Switch id="stripe-closable" checked={props.isClosable} onCheckedChange={(checked) => onPropChange('isClosable', checked)} />
                     </div>
                 </div>
             );
+        }
         case 'NPS':
             return (
                 <div className="space-y-4">
@@ -1468,40 +1963,57 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                 </div>
             </div>
         );
-      case "Footer":
+      case 'FTPUpload':
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-1">Texto do Rodapé 1</Label>
-                  <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Primeira linha de texto no rodapé (ex: copyright).</p></TooltipContent>
-                  </Tooltip>
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="ftp-title">Título do Bloco</Label>
+                    <Input id="ftp-title" value={props.title || ''} onChange={e => onPropChange('title', e.target.value)} placeholder="Upload de Base de Clientes" />
                 </div>
-                <DebouncedTextInput id="footer-text-1" value={props.footerText1 || ""} onBlur={(value) => onPropChange("footerText1", value)} rows={3}/>
-            </div>
-            <div className="space-y-2">
-                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-2">Texto do Rodapé 2</Label>
-                   <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Segunda linha de texto no rodapé (ex: informações da empresa).</p></TooltipContent>
-                  </Tooltip>
+                <div className="space-y-2">
+                    <Label htmlFor="ftp-instruction">Texto de Instrução</Label>
+                    <Input id="ftp-instruction" value={props.instructionText || ''} onChange={e => onPropChange('instructionText', e.target.value)} placeholder="Arraste e solte o arquivo ou clique aqui" />
                 </div>
-                <DebouncedTextInput id="footer-text-2" value={props.footerText2 || ""} onBlur={(value) => onPropChange("footerText2", value)} rows={6} />
-            </div>
-            <div className="space-y-2">
-                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="footer-text-3">Texto do Rodapé 3</Label>
-                   <Tooltip>
-                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                    <TooltipContent><p>Terceira linha de texto no rodapé (ex: aviso legal).</p></TooltipContent>
-                  </Tooltip>
+                <div className="space-y-2">
+                    <Label htmlFor="ftp-path">Caminho de Destino no FTP</Label>
+                    <Input id="ftp-path" value={props.destinationPath || ''} onChange={e => onPropChange('destinationPath', e.target.value)} placeholder="/Import" />
                 </div>
-                <DebouncedTextInput id="footer-text-3" value={props.footerText3 || ""} onBlur={(value) => onPropChange("footerText3", value)} rows={4}/>
+                <div className="space-y-2">
+                    <Label htmlFor="ftp-filename">Nome do Arquivo no FTP</Label>
+                    <Input id="ftp-filename" value={props.destinationFilename || ''} onChange={e => onPropChange('destinationFilename', e.target.value)} placeholder="arquivo_%%Date%%.csv" />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="ftp-de">Data Extension Alvo (Informativo)</Label>
+                    <Input id="ftp-de" value={props.dataExtensionName || ''} onChange={e => onPropChange('dataExtensionName', e.target.value)} placeholder="Nome da DE que receberá os dados" />
+                </div>
+                <Separator />
+                <h4 className="font-semibold">Estilo do Botão de Envio</h4>
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="ftp-button-text">Texto do Botão</Label>
+                        <Input id="ftp-button-text" value={props.buttonProps?.text || "Enviar Arquivo"} onChange={(e) => onSubPropChange('buttonProps', 'text', e.target.value)} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Cor de Fundo</Label>
+                            <Input type="color" value={props.buttonProps?.bgColor || '#000000'} onChange={(e) => onSubPropChange('buttonProps', 'bgColor', e.target.value)} className="p-1 h-10" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Cor do Texto</Label>
+                            <Input type="color" value={props.buttonProps?.textColor || '#FFFFFF'} onChange={(e) => onSubPropChange('buttonProps', 'textColor', e.target.value)} className="p-1 h-10" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Ícone</Label>
+                        <Select value={props.buttonProps?.icon || 'none'} onValueChange={(value) => onSubPropChange('buttonProps', 'icon', value)}>
+                            <SelectTrigger><SelectValue placeholder="Sem ícone"/></SelectTrigger>
+                            <SelectContent>
+                                {lucideIcons.map(icon => <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
             </div>
-          </div>
         );
       default:
         return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;
@@ -1627,3 +2139,5 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
     </TooltipProvider>
   )
 }
+
+    

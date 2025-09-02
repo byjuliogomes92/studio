@@ -1,69 +1,67 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isMember(workspaceId, userId) {
+
+    // Helper Function to check if a user is a member of a workspace.
+    // This makes the rules cleaner and reusable.
+    function isWorkspaceMember(workspaceId, userId) {
       return exists(/databases/$(database)/documents/workspaceMembers/$(userId)_$(workspaceId));
     }
-    
-    function isOwner(workspaceId, userId) {
-      return get(/databases/$(database)/documents/workspaceMembers/$(userId)_$(workspaceId)).data.role == 'owner';
-    }
 
+    // Workspaces: A user can only read workspace data if they are a member.
     match /workspaces/{workspaceId} {
-      allow read: if isMember(workspaceId, request.auth.uid);
-      allow create: if request.auth.uid == request.resource.data.ownerId;
-      allow update: if isOwner(workspaceId, request.auth.uid);
+      allow read: if isWorkspaceMember(workspaceId, request.auth.uid);
+      // Only the owner can update or delete.
+      allow update, delete: if request.auth.uid == resource.data.ownerId;
+      // Any authenticated user can create a workspace (it will be associated with them).
+      allow create: if request.auth.uid != null;
+    }
+
+    // Workspace Members: Only members can see other members. Only members can add/remove (business logic should enforce owner/admin roles).
+    match /workspaceMembers/{membershipId} {
+        allow read, create, update, delete: if request.auth.uid != null &&
+                         isWorkspaceMember(resource.data.workspaceId, request.auth.uid);
     }
     
-    match /workspaceMembers/{memberId} {
-      allow read, create, delete: if isOwner(resource.data.workspaceId, request.auth.uid);
+    // Invites Collection Rules
+    match /invites/{inviteId} {
+      // Allow a workspace member to create and read invites for their own workspace.
+      allow create, read: if request.auth.uid != null &&
+                           isWorkspaceMember(request.resource.data.workspaceId, request.auth.uid);
+
+      // Allow a user to read and update an invite sent to them.
+      // This is for accepting or declining the invite.
+      allow read, update: if request.auth.uid != null &&
+                           request.auth.token.email == resource.data.toEmail;
+
+      // Nobody can delete an invite record to maintain history.
+      allow delete: if false;
     }
 
-    match /projects/{projectId} {
-      allow list: if request.auth.uid != null; // Simplified for migration
-      allow read, update, delete: if (resource.data.keys().hasAll(['workspaceId']) && isMember(resource.data.workspaceId, request.auth.uid)) || (resource.data.keys().hasAll(['userId']) && resource.data.userId == request.auth.uid);
-      allow create: if isMember(request.resource.data.workspaceId, request.auth.uid);
+    // General rule for most data collections (Projects, Pages, Templates, Brands, Media)
+    match /{collection}/{docId} where collection in ['projects', 'pages_drafts', 'pages_published', 'templates', 'brands', 'media', 'activityLogs'] {
+      // READ PERMISSION:
+      // You can read if you are logged in AND a member of the workspace the document belongs to.
+      allow read: if isWorkspaceMember(resource.data.workspaceId, request.auth.uid);
+
+      // WRITE PERMISSION (Create, Update, Delete):
+      // You can write if you are logged in AND a member of the workspace you are writing to.
+      allow write: if isWorkspaceMember(request.resource.data.workspaceId, request.auth.uid);
     }
 
-    match /brands/{brandId} {
-      allow list: if request.auth.uid != null; // Simplified for migration
-      allow read, update, delete: if (resource.data.keys().hasAll(['workspaceId']) && isMember(resource.data.workspaceId, request.auth.uid)) || (resource.data.keys().hasAll(['userId']) && resource.data.userId == request.auth.uid);
-      allow create: if isMember(request.resource.data.workspaceId, request.auth.uid);
-    }
-
-    match /templates/{templateId} {
-      allow list: if request.auth.uid != null; // Simplified for migration
-      allow read, update, delete: if (resource.data.isDefault == true) || (resource.data.keys().hasAll(['workspaceId']) && isMember(resource.data.workspaceId, request.auth.uid)) || (resource.data.keys().hasAll(['userId']) && resource.data.userId == request.auth.uid);
-      allow create: if isMember(request.resource.data.workspaceId, request.auth.uid);
-    }
-
-    match /pages_drafts/{pageId} {
-      allow list: if request.auth.uid != null; // Simplified for migration
-      allow read, write: if (resource.data.keys().hasAll(['workspaceId']) && isMember(resource.data.workspaceId, request.auth.uid)) || (resource.data.keys().hasAll(['userId']) && resource.data.userId == request.auth.uid);
-      allow create: if isMember(request.resource.data.workspaceId, request.auth.uid);
-    }
-    
-    match /pages_published/{pageId} {
-      allow read: if true;
-      allow write: if (resource.data.keys().hasAll(['workspaceId']) && isMember(resource.data.workspaceId, request.auth.uid)) || (resource.data.keys().hasAll(['userId']) && resource.data.userId == request.auth.uid);
-      allow create: if isMember(request.resource.data.workspaceId, request.auth.uid);
-    }
-    
+    // User Progress: A user can only read and write their own progress.
     match /userProgress/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
-
-    match /pageViews/{viewId} {
+    
+    // Analytics (Views and Submissions): Anyone can write (to capture the data), but only workspace members can read.
+    match /{collection}/{docId} where collection in ['pageViews', 'formSubmissions'] {
+      // Anyone can create (log) a view or submission.
       allow create: if true;
-      allow read: if request.auth != null && isMember(get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId, request.auth.uid);
-    }
-
-    match /formSubmissions/{submissionId} {
-      allow create: if true;
-      allow read: if request.auth != null && isMember(get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId, request.auth.uid);
+      // Only members of the workspace can read the analytics data.
+      allow read: if isWorkspaceMember(resource.data.workspaceId, request.auth.uid);
+      // Nobody can update or delete to maintain data integrity.
+      allow update, delete: if false;
     }
   }
 }

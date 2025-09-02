@@ -86,7 +86,7 @@ export function CommandPalette() {
         {projects.length > 0 && (
             <CommandGroup heading="Projetos">
             {projects.map((project) => (
-                <CommandItem key={project.id} onSelect={() => runCommand(() => router.push(`/project/${project.id}`))}>
+                <CommandItem key={project.id} value={project.id} onSelect={(value) => runCommand(() => router.push(`/project/${value}`))}>
                 <Folder className="mr-2 h-4 w-4" />
                 <span>{project.name}</span>
                 </CommandItem>
@@ -97,7 +97,7 @@ export function CommandPalette() {
         {pages.length > 0 && (
           <CommandGroup heading="Páginas">
             {pages.map((page) => (
-              <CommandItem key={page.id} onSelect={() => runCommand(() => router.push(`/editor/${page.id}`))}>
+              <CommandItem key={page.id} value={page.id} onSelect={(value) => runCommand(() => router.push(`/editor/${value}`))}>
                 <FileText className="mr-2 h-4 w-4" />
                 <span>{page.name}</span>
               </CommandItem>
@@ -108,7 +108,12 @@ export function CommandPalette() {
         {allTemplates.length > 0 && (
             <CommandGroup heading="Templates">
                 {allTemplates.map((template) => (
-                <CommandItem key={template.id} onSelect={() => runCommand(() => router.push(`/editor/${template.id}?isTemplate=true`))} disabled={template.isDefault}>
+                <CommandItem key={template.id} value={template.id} onSelect={(value) => {
+                    const selectedTemplate = allTemplates.find(t => t.id === value);
+                    if (selectedTemplate && !selectedTemplate.isDefault) {
+                        runCommand(() => router.push(`/editor/${value}?isTemplate=true`));
+                    }
+                }} disabled={template.isDefault}>
                     <Library className="mr-2 h-4 w-4" />
                     <span>{template.name}</span>
                 </CommandItem>

@@ -29,14 +29,11 @@ import { renderFooter } from './html-components/footer';
 import { renderFTPUpload } from './html-components/ftpupload';
 
 const wrapInPreviewBlock = (content: string, title: string, isForPreview: boolean) => {
-    if (!content.trim()) {
-        return '';
+    if (!content.trim() || !isForPreview) {
+        return content;
     }
-    if (isForPreview) {
-        const escapedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return `<div class="ampscript-preview-block" title="${title}"><pre>${escapedContent}</pre></div>`;
-    }
-    return content;
+    const escapedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<div class="ampscript-preview-block" title="${title}"><pre>${escapedContent}</pre></div>`;
 };
 
 
@@ -54,7 +51,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
               ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
               : '';
 
-            const sectionClass = 'section-wrapper animate-on-scroll';
+            const sectionClass = 'component-wrapper animate-on-scroll';
             
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
 
@@ -374,10 +371,11 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 const getClientSideScripts = (pageState: CloudPage): string => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
     const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
+    const hasAutoplayCarousel = hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay);
 
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
     const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
-    const autoplayPluginScript = (hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay)) 
+    const autoplayPluginScript = hasAutoplayCarousel 
       ? '<script src="https://unpkg.com/embla-carousel-autoplay@latest/embla-carousel-autoplay.umd.js"></script>' 
       : '';
 
@@ -453,39 +451,6 @@ const getClientSideScripts = (pageState: CloudPage): string => {
                 }
             });
         });
-    }
-    
-    function setupCarousels() {
-        if (typeof EmblaCarousel !== 'undefined') {
-            const autoplayPlugin = typeof EmblaCarouselAutoplay !== 'undefined' ? EmblaCarouselAutoplay : null;
-            document.querySelectorAll('.carousel-container').forEach(container => {
-                const viewport = container.querySelector('.carousel-viewport');
-                const optionsStr = container.dataset.options || '{}';
-                let options = {};
-                try {
-                    options = JSON.parse(optionsStr);
-                } catch(e) {
-                    console.error('Could not parse carousel options: ', e);
-                }
-
-                const plugins = [];
-                if (options.autoplay && autoplayPlugin) {
-                    plugins.push(autoplayPlugin(options.autoplay));
-                }
-
-                if(options.loop && container.classList.contains('logo-carousel')) {
-                    const innerContainer = container.querySelector('.carousel-inner');
-                    const slides = Array.from(innerContainer.children);
-                    slides.forEach(slide => {
-                        innerContainer.appendChild(slide.cloneNode(true));
-                    });
-                }
-                
-                if (viewport) {
-                    EmblaCarousel(viewport, options, plugins);
-                }
-            });
-        }
     }
     
     function setSocialIconStyles() {
@@ -945,6 +910,16 @@ ${trackingScripts.head}
         }
     }
     
+    .component-wrapper {
+      width: 100%;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 20px;
+      padding-right: 20px;
+      box-sizing: border-box;
+    }
+
     .section-wrapper {
         width: 100%;
         display: flex;
@@ -2019,3 +1994,5 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   %%[ ENDIF ]%%
 </body>
 </html>
+`;
+}

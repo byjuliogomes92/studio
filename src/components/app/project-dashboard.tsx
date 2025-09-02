@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Project, CloudPage, UserProgress, Template, PageView, Workspace } from "@/lib/types";
+import type { Project, CloudPage, UserProgress, Template, PageView, Workspace, PlatformSettings } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Folder, Plus, Trash2, LogOut, MoreVertical, FileText, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Library, CheckCheck, Briefcase, Target, BarChart, Calendar, Users, Smile, Menu, User, Link, Palette, Image as ImageIcon, ShieldCheck, Megaphone } from "lucide-react";
 import {
@@ -40,7 +40,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
-import { addProject, deleteProject, updateProject, getUserProgress } from "@/lib/firestore";
+import { addProject, deleteProject, updateProject, getUserProgress, getPlatformSettings } from "@/lib/firestore";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -122,7 +122,8 @@ export function ProjectDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
-  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings | null>(null);
+
 
   // Notifications state
   const [notifications, setNotifications] = useState([
@@ -149,13 +150,6 @@ export function ProjectDashboard() {
   const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  // Check announcement banner state from localStorage on mount
-  useEffect(() => {
-    if (localStorage.getItem('announcementClosed_20240725') !== 'true') {
-      setIsAnnouncementOpen(true);
-    }
-  }, []);
-
   useEffect(() => {
     if (localStorage.getItem('onboardingGuideClosed') === 'true') {
       setIsOnboardingGuideOpen(false);
@@ -165,8 +159,12 @@ export function ProjectDashboard() {
       if (!user || !activeWorkspace) return;
       setIsLoading(true);
       try {
-        const progress = await getUserProgress(user.uid);
+        const [progress, settings] = await Promise.all([
+            getUserProgress(user.uid),
+            getPlatformSettings()
+        ]);
         setUserProgress(progress);
+        setPlatformSettings(settings);
       } catch (err) {
         console.error(err);
         toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os dados.' });
@@ -297,11 +295,6 @@ export function ProjectDashboard() {
 
   const markAllAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
-
-  const handleCloseAnnouncement = () => {
-    setIsAnnouncementOpen(false);
-    localStorage.setItem('announcementClosed_20240725', 'true');
   };
 
   const filteredAndSortedProjects = useMemo((): EnrichedProject[] => {
@@ -581,6 +574,8 @@ export function ProjectDashboard() {
     }
   };
 
+  const banner = platformSettings?.dashboardBanner;
+
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b bg-card">
@@ -611,11 +606,11 @@ export function ProjectDashboard() {
       </header>
 
       <main className="p-4 md:p-6">
-        {isAnnouncementOpen && (
+        {banner?.enabled && (
             <div className="relative rounded-lg overflow-hidden mb-6 group h-40 md:h-52">
                 <Image 
-                    src="https://images.unsplash.com/photo-1711540846697-56b9f66d17f1"
-                    alt="Banner de anúncio de nova funcionalidade"
+                    src={banner.imageUrl || "https://images.unsplash.com/photo-1711540846697-56b9f66d17f1"}
+                    alt={banner.title || "Banner de anúncio"}
                     fill
                     sizes="100vw"
                     className="w-full h-full object-cover"
@@ -624,28 +619,17 @@ export function ProjectDashboard() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#131C35] to-transparent flex items-center p-6 md:p-10">
                     <div className="max-w-md text-white">
-                        <h3 className="text-xl md:text-2xl font-bold">
-                            <span className="text-primary">Nova Funcionalidade:<br></br></span> Testes A/B para Componentes
-                        </h3>
-                        <p className="mt-2 text-sm md:text-base opacity-90">
-                            Agora você pode testar diferentes versões dos seus componentes e otimizar a performance das suas páginas.
-                        </p>
+                        <h3 className="text-xl md:text-2xl font-bold">{banner.title}</h3>
+                        <p className="mt-2 text-sm md:text-base opacity-90">{banner.description}</p>
                         <Button 
                             variant="secondary"
                             className="mt-4"
-                            onClick={() => window.open('#', '_blank')}
+                            onClick={() => window.open(banner.buttonUrl, '_blank')}
                         >
-                            Saiba Mais
+                            {banner.buttonText}
                         </Button>
                     </div>
                 </div>
-                 <button 
-                    onClick={handleCloseAnnouncement} 
-                    className="absolute top-4 right-4 text-white/70 hover:text-white transition-opacity group-hover:opacity-100 md:opacity-0"
-                    aria-label="Fechar anúncio"
-                >
-                    <X className="h-6 w-6" />
-                </button>
             </div>
         )}
 

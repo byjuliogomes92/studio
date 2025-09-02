@@ -345,3 +345,16 @@ export interface AppNotification {
     readBy: string[]; // Array of user IDs who have read it
     createdAt: any;
 }
+
+export interface PlatformSettings {
+    id: 'global';
+    dashboardBanner?: {
+        enabled: boolean;
+        title: string;
+        description: string;
+        imageUrl: string;
+        buttonText: string;
+        buttonUrl: string;
+    };
+    // Add other settings like feature flags here in the future
+}

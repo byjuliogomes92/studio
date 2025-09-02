@@ -3,7 +3,7 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { UAParser } from 'ua-parser-js';
@@ -828,4 +828,35 @@ export const deleteNotification = async (notificationId: string): Promise<void> 
     const db = getDbInstance();
     const docRef = doc(db, 'notifications', notificationId);
     await deleteDoc(docRef);
+};
+
+// Platform Settings (Admin)
+const defaultSettings: PlatformSettings = {
+  id: 'global',
+  dashboardBanner: {
+    enabled: true,
+    title: 'Anúncio Padrão',
+    description: 'Este é um anúncio padrão que pode ser editado no painel administrativo.',
+    imageUrl: 'https://images.unsplash.com/photo-1711540846697-56b9f66d17f1',
+    buttonText: 'Saiba Mais',
+    buttonUrl: '#',
+  }
+};
+
+export const getPlatformSettings = async (): Promise<PlatformSettings> => {
+    const db = getDbInstance();
+    const docRef = doc(db, 'platformSettings', 'global');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as PlatformSettings;
+    }
+    // If no settings exist, create with defaults
+    await setDoc(docRef, defaultSettings);
+    return defaultSettings;
+};
+
+export const updatePlatformSettings = async (settings: PlatformSettings): Promise<void> => {
+    const db = getDbInstance();
+    const docRef = doc(db, 'platformSettings', 'global');
+    await setDoc(docRef, settings, { merge: true });
 };

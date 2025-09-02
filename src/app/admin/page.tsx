@@ -39,7 +39,7 @@ export default function AdminPage() {
             <CardDescription>Previsão de receita mensal recorrente.</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">R$ 1,234.56</p>
+            <p className="text-2xl font-bold">R$ 1.234,56</p>
           </CardContent>
         </Card>
       </div>

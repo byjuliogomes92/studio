@@ -3,51 +3,108 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper Function to check if a user is part of a workspace
-    function isWorkspaceMember(workspaceId, userId) {
-      return exists(/databases/$(database)/documents/workspaceMembers/$(userId)_$(workspaceId));
+
+    // Helper functions
+    function isOwner(workspaceId) {
+      let memberPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId);
+      return exists(memberPath) && get(memberPath).data.role == 'owner';
     }
-    
-    function isInvitedUser(email) {
-      return exists(/databases/$(database)/documents/invites);
+    function isEditor(workspaceId) {
+        let memberPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId);
+        return exists(memberPath) && (get(memberPath).data.role == 'owner' || get(memberPath).data.role == 'editor');
     }
-    
-    // Workspaces
-    match /workspaces/{workspaceId} {
-      allow read: if isWorkspaceMember(workspaceId, request.auth.uid);
-      allow create: if request.auth.uid != null;
-      allow update: if request.auth.uid == resource.data.ownerId || get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId)).data.role == 'admin';
-      allow delete: if request.auth.uid == resource.data.ownerId;
+    function isMember(workspaceId) {
+       return exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(workspaceId));
     }
 
-    // Workspace Members
-    match /workspaceMembers/{membershipId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId, request.auth.uid);
-      // Only owners/admins can add/remove/update roles
-      allow write: if isWorkspaceMember(request.resource.data.workspaceId, request.auth.uid) &&
-                    (get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid)_$(request.resource.data.workspaceId)).data.role in ['owner', 'admin']);
-    }
-
-    // Generic rule for workspace-bound data
-    match /{collection}/{docId} 
-      where collection in ['projects', 'pages_drafts', 'pages_published', 'templates', 'brands', 'media', 'activityLogs'] {
-      
-      allow read: if isWorkspaceMember(resource.data.workspaceId, request.auth.uid);
-      allow create: if isWorkspaceMember(request.resource.data.workspaceId, request.auth.uid);
-      allow update: if isWorkspaceMember(resource.data.workspaceId, request.auth.uid);
-      allow delete: if isWorkspaceMember(resource.data.workspaceId, request.auth.uid);
-    }
-
-    // User-specific data
-    match /userProgress/{userId} {
+    // Rules for collections
+    match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
+    
+    match /userProgress/{userId} {
+        allow read, write: if request.auth.uid == userId;
+    }
 
-    // Publicly creatable, privately readable data
-    match /{collection}/{docId} where collection in ['pageViews', 'formSubmissions'] {
-      allow create: if true; // Anyone can submit a form or trigger a page view
-      allow read: if isWorkspaceMember(resource.data.workspaceId, request.auth.uid);
-      allow update, delete: if false; // Protect data integrity
+    match /workspaces/{workspaceId} {
+      allow read: if isMember(workspaceId);
+      allow create: if request.auth.uid == request.resource.data.ownerId;
+      allow update: if isOwner(workspaceId);
+    }
+    
+    match /workspaceMembers/{membershipId} {
+        allow read: if isMember(resource.data.workspaceId);
+        // Only owners can create/delete memberships.
+        allow create, delete: if isOwner(request.resource.data.workspaceId);
+        // Owners can change any role. Members can't change roles.
+        allow update: if isOwner(resource.data.workspaceId);
+    }
+
+    match /projects/{projectId} {
+      // Members can read projects in their workspace
+      allow read: if isMember(get(/databases/$(database)/documents/projects/$(projectId)).data.workspaceId);
+      // Members can create projects for their workspace
+      allow create: if isMember(request.resource.data.workspaceId) && request.auth.uid == request.resource.data.userId;
+      // Only editors/owners can update/delete
+      allow update, delete: if isEditor(get(/databases/$(database)/documents/projects/$(projectId)).data.workspaceId);
+    }
+
+    match /{collection=**}/pages_drafts/{pageId} {
+       allow read, create, update, delete: if isEditor(get(/databases/$(database)/documents/pages_drafts/$(pageId)).data.workspaceId);
+    }
+
+    match /{collection=**}/pages_published/{pageId} {
+       allow read: true; 
+       allow create, update, delete: if isEditor(get(/databases/$(database)/documents/pages_published/$(pageId)).data.workspaceId);
+    }
+    
+    match /templates/{templateId} {
+        allow read: if isMember(resource.data.workspaceId);
+        allow create: if isMember(request.resource.data.workspaceId) && request.auth.uid == request.resource.data.createdBy;
+        allow delete: if isEditor(resource.data.workspaceId);
+    }
+    
+    match /brands/{brandId} {
+        allow read: if isMember(resource.data.workspaceId);
+        allow create: if isEditor(request.resource.data.workspaceId);
+        allow update, delete: if isEditor(resource.data.workspaceId);
+    }
+    
+     match /media/{mediaId} {
+        allow read: if isMember(resource.data.workspaceId);
+        allow create: if isEditor(request.resource.data.workspaceId);
+        allow delete: if isEditor(resource.data.workspaceId);
+    }
+
+    match /pageViews/{viewId} {
+      // Anyone can "create" a page view by hitting the page.
+      allow create: if true;
+      // Only members of the workspace can read the analytics.
+      allow read, list: if isMember(resource.data.workspaceId);
+      // Prevent updates and deletes.
+      allow update, delete: if false;
+    }
+    
+     match /formSubmissions/{submissionId} {
+      allow create: if true;
+      allow read, list: if isMember(resource.data.workspaceId);
+      allow update, delete: if false;
+    }
+    
+    match /activityLogs/{logId} {
+        allow read: if isMember(resource.data.workspaceId);
+        allow create: if request.auth.uid == request.resource.data.userId;
+        allow update, delete: if false;
+    }
+    
+    match /notifications/{notificationId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if request.auth.token.admin == true;
+    }
+    
+    match /platformSettings/{settingId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth.token.admin == true;
     }
   }
 }

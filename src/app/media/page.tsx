@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { uploadMedia, getMediaForWorkspace, deleteMedia, updateMedia } from '@/lib/firestore';
+import { uploadMedia, getMediaForWorkspace, deleteMedia, updateMedia, STORAGE_LIMIT_BYTES } from '@/lib/firestore';
 import type { MediaAsset } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,7 +28,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
-import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library } from 'lucide-react';
+import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library, Database } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -39,6 +39,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (!bytes || bytes === 0) return '0 Bytes';
@@ -326,6 +327,12 @@ export default function MediaLibraryPage() {
           toast({ variant: "destructive", title: "Erro ao atualizar", description: error.message });
       }
   }
+  
+  const currentUsageBytes = useMemo(() => {
+    return mediaAssets.reduce((total, asset) => total + asset.size, 0);
+  }, [mediaAssets]);
+  
+  const usagePercentage = (currentUsageBytes / STORAGE_LIMIT_BYTES) * 100;
 
   const allTags = useMemo(() => {
       const tagsSet = new Set<string>();
@@ -471,7 +478,25 @@ export default function MediaLibraryPage() {
       </header>
      
       <main className="p-6 space-y-6">
-         <UploadDropzone onUpload={handleFileUpload} disabled={isUploading || !activeWorkspace} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <UploadDropzone onUpload={handleFileUpload} disabled={isUploading || !activeWorkspace} />
+          <Card className="flex flex-col justify-center">
+            <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-2">
+                    <Database className="h-6 w-6 text-primary" />
+                    <h3 className="text-lg font-semibold">Uso do Armazenamento</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                    Cada workspace tem um limite de armazenamento. Organize seus arquivos para otimizar o uso.
+                </p>
+                <Progress value={usagePercentage} className="w-full mb-2" />
+                <div className="flex justify-between text-sm">
+                    <span>Usado: {formatBytes(currentUsageBytes)}</span>
+                    <span className="text-muted-foreground">Limite: {formatBytes(STORAGE_LIMIT_BYTES)}</span>
+                </div>
+            </CardContent>
+          </Card>
+        </div>
         
         <div className="flex flex-col md:flex-row gap-4 justify-between">
             <div className="relative w-full max-w-sm">

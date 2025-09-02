@@ -577,8 +577,17 @@ export const deleteBrand = async (brandId: string, user: User): Promise<void> =>
 
 
 // Media Library
+export const STORAGE_LIMIT_BYTES = 100 * 1024 * 1024; // 100 MB
+
 export const uploadMedia = async (file: File, workspaceId: string, userId: string, onProgress?: (progress: number) => void): Promise<MediaAsset> => {
     const db = getDbInstance();
+
+    // Check storage limit before upload
+    const currentAssets = await getMediaForWorkspace(workspaceId);
+    const currentUsage = currentAssets.reduce((acc, asset) => acc + asset.size, 0);
+    if (currentUsage + file.size > STORAGE_LIMIT_BYTES) {
+        throw new Error(`Limite de armazenamento de ${STORAGE_LIMIT_BYTES / 1024 / 1024}MB excedido.`);
+    }
     
     const storagePath = `${workspaceId}/${userId}/${Date.now()}-${file.name}`;
     const storageRef = ref(storage, storagePath);
@@ -611,7 +620,7 @@ export const uploadMedia = async (file: File, workspaceId: string, userId: strin
                     };
 
                     const docRef = await addDoc(collection(db, 'media'), mediaData);
-                    resolve({ ...mediaData, id: docRef.id, createdAt: Timestamp.now() });
+                    resolve({ ...mediaData, id: docRef.id, createdAt: Timestamp.now(), size: file.size } as MediaAsset);
                 } catch(error) {
                     console.error("Firestore document creation failed:", error);
                     reject(error);

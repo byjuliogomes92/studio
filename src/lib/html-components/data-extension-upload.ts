@@ -11,8 +11,9 @@ export function renderDataExtensionUpload(component: PageComponent): string {
 
     const formId = `de-upload-form-${component.id}`;
 
-    return `
-        %%[ IF @showThanks != "true" THEN ]%%
+    // Adiciona a verificação de autenticação SSO
+    const ssoProtectedContent = `
+        %%[ IF @isAuthenticated == true THEN ]%%
         <div class="de-upload-container">
             <form id="${formId}" class="de-upload-form" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                 <input type="hidden" name="__isCsvUpload" value="true">
@@ -44,12 +45,12 @@ export function renderDataExtensionUpload(component: PageComponent): string {
             </form>
         </div>
         %%[ ELSE ]%%
-            <div class="thank-you-message" style="text-align: center;">
-                <h2>Upload Concluído!</h2>
-                <p>Os dados do seu arquivo CSV foram enviados para processamento no Marketing Cloud.</p>
-            </div>
+            <!-- O componente não é renderizado se o usuário não estiver autenticado -->
         %%[ ENDIF ]%%
+    `;
 
+    // O script permanece o mesmo, mas só será executado se o formulário for renderizado.
+    const script = `
         <script>
         (function() {
             const form = document.getElementById('${formId}');
@@ -145,5 +146,17 @@ export function renderDataExtensionUpload(component: PageComponent): string {
             });
         })();
         </script>
+    `;
+
+    return `
+        %%[ IF @showThanks != "true" THEN ]%%
+            ${ssoProtectedContent}
+        %%[ ELSE ]%%
+            <div class="thank-you-message" style="text-align: center;">
+                <h2>Upload Concluído!</h2>
+                <p>Os dados do seu arquivo CSV foram enviados para processamento no Marketing Cloud.</p>
+            </div>
+        %%[ ENDIF ]%%
+        ${script}
     `;
 }

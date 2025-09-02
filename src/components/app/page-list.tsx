@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -7,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Calendar, Smile, Code, Link, Laptop, Smartphone } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Calendar, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -60,7 +59,9 @@ import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsFor
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { format, subDays } from 'date-fns';
+import { format, subDays, addDays } from 'date-fns';
+import { DateRange } from "react-day-picker";
+import { Calendar } from "@/components/ui/calendar";
 import { CreatePageFromTemplateDialog } from "./create-page-from-template-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -235,15 +236,20 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
     const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [date, setDate] = useState<DateRange | undefined>({
+      from: subDays(new Date(), 13),
+      to: new Date(),
+    });
     
     const fetchAnalyticsData = useCallback(() => {
         if (!page?.id || !workspaceId) return;
         setIsRefreshing(true);
         const hasForm = page.components.some(c => c.type === 'Form');
         
-        const promises = [getPageViews(page.id, workspaceId)];
+        // Fetch last 90 days of data to allow filtering
+        const promises = [getPageViews(page.id, workspaceId, 90)];
         if (hasForm) {
-            promises.push(getFormSubmissions(page.id, workspaceId) as any);
+            promises.push(getFormSubmissions(page.id, workspaceId, 90) as any);
         }
 
         Promise.all(promises)
@@ -278,59 +284,92 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
         color: "hsl(var(--chart-2))",
       },
     } as const;
+    
+    const filteredData = useMemo(() => {
+        const startDate = date?.from ? new Date(date.from.setHours(0, 0, 0, 0)) : null;
+        const endDate = date?.to ? new Date(date.to.setHours(23, 59, 59, 999)) : null;
+
+        const filteredViews = views.filter(v => {
+            if (!startDate || !endDate) return true;
+            const viewDate = v.timestamp?.toDate();
+            if (!viewDate) return false;
+            return viewDate >= startDate && viewDate <= endDate;
+        });
+
+        const filteredSubmissions = submissions.filter(s => {
+            if (!startDate || !endDate) return true;
+            const subDate = s.timestamp?.toDate();
+            if (!subDate) return false;
+            return subDate >= startDate && subDate <= endDate;
+        });
+
+        return { filteredViews, filteredSubmissions };
+
+    }, [views, submissions, date]);
+
 
     const {
         totalViews,
         uniqueVisitors,
-        viewsLast14Days,
+        viewsOverTime,
         topReferrers,
         topBrowsers,
         topOS,
-        deviceDistribution
+        deviceDistribution,
+        conversionRate,
     } = useMemo(() => {
-        const uniqueVisitorSet = new Set(views.map(v => v.country && v.userAgent ? `${v.country}-${v.userAgent}` : v.id));
+        const { filteredViews } = filteredData;
+        const uniqueVisitorSet = new Set(filteredViews.map(v => v.country && v.userAgent ? `${v.country}-${v.userAgent}` : v.id));
         
         const dailyViews = new Map<string, number>();
-        for (let i = 13; i >= 0; i--) {
-            const date = format(subDays(new Date(), i), 'dd/MM');
-            dailyViews.set(date, 0);
+        let currentDate = date?.from ? new Date(date.from) : subDays(new Date(), 13);
+        const endDate = date?.to ? new Date(date.to) : new Date();
+
+        while (currentDate <= endDate) {
+            dailyViews.set(format(currentDate, 'dd/MM'), 0);
+            currentDate = addDays(currentDate, 1);
         }
-        views.forEach(v => {
-            const date = v.timestamp?.toDate ? format(v.timestamp.toDate(), 'dd/MM') : null;
-            if (date && dailyViews.has(date)) {
-                dailyViews.set(date, (dailyViews.get(date) || 0) + 1);
+
+        filteredViews.forEach(v => {
+            const viewDate = v.timestamp?.toDate ? format(v.timestamp.toDate(), 'dd/MM') : null;
+            if (viewDate && dailyViews.has(viewDate)) {
+                dailyViews.set(viewDate, (dailyViews.get(viewDate) || 0) + 1);
             }
         });
 
-        const countTop = (key: keyof PageView) => {
+        const countTop = (key: keyof PageView, data: PageView[]) => {
             const counts = new Map<string, number>();
-            views.forEach(v => {
+            data.forEach(v => {
                 const value = v[key] as string || 'Direto/N/A';
                 counts.set(value, (counts.get(value) || 0) + 1);
             });
             return Array.from(counts.entries()).sort((a,b) => b[1] - a[1]).slice(0, 5);
         };
         
-        const deviceData = countTop('deviceType');
+        const deviceData = countTop('deviceType', filteredViews);
+        const totalSubmissions = filteredData.filteredSubmissions.length;
+        const calculatedConversionRate = totalViews > 0 ? ((totalSubmissions / totalViews) * 100) : 0;
         
         return {
-            totalViews: views.length,
+            totalViews: filteredViews.length,
             uniqueVisitors: uniqueVisitorSet.size,
-            viewsLast14Days: Array.from(dailyViews.entries()).map(([name, views]) => ({ name, views })),
-            topReferrers: countTop('referrer'),
-            topBrowsers: countTop('browser'),
-            topOS: countTop('os'),
-            deviceDistribution: deviceData.map(([name, value]) => ({ name, value, fill: name.toLowerCase() === 'mobile' ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-1))' }))
+            viewsOverTime: Array.from(dailyViews.entries()).map(([name, views]) => ({ name, views })),
+            topReferrers: countTop('referrer', filteredViews),
+            topBrowsers: countTop('browser', filteredViews),
+            topOS: countTop('os', filteredViews),
+            deviceDistribution: deviceData.map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value, fill: name.toLowerCase() === 'mobile' ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-1))' })),
+            conversionRate: calculatedConversionRate,
         };
-    }, [views]);
+    }, [filteredData, date]);
     
     const downloadCSV = () => {
-        if (submissions.length === 0) return;
+        const { filteredSubmissions } = filteredData;
+        if (filteredSubmissions.length === 0) return;
 
-        const headers = Object.keys(submissions[0].formData);
+        const headers = Object.keys(filteredSubmissions[0].formData);
         const csvRows = [
             headers.join(','),
-            ...submissions.map(row => 
+            ...filteredSubmissions.map(row => 
                 headers.map(header => JSON.stringify(row.formData[header] || '', (key, value) => value === null ? '' : value)).join(',')
             )
         ];
@@ -351,7 +390,44 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+                 <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        id="date"
+                        variant={"outline"}
+                        className={cn(
+                        "w-[300px] justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date?.from ? (
+                        date.to ? (
+                            <>
+                            {format(date.from, "LLL dd, y")} -{" "}
+                            {format(date.to, "LLL dd, y")}
+                            </>
+                        ) : (
+                            format(date.from, "LLL dd, y")
+                        )
+                        ) : (
+                        <span>Escolha um período</span>
+                        )}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={date?.from}
+                        selected={date}
+                        onSelect={setDate}
+                        numberOfMonths={2}
+                    />
+                    </PopoverContent>
+                </Popover>
+
                 <Button onClick={fetchAnalyticsData} variant="outline" disabled={isRefreshing}>
                     <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
                     Atualizar Dados
@@ -389,20 +465,20 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                                 <Target className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{totalViews > 0 ? ((submissions.length / totalViews) * 100).toFixed(2) : 0}%</div>
+                                <div className="text-2xl font-bold">{conversionRate.toFixed(2)}%</div>
                             </CardContent>
                         </Card>
                     </div>
                      <Card>
                         <CardHeader>
-                            <CardTitle>Visualizações nos últimos 14 dias</CardTitle>
+                            <CardTitle>Visualizações no período</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                                <BarChart data={viewsLast14Days} accessibilityLayer>
+                                <BarChart data={viewsOverTime} accessibilityLayer>
                                     <CartesianGrid vertical={false} />
                                     <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="#888888" fontSize={12} />
-                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                                     <ChartTooltip content={<ChartTooltipContent />} />
                                     <Bar dataKey="views" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                                 </BarChart>
@@ -415,10 +491,10 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                         <Card>
                             <CardHeader><CardTitle>Dispositivos</CardTitle></CardHeader>
                             <CardContent>
-                               <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                               <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
                                     <PieChart>
                                         <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                                        <Pie data={deviceDistribution} dataKey="value" nameKey="name">
+                                        <Pie data={deviceDistribution} dataKey="value" nameKey="name" innerRadius={60}>
                                             {deviceDistribution.map((entry) => (
                                                 <Cell key={entry.name} fill={entry.fill} />
                                             ))}
@@ -455,9 +531,9 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                              <CardHeader className="flex flex-row items-center justify-between">
                                 <div>
                                     <CardTitle>Submissões do Formulário</CardTitle>
-                                    <CardDescription>{submissions.length} registros encontrados.</CardDescription>
+                                    <CardDescription>{filteredData.filteredSubmissions.length} registros encontrados no período.</CardDescription>
                                 </div>
-                                <Button onClick={downloadCSV} disabled={submissions.length === 0}>
+                                <Button onClick={downloadCSV} disabled={filteredData.filteredSubmissions.length === 0}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Exportar CSV
                                 </Button>
@@ -468,14 +544,14 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Data</TableHead>
-                                                 {submissions.length > 0 && Object.keys(submissions[0].formData).map(key => <TableHead key={key}>{key}</TableHead>)}
+                                                 {filteredData.filteredSubmissions.length > 0 && Object.keys(filteredData.filteredSubmissions[0].formData).map(key => <TableHead key={key}>{key}</TableHead>)}
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {submissions.map(submission => (
+                                            {filteredData.filteredSubmissions.map(submission => (
                                                 <TableRow key={submission.id}>
                                                     <TableCell>{submission.timestamp?.toDate ? format(submission.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
-                                                    {submissions.length > 0 && Object.keys(submissions[0].formData).map(key => <TableCell key={key}>{submission.formData[key]}</TableCell>)}
+                                                    {filteredData.filteredSubmissions.length > 0 && Object.keys(filteredData.filteredSubmissions[0].formData).map(key => <TableCell key={key}>{submission.formData[key]}</TableCell>)}
                                                 </TableRow>
                                             ))}
                                         </TableBody>

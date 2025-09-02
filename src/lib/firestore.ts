@@ -698,12 +698,16 @@ export const logPageView = async (pageData: CloudPage, viewDetails: { userAgent:
     }
 };
 
-export const getPageViews = async (pageId: string, workspaceId: string): Promise<PageView[]> => {
+export const getPageViews = async (pageId: string, workspaceId: string, days: number = 14): Promise<PageView[]> => {
     const db = getDbInstance();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
     const q = query(
         collection(db, 'pageViews'),
         where('pageId', '==', pageId),
         where('workspaceId', '==', workspaceId),
+        where('timestamp', '>=', startDate),
         orderBy('timestamp', 'desc')
     );
     const querySnapshot = await getDocs(q);
@@ -738,12 +742,16 @@ export const logFormSubmission = async (pageId: string, formData: { [key: string
     }
 };
 
-export const getFormSubmissions = async (pageId: string, workspaceId: string): Promise<FormSubmission[]> => {
+export const getFormSubmissions = async (pageId: string, workspaceId: string, days: number = 14): Promise<FormSubmission[]> => {
     const db = getDbInstance();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
     const q = query(
         collection(db, 'formSubmissions'),
         where('pageId', '==', pageId),
         where('workspaceId', '==', workspaceId),
+        where('timestamp', '>=', startDate),
         orderBy('timestamp', 'desc')
     );
     const querySnapshot = await getDocs(q);

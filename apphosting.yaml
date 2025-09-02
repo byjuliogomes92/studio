@@ -6,4 +6,8 @@ runConfig:
   # more instances in response to increased traffic.
   maxInstances: 1
 # Required for Next.js API routes and other backend features to work correctly.
-frameworksBackend: {}
+frameworksBackend:
+  # Allow the backend to be publicly available.
+  # This is required for Firebase "onCall" functions to work correctly.
+  # Security is still handled by Firebase Auth checks within the function.
+  invoker: public

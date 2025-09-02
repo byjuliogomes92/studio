@@ -28,7 +28,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
-import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library, Database } from 'lucide-react';
+import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library, Database, Check, Hand } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -216,6 +216,10 @@ export default function MediaLibraryPage() {
   ]);
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
   
+  // Selection state
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const handleNotificationClick = (notificationId: number, slug: string) => {
     setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
     window.open(`https://blog.cloudpagestudio.app/${slug}`, '_blank');
@@ -251,6 +255,12 @@ export default function MediaLibraryPage() {
         setIsLoading(false);
     }
   }, [user, authLoading, router, activeWorkspace, fetchMedia]);
+
+  useEffect(() => {
+      if (!isSelectionMode) {
+          setSelectedIds(new Set());
+      }
+  }, [isSelectionMode]);
   
   const handleFileUpload = async (files: FileList) => {
     if (!user || !activeWorkspace) return;
@@ -299,15 +309,20 @@ export default function MediaLibraryPage() {
     }
   };
 
-  const handleDeleteMedia = async (asset: MediaAsset) => {
-    try {
-        await deleteMedia(asset);
-        setMediaAssets(prev => prev.filter(m => m.id !== asset.id));
-        toast({ title: 'Arquivo excluído!' });
-    } catch (error: any) {
-        console.error("Delete failed:", error);
-        toast({ variant: "destructive", title: "Erro ao excluir", description: error.message });
-    }
+  const handleDeleteMedia = async (assetsToDelete: MediaAsset[]) => {
+      if (assetsToDelete.length === 0) return;
+      try {
+          const deletePromises = assetsToDelete.map(asset => deleteMedia(asset));
+          await Promise.all(deletePromises);
+          
+          setMediaAssets(prev => prev.filter(m => !assetsToDelete.some(a => a.id === m.id)));
+          setSelectedIds(new Set());
+          setIsSelectionMode(false);
+          toast({ title: `${assetsToDelete.length} arquivo(s) excluído(s)!` });
+      } catch (error: any) {
+          console.error("Delete failed:", error);
+          toast({ variant: "destructive", title: "Erro ao excluir", description: error.message });
+      }
   }
 
   const handleCopyUrl = (url: string) => {
@@ -326,6 +341,23 @@ export default function MediaLibraryPage() {
           console.error("Failed to update media:", error);
           toast({ variant: "destructive", title: "Erro ao atualizar", description: error.message });
       }
+  }
+
+  const handleToggleSelection = (assetId: string) => {
+      setSelectedIds(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(assetId)) {
+              newSet.delete(assetId);
+          } else {
+              newSet.add(assetId);
+          }
+          return newSet;
+      })
+  }
+
+  const handleBulkDelete = () => {
+      const assetsToDelete = mediaAssets.filter(asset => selectedIds.has(asset.id));
+      handleDeleteMedia(assetsToDelete);
   }
   
   const currentUsageBytes = useMemo(() => {
@@ -478,22 +510,20 @@ export default function MediaLibraryPage() {
       </header>
      
       <main className="p-6 space-y-6">
-        <div className="space-y-4">
-            <UploadDropzone onUpload={handleFileUpload} disabled={isUploading || !activeWorkspace} />
-            
-            <div className="p-4 rounded-lg border bg-card">
-                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold flex items-center gap-2">
-                        <Database className="h-4 w-4 text-muted-foreground" />
-                        Uso do Armazenamento
-                    </h3>
-                    <div className="text-sm">
-                        <span className="font-medium">{formatBytes(currentUsageBytes)}</span>
-                        <span className="text-muted-foreground"> / {formatBytes(STORAGE_LIMIT_BYTES)}</span>
-                    </div>
-                </div>
-                <Progress value={usagePercentage} className="w-full h-2" />
-            </div>
+        <UploadDropzone onUpload={handleFileUpload} disabled={isUploading || !activeWorkspace} />
+        
+        <div className="p-3 border rounded-lg bg-card">
+              <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-sm font-medium flex items-center gap-2">
+                      <Database className="h-4 w-4 text-muted-foreground" />
+                      Uso do Armazenamento
+                  </h3>
+                  <div className="text-xs">
+                      <span className="font-medium">{formatBytes(currentUsageBytes)}</span>
+                      <span className="text-muted-foreground"> / {formatBytes(STORAGE_LIMIT_BYTES)}</span>
+                  </div>
+              </div>
+              <Progress value={usagePercentage} className="w-full h-1.5" />
         </div>
         
         <div className="flex flex-col md:flex-row gap-4 justify-between">
@@ -506,14 +536,20 @@ export default function MediaLibraryPage() {
                     onChange={e => setSearchTerm(e.target.value)}
                 />
             </div>
-            <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-sm font-medium">Filtrar por tag:</span>
-                <Badge variant={!activeTag ? "default" : "secondary"} onClick={() => setActiveTag(null)} className="cursor-pointer">Todos</Badge>
-                {allTags.map(tag => (
-                     <Badge key={tag} variant={activeTag === tag ? "default" : "secondary"} onClick={() => setActiveTag(tag)} className="cursor-pointer">
-                        {tag}
-                    </Badge>
-                ))}
+            <div className="flex items-center gap-2">
+                <Button variant={isSelectionMode ? "secondary" : "outline"} onClick={() => setIsSelectionMode(!isSelectionMode)}>
+                    {isSelectionMode ? <X className="mr-2 h-4 w-4" /> : <Hand className="mr-2 h-4 w-4" />}
+                    {isSelectionMode ? 'Cancelar' : 'Selecionar'}
+                </Button>
+                <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-sm font-medium">Tags:</span>
+                    <Badge variant={!activeTag ? "default" : "secondary"} onClick={() => setActiveTag(null)} className="cursor-pointer">Todos</Badge>
+                    {allTags.map(tag => (
+                         <Badge key={tag} variant={activeTag === tag ? "default" : "secondary"} onClick={() => setActiveTag(tag)} className="cursor-pointer">
+                            {tag}
+                        </Badge>
+                    ))}
+                </div>
             </div>
         </div>
         
@@ -545,72 +581,93 @@ export default function MediaLibraryPage() {
           ))}
           {filteredAssets.map((asset) => (
              <Dialog key={asset.id}>
-                <DialogTrigger asChild>
-                    <Card className="group relative overflow-hidden cursor-pointer">
-                        <CardContent className="p-0">
-                        <div className="aspect-square w-full bg-muted flex items-center justify-center">
-                            <Image
-                            src={asset.url}
-                            alt={asset.fileName}
-                            width={200}
-                            height={200}
-                            className="object-cover w-full h-full"
-                            />
-                        </div>
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                            <div className="flex justify-end gap-1">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
-                                </Popover>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                            <Tag className="h-4 w-4" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
-                                </Popover>
-                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleCopyUrl(asset.url); }}>
-                                    <Copy className="h-4 w-4" />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button size="icon" variant="destructive" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Excluir Arquivo?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Tem certeza que deseja excluir "{asset.fileName}"? Esta ação não pode ser desfeita.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteMedia(asset)}>Excluir</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                            <div className="text-white text-xs p-1 bg-black/50 rounded-md">
-                                <p className="font-bold truncate">{asset.fileName}</p>
-                                <p>{formatBytes(asset.size)}</p>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                    {(asset.tags || []).map(tag => <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>)}
+                <div className="group relative">
+                   <DialogTrigger asChild disabled={isSelectionMode}>
+                        <Card 
+                            className={cn(
+                                "group/card relative overflow-hidden transition-all",
+                                isSelectionMode ? "cursor-pointer" : "cursor-pointer"
+                            )}
+                            onClick={() => isSelectionMode && handleToggleSelection(asset.id)}
+                        >
+                             <CardContent className="p-0">
+                                <div className="aspect-square w-full bg-muted flex items-center justify-center">
+                                    <Image
+                                        src={asset.url}
+                                        alt={asset.fileName}
+                                        width={200}
+                                        height={200}
+                                        className="object-cover w-full h-full"
+                                    />
                                 </div>
-                            </div>
+                                <div className={cn(
+                                    "absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity flex flex-col justify-between p-2",
+                                    isSelectionMode && selectedIds.has(asset.id) && "opacity-100"
+                                )}>
+                                    {!isSelectionMode && (
+                                    <div className="flex justify-end gap-1">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
+                                        </Popover>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                    <Tag className="h-4 w-4" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
+                                        </Popover>
+                                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleCopyUrl(asset.url); }}>
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button size="icon" variant="destructive" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Excluir Arquivo?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Tem certeza que deseja excluir "{asset.fileName}"? Esta ação não pode ser desfeita.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteMedia([asset])}>Excluir</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                    )}
+                                    <div className="text-white text-xs p-1 bg-black/50 rounded-md">
+                                        <p className="font-bold truncate">{asset.fileName}</p>
+                                        <p>{formatBytes(asset.size)}</p>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                            {(asset.tags || []).map(tag => <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </DialogTrigger>
+                     {isSelectionMode && (
+                        <div 
+                            onClick={() => handleToggleSelection(asset.id)}
+                            className="absolute top-2 left-2 z-10 w-6 h-6 bg-background/80 rounded-md flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-primary"
+                        >
+                            {selectedIds.has(asset.id) && <Check className="h-5 w-5 text-primary" />}
                         </div>
-                        </CardContent>
-                    </Card>
-                </DialogTrigger>
+                    )}
+                </div>
                 <DialogContent className="max-w-4xl h-auto p-2 bg-transparent border-none shadow-none">
-                     <DialogHeader className="sr-only">
+                    <DialogHeader className="sr-only">
                         <DialogTitle>{asset.fileName}</DialogTitle>
                         <DialogDescription>Visualização da imagem {asset.fileName}.</DialogDescription>
                     </DialogHeader>
@@ -631,6 +688,34 @@ export default function MediaLibraryPage() {
             </div>
         )}
       </main>
+      
+       {isSelectionMode && selectedIds.size > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+                <div className="flex items-center gap-4 bg-background border rounded-lg shadow-lg p-3">
+                    <p className="text-sm font-medium">{selectedIds.size} item(s) selecionado(s)</p>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir Selecionados
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                             <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir {selectedIds.size} itens?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleBulkDelete}>Excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </div>
+        )}
     </>
   );
 }

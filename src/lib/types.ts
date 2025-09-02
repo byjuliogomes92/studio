@@ -360,3 +360,31 @@ export interface PlatformSettings {
     };
     // Add other settings like feature flags here in the future
 }
+
+export type TicketStatus = 'aberto' | 'em_andamento' | 'fechado';
+export type TicketCategory = 'bug' | 'duvida' | 'melhoria' | 'outro';
+
+export interface SupportTicket {
+    id: string;
+    workspaceId: string;
+    userId: string;
+    userEmail: string;
+    userName: string;
+    title: string;
+    description: string;
+    category: TicketCategory;
+    status: TicketStatus;
+    createdAt: any;
+    updatedAt: any;
+    lastCommentBy?: 'user' | 'admin';
+}
+
+export interface TicketComment {
+    id: string;
+    ticketId: string;
+    userId: string;
+    userName: string;
+    userAvatarUrl?: string;
+    comment: string;
+    createdAt: any;
+}

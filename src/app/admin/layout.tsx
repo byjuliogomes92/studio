@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion } from 'lucide-react';
+import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -21,6 +21,7 @@ function AdminSidebar() {
     const navItems = [
       { path: '/admin', icon: BarChart, label: 'Dashboard' },
       { path: '/admin/users', icon: Users, label: 'Usuários' },
+      { path: '/admin/support', icon: MessageSquare, label: 'Suporte' },
       { path: '/admin/notifications', icon: Bell, label: 'Notificações' },
       { path: '/admin/settings', icon: Settings, label: 'Configurações' },
       { path: '/admin/set-admin', icon: ShieldQuestion, label: 'Tornar Admin' }
@@ -42,7 +43,7 @@ function AdminSidebar() {
                             <SidebarMenuButton 
                                 onClick={() => router.push(item.path)} 
                                 tooltip={item.label}
-                                isActive={pathname === item.path}
+                                isActive={pathname.startsWith(item.path)}
                             >
                                 <item.icon />
                                 <span>{item.label}</span>

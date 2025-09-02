@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save, Copy, Users, Activity, Settings, EyeOff, Search } from 'lucide-react';
+import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save, Copy, Users, Activity, Settings, EyeOff, Search, MessageSquare } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -444,6 +444,13 @@ export default function AccountPage() {
                     <div className="space-y-2">
                     <Label htmlFor="email">Email (não pode ser alterado)</Label>
                     <Input id="email" value={user.email || ''} disabled />
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                        <Button variant="outline" onClick={() => router.push('/support')}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Meus Chamados de Suporte
+                        </Button>
                     </div>
                 </CardContent>
                 </Card>

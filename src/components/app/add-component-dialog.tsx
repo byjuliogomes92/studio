@@ -61,6 +61,10 @@ type BlockType =
     | 'hero-split-left' 
     | 'hero-lead-capture' 
     | 'logo-carousel'
+    | 'header-simple'
+    | 'header-cta'
+    | 'header-centered'
+    | 'header-minimal'
     | 'footer-simple'
     | 'footer-columns'
     | 'footer-newsletter'
@@ -73,7 +77,6 @@ const componentList: {
   {
     category: "Estrutura",
     components: [
-      { name: "Header", icon: AlignStartVertical, enabled: true },
       { name: "Banner", icon: Image, enabled: true },
       { name: "Stripe", icon: PanelTop, enabled: true },
       { name: "Footer", icon: AlignEndVertical, enabled: true },
@@ -127,6 +130,15 @@ const blockList: {
         icon: LucideIcon;
     }[]
 }[] = [
+    {
+        category: 'Cabeçalhos',
+        blocks: [
+            { name: "Simples (Logo + Menu)", description: "Layout clássico com logo à esquerda e menu de navegação à direita.", type: 'header-simple', icon: AlignStartVertical },
+            { name: "Com CTA (Logo + Menu + Botão)", description: "Adiciona um botão de call-to-action ao lado do menu de navegação.", type: 'header-cta', icon: AlignStartVertical },
+            { name: "Centralizado", description: "Um layout moderno com o logo no centro e o menu de navegação logo abaixo.", type: 'header-centered', icon: AlignStartVertical },
+            { name: "Minimalista (Logo + Botão)", description: "Ideal para landing pages, com apenas o logo e um botão de ação.", type: 'header-minimal', icon: AlignStartVertical },
+        ]
+    },
     {
         category: 'Heros',
         blocks: [
@@ -231,6 +243,18 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
     const baseId = Date.now();
     
     switch(type) {
+        case 'header-simple':
+            componentsToAdd = [{ id: `header-${baseId}`, type: 'Header', props: { layout: 'logo-left-menu-right', links: [{id: '1', text: 'Home', url: '#'}, {id: '2', text: 'Sobre', url: '#'}] }, order: 0, parentId: null, column: 0 }];
+            break;
+        case 'header-cta':
+            componentsToAdd = [{ id: `header-${baseId}`, type: 'Header', props: { layout: 'logo-left-menu-button-right', links: [{id: '1', text: 'Recursos', url: '#'}, {id: '2', text: 'Preços', url: '#'}], buttonText: 'Comece Agora', buttonUrl: '#' }, order: 0, parentId: null, column: 0 }];
+            break;
+        case 'header-centered':
+            componentsToAdd = [{ id: `header-${baseId}`, type: 'Header', props: { layout: 'logo-center-menu-below', links: [{id: '1', text: 'Portfólio', url: '#'}, {id: '2', text: 'Blog', url: '#'}, {id: '3', text: 'Contato', url: '#'}] }, order: 0, parentId: null, column: 0 }];
+            break;
+        case 'header-minimal':
+            componentsToAdd = [{ id: `header-${baseId}`, type: 'Header', props: { layout: 'logo-left-button-right', buttonText: 'Fale Conosco', buttonUrl: '#' }, order: 0, parentId: null, column: 0 }];
+            break;
         case 'hero-background-image':
             componentsToAdd = [
                 {
@@ -458,7 +482,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
           <DialogTitle>Adicionar Novo Conteúdo</DialogTitle>
         </DialogHeader>
         <TooltipProvider>
-            <Tabs defaultValue="componentes" className="w-full">
+            <Tabs defaultValue="blocos" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="blocos">
                     Blocos Prontos
@@ -469,7 +493,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             </TabsList>
             <TabsContent value="blocos">
                 <Tabs defaultValue={blockList[0].category} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                         {blockList.map((group) => (
                             <TabsTrigger key={group.category} value={group.category}>{group.category}</TabsTrigger>
                         ))}

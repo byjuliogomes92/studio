@@ -12,7 +12,7 @@ import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity } from "@/lib/firestore";
+import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity, getPagesForProject } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { produce } from "immer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -87,6 +87,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [isSaveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  const [projectPages, setProjectPages] = useState<CloudPage[]>([]);
   
   // New state for publish modal
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
@@ -152,6 +153,10 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             if(pageData.brandId) {
                 const brandData = await getBrand(pageData.brandId);
                 setBrand(brandData);
+            }
+            if (pageData.projectId) {
+                const pages = await getPagesForProject(pageData.projectId, activeWorkspace.id);
+                setProjectPages(pages);
             }
 
           } else {
@@ -516,6 +521,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         setSelectedComponentId={setSelectedComponentId}
                         pageName={pageState.name}
                         setPageName={handlePageNameChange}
+                        projectPages={projectPages}
                     />
                 </aside>
             </ResizablePanel>
@@ -551,6 +557,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 key={selectedComponent.id}
                                 component={selectedComponent}
                                 onComponentChange={handleComponentChange}
+                                projectPages={projectPages}
                             />
                         </div>
                     </ScrollArea>

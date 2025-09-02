@@ -153,6 +153,14 @@ export type MobileMenuBehavior = 'push' | 'drawer' | 'overlay';
 
 export type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 
+export type ActionType = 'URL' | 'PAGE';
+
+export interface Action {
+  type: ActionType;
+  url?: string;
+  pageId?: string;
+}
+
 export type AnimationType = 'none' | 'fadeIn' | 'fadeInUp' | 'fadeInLeft' | 'fadeInRight';
 
 export interface PageComponent {

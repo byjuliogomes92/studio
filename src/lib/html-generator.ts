@@ -1,6 +1,6 @@
 
 
-import type { CloudPage, PageComponent, ComponentType } from './types';
+import type { CloudPage, PageComponent, ComponentType, Action } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';

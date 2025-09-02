@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, CustomFormField, PageComponent } from '@/lib/types';
 
 const renderField = (
@@ -110,7 +111,16 @@ export function renderForm(component: PageComponent, pageState: CloudPage): stri
         ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
         : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
     
-    const redirectUrl = submission?.url || meta.redirectUrl ||'';
+    const action = submission?.action;
+    let redirectUrl = "%%=RequestParameter('PAGEURL')=%%";
+    if (action) {
+      if (action.type === 'URL' && action.url) {
+        redirectUrl = action.url;
+      } else if (action.type === 'PAGE' && action.pageId) {
+        redirectUrl = `%%=CloudPagesURL(${action.pageId})=%%`;
+      }
+    }
+
 
     return `
         %%[ Set @thankYouMessage = "${submission?.message || 'Obrigado!'}" ]%%

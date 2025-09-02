@@ -1,5 +1,4 @@
 
-
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -587,7 +586,7 @@ export const uploadMedia = async (file: File, workspaceId: string, userId: strin
     const snapshot = await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(snapshot.ref);
 
-    const mediaData: Omit<MediaAsset, 'id'> = {
+    const mediaData: Omit<MediaAsset, 'id' | 'tags'> = {
         workspaceId,
         userId,
         fileName: file.name,
@@ -601,6 +600,12 @@ export const uploadMedia = async (file: File, workspaceId: string, userId: strin
     const docRef = await addDoc(collection(db, 'media'), mediaData);
 
     return { ...mediaData, id: docRef.id, createdAt: Timestamp.now() };
+}
+
+export const updateMediaTags = async (mediaId: string, tags: string[]): Promise<void> => {
+    const db = getDbInstance();
+    const mediaRef = doc(db, 'media', mediaId);
+    await updateDoc(mediaRef, { tags });
 }
 
 export const getMediaForWorkspace = async (workspaceId: string): Promise<MediaAsset[]> => {

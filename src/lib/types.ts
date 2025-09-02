@@ -260,6 +260,7 @@ export interface MediaAsset {
   storagePath: string;
   contentType: string;
   size: number;
+  tags?: string[];
   createdAt: any;
 }
 

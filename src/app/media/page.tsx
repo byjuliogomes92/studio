@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { uploadMedia, getMediaForWorkspace, deleteMedia } from '@/lib/firestore';
+import { uploadMedia, getMediaForWorkspace, deleteMedia, updateMediaTags } from '@/lib/firestore';
 import type { MediaAsset } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,10 +20,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search } from 'lucide-react';
+import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (bytes === 0) return '0 Bytes';
@@ -34,6 +37,58 @@ function formatBytes(bytes: number, decimals = 2) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
+function TagEditor({ asset, onTagsUpdate }: { asset: MediaAsset; onTagsUpdate: (assetId: string, tags: string[]) => void; }) {
+    const [tagInput, setTagInput] = useState('');
+    const tags = asset.tags || [];
+
+    const handleAddTag = () => {
+        if (tagInput && !tags.includes(tagInput)) {
+            const newTags = [...tags, tagInput.trim()];
+            onTagsUpdate(asset.id, newTags);
+        }
+        setTagInput('');
+    };
+
+    const handleRemoveTag = (tagToRemove: string) => {
+        const newTags = tags.filter(tag => tag !== tagToRemove);
+        onTagsUpdate(asset.id, newTags);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAddTag();
+        }
+    };
+    
+    return (
+        <PopoverContent onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-4">
+                <p className="font-medium">Editar Tags</p>
+                <div className="flex flex-wrap gap-1">
+                    {tags.map(tag => (
+                        <Badge key={tag} variant="secondary">
+                            {tag}
+                            <button onClick={() => handleRemoveTag(tag)} className="ml-1.5 rounded-full hover:bg-destructive/20 p-0.5">
+                                <X className="h-3 w-3" />
+                            </button>
+                        </Badge>
+                    ))}
+                </div>
+                <div className="flex gap-2">
+                    <Input
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Nova tag..."
+                    />
+                    <Button onClick={handleAddTag} size="sm">Adicionar</Button>
+                </div>
+            </div>
+        </PopoverContent>
+    )
+}
+
 export default function MediaLibraryPage() {
   const router = useRouter();
   const { user, loading: authLoading, activeWorkspace } = useAuth();
@@ -42,7 +97,8 @@ export default function MediaLibraryPage() {
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTag, setActiveTag] = useState<string | null>(null);
 
   const fetchMedia = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -76,12 +132,11 @@ export default function MediaLibraryPage() {
         return;
     }
     const file = event.target.files[0];
-    // Basic validation
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
       toast({ variant: 'destructive', title: 'Arquivo muito grande', description: 'O tamanho máximo do arquivo é 5MB.' });
       return;
     }
-    if (!file.type.startsWith('image/')) {
+     if (!file.type.startsWith('image/')) {
         toast({ variant: 'destructive', title: 'Tipo de arquivo inválido', description: 'Apenas imagens são permitidas.' });
         return;
     }
@@ -90,7 +145,7 @@ export default function MediaLibraryPage() {
     try {
         await uploadMedia(file, activeWorkspace.id, user.uid);
         toast({ title: 'Upload concluído!', description: `O arquivo "${file.name}" foi salvo.` });
-        fetchMedia(); // Refresh list
+        fetchMedia();
     } catch (error: any) {
         console.error("Upload failed:", error);
         toast({ variant: "destructive", title: "Erro no Upload", description: error.message });
@@ -115,6 +170,35 @@ export default function MediaLibraryPage() {
     toast({ title: 'URL copiada!' });
   }
 
+  const handleTagsUpdate = async (assetId: string, tags: string[]) => {
+      try {
+          await updateMediaTags(assetId, tags);
+          setMediaAssets(prev => prev.map(asset => 
+              asset.id === assetId ? { ...asset, tags } : asset
+          ));
+          toast({ title: 'Tags atualizadas!' });
+      } catch (error: any) {
+          console.error("Failed to update tags:", error);
+          toast({ variant: "destructive", title: "Erro ao atualizar tags", description: error.message });
+      }
+  }
+
+  const allTags = useMemo(() => {
+      const tagsSet = new Set<string>();
+      mediaAssets.forEach(asset => {
+          (asset.tags || []).forEach(tag => tagsSet.add(tag));
+      });
+      return Array.from(tagsSet).sort();
+  }, [mediaAssets]);
+
+  const filteredAssets = useMemo(() => {
+    return mediaAssets.filter(asset => {
+        const matchesSearch = asset.fileName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesTag = activeTag ? (asset.tags || []).includes(activeTag) : true;
+        return matchesSearch && matchesTag;
+    });
+  }, [mediaAssets, searchTerm, activeTag]);
+
   if (isLoading || authLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -131,17 +215,6 @@ export default function MediaLibraryPage() {
             <Logo className="h-6 w-6 text-primary" />
             <h1>Biblioteca de Mídia</h1>
           </div>
-          <Button variant="outline" size="sm" onClick={() => {
-                const input = document.querySelector('.cmdk-input') as HTMLInputElement;
-                input?.focus();
-                document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'metaKey': true}));
-            }}>
-                <Search className="mr-2 h-4 w-4"/>
-                Buscar...
-                <kbd className="pointer-events-none ml-4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-             </Button>
         </div>
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push('/')}>
@@ -164,15 +237,38 @@ export default function MediaLibraryPage() {
         )}
 
       <main className="p-6">
-        {mediaAssets.length === 0 ? (
+        <div className="mb-6 flex flex-col md:flex-row gap-4 justify-between">
+            <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar por nome do arquivo..." 
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                />
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm font-medium">Filtrar por tag:</span>
+                <Badge variant={!activeTag ? "default" : "secondary"} onClick={() => setActiveTag(null)} className="cursor-pointer">Todos</Badge>
+                {allTags.map(tag => (
+                     <Badge key={tag} variant={activeTag === tag ? "default" : "secondary"} onClick={() => setActiveTag(tag)} className="cursor-pointer">
+                        {tag}
+                    </Badge>
+                ))}
+            </div>
+        </div>
+        
+        {filteredAssets.length === 0 ? (
           <div className="text-center py-16 border-2 border-dashed rounded-lg">
             <ImageIcon size={48} className="mx-auto text-muted-foreground" />
-            <h2 className="mt-4 text-xl font-semibold">Sua biblioteca está vazia</h2>
-            <p className="mt-2 text-muted-foreground">Comece fazendo o upload de suas imagens, logos e outros assets.</p>
+            <h2 className="mt-4 text-xl font-semibold">{mediaAssets.length === 0 ? "Sua biblioteca está vazia" : "Nenhum arquivo encontrado"}</h2>
+            <p className="mt-2 text-muted-foreground">
+              {mediaAssets.length === 0 ? "Comece fazendo o upload de suas imagens, logos e outros assets." : "Tente limpar seus filtros de busca."}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {mediaAssets.map((asset) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+            {filteredAssets.map((asset) => (
               <Card key={asset.id} className="group relative overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-square w-full bg-muted flex items-center justify-center">
@@ -186,6 +282,14 @@ export default function MediaLibraryPage() {
                   </div>
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
                      <div className="flex justify-end gap-1">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                    <Tag className="h-4 w-4" />
+                                </Button>
+                            </PopoverTrigger>
+                            <TagEditor asset={asset} onTagsUpdate={handleTagsUpdate} />
+                        </Popover>
                         <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => handleCopyUrl(asset.url)}>
                             <Copy className="h-4 w-4" />
                         </Button>
@@ -212,6 +316,9 @@ export default function MediaLibraryPage() {
                      <div className="text-white text-xs p-1 bg-black/50 rounded-md">
                         <p className="font-bold truncate">{asset.fileName}</p>
                         <p>{formatBytes(asset.size)}</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                            {(asset.tags || []).map(tag => <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>)}
+                        </div>
                      </div>
                   </div>
                 </CardContent>

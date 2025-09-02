@@ -1,3 +1,4 @@
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -9,15 +10,11 @@ const db = getFirestore();
  * Sets a custom claim on a user account to make them an admin.
  */
 exports.setAdminClaim = functions
-    .region('us-central1') // Especificar região explicitamente
+    .region('us-central1')
     .https.onCall(async (data, context) => {
-        // Adicionar headers CORS manualmente se necessário
-        const corsHeaders = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        };
-
+        // This check ensures that only authenticated users can call this function.
+        // For extra security, you could check if context.auth.token.admin === true
+        // to ensure only admins can make other users admins.
         if (!context.auth) {
             throw new functions.https.HttpsError(
                 "unauthenticated",
@@ -44,8 +41,7 @@ exports.setAdminClaim = functions
             }, { merge: true });
 
             return { 
-                message: `Sucesso! ${email} agora é um administrador.`,
-                headers: corsHeaders 
+                message: `Sucesso! ${email} agora é um administrador.`
             };
 
         } catch (error) {
@@ -101,3 +97,4 @@ exports.getAllUsers = functions
             );
         }
     });
+

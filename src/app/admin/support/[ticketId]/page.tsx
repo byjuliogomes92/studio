@@ -17,6 +17,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export default function TicketDetailsPage() {
     const params = useParams();
@@ -103,6 +104,15 @@ export default function TicketDetailsPage() {
             case 'em_andamento': return <Clock className="h-5 w-5 text-blue-500" />;
             case 'fechado': return <CheckCircle className="h-5 w-5 text-green-500" />;
             default: return null;
+        }
+    };
+
+    const getStatusVariant = (status: TicketStatus): "destructive" | "default" | "secondary" | "outline" => {
+        switch (status) {
+            case 'aberto': return 'destructive';
+            case 'em_andamento': return 'default';
+            case 'fechado': return 'secondary';
+            default: return 'outline';
         }
     };
 
@@ -220,4 +230,3 @@ export default function TicketDetailsPage() {
         </div>
     );
 }
-

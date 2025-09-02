@@ -858,7 +858,9 @@ export function PageList({ projectId }: PageListProps) {
                 </TabsList>
                 <TabsContent value="pages">
                     <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div></div>
+                        <div className="relative w-full max-w-sm">
+                           {/* A busca agora é global via Command Palette */}
+                        </div>
                         <div className="flex items-center gap-2 flex-wrap justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium mr-2 hidden md:inline">Filtrar:</span>

@@ -700,7 +700,6 @@ export function ProjectDashboard() {
 
 
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            {/* Search will be handled by Command Palette now, so we remove the specific search bar */}
             <div></div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 rounded-md border bg-background p-1">

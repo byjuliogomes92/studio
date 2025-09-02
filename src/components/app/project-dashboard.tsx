@@ -584,7 +584,7 @@ export function ProjectDashboard() {
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex items-center gap-2 font-semibold text-lg">
             <Logo className="h-6 w-6 text-primary" />
-            <h1 className="hidden md:block">Meus Projetos</h1>
+            <h1 className="hidden md:block">Projetos</h1>
           </div>
           <Separator orientation="vertical" className="h-6 mx-2 hidden md:block" />
            <div className="flex items-center gap-2">

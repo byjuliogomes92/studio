@@ -23,6 +23,9 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library } from 'lucide-react';
@@ -584,6 +587,10 @@ export default function MediaLibraryPage() {
                     </Card>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl h-auto p-2 bg-transparent border-none shadow-none">
+                     <DialogHeader className="sr-only">
+                        <DialogTitle>{asset.fileName}</DialogTitle>
+                        <DialogDescription>Visualização da imagem {asset.fileName}.</DialogDescription>
+                    </DialogHeader>
                     <Image
                         src={asset.url}
                         alt={asset.fileName}

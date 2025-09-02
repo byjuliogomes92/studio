@@ -770,6 +770,10 @@ export default function MediaLibraryPage() {
                                                 <Image src={asset.url} alt={asset.fileName} width={40} height={40} className="rounded-md object-cover aspect-square"/>
                                             </DialogTrigger>
                                              <DialogContent className="max-w-4xl h-auto p-2 bg-transparent border-none shadow-none">
+                                                <DialogHeader className="sr-only">
+                                                    <DialogTitle>{asset.fileName}</DialogTitle>
+                                                    <DialogDescription>Visualização da imagem {asset.fileName}.</DialogDescription>
+                                                </DialogHeader>
                                                 <Image src={asset.url} alt={asset.fileName} width={1200} height={800} className="object-contain w-full h-auto max-h-[90vh] rounded-lg"/>
                                             </DialogContent>
                                         </Dialog>

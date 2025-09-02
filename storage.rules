@@ -1,18 +1,12 @@
-
 rules_version = '2';
 
+// https://firebase.google.com/docs/storage/security
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // As regras de segurança do Storage garantem que apenas usuários autenticados
-    // possam ler e escrever arquivos. A segurança de acesso a arquivos de um
-    // workspace específico é controlada no código Firestore, onde apenas
-    // membros do workspace podem ver os assets daquele workspace.
-
-    // Permite que qualquer usuário autenticado leia e escreva em seus próprios arquivos.
-    // A estrutura de pastas é: {workspaceId}/{userId}/{file}
-    match /{workspaceId}/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Permite leitura e escrita para todos os usuários autenticados.
+    // Regras mais granulares podem ser adicionadas posteriormente.
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

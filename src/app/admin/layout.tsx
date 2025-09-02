@@ -4,11 +4,12 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarGroupLabel } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarGroupLabel, useSidebar } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 
 function AdminSidebar() {
@@ -167,5 +168,3 @@ export default function AdminLayout({
     </SidebarProvider>
   )
 }
-
-    

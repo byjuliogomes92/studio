@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
@@ -27,14 +26,6 @@ import { renderCarousel } from './html-components/carousel';
 import { renderForm } from './html-components/form';
 import { renderFooter } from './html-components/footer';
 import { renderFTPUpload } from './html-components/ftpupload';
-
-const wrapInPreviewBlock = (content: string, title: string, isForPreview: boolean) => {
-    if (!content.trim() || !isForPreview) {
-        return content;
-    }
-    const escapedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return `<div class="ampscript-preview-block" title="${title}"><pre>${escapedContent}</pre></div>`;
-};
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -339,7 +330,7 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
   SET @submittedPassword = RequestParameter("page_password")
   SET @identifier = RequestParameter("${config.urlParameter}")
 
-  IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN
+  IF NOT EMPTY(@submittedPassword) && NOT EMPTY(@identifier) THEN
       SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
       IF @submittedPassword == @correctPassword THEN
           SET @isAuthenticated = true
@@ -824,7 +815,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     ${prefillAmpscript || ''}
 ]%%`;
 
-  return `<!DOCTYPE html>
+  let finalHtml = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -841,6 +832,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+${initialAmpscript}
+${ssjsScript}
 ${trackingScripts.head}
 <style>
     :root {
@@ -1109,49 +1102,6 @@ ${trackingScripts.head}
     
     h1, h2 {
         font-weight: bold;
-    }
-
-    .ampscript-preview-block {
-        background-color: rgba(22, 11, 56, 0.05);
-        color: #333;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 12px;
-        padding: 1rem 1rem 1rem 2.5rem;
-        border-radius: 8px;
-        margin: 0;
-        border: 1px dashed #ccc;
-        position: relative;
-        overflow: hidden;
-    }
-    .ampscript-preview-block pre {
-      margin: 0;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    .ampscript-preview-block::before {
-        content: '</>';
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        background-color: #e2e8f0;
-        color: #4a5568;
-        padding: 1rem 0.5rem;
-        font-size: 14px;
-        font-family: sans-serif;
-        font-weight: bold;
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        transform: rotate(180deg);
-        border-right: 1px solid #ccc;
-    }
-    .ampscript-inline-preview {
-        background-color: #e0f2fe;
-        color: #0c4a6e;
-        padding: 2px 4px;
-        border-radius: 4px;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 0.9em;
     }
 
     .video-container {
@@ -1976,9 +1926,7 @@ ${trackingScripts.head}
 ${clientSideScripts}
 </head>
 <body>
-${wrapInPreviewBlock(trackingScripts.body, 'Tracking Scripts (Body)', isForPreview)}
-${wrapInPreviewBlock(initialAmpscript, 'Initial AMPScript', isForPreview)}
-${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
+${trackingScripts.body}
   %%[ IF @isAuthenticated == true THEN ]%%
   ${renderLoader(meta, styles.themeColor)}
   ${stripeComponents}
@@ -1995,4 +1943,11 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
 </body>
 </html>
 `;
+
+  // For non-preview (final publish), replace escaped HTML entities
+  if (!isForPreview) {
+      finalHtml = finalHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  }
+
+  return finalHtml;
 }

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -224,22 +225,23 @@ function QuickSnippetPopover({ pageId }: { pageId: string }) {
 
 interface AnalyticsDashboardProps {
   page: CloudPage;
+  workspaceId: string;
 }
 
-function AnalyticsDashboard({ page }: AnalyticsDashboardProps) {
+function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
     const [views, setViews] = useState<PageView[]>([]);
     const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     
     const fetchAnalyticsData = useCallback(() => {
-        if (!page?.id) return;
+        if (!page?.id || !workspaceId) return;
         setIsRefreshing(true);
         const hasForm = page.components.some(c => c.type === 'Form');
         
-        const promises = [getPageViews(page.id)];
+        const promises = [getPageViews(page.id, workspaceId)];
         if (hasForm) {
-            promises.push(getFormSubmissions(page.id) as any);
+            promises.push(getFormSubmissions(page.id, workspaceId) as any);
         }
 
         Promise.all(promises)
@@ -253,7 +255,7 @@ function AnalyticsDashboard({ page }: AnalyticsDashboardProps) {
                 setLoading(false);
                 setIsRefreshing(false);
             });
-    }, [page]);
+    }, [page, workspaceId]);
 
     useEffect(() => {
         setLoading(true);
@@ -1102,7 +1104,7 @@ export function PageList({ projectId }: PageListProps) {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {selectedPage && <AnalyticsDashboard page={selectedPage} />}
+                            {selectedPage && activeWorkspace && <AnalyticsDashboard page={selectedPage} workspaceId={activeWorkspace.id} />}
                         </>
                     ) : (
                          <div className="text-center py-16">

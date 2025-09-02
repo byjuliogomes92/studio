@@ -301,6 +301,7 @@ export interface PageView {
 export interface FormSubmission {
     id?: string;
     pageId: string;
+    workspaceId: string;
     timestamp: any;
     formData: { [key: string]: any };
 }

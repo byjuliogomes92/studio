@@ -143,10 +143,10 @@ export const inviteUserToWorkspace = async (workspaceId: string, email: string, 
         createdAt: serverTimestamp(),
     };
 
-    await addDoc(collection(db, 'workspaceMembers'), newMemberData);
-    
-    // Assuming the inviter's user object is passed in
-    await logActivity(workspaceId, inviterName || 'System', null, null, 'MEMBER_INVITED', { invitedEmail: email, role });
+    const newMemberRef = await addDoc(collection(db, 'workspaceMembers'), newMemberData);
+
+    const inviterUser = { displayName: inviterName, uid: '', photoURL: '' }; // Mock user for logging
+    await logActivity(workspaceId, inviterUser.uid, inviterUser.displayName, inviterUser.photoURL, 'MEMBER_INVITED', { invitedEmail: email, role });
 };
 
 export const removeUserFromWorkspace = async (workspaceId: string, userId: string, removerUser: User, removedUser: WorkspaceMember): Promise<void> => {
@@ -192,8 +192,6 @@ export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>)
     };
     const projectRef = await addDoc(collection(db, "projects"), newProjectData);
 
-    // Assuming the user object is available here, if not, this needs adjustment
-    // For now, we will pass null for avatar, as we don't have the full user object
     await logActivity(projectData.workspaceId, projectData.userId, '', null, 'PROJECT_CREATED', { projectName: projectData.name });
     
     return {
@@ -692,11 +690,12 @@ export const logPageView = async (pageData: CloudPage, headers: Headers): Promis
     }
 };
 
-export const getPageViews = async (pageId: string): Promise<PageView[]> => {
+export const getPageViews = async (pageId: string, workspaceId: string): Promise<PageView[]> => {
     const db = getDbInstance();
     const q = query(
         collection(db, 'pageViews'),
         where('pageId', '==', pageId),
+        where('workspaceId', '==', workspaceId),
         orderBy('timestamp', 'desc')
     );
     const querySnapshot = await getDocs(q);
@@ -706,9 +705,20 @@ export const getPageViews = async (pageId: string): Promise<PageView[]> => {
 
 export const logFormSubmission = async (pageId: string, formData: { [key: string]: any }): Promise<void> => {
     const db = getDbInstance();
+    
+    // Get workspaceId from the page document to ensure it's logged correctly
+    const pageRef = doc(db, 'pages_published', pageId);
+    const pageSnap = await getDoc(pageRef);
+    const workspaceId = pageSnap.exists() ? pageSnap.data().workspaceId : null;
+
+    if (!workspaceId) {
+        console.error(`Could not log submission: workspaceId not found for page ${pageId}`);
+        return;
+    }
 
     const submissionData: Omit<FormSubmission, 'id'> = {
         pageId,
+        workspaceId,
         formData,
         timestamp: serverTimestamp(),
     };
@@ -720,11 +730,12 @@ export const logFormSubmission = async (pageId: string, formData: { [key: string
     }
 };
 
-export const getFormSubmissions = async (pageId: string): Promise<FormSubmission[]> => {
+export const getFormSubmissions = async (pageId: string, workspaceId: string): Promise<FormSubmission[]> => {
     const db = getDbInstance();
     const q = query(
         collection(db, 'formSubmissions'),
         where('pageId', '==', pageId),
+        where('workspaceId', '==', workspaceId),
         orderBy('timestamp', 'desc')
     );
     const querySnapshot = await getDocs(q);

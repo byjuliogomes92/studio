@@ -19,6 +19,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library } from 'lucide-react';
 import { Logo } from '@/components/icons';
@@ -513,68 +518,81 @@ export default function MediaLibraryPage() {
               </Card>
           ))}
           {filteredAssets.map((asset) => (
-            <Card key={asset.id} className="group relative overflow-hidden">
-              <CardContent className="p-0">
-                <div className="aspect-square w-full bg-muted flex items-center justify-center">
-                  <Image
-                    src={asset.url}
-                    alt={asset.fileName}
-                    width={200}
-                    height={200}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                   <div className="flex justify-end gap-1">
-                      <Popover>
-                          <PopoverTrigger asChild>
-                              <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                  <Edit className="h-4 w-4" />
-                              </Button>
-                          </PopoverTrigger>
-                          <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
-                      </Popover>
-                      <Popover>
-                          <PopoverTrigger asChild>
-                              <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                  <Tag className="h-4 w-4" />
-                              </Button>
-                          </PopoverTrigger>
-                          <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
-                      </Popover>
-                      <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => handleCopyUrl(asset.url)}>
-                          <Copy className="h-4 w-4" />
-                      </Button>
-                       <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="destructive" className="h-8 w-8">
-                                  <Trash2 className="h-4 w-4" />
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir Arquivo?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      Tem certeza que deseja excluir "{asset.fileName}"? Esta ação não pode ser desfeita.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteMedia(asset)}>Excluir</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                   </div>
-                   <div className="text-white text-xs p-1 bg-black/50 rounded-md">
-                      <p className="font-bold truncate">{asset.fileName}</p>
-                      <p>{formatBytes(asset.size)}</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                          {(asset.tags || []).map(tag => <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>)}
-                      </div>
-                   </div>
-                </div>
-              </CardContent>
-            </Card>
+             <Dialog key={asset.id}>
+                <DialogTrigger asChild>
+                    <Card className="group relative overflow-hidden cursor-pointer">
+                        <CardContent className="p-0">
+                        <div className="aspect-square w-full bg-muted flex items-center justify-center">
+                            <Image
+                            src={asset.url}
+                            alt={asset.fileName}
+                            width={200}
+                            height={200}
+                            className="object-cover w-full h-full"
+                            />
+                        </div>
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                            <div className="flex justify-end gap-1">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
+                                </Popover>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                            <Tag className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
+                                </Popover>
+                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleCopyUrl(asset.url); }}>
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button size="icon" variant="destructive" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Excluir Arquivo?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Tem certeza que deseja excluir "{asset.fileName}"? Esta ação não pode ser desfeita.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteMedia(asset)}>Excluir</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                            <div className="text-white text-xs p-1 bg-black/50 rounded-md">
+                                <p className="font-bold truncate">{asset.fileName}</p>
+                                <p>{formatBytes(asset.size)}</p>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {(asset.tags || []).map(tag => <Badge key={tag} variant="secondary" className="text-xs px-1.5 py-0.5">{tag}</Badge>)}
+                                </div>
+                            </div>
+                        </div>
+                        </CardContent>
+                    </Card>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl h-auto p-2 bg-transparent border-none shadow-none">
+                    <Image
+                        src={asset.url}
+                        alt={asset.fileName}
+                        width={1200}
+                        height={800}
+                        className="object-contain w-full h-auto max-h-[90vh] rounded-lg"
+                    />
+                </DialogContent>
+            </Dialog>
           ))}
         </div>
         {mediaAssets.length === 0 && !isUploading && (

@@ -735,6 +735,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     return `${lottiePlayerScript}${carouselScript}${script}`;
 };
 
+
 const getPrefillAmpscript = (pageState: CloudPage): string => {
     const formComponent = pageState.components.find(c => c.type === 'Form');
     if (!formComponent) return '';
@@ -1831,6 +1832,13 @@ ${trackingScripts.head}
     }
     .carousel-dot.is-selected { background-color: var(--theme-color); }
 
+    .logo-carousel .carousel-inner {
+        animation: scroll 30s linear infinite;
+    }
+    @keyframes scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(calc(-250px * 7))}
+    }
     .logo-carousel .carousel-slide {
         padding: 0 20px;
     }

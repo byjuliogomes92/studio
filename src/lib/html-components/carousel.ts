@@ -21,8 +21,12 @@ export function renderCarousel(component: PageComponent): string {
     }
 
     const carouselId = `carousel-${component.id}`;
-    const autoplayOptions = options.autoplay ? { delay: options.autoplaySpeed || 4000, stopOnInteraction: false } : null;
-    const emblaOptions = JSON.stringify({ ...options, autoplay: autoplayOptions });
+    
+    // Explicitly check for autoplay in options to create the correct JSON
+    const emblaOptions = {
+        ...options,
+        autoplay: options.autoplay ? { delay: options.autoplay.delay || 4000, stopOnInteraction: false } : null,
+    };
 
     const slidesHtml = images.map((image: CarouselImage) => `
         <div class="carousel-slide">
@@ -36,10 +40,11 @@ export function renderCarousel(component: PageComponent): string {
     ` : '';
     
     return `
-        <div class="carousel-container ${carouselType === 'logo' ? 'logo-carousel' : ''}" id="${carouselId}" data-options='${emblaOptions}'>
+        <div class="carousel-container ${carouselType === 'logo' ? 'logo-carousel' : ''}" id="${carouselId}" data-options='${JSON.stringify(emblaOptions)}'>
             <div class="carousel-viewport">
                 <div class="carousel-inner">
                     ${slidesHtml}
+                    ${carouselType === 'logo' ? slidesHtml : ''}
                 </div>
             </div>
             ${arrowsHtml}

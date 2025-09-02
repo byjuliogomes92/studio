@@ -209,7 +209,7 @@ export const updateProject = async (projectId: string, data: Partial<Project>, u
     const projectSnap = await getDoc(projectRef);
     const projectData = projectSnap.data();
     if(projectData) {
-        await logActivity(projectData.workspaceId, user.uid, user.displayName, user.photoURL, 'PROJECT_UPDATED', { projectName: projectData.name });
+        await logActivity(projectData.workspaceId, user.uid, user.displayName, user.photoURL, 'PROJECT_UPDATED', { projectName: data.name || projectData.name });
     }
 }
 
@@ -671,8 +671,43 @@ export const updateUserProgress = async (userId: string, objective: keyof Onboar
 };
 
 // Analytics
+const parseUserAgent = (ua: string): { os: string, browser: string, deviceType: string } => {
+    if (!ua) return { os: 'N/A', browser: 'N/A', deviceType: 'N/A' };
+
+    let os = 'N/A', browser = 'N/A', deviceType = 'Desktop';
+
+    // Device Type
+    if (/Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+        deviceType = 'Mobile';
+    }
+
+    // OS
+    if (/Windows NT 10.0/i.test(ua)) os = "Windows 11/10";
+    else if (/Windows NT 6.3/i.test(ua)) os = "Windows 8.1";
+    else if (/Windows NT 6.2/i.test(ua)) os = "Windows 8";
+    else if (/Windows NT 6.1/i.test(ua)) os = "Windows 7";
+    else if (/Windows/i.test(ua)) os = "Windows";
+    else if (/Android/i.test(ua)) os = "Android";
+    else if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS";
+    else if (/Mac OS X/i.test(ua)) os = "macOS";
+    else if (/Linux/i.test(ua)) os = "Linux";
+
+    // Browser
+    if (/Edg/i.test(ua)) browser = "Edge";
+    else if (/Chrome/i.test(ua) && !/Chromium/i.test(ua)) browser = "Chrome";
+    else if (/Firefox/i.test(ua)) browser = "Firefox";
+    else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = "Safari";
+    else if (/MSIE|Trident/i.test(ua)) browser = "Internet Explorer";
+    
+    return { os, browser, deviceType };
+};
+
+
 export const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void> => {
     const db = getDbInstance();
+    const userAgent = headers.get('user-agent') || '';
+    const { os, browser, deviceType } = parseUserAgent(userAgent);
+
 
     const viewData: Omit<PageView, 'id'> = {
         pageId: pageData.id,
@@ -681,7 +716,11 @@ export const logPageView = async (pageData: CloudPage, headers: Headers): Promis
         timestamp: serverTimestamp(),
         country: headers.get('x-vercel-ip-country') || undefined,
         city: headers.get('x-vercel-ip-city') || undefined,
-        userAgent: headers.get('user-agent') || undefined,
+        userAgent: userAgent,
+        referrer: headers.get('referer') || undefined,
+        os,
+        browser,
+        deviceType,
     };
 
     try {

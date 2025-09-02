@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart, Calendar, Smile, Code, Link } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Calendar, Smile, Code, Link, Laptop, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -60,7 +60,7 @@ import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsFor
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { CreatePageFromTemplateDialog } from "./create-page-from-template-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +68,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Separator } from "../ui/separator";
 import { Label } from "../ui/label";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 
 interface PageListProps {
@@ -98,7 +100,7 @@ const projectIcons = [
     { name: "Folder", icon: Folder },
     { name: "Briefcase", icon: Briefcase },
     { name: "Target", icon: Target },
-    { name: "BarChart", icon: BarChart },
+    { name: "BarChart", icon: BarChartIcon },
     { name: "Calendar", icon: Calendar },
     { name: "Users", icon: Users },
     { name: "Smile", icon: Smile },
@@ -181,7 +183,7 @@ function QuickSnippetPopover({ pageId }: { pageId: string }) {
         }
     }, [pageId]);
 
-    const snippet = `%%=TreatAsContentArea("CONTENT", HTTPGet("${pageUrl}", false, 0, @status))=%%`;
+    const snippet = `%%=TreatAsContent("CONTENT", HTTPGet("${pageUrl}", false, 0, @status))=%%`;
 
     const handleCopy = () => {
         navigator.clipboard.writeText(snippet);
@@ -262,10 +264,47 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
         fetchAnalyticsData();
     }, [fetchAnalyticsData]);
 
-    const totalViews = views.length;
-    const uniqueCountries = useMemo(() => {
-        const countries = new Set(views.map(v => v.country).filter(Boolean));
-        return Array.from(countries);
+    const {
+        totalViews,
+        uniqueVisitors,
+        viewsLast14Days,
+        topReferrers,
+        topBrowsers,
+        topOS,
+        deviceDistribution
+    } = useMemo(() => {
+        const uniqueVisitorSet = new Set(views.map(v => v.country && v.userAgent ? `${v.country}-${v.userAgent}` : v.id));
+        
+        const dailyViews = new Map<string, number>();
+        for (let i = 13; i >= 0; i--) {
+            const date = format(subDays(new Date(), i), 'dd/MM');
+            dailyViews.set(date, 0);
+        }
+        views.forEach(v => {
+            const date = v.timestamp?.toDate ? format(v.timestamp.toDate(), 'dd/MM') : null;
+            if (date && dailyViews.has(date)) {
+                dailyViews.set(date, (dailyViews.get(date) || 0) + 1);
+            }
+        });
+
+        const countTop = (key: keyof PageView) => {
+            const counts = new Map<string, number>();
+            views.forEach(v => {
+                const value = v[key] as string || 'Direto/N/A';
+                counts.set(value, (counts.get(value) || 0) + 1);
+            });
+            return Array.from(counts.entries()).sort((a,b) => b[1] - a[1]).slice(0, 5);
+        };
+        
+        return {
+            totalViews: views.length,
+            uniqueVisitors: uniqueVisitorSet.size,
+            viewsLast14Days: Array.from(dailyViews.entries()).map(([name, views]) => ({ name, views })),
+            topReferrers: countTop('referrer'),
+            topBrowsers: countTop('browser'),
+            topOS: countTop('os'),
+            deviceDistribution: countTop('deviceType').map(([name, value]) => ({ name, value, fill: name === 'Mobile' ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))' })),
+        };
     }, [views]);
     
     const downloadCSV = () => {
@@ -301,13 +340,14 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                     Atualizar Dados
                 </Button>
             </div>
-            <Tabs defaultValue="views">
+            <Tabs defaultValue="overview">
                 <TabsList>
-                    <TabsTrigger value="views">Visualizações</TabsTrigger>
+                    <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                    <TabsTrigger value="audience">Audiência</TabsTrigger>
                     {page.components.some(c => c.type === 'Form') && <TabsTrigger value="submissions">Submissões</TabsTrigger>}
                 </TabsList>
-                <TabsContent value="views" className="mt-4">
-                    <div className="grid gap-4 md:grid-cols-3 mb-6">
+                <TabsContent value="overview" className="mt-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Total de Visualizações</CardTitle>
@@ -319,43 +359,82 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Países Únicos</CardTitle>
+                                <CardTitle className="text-sm font-medium">Visitantes Únicos</CardTitle>
                                 <Globe className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{uniqueCountries.length}</div>
+                                <div className="text-2xl font-bold">{uniqueVisitors}</div>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
+                                <Target className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{totalViews > 0 ? ((submissions.length / totalViews) * 100).toFixed(2) : 0}%</div>
                             </CardContent>
                         </Card>
                     </div>
                      <Card>
                         <CardHeader>
-                            <CardTitle>Acessos Recentes</CardTitle>
+                            <CardTitle>Visualizações nos últimos 14 dias</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             <div className="relative w-full overflow-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Data</TableHead>
-                                            <TableHead>País</TableHead>
-                                            <TableHead>Cidade</TableHead>
-                                            <TableHead>User Agent</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {views.slice(0, 10).map(view => (
-                                            <TableRow key={view.id}>
-                                                <TableCell>{view.timestamp?.toDate ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
-                                                <TableCell>{view.country || 'N/A'}</TableCell>
-                                                <TableCell>{view.city || 'N/A'}</TableCell>
-                                                <TableCell className="max-w-xs truncate" title={view.userAgent}>{view.userAgent || 'N/A'}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                             </div>
+                             <div className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={viewsLast14Days}>
+                                        <CartesianGrid vertical={false} />
+                                        <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="#888888" fontSize={12} />
+                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                        <ChartTooltip content={<ChartTooltipContent />} />
+                                        <Bar dataKey="views" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+                <TabsContent value="audience" className="mt-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <Card>
+                            <CardHeader><CardTitle>Dispositivos</CardTitle></CardHeader>
+                            <CardContent>
+                               <div className="h-[200px]">
+                                 <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                                        <Pie data={deviceDistribution} dataKey="value" nameKey="name">
+                                            {deviceDistribution.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                        <ChartLegend content={<ChartLegendContent />} />
+                                    </PieChart>
+                                 </ResponsiveContainer>
+                               </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle>Principais Origens</CardTitle></CardHeader>
+                            <CardContent>
+                                <ul>{topReferrers.map(([name, count]) => <li key={name} className="flex justify-between text-sm py-1 border-b"><span>{name}</span><strong>{count}</strong></li>)}</ul>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle>Navegadores e OS</CardTitle></CardHeader>
+                            <CardContent className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <h4 className="font-bold text-sm mb-2">Navegadores</h4>
+                                    <ul>{topBrowsers.map(([name, count]) => <li key={name} className="flex justify-between text-sm py-1 border-b"><span>{name}</span><strong>{count}</strong></li>)}</ul>
+                                </div>
+                                 <div>
+                                    <h4 className="font-bold text-sm mb-2">Sistemas</h4>
+                                    <ul>{topOS.map(([name, count]) => <li key={name} className="flex justify-between text-sm py-1 border-b"><span>{name}</span><strong>{count}</strong></li>)}</ul>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
                 {page.components.some(c => c.type === 'Form') && (
                     <TabsContent value="submissions" className="mt-4">

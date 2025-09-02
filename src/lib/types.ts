@@ -297,6 +297,10 @@ export interface PageView {
   country?: string;
   city?: string;
   userAgent?: string;
+  referrer?: string;
+  browser?: string;
+  os?: string;
+  deviceType?: string;
 }
 
 export interface FormSubmission {

@@ -82,11 +82,17 @@ setAdminClaim();
  * arquivos para o Firebase Storage sem erros de CORS.
  *
  * --- PASSO A PASSO ---
+ * 
+ * 1. **(IMPORTANTE!) Ative o Firebase Storage primeiro:**
+ *    - No menu lateral do Firebase Console, vá em "Storage".
+ *    - Clique no botão "Começar" (Get Started).
+ *    - Siga os passos de configuração (normalmente, apenas clique em "Próximo" e "Concluir").
+ *    - **Este passo cria o "bucket" de armazenamento que o próximo comando precisa.**
  *
- * 1. No terminal do Cloud Shell, crie um arquivo de configuração:
+ * 2. No terminal do Cloud Shell, crie um arquivo de configuração:
  *    nano cors.json
  *
- * 2. Cole o conteúdo JSON abaixo no editor e salve (Ctrl+X, Y, Enter):
+ * 3. Cole o conteúdo JSON abaixo no editor e salve (Ctrl+X, Y, Enter):
  *
 [
   {
@@ -97,15 +103,16 @@ setAdminClaim();
   }
 ]
  *
- * 3. Execute o comando abaixo no terminal. Ele aplica a configuração
+ * 4. Execute o comando abaixo no terminal. Ele aplica a configuração
  *    de CORS ao seu bucket de armazenamento.
  *    (O ID do projeto já é detectado automaticamente pelo Cloud Shell)
  *
 gsutil cors set cors.json gs://$(gcloud config get-value project).appspot.com
 
  *
- * 4. Após a mensagem de sucesso, o upload de arquivos na biblioteca
+ * 5. Após a mensagem de sucesso, o upload de arquivos na biblioteca
  *    de mídia funcionará corretamente.
  *
  * ==================================================================
  */
+

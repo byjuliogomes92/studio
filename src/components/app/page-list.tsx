@@ -339,6 +339,7 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                                             <TableHead>Data</TableHead>
                                             <TableHead>País</TableHead>
                                             <TableHead>Cidade</TableHead>
+                                            <TableHead>User Agent</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -347,6 +348,7 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                                                 <TableCell>{view.timestamp?.toDate ? format(view.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss') : '-'}</TableCell>
                                                 <TableCell>{view.country || 'N/A'}</TableCell>
                                                 <TableCell>{view.city || 'N/A'}</TableCell>
+                                                <TableCell className="max-w-xs truncate" title={view.userAgent}>{view.userAgent || 'N/A'}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -547,9 +549,9 @@ export function PageList({ projectId }: PageListProps) {
   }, [activeTab, pages, selectedPageId, projectId, router]);
 
   const handleDeletePage = async () => {
-     if (!pageToDelete) return;
+     if (!pageToDelete || !user) return;
     try {
-      await deletePage(pageToDelete.id);
+      await deletePage(pageToDelete.id, user);
       setPages(prev => prev.filter(p => p.id !== pageToDelete.id));
       toast({ title: "Página excluída!" });
     } catch (error) {
@@ -560,9 +562,10 @@ export function PageList({ projectId }: PageListProps) {
   }
 
   const handleDuplicatePage = async (pageId: string) => {
+    if(!user) return;
     toast({ title: "Copiando página...", description: "Por favor, aguarde." });
     try {
-      const newPage = await duplicatePage(pageId);
+      const newPage = await duplicatePage(pageId, user);
       setPages(prev => [newPage, ...prev]);
       toast({ title: "Página duplicada!", description: `A página "${newPage.name}" foi criada com sucesso.` });
     } catch(error) {

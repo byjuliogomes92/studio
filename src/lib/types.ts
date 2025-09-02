@@ -201,6 +201,7 @@ export interface CloudPage {
     loaderType?: LoaderType;
     loaderImageUrl?: string;
     loaderAnimation?: LoaderAnimation;
+    redirectUrl: string;
     dataExtensionKey: string;
     dataExtensionTargetMethod?: 'key' | 'name';
     metaDescription: string;

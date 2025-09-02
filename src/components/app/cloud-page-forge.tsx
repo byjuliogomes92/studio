@@ -484,7 +484,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                              <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">URL Completa</Label>
                                 <div className="flex items-center justify-between gap-2">
-                                    <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0">{pageUrl}</a>
+                                    <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0 break-all">{pageUrl}</a>
                                     <div className="flex items-center gap-1 flex-shrink-0">
                                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(pageUrl)}><Copy className="h-4 w-4"/></Button>
                                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(pageUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>

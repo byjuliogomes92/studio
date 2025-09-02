@@ -107,6 +107,7 @@ export function ProjectFlowView({ pages }: ProjectFlowViewProps) {
     const edges: Edge[] = [];
     pages.forEach(page => {
       page.components.forEach(component => {
+        // Check for Button and Form components with a page link action
         if ((component.type === 'Button' || component.type === 'Form') && component.props.action?.type === 'PAGE') {
           const targetPageId = component.props.action.pageId;
           if (targetPageId) {
@@ -128,7 +129,7 @@ export function ProjectFlowView({ pages }: ProjectFlowViewProps) {
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodes, edges);
 
     return { initialNodes: layoutedNodes, initialEdges: layoutedEdges };
-  }, [pages, router]);
+  }, [pages]);
 
   if (pages.length === 0) {
     return (

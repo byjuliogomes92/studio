@@ -68,6 +68,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Separator } from "../ui/separator";
 import { Label } from "../ui/label";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+
 
 interface PageListProps {
   projectId: string;
@@ -860,6 +862,7 @@ export function PageList({ projectId }: PageListProps) {
 
   return (
     <>
+    <TooltipProvider>
       <div className="min-h-screen bg-muted/40">
         <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b bg-card">
           <div className="flex items-center gap-2 md:gap-4 text-lg font-semibold">
@@ -1016,7 +1019,15 @@ export function PageList({ projectId }: PageListProps) {
                                 <div className="p-4 flex-grow flex flex-col justify-between" onClick={() => handlePageClick(page.id)}>
                                     <div>
                                         <div className="flex justify-between items-start">
-                                            <h3 className="font-semibold text-base leading-tight truncate pr-2" title={page.name}>
+                                            <h3 className="font-semibold text-base leading-tight truncate pr-2 flex items-center gap-2" title={page.name}>
+                                                 <Tooltip>
+                                                    <TooltipTrigger>
+                                                         <div className={cn("h-2.5 w-2.5 rounded-full", page.status === 'published' ? 'bg-green-500' : 'bg-orange-400')}></div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>{page.status === 'published' ? 'Publicada' : 'Rascunho'}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
                                                 {page.name}
                                             </h3>
                                             <Badge variant="outline" className="shrink-0 capitalize">
@@ -1043,12 +1054,13 @@ export function PageList({ projectId }: PageListProps) {
                         <Table>
                             <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[50%]" onClick={() => handleSort('name')}>
+                                <TableHead className="w-[40%]" onClick={() => handleSort('name')}>
                                 <div className="flex items-center gap-2 cursor-pointer">
                                     Nome da Página
                                     {getSortDirection('name') !== 'none' && <ArrowUpDown className="h-4 w-4" />}
                                 </div>
                                 </TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead>Plataforma</TableHead>
                                 <TableHead>Tags</TableHead>
                                 <TableHead onClick={() => handleSort('updatedAt')}>
@@ -1064,6 +1076,12 @@ export function PageList({ projectId }: PageListProps) {
                             {filteredAndSortedPages.map((page) => (
                                 <TableRow key={page.id} className="cursor-pointer" onClick={() => handlePageClick(page.id)}>
                                 <TableCell className="font-medium">{page.name}</TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <div className={cn("h-2.5 w-2.5 rounded-full", page.status === 'published' ? 'bg-green-500' : 'bg-orange-400')}></div>
+                                        <span className="capitalize">{page.status === 'published' ? 'Publicada' : 'Rascunho'}</span>
+                                    </div>
+                                </TableCell>
                                 <TableCell><PlatformIcon platformId={page.platform} /></TableCell>
                                 <TableCell>
                                     <div className="flex flex-wrap gap-1">
@@ -1143,9 +1161,11 @@ export function PageList({ projectId }: PageListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </TooltipProvider>
     </>
   );
 }
+
 
 
 

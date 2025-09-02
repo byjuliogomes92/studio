@@ -225,7 +225,7 @@ export const getProjectWithPages = async (projectId: string, workspaceId: string
     const projectDoc = await getDoc(projectRef);
 
     if (!projectDoc.exists() || projectDoc.data().workspaceId !== workspaceId) {
-        return null; 
+        return null;
     }
 
     const project = { id: projectDoc.id, ...projectDoc.data() } as Project;
@@ -344,14 +344,48 @@ export const getPageBySlug = async (slug: string, version: 'drafts' | 'published
 
 export const getPagesForProject = async (projectId: string, workspaceId: string): Promise<CloudPage[]> => {
     const db = getDbInstance();
-    const q = query(
+    const draftsQuery = query(
       collection(db, "pages_drafts"), 
       where("projectId", "==", projectId),
-      where("workspaceId", "==", workspaceId),
-      orderBy("updatedAt", "desc")
+      where("workspaceId", "==", workspaceId)
     );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CloudPage));
+    const publishedQuery = query(
+      collection(db, "pages_published"), 
+      where("projectId", "==", projectId),
+      where("workspaceId", "==", workspaceId)
+    );
+  
+    const [draftsSnapshot, publishedSnapshot] = await Promise.all([
+      getDocs(draftsQuery),
+      getDocs(publishedQuery)
+    ]);
+  
+    const publishedPagesMap = new Map<string, CloudPage>();
+    publishedSnapshot.docs.forEach(doc => {
+      publishedPagesMap.set(doc.id, { id: doc.id, ...doc.data() } as CloudPage);
+    });
+  
+    const pagesWithStatus = draftsSnapshot.docs.map(doc => {
+      const draftPage = { id: doc.id, ...doc.data() } as CloudPage;
+      const publishedPage = publishedPagesMap.get(doc.id);
+  
+      let status: 'published' | 'draft' = 'draft';
+      if (publishedPage) {
+        const draftTime = draftPage.updatedAt?.toMillis() || 0;
+        const publishedTime = publishedPage.updatedAt?.toMillis() || 0;
+        if (draftTime <= publishedTime) {
+          status = 'published';
+        }
+      }
+      
+      return {
+        ...draftPage,
+        status: status
+      };
+    });
+  
+    // Sort pages by updatedAt date in descending order
+    return pagesWithStatus.sort((a, b) => (b.updatedAt?.toMillis() || 0) - (a.updatedAt?.toMillis() || 0));
 };
 
 

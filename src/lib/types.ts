@@ -181,6 +181,7 @@ export interface CloudPage {
   brandName: string;
   platform?: string;
   tags?: string[];
+  status?: 'published' | 'draft';
   styles: {
     backgroundColor: string;
     backgroundImage: string;

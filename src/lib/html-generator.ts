@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent, ComponentType } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
@@ -802,9 +803,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const googleFont = styles.fontFamily || 'Roboto';
   
   const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe'), components, pageState, isForPreview);
-
-  const pageIdentifier = slug || id;
-  const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${pageIdentifier}" alt="" width="1" height="1" style="display:none" />`;
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
@@ -1962,7 +1960,6 @@ ${isForPreview ? '' : trackingScripts.body}
   </main>
   ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '') : ''}
   ${isForPreview ? '' : cookieBannerHtml}
-  ${isForPreview ? '' : trackingPixel}
   %%[ ELSE ]%%
   ${security.body}
   %%[ ENDIF ]%%

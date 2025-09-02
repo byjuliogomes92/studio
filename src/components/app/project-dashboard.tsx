@@ -683,13 +683,13 @@ export function ProjectDashboard() {
                 <Image 
                     src="https://images.unsplash.com/photo-1711540846697-56b9f66d17f1"
                     alt="Banner de anúncio de nova funcionalidade"
-                    layout="fill"
+                    fill
                     objectFit="cover"
                     className="w-full h-full"
                     data-ai-hint="abstract banner"
                     objectPosition="left 53%"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/20 flex items-center p-6 md:p-10">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#131C35] to-transparent flex items-center p-6 md:p-10">
                     <div className="max-w-md text-white">
                         <h3 className="text-xl md:text-2xl font-bold">
                             <span className="text-primary">Nova Funcionalidade:<br></br></span> Testes A/B para Componentes
@@ -824,7 +824,7 @@ export function ProjectDashboard() {
             {filteredAndSortedProjects.map((project) => (
               <div
                 key={project.id}
-                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md hover:bg-accent transition-shadow"
+                className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:bg-accent transition-shadow"
               >
                 <div onClick={() => handleNavigateToProject(project.id)} className="cursor-pointer">
                     <ProjectIcon iconName={project.icon} color={project.color} className="mb-4" />

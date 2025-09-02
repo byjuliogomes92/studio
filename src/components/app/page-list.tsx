@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -318,7 +319,8 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
         deviceDistribution,
         conversionRate,
     } = useMemo(() => {
-        const { filteredViews } = filteredData;
+        const { filteredViews, filteredSubmissions } = filteredData;
+        const totalViews = filteredViews.length;
         const uniqueVisitorSet = new Set(filteredViews.map(v => v.country && v.userAgent ? `${v.country}-${v.userAgent}` : v.id));
         
         const dailyViews = new Map<string, number>();
@@ -347,11 +349,11 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
         };
         
         const deviceData = countTop('deviceType', filteredViews);
-        const totalSubmissions = filteredData.filteredSubmissions.length;
+        const totalSubmissions = filteredSubmissions.length;
         const calculatedConversionRate = totalViews > 0 ? ((totalSubmissions / totalViews) * 100) : 0;
         
         return {
-            totalViews: filteredViews.length,
+            totalViews: totalViews,
             uniqueVisitors: uniqueVisitorSet.size,
             viewsOverTime: Array.from(dailyViews.entries()).map(([name, views]) => ({ name, views })),
             topReferrers: countTop('referrer', filteredViews),

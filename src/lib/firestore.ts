@@ -1,10 +1,10 @@
 
 import { getDb, storage } from "./firebase";
-import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig } from "./types";
 import { updateProfile, type User } from "firebase/auth";
-import { encryptPassword } from "./crypto";
+import { encryptPassword, decryptPassword } from "./crypto";
 
 
 const getDbInstance = (): Firestore => {
@@ -258,13 +258,25 @@ export const deleteProject = async (projectId: string): Promise<void> => {
 
 // Pages
 
-export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+const generateSlug = (name: string) => {
+  const slugBase = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+  return `${slugBase}-${Date.now()}`;
+};
+
+export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'slug'>): Promise<string> => {
     const db = getDbInstance();
     const pageId = doc(collection(db, 'dummy_id_generator')).id; 
 
     const pageWithTimestamps = {
       ...pageData,
-      id: pageId, 
+      id: pageId,
+      slug: generateSlug(pageData.name),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -315,6 +327,21 @@ export const getPage = async (pageId: string, version: 'drafts' | 'published' = 
     return page;
 };
 
+export const getPageBySlug = async (slug: string, version: 'drafts' | 'published' = 'drafts'): Promise<CloudPage | null> => {
+    const db = getDbInstance();
+    const collectionName = version === 'drafts' ? 'pages_drafts' : 'pages_published';
+    const q = query(collection(db, collectionName), where('slug', '==', slug), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
+    }
+    
+    const docSnap = querySnapshot.docs[0];
+    return { id: docSnap.id, ...docSnap.data() } as CloudPage;
+};
+
+
 export const getPagesForProject = async (projectId: string, workspaceId: string): Promise<CloudPage[]> => {
     const db = getDbInstance();
     const q = query(
@@ -341,7 +368,7 @@ export const duplicatePage = async (pageId: string): Promise<CloudPage> => {
         throw new Error("Página original não encontrada.");
     }
     
-    const { id, createdAt, updatedAt, ...pageDataToCopy } = originalPage;
+    const { id, createdAt, updatedAt, slug, ...pageDataToCopy } = originalPage;
 
     pageDataToCopy.name = `Cópia de ${originalPage.name}`;
     

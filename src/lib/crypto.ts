@@ -1,11 +1,10 @@
+
 import crypto from 'crypto-js';
 
 const getEncryptionKey = (): string => {
-    const key = process.env.FTP_ENCRYPTION_KEY;
+    const key = process.env.FTP_ENCRYPTION_KEY || process.env.NEXT_PUBLIC_CRYPTO_FALLBACK_KEY;
     if (!key) {
-        // Em um ambiente de produção real, isso deve lançar um erro ou ter um fallback mais robusto.
-        // Por segurança, NUNCA use uma chave padrão fixa no código.
-        console.error("FATAL: FTP_ENCRYPTION_KEY não está definida no ambiente.");
+        console.error("FATAL: Encryption key is not defined in the environment.");
         throw new Error("A chave de criptografia do servidor não está configurada.");
     }
     return key;

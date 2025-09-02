@@ -785,7 +785,7 @@ const renderLoader = (meta: CloudPage['meta'], themeColor: string): string => {
 
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string {
-  const { id, styles, components, meta, cookieBanner } = pageState;
+  const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
   const ssjsScript = getFormSubmissionScript(pageState);
 
@@ -802,7 +802,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe'), components, pageState, isForPreview);
 
-  const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
+  const pageIdentifier = slug || id;
+  const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${pageIdentifier}" alt="" width="1" height="1" style="display:none" />`;
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
@@ -1978,5 +1979,3 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
 </html>
 `
 }
-
-    

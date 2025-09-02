@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant } from "@/lib/types";
+import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant, CloudPage } from "@/lib/types";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,7 @@ import { MediaLibraryDialog } from "./media-library-dialog";
 interface ComponentSettingsProps {
   component: PageComponent;
   onComponentChange: (id: string, newProps: Partial<PageComponent>) => void;
+  projectPages: CloudPage[];
 }
 
 const formFields: {id: keyof PageComponent['props']['fields'], label: string, urlParam: string, deName: string}[] = [
@@ -621,7 +622,7 @@ function CarouselImageManager({ images, onPropChange }: { images: { id: string; 
 }
 
 
-const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void) => {
+const renderComponentSettings = (type: ComponentType, props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void, projectPages: CloudPage[] = []) => {
     
     // Create a ref for the thank you message textarea for cursor manipulation
     const thankYouTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1206,14 +1207,53 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     </div>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="button-action-type">Ação do Botão</Label>
+                  <Select
+                    value={props.action?.type || 'URL'}
+                    onValueChange={(value) => onPropChange('action', { ...props.action, type: value })}
+                  >
+                    <SelectTrigger id="button-action-type">
+                      <SelectValue placeholder="Selecione uma ação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="URL">Ir para URL externa</SelectItem>
+                      <SelectItem value="PAGE">Ir para outra página</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(!props.action || props.action.type === 'URL') && (
+                  <div className="space-y-2">
                     <Label htmlFor="button-href">URL do Link</Label>
                     <Input
-                        id="button-href"
-                        value={props.href || ''}
-                        onChange={(e) => onPropChange('href', e.target.value)}
-                        placeholder="https://exemplo.com"
+                      id="button-href"
+                      value={props.action?.url || ''}
+                      onChange={(e) => onPropChange('action', { ...props.action, url: e.target.value, type: 'URL' })}
+                      placeholder="https://exemplo.com"
                     />
-                </div>
+                  </div>
+                )}
+
+                {(props.action?.type === 'PAGE') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="button-page-id">Página de Destino</Label>
+                    <Select
+                      value={props.action?.pageId || ''}
+                      onValueChange={(value) => onPropChange('action', { ...props.action, pageId: value, type: 'PAGE' })}
+                    >
+                      <SelectTrigger id="button-page-id">
+                        <SelectValue placeholder="Selecione uma página..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projectPages.map(page => (
+                          <SelectItem key={page.id} value={page.id}>
+                            {page.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                     <Label htmlFor="button-variant">Variante</Label>
                      <Select value={props.variant || 'default'} onValueChange={(value: ButtonVariant) => onPropChange('variant', value)}>
@@ -2040,7 +2080,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
     }
 }
 
-export function ComponentSettings({ component, onComponentChange }: ComponentSettingsProps) {
+export function ComponentSettings({ component, onComponentChange, projectPages }: ComponentSettingsProps) {
 
   const abTestEnabled = component.abTestEnabled || false;
   const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
@@ -2111,7 +2151,7 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
       <div className="space-y-6">
         <div>
             <h3 className="text-sm font-medium mb-4">Configurações Gerais</h3>
-            {renderComponentSettings(component.type, component.props, handlePropChange, handleSubPropChange)}
+            {renderComponentSettings(component.type, component.props, handlePropChange, handleSubPropChange, projectPages)}
         </div>
         
         <Separator />
@@ -2144,7 +2184,8 @@ export function ComponentSettings({ component, onComponentChange }: ComponentSet
                              component.type, 
                              variantProps, 
                              (prop, value) => handleVariantPropChange(0, prop, value), 
-                             (prop, subProp, value) => handleVariantSubPropChange(0, prop, subProp, value)
+                             (prop, subProp, value) => handleVariantSubPropChange(0, prop, subProp, value),
+                             projectPages
                           )}
                      </div>
                      <Separator/>

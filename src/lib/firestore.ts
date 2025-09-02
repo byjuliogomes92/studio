@@ -114,7 +114,7 @@ export const getWorkspaceMembers = async (workspaceId: string): Promise<Workspac
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkspaceMember));
 };
 
-export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole, inviterUser: User): Promise<void> => {
+export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole, inviterName: string): Promise<void> => {
     const db = getDbInstance();
     
     // This is a simplified approach. In a real app, you'd use a callable function to find the user by email.
@@ -146,7 +146,7 @@ export const inviteUserToWorkspace = async (workspaceId: string, email: string, 
 
     const newMemberRef = await addDoc(collection(db, 'workspaceMembers'), newMemberData);
 
-    await logActivity(workspaceId, inviterUser, 'MEMBER_INVITED', { invitedEmail: email, role });
+    await logActivity(workspaceId, { uid: userId, displayName: inviterName } as User, 'MEMBER_INVITED', { invitedEmail: email, role });
 };
 
 export const removeUserFromWorkspace = async (workspaceId: string, userId: string, removerUser: User, removedUser: WorkspaceMember): Promise<void> => {
@@ -184,7 +184,7 @@ export const updateUserRole = async (workspaceId: string, userId: string, role: 
 
 // Projects
 
-export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>, user: User): Promise<Project> => {
+export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project> => {
     const db = getDbInstance();
     const newProjectData = {
         ...projectData,
@@ -192,7 +192,7 @@ export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>,
     };
     const projectRef = await addDoc(collection(db, "projects"), newProjectData);
 
-    await logActivity(projectData.workspaceId, user, 'PROJECT_CREATED', { projectName: projectData.name });
+    await logActivity(projectData.workspaceId, { uid: projectData.userId } as User, 'PROJECT_CREATED', { projectName: projectData.name });
     
     return {
         id: projectRef.id,
@@ -671,11 +671,10 @@ export const updateUserProgress = async (userId: string, objective: keyof Onboar
 };
 
 // Analytics
-export const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void> => {
+export const logPageView = async (pageData: CloudPage, viewDetails: { userAgent: string; referrer?: string; country?: string; city?: string; }): Promise<void> => {
     const db = getDbInstance();
-    const userAgent = headers.get('user-agent') || '';
     
-    const parser = new UAParser(userAgent);
+    const parser = new UAParser(viewDetails.userAgent);
     const uaResult = parser.getResult();
 
     const viewData: Omit<PageView, 'id'> = {
@@ -683,12 +682,12 @@ export const logPageView = async (pageData: CloudPage, headers: Headers): Promis
         projectId: pageData.projectId,
         workspaceId: pageData.workspaceId,
         timestamp: serverTimestamp(),
-        country: headers.get('x-vercel-ip-country') || undefined,
-        city: headers.get('x-vercel-ip-city') || undefined,
-        userAgent: userAgent,
-        referrer: headers.get('referer') || undefined,
-        os: uaResult.os.name,
-        browser: uaResult.browser.name,
+        country: viewDetails.country || 'N/A',
+        city: viewDetails.city || 'N/A',
+        userAgent: viewDetails.userAgent,
+        referrer: viewDetails.referrer || 'Direto/N/A',
+        os: uaResult.os.name || 'N/A',
+        browser: uaResult.browser.name || 'N/A',
         deviceType: uaResult.device.type || 'desktop',
     };
 
@@ -755,7 +754,7 @@ export const getFormSubmissions = async (pageId: string, workspaceId: string): P
 // Activity Logs
 export const logActivity = async (
     workspaceId: string, 
-    user: User,
+    user: Partial<User>,
     action: ActivityLogAction, 
     details: { [key: string]: any }
 ): Promise<void> => {
@@ -765,7 +764,7 @@ export const logActivity = async (
 
     const logEntry: Omit<ActivityLog, 'id'> = {
         workspaceId,
-        userId: user.uid,
+        userId: user.uid || 'unknown',
         userName: user.displayName || 'Usuário Anônimo',
         userAvatarUrl: finalAvatarUrl,
         action,

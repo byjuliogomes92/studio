@@ -44,8 +44,13 @@ export async function GET(
         return new NextResponse('Esta página expirou.', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
-    // Asynchronously log the page view without waiting for it to complete.
-    logPageView(pageData, request.headers).catch(console.error);
+    // Asynchronously log the page view with extracted headers.
+    logPageView(pageData, {
+      userAgent: request.headers.get('user-agent') || '',
+      referrer: request.headers.get('referer'),
+      country: request.geo?.country,
+      city: request.geo?.city,
+    }).catch(console.error);
 
     // Hardcode the base URL to ensure it's always correct, even when called via HTTPGet from SFMC.
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cloudpagestudio.vercel.app';

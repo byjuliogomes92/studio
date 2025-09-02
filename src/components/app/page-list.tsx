@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Calendar, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -102,7 +102,7 @@ const projectIcons = [
     { name: "Briefcase", icon: Briefcase },
     { name: "Target", icon: Target },
     { name: "BarChart", icon: BarChartIcon },
-    { name: "Calendar", icon: Calendar },
+    { name: "Calendar", icon: CalendarIcon },
     { name: "Users", icon: Users },
     { name: "Smile", icon: Smile },
 ];

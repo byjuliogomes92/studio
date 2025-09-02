@@ -308,26 +308,27 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 
 const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
     const security = pageState.meta.security;
+    let amscript = 'VAR @isAuthenticated, @LoginURL\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))\n';
+
     if (!security || security.type === 'none') {
-        return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
+        return { ssjs: '', amscript: amscript + 'SET @isAuthenticated = true', body: '' };
     }
 
     if (security.type === 'sso') {
-        const amscript = `
-  VAR @IsAuthenticated, @RedirectURL
-  SET @RedirectURL = CloudPagesURL(PageID)
+        amscript += `
   TRY 
-    SET @IsAuthenticated = Request.GetUserInfo()
+    SET @IsAuthenticated_Temp = Request.GetUserInfo()
+    SET @isAuthenticated = true
   CATCH(e) 
-    Redirect("https://mc.login.exacttarget.com/hub/auth?returnUrl=" + URLEncode(@RedirectURL), false)
+    SET @isAuthenticated = false
   ENDTRY`;
         return { ssjs: '', amscript, body: '' };
     }
     
     if (security.type === 'password' && security.passwordConfig) {
         const config = security.passwordConfig;
-        const amscript = `
-  VAR @isAuthenticated, @submittedPassword, @identifier, @correctPassword
+        amscript += `
+  VAR @submittedPassword, @identifier, @correctPassword
   SET @isAuthenticated = false
   SET @submittedPassword = RequestParameter("page_password")
   SET @identifier = RequestParameter("${config.urlParameter}")
@@ -355,10 +356,10 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 </div>
 %%[ ENDIF ]%%`;
 
-        return { ssjs: '', amscript, body: '' };
+        return { ssjs: '', amscript, body: body };
     }
 
-    return { ssjs: '', amscript: 'VAR @isAuthenticated\nSET @isAuthenticated = true', body: '' };
+    return { ssjs: '', amscript: amscript + 'SET @isAuthenticated = true', body: '' };
 }
 
 const getClientSideScripts = (pageState: CloudPage): string => {
@@ -834,8 +835,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-${initialAmpscript}
-${ssjsScript}
+${isForPreview ? '' : initialAmpscript}
+${isForPreview ? '' : ssjsScript}
 ${trackingScripts.head}
 <style>
     :root {
@@ -1420,6 +1421,29 @@ ${trackingScripts.head}
       padding: 10px 20px;
       border-radius: 5px;
     }
+    .de-upload-auth-required {
+        text-align: center;
+        padding: 40px 20px;
+        background-color: #fff8e1;
+        border: 1px solid #ffecb3;
+    }
+    .de-upload-auth-required .de-upload-auth-icon {
+        color: #f59e0b;
+        margin-bottom: 10px;
+    }
+    .de-upload-auth-required .de-upload-auth-icon svg {
+        width: 32px;
+        height: 32px;
+        margin: 0 auto;
+    }
+    .de-upload-auth-required h4 {
+        font-size: 1.1rem;
+        color: #333;
+    }
+    .de-upload-auth-required p {
+        color: #666;
+        margin-bottom: 20px;
+    }
 
 
     footer {
@@ -1928,7 +1952,7 @@ ${trackingScripts.head}
 ${clientSideScripts}
 </head>
 <body>
-${trackingScripts.body}
+${isForPreview ? '' : trackingScripts.body}
   %%[ IF @isAuthenticated == true THEN ]%%
   ${renderLoader(meta, styles.themeColor)}
   ${stripeComponents}
@@ -1937,8 +1961,8 @@ ${trackingScripts.body}
     ${mainContentHtml}
   </main>
   ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '') : ''}
-  ${cookieBannerHtml}
-  ${trackingPixel}
+  ${isForPreview ? '' : cookieBannerHtml}
+  ${isForPreview ? '' : trackingPixel}
   %%[ ELSE ]%%
   ${security.body}
   %%[ ENDIF ]%%

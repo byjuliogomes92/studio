@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -348,10 +349,12 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                         options: {
                             loop: true,
                             align: 'start',
+                            duration: 50,
                             slidesPerView: 5,
                             autoplay: {
-                                delay: 2000,
+                                delay: 0,
                                 stopOnInteraction: false,
+                                stopOnMouseEnter: true,
                             },
                         },
                     },

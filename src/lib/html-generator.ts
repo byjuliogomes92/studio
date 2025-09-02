@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent, ComponentType } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
@@ -682,7 +683,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
 
             const options = JSON.parse(container.dataset.options || '{}');
             const plugins = [];
-            if (options.autoplay) {
+            if (options.autoplay && typeof EmblaCarouselAutoplay !== 'undefined') {
                 plugins.push(EmblaCarouselAutoplay(options.autoplay));
             }
 
@@ -1832,13 +1833,6 @@ ${trackingScripts.head}
     }
     .carousel-dot.is-selected { background-color: var(--theme-color); }
 
-    .logo-carousel .carousel-inner {
-        animation: scroll 30s linear infinite;
-    }
-    @keyframes scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(calc(-250px * 7))}
-    }
     .logo-carousel .carousel-slide {
         padding: 0 20px;
     }
@@ -1984,6 +1978,5 @@ ${wrapInPreviewBlock(ssjsScript, 'Form Submission Script (SSJS)', isForPreview)}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>
-`
+</html>`;
 }

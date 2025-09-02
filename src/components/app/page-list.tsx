@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -47,7 +46,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
 import {
   Table,
   TableBody,
@@ -500,7 +498,6 @@ export function PageList({ projectId }: PageListProps) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activePlatform, setActivePlatform] = useState<string>("all");
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('pages');
   
   // Mobile Warning Dialog
@@ -833,75 +830,6 @@ export function PageList({ projectId }: PageListProps) {
     )
   }
 
-  const renderSearch = () => {
-    const searchInput = (
-         <Popover>
-            <PopoverTrigger asChild>
-              <div className={cn("relative w-full", isMobile ? "max-w-full" : "max-w-sm")}>
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                      placeholder="Buscar páginas..."
-                      className="pl-9"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  {searchTerm && (
-                      <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                          onClick={() => setSearchTerm("")}
-                          aria-label="Limpar busca"
-                      >
-                          <X className="h-4 w-4" />
-                      </Button>
-                  )}
-              </div>
-            </PopoverTrigger>
-            {searchTerm && filteredAndSortedPages.length > 0 && (
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                  <Command>
-                      <CommandGroup>
-                          {filteredAndSortedPages.map(page => (
-                              <CommandItem
-                                  key={page.id}
-                                  value={page.name}
-                                  onSelect={() => handlePageClick(page.id)}
-                                  className="cursor-pointer"
-                              >
-                                  {page.name}
-                              </CommandItem>
-                          ))}
-                      </CommandGroup>
-                  </Command>
-              </PopoverContent>
-            )}
-          </Popover>
-    );
-
-    if (isMobile) {
-      return (
-        <div className="w-full">
-            {isSearchVisible ? (
-                <div className="flex items-center gap-2">
-                    {searchInput}
-                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)} aria-label="Fechar busca">
-                        <X className="h-4 w-4"/>
-                    </Button>
-                </div>
-            ) : (
-                <Button variant="outline" onClick={() => setIsSearchVisible(true)} className="w-full justify-start">
-                    <Search className="mr-2 h-4 w-4"/>
-                    Buscar páginas...
-                </Button>
-            )}
-        </div>
-      )
-    }
-
-    return searchInput;
-  }
-
   return (
     <>
     <TooltipProvider>
@@ -930,7 +858,8 @@ export function PageList({ projectId }: PageListProps) {
                 </TabsList>
                 <TabsContent value="pages">
                     <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        {renderSearch()}
+                        { /* Search bar removed to be replaced by command palette */ }
+                        <div></div>
                         <div className="flex items-center gap-2 flex-wrap justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium mr-2 hidden md:inline">Filtrar:</span>
@@ -1209,10 +1138,3 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
-
-
-
-
-
-
-

@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/use-auth';
 import { AppFooter } from '@/components/app/app-footer';
+import { CommandPalette } from '@/components/app/command-palette';
 
 export const metadata: Metadata = {
   title: {
@@ -34,6 +35,7 @@ export default function RootLayout({
         <AuthProvider>
           <div className="flex-grow">
             {children}
+            <CommandPalette />
           </div>
           <Toaster />
           <AppFooter />

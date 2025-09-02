@@ -7,8 +7,8 @@ import { app } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
-import type { Workspace, UserProfileType } from '@/lib/types';
-import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete } from '@/lib/firestore';
+import type { Workspace, UserProfileType, Project, CloudPage, Template } from '@/lib/types';
+import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete, getProjectsForUser, getTemplates } from '@/lib/firestore';
 import { produce } from 'immer';
 
 interface AuthContextType {
@@ -17,6 +17,9 @@ interface AuthContextType {
   isUpdatingAvatar: boolean;
   activeWorkspace: Workspace | null;
   workspaces: Workspace[];
+  projects: Project[];
+  pages: CloudPage[];
+  templates: Template[];
   switchWorkspace: (workspaceId: string) => void;
   updateWorkspaceName: (workspaceId: string, newName: string) => Promise<void>;
   login: (email: string, password: string) => Promise<any>;
@@ -37,12 +40,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [auth, setAuth] = useState<Auth | null>(null);
+  
+  // Global data
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [pages, setPages] = useState<CloudPage[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
 
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+
+  const fetchGlobalData = useCallback(async (userId: string, workspaceId: string) => {
+    try {
+        const [{ projects, pages }, templates] = await Promise.all([
+          getProjectsForUser(workspaceId),
+          getTemplates(workspaceId),
+        ]);
+        setProjects(projects);
+        setPages(pages);
+        setTemplates(templates);
+      } catch (error) {
+        console.error("Failed to fetch global data:", error);
+        toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar os dados do seu workspace.' });
+      }
+  }, [toast]);
 
   const fetchWorkspaces = useCallback(async (userId: string) => {
     try {
@@ -50,8 +73,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setWorkspaces(userWorkspaces);
       if (userWorkspaces.length > 0) {
         const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
-        const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
-        setActiveWorkspace(found || userWorkspaces[0]);
+        const found = userWorkspaces.find(w => w.id === lastWorkspaceId) || userWorkspaces[0];
+        setActiveWorkspace(found);
+        await fetchGlobalData(userId, found.id);
       } else {
         setActiveWorkspace(null); 
       }
@@ -59,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to fetch workspaces:", error);
       toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
     }
-  }, [toast]);
+  }, [toast, fetchGlobalData]);
 
 
   useEffect(() => {
@@ -216,6 +240,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updateUserName,
     activeWorkspace,
     workspaces,
+    projects,
+    pages,
+    templates,
     switchWorkspace,
     updateWorkspaceName,
     reloadWorkspaces: () => user ? fetchWorkspaces(user.uid) : Promise.resolve(),

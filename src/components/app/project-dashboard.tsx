@@ -34,14 +34,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandGroup, CommandItem, CommandEmpty } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
-import { addProject, deleteProject, getProjectsForUser, updateProject, getUserProgress, getTemplates } from "@/lib/firestore";
+import { addProject, deleteProject, updateProject, getUserProgress } from "@/lib/firestore";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -116,13 +114,10 @@ function WorkspaceSwitcher() {
 
 export function ProjectDashboard() {
   const router = useRouter();
-  const { user, logout, loading: authLoading, activeWorkspace } = useAuth();
+  const { user, logout, loading: authLoading, activeWorkspace, projects, pages, templates } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [pages, setPages] = useState<CloudPage[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
@@ -170,16 +165,8 @@ export function ProjectDashboard() {
       if (!user || !activeWorkspace) return;
       setIsLoading(true);
       try {
-        const [{ projects, pages }, progress, templates] = await Promise.all([
-          getProjectsForUser(activeWorkspace.id),
-          getUserProgress(user.uid),
-          getTemplates(activeWorkspace.id),
-        ]);
-        setProjects(projects);
-        setPages(pages);
+        const progress = await getUserProgress(user.uid);
         setUserProgress(progress);
-        setTemplates(templates);
-
       } catch (err) {
         console.error(err);
         toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os dados.' });
@@ -582,76 +569,6 @@ export function ProjectDashboard() {
        </>
     )
   }
-
-  const renderSearch = () => {
-    const searchInput = (
-         <Popover>
-            <PopoverTrigger asChild>
-              <div className={cn("relative w-full", isMobile ? "max-w-full" : "max-w-sm")}>
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                      placeholder="Buscar projetos..."
-                      className="pl-9"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  {searchTerm && (
-                      <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                          onClick={() => setSearchTerm("")}
-                          aria-label="Limpar busca"
-                      >
-                          <X className="h-4 w-4" />
-                      </Button>
-                  )}
-              </div>
-            </PopoverTrigger>
-            {searchTerm && filteredAndSortedProjects.length > 0 && (
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                <Command>
-                  <CommandGroup>
-                    {filteredAndSortedProjects.map(project => (
-                      <CommandItem
-                        key={project.id}
-                        value={project.name}
-                        onSelect={() => handleNavigateToProject(project.id)}
-                        className="cursor-pointer"
-                      >
-                        <ProjectIcon iconName={project.icon} color={project.color} className="mr-2 h-4 w-4" />
-                        {project.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            )}
-          </Popover>
-    );
-
-    if (isMobile) {
-      return (
-        <div className="w-full">
-            {isSearchVisible ? (
-                <div className="flex items-center gap-2">
-                    {searchInput}
-                    <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(false)} aria-label="Fechar busca">
-                        <X className="h-4 w-4"/>
-                    </Button>
-                </div>
-            ) : (
-                <Button variant="outline" onClick={() => setIsSearchVisible(true)} className="w-full justify-start">
-                    <Search className="mr-2 h-4 w-4"/>
-                    Buscar projetos...
-                </Button>
-            )}
-        </div>
-      )
-    }
-
-    return searchInput;
-  }
   
   const handleNextStepClick = () => {
     if (projects.length === 0) {
@@ -782,7 +699,8 @@ export function ProjectDashboard() {
 
 
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            {renderSearch()}
+            {/* Search will be handled by Command Palette now, so we remove the specific search bar */}
+            <div></div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 rounded-md border bg-background p-1">
                 <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8" aria-label="Visualização em grade">

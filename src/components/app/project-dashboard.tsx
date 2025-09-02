@@ -240,7 +240,7 @@ export function ProjectDashboard() {
   }
 
   const handleDeleteProject = async () => {
-    if (!projectToDelete) return;
+    if (!projectToDelete || !user) return;
     
     const pagesInProject = pages.filter(p => p.projectId === projectToDelete.id);
     if (pagesInProject.length > 0) {

@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 
 export type ComponentType =
@@ -305,10 +306,12 @@ export interface FormSubmission {
 }
 
 export type ActivityLogAction = 
-    | 'PROJECT_CREATED' | 'PROJECT_DELETED'
+    | 'PROJECT_CREATED' | 'PROJECT_DELETED' | 'PROJECT_UPDATED'
     | 'PAGE_CREATED' | 'PAGE_DELETED' | 'PAGE_PUBLISHED'
     | 'MEMBER_INVITED' | 'MEMBER_REMOVED' | 'MEMBER_ROLE_CHANGED' | 'MEMBER_JOINED'
-    | 'WORKSPACE_RENAMED';
+    | 'WORKSPACE_RENAMED'
+    | 'TEMPLATE_CREATED' | 'TEMPLATE_DELETED'
+    | 'BRAND_CREATED' | 'BRAND_DELETED' | 'BRAND_UPDATED';
 
 export interface ActivityLog {
     id: string;

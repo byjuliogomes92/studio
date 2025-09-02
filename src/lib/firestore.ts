@@ -203,7 +203,14 @@ export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>)
 
 export const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {
     const db = getDbInstance();
-    await updateDoc(doc(db, "projects", projectId), data);
+    const projectRef = doc(db, "projects", projectId);
+    await updateDoc(projectRef, data);
+
+    const projectSnap = await getDoc(projectRef);
+    const projectData = projectSnap.data();
+    if(projectData) {
+        await logActivity(projectData.workspaceId, projectData.userId, '', 'PROJECT_UPDATED', { projectName: projectData.name });
+    }
 }
 
 export const getProjectsForUser = async (workspaceId: string): Promise<{ projects: Project[], pages: CloudPage[] }> => {
@@ -244,6 +251,10 @@ export const getProjectWithPages = async (projectId: string, workspaceId: string
 export const deleteProject = async (projectId: string): Promise<void> => {
     const db = getDbInstance();
     const projectDocRef = doc(db, "projects", projectId);
+    const projectSnap = await getDoc(projectDocRef);
+    const projectData = projectSnap.data();
+
+    if (!projectData) return;
     
     const draftPagesQuery = query(collection(db, "pages_drafts"), where("projectId", "==", projectId));
     const publishedPagesQuery = query(collection(db, "pages_published"), where("projectId", "==", projectId));
@@ -259,6 +270,8 @@ export const deleteProject = async (projectId: string): Promise<void> => {
     batch.delete(projectDocRef);
 
     await batch.commit();
+
+    await logActivity(projectData.workspaceId, projectData.userId, '', 'PROJECT_DELETED', { projectName: projectData.name });
 };
 
 
@@ -314,6 +327,7 @@ export const publishPage = async (pageId: string, pageData: Partial<CloudPage>):
     const publishedRef = doc(db, "pages_published", pageId);
     await setDoc(publishedRef, {
         ...pageData,
+        status: 'published',
         updatedAt: serverTimestamp(), 
     }, { merge: true });
     
@@ -382,12 +396,8 @@ export const getPagesForProject = async (projectId: string, workspaceId: string)
       const publishedPage = publishedPagesMap.get(doc.id);
   
       let status: 'published' | 'draft' = 'draft';
-      if (publishedPage) {
-        const draftTime = draftPage.updatedAt?.toMillis() || 0;
-        const publishedTime = publishedPage.updatedAt?.toMillis() || 0;
-        if (draftTime <= publishedTime) {
+      if (publishedPage && publishedPage.status === 'published') {
           status = 'published';
-        }
       }
       
       return {
@@ -462,6 +472,7 @@ export const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt
         updatedAt: serverTimestamp(),
     };
     const templateRef = await addDoc(collection(db, "templates"), templateWithTimestamps);
+    await logActivity(templateData.workspaceId, templateData.createdBy, null, 'TEMPLATE_CREATED', { templateName: templateData.name });
     return templateRef.id;
 };
 
@@ -483,11 +494,18 @@ export const getTemplate = async (templateId: string): Promise<Template | null> 
 
 export const deleteTemplate = async (templateId: string): Promise<void> => {
     const db = getDbInstance();
-    await deleteDoc(doc(db, "templates", templateId));
+    const templateRef = doc(db, 'templates', templateId);
+    const templateSnap = await getDoc(templateRef);
+    const templateData = templateSnap.data();
+
+    if (templateData) {
+        await deleteDoc(templateRef);
+        await logActivity(templateData.workspaceId, templateData.createdBy, null, 'TEMPLATE_DELETED', { templateName: templateData.name });
+    }
 };
 
 // Brands
-export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>): Promise<Brand> => {
+export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>, user: User): Promise<Brand> => {
     const db = getDbInstance();
     
     // Encrypt password if it exists
@@ -502,6 +520,9 @@ export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>): Prom
 
     const dataWithTimestamp = { ...brandData, createdAt: serverTimestamp() };
     const docRef = await addDoc(collection(db, 'brands'), dataWithTimestamp);
+    
+    await logActivity(brandData.workspaceId, user.uid, user.displayName, 'BRAND_CREATED', { brandName: brandData.name });
+
     return { ...brandData, id: docRef.id, createdAt: Timestamp.now() } as Brand;
 };
 
@@ -520,7 +541,7 @@ export const getBrand = async (brandId: string): Promise<Brand | null> => {
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Brand : null;
 };
 
-export const updateBrand = async (brandId: string, data: Partial<Brand>): Promise<void> => {
+export const updateBrand = async (brandId: string, data: Partial<Brand>, user: User): Promise<void> => {
     const db = getDbInstance();
     const brandRef = doc(db, 'brands', brandId);
     
@@ -535,11 +556,23 @@ export const updateBrand = async (brandId: string, data: Partial<Brand>): Promis
     }
 
     await updateDoc(brandRef, data);
+    const brandSnap = await getDoc(brandRef);
+    const brandData = brandSnap.data();
+    if(brandData) {
+        await logActivity(brandData.workspaceId, user.uid, user.displayName, 'BRAND_UPDATED', { brandName: brandData.name });
+    }
 };
 
-export const deleteBrand = async (brandId: string): Promise<void> => {
+export const deleteBrand = async (brandId: string, user: User): Promise<void> => {
     const db = getDbInstance();
-    await deleteDoc(doc(db, 'brands', brandId));
+    const brandRef = doc(db, 'brands', brandId);
+    const brandSnap = await getDoc(brandRef);
+    const brandData = brandSnap.data();
+
+    if(brandData) {
+        await deleteDoc(brandRef);
+        await logActivity(brandData.workspaceId, user.uid, user.displayName, 'BRAND_DELETED', { brandName: brandData.name });
+    }
 };
 
 

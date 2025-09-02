@@ -204,6 +204,7 @@ function ActivityLogDisplay({ activeWorkspace }: { activeWorkspace: any; }) {
         switch (action) {
             case 'PROJECT_CREATED': return `criou o projeto "${details.projectName}"`;
             case 'PROJECT_DELETED': return `excluiu o projeto "${details.projectName}"`;
+            case 'PROJECT_UPDATED': return `atualizou o projeto "${details.projectName}"`;
             case 'PAGE_CREATED': return `criou a página "${details.pageName}"`;
             case 'PAGE_DELETED': return `excluiu a página "${details.pageName}"`;
             case 'PAGE_PUBLISHED': return `publicou a página "${details.pageName}"`;
@@ -212,6 +213,11 @@ function ActivityLogDisplay({ activeWorkspace }: { activeWorkspace: any; }) {
             case 'MEMBER_JOINED': return `juntou-se ao workspace`;
             case 'MEMBER_ROLE_CHANGED': return `alterou a função de ${details.memberName} para ${details.newRole}`;
             case 'WORKSPACE_RENAMED': return `renomeou o workspace para "${details.newName}"`;
+            case 'BRAND_CREATED': return `criou a marca "${details.brandName}"`;
+            case 'BRAND_UPDATED': return `atualizou a marca "${details.brandName}"`;
+            case 'BRAND_DELETED': return `excluiu a marca "${details.brandName}"`;
+            case 'TEMPLATE_CREATED': return `criou o template "${details.templateName}"`;
+            case 'TEMPLATE_DELETED': return `excluiu o template "${details.templateName}"`;
             default: return `realizou uma ação desconhecida.`;
         }
     };

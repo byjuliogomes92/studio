@@ -165,12 +165,12 @@ export default function BrandsPage() {
 
         if (brandData.id) {
             // Update existing brand
-            await updateBrand(brandData.id, brandData as Brand);
+            await updateBrand(brandData.id, brandData as Brand, user);
             setBrands(brands.map((b) => (b.id === brandData.id ? { ...b, ...brandData } as Brand : b)));
             toast({ title: "Marca atualizada!", description: `A marca "${brandData.name}" foi atualizada.` });
         } else {
             // Create new brand
-            const newBrand = await addBrand(brandData as Omit<Brand, "id" | "createdAt">);
+            const newBrand = await addBrand(brandData as Omit<Brand, "id" | "createdAt">, user);
             setBrands([newBrand, ...brands]);
             toast({ title: "Marca criada!", description: `A marca "${brandData.name}" foi criada com sucesso.` });
         }
@@ -184,8 +184,9 @@ export default function BrandsPage() {
   };
   
   const handleDeleteBrand = async (brandId: string) => {
+    if (!user) return;
       try {
-          await deleteBrand(brandId);
+          await deleteBrand(brandId, user);
           setBrands(brands.filter(b => b.id !== brandId));
           toast({ title: "Marca excluída!"});
       } catch (error) {

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -232,6 +233,7 @@ export function ProjectDashboard() {
         setProjects(prev => prev.map(p => p.id === projectToEdit.id ? { ...p, ...updatedData } : p));
         toast({ title: "Projeto atualizado!" });
     } catch (error) {
+        console.error("Project update failed:", error);
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível renomear o projeto." });
     } finally {
         setIsRenameModalOpen(false);

@@ -96,13 +96,13 @@ export const getWorkspacesForUser = async (userId: string): Promise<Workspace[]>
     return workspaceSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Workspace));
 };
 
-export const updateWorkspaceName = async (workspaceId: string, newName: string, user: { uid: string, displayName?: string | null }): Promise<void> => {
+export const updateWorkspaceName = async (workspaceId: string, newName: string, user: User): Promise<void> => {
     const db = getDbInstance();
     const workspaceRef = doc(db, 'workspaces', workspaceId);
     const oldName = (await getDoc(workspaceRef)).data()?.name || '';
     await updateDoc(workspaceRef, { name: newName });
 
-    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName: oldName, newName });
+    await logActivity(workspaceId, user.uid, user.displayName, user.photoURL, 'WORKSPACE_RENAMED', { oldName: oldName, newName });
 };
 
 
@@ -146,10 +146,10 @@ export const inviteUserToWorkspace = async (workspaceId: string, email: string, 
     await addDoc(collection(db, 'workspaceMembers'), newMemberData);
     
     // Assuming the inviter's user object is passed in
-    await logActivity(workspaceId, inviterName || 'System', null, 'MEMBER_INVITED', { invitedEmail: email, role });
+    await logActivity(workspaceId, inviterName || 'System', null, null, 'MEMBER_INVITED', { invitedEmail: email, role });
 };
 
-export const removeUserFromWorkspace = async (workspaceId: string, userId: string, removerUser: any, removedUser: WorkspaceMember): Promise<void> => {
+export const removeUserFromWorkspace = async (workspaceId: string, userId: string, removerUser: User, removedUser: WorkspaceMember): Promise<void> => {
     const db = getDbInstance();
     
     const q = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
@@ -162,10 +162,10 @@ export const removeUserFromWorkspace = async (workspaceId: string, userId: strin
     const memberDoc = querySnapshot.docs[0];
     await deleteDoc(memberDoc.ref);
 
-    await logActivity(workspaceId, removerUser.uid, removerUser.displayName, 'MEMBER_REMOVED', { removedMemberEmail: removedUser.email });
+    await logActivity(workspaceId, removerUser.uid, removerUser.displayName, removerUser.photoURL, 'MEMBER_REMOVED', { removedMemberEmail: removedUser.email });
 }
 
-export const updateUserRole = async (workspaceId: string, userId: string, role: WorkspaceMemberRole, updaterUser: any, updatedUser: WorkspaceMember): Promise<void> => {
+export const updateUserRole = async (workspaceId: string, userId: string, role: WorkspaceMemberRole, updaterUser: User, updatedUser: WorkspaceMember): Promise<void> => {
     const db = getDbInstance();
      
     const q = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
@@ -178,7 +178,7 @@ export const updateUserRole = async (workspaceId: string, userId: string, role: 
     const memberDoc = querySnapshot.docs[0];
     await updateDoc(memberDoc.ref, { role });
 
-    await logActivity(workspaceId, updaterUser.uid, updaterUser.displayName, 'MEMBER_ROLE_CHANGED', { memberName: updatedUser.email, newRole: role });
+    await logActivity(workspaceId, updaterUser.uid, updaterUser.displayName, updaterUser.photoURL, 'MEMBER_ROLE_CHANGED', { memberName: updatedUser.email, newRole: role });
 }
 
 
@@ -192,7 +192,9 @@ export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>)
     };
     const projectRef = await addDoc(collection(db, "projects"), newProjectData);
 
-    await logActivity(projectData.workspaceId, projectData.userId, '', 'PROJECT_CREATED', { projectName: projectData.name });
+    // Assuming the user object is available here, if not, this needs adjustment
+    // For now, we will pass null for avatar, as we don't have the full user object
+    await logActivity(projectData.workspaceId, projectData.userId, '', null, 'PROJECT_CREATED', { projectName: projectData.name });
     
     return {
         id: projectRef.id,
@@ -209,7 +211,7 @@ export const updateProject = async (projectId: string, data: Partial<Project>, u
     const projectSnap = await getDoc(projectRef);
     const projectData = projectSnap.data();
     if(projectData) {
-        await logActivity(projectData.workspaceId, user.uid, user.displayName, 'PROJECT_UPDATED', { projectName: projectData.name });
+        await logActivity(projectData.workspaceId, user.uid, user.displayName, user.photoURL, 'PROJECT_UPDATED', { projectName: projectData.name });
     }
 }
 
@@ -271,7 +273,7 @@ export const deleteProject = async (projectId: string): Promise<void> => {
 
     await batch.commit();
 
-    await logActivity(projectData.workspaceId, projectData.userId, '', 'PROJECT_DELETED', { projectName: projectData.name });
+    await logActivity(projectData.workspaceId, projectData.userId, '', null, 'PROJECT_DELETED', { projectName: projectData.name });
 };
 
 
@@ -308,7 +310,7 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
         setDoc(publishedRef, pageWithTimestamps)
     ]);
     
-    await logActivity(pageData.workspaceId, '', null, 'PAGE_CREATED', { pageName: pageData.name });
+    await logActivity(pageData.workspaceId, '', null, null, 'PAGE_CREATED', { pageName: pageData.name });
 
     return pageId;
 };
@@ -332,7 +334,7 @@ export const publishPage = async (pageId: string, pageData: Partial<CloudPage>):
     }, { merge: true });
     
     if (pageData.workspaceId) {
-        await logActivity(pageData.workspaceId, '', null, 'PAGE_PUBLISHED', { pageName: pageData.name });
+        await logActivity(pageData.workspaceId, '', null, null, 'PAGE_PUBLISHED', { pageName: pageData.name });
     }
 };
 
@@ -423,7 +425,7 @@ export const deletePage = async (pageId: string): Promise<void> => {
     await Promise.all([deleteDoc(draftRef), deleteDoc(publishedRef)]);
     
     if(pageData && pageData.workspaceId) {
-       await logActivity(pageData.workspaceId, '', null, 'PAGE_DELETED', { pageName: pageData.name });
+       await logActivity(pageData.workspaceId, '', null, null, 'PAGE_DELETED', { pageName: pageData.name });
     }
 };
 
@@ -472,7 +474,7 @@ export const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt
         updatedAt: serverTimestamp(),
     };
     const templateRef = await addDoc(collection(db, "templates"), templateWithTimestamps);
-    await logActivity(templateData.workspaceId, templateData.createdBy, null, 'TEMPLATE_CREATED', { templateName: templateData.name });
+    await logActivity(templateData.workspaceId, templateData.createdBy, null, null, 'TEMPLATE_CREATED', { templateName: templateData.name });
     return templateRef.id;
 };
 
@@ -500,7 +502,7 @@ export const deleteTemplate = async (templateId: string): Promise<void> => {
 
     if (templateData) {
         await deleteDoc(templateRef);
-        await logActivity(templateData.workspaceId, templateData.createdBy, null, 'TEMPLATE_DELETED', { templateName: templateData.name });
+        await logActivity(templateData.workspaceId, templateData.createdBy, null, null, 'TEMPLATE_DELETED', { templateName: templateData.name });
     }
 };
 
@@ -521,7 +523,7 @@ export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>, user:
     const dataWithTimestamp = { ...brandData, createdAt: serverTimestamp() };
     const docRef = await addDoc(collection(db, 'brands'), dataWithTimestamp);
     
-    await logActivity(brandData.workspaceId, user.uid, user.displayName, 'BRAND_CREATED', { brandName: brandData.name });
+    await logActivity(brandData.workspaceId, user.uid, user.displayName, user.photoURL, 'BRAND_CREATED', { brandName: brandData.name });
 
     return { ...brandData, id: docRef.id, createdAt: Timestamp.now() } as Brand;
 };
@@ -559,7 +561,7 @@ export const updateBrand = async (brandId: string, data: Partial<Brand>, user: U
     const brandSnap = await getDoc(brandRef);
     const brandData = brandSnap.data();
     if(brandData) {
-        await logActivity(brandData.workspaceId, user.uid, user.displayName, 'BRAND_UPDATED', { brandName: brandData.name });
+        await logActivity(brandData.workspaceId, user.uid, user.displayName, user.photoURL, 'BRAND_UPDATED', { brandName: brandData.name });
     }
 };
 
@@ -571,7 +573,7 @@ export const deleteBrand = async (brandId: string, user: User): Promise<void> =>
 
     if(brandData) {
         await deleteDoc(brandRef);
-        await logActivity(brandData.workspaceId, user.uid, user.displayName, 'BRAND_DELETED', { brandName: brandData.name });
+        await logActivity(brandData.workspaceId, user.uid, user.displayName, user.photoURL, 'BRAND_DELETED', { brandName: brandData.name });
     }
 };
 
@@ -734,22 +736,20 @@ export const getFormSubmissions = async (pageId: string): Promise<FormSubmission
 export const logActivity = async (
     workspaceId: string, 
     userId: string, 
-    userName: string | null, 
+    userName: string | null,
+    userAvatarUrl: string | null,
     action: ActivityLogAction, 
     details: { [key: string]: any }
 ): Promise<void> => {
     const db = getDbInstance();
     
-    // For now, we assume the user's photoURL is available when calling this.
-    // A more robust solution might fetch it from a 'users' collection if needed.
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    const userAvatarUrl = userDoc.exists() ? userDoc.data().photoURL : `https://api.dicebear.com/8.x/thumbs/svg?seed=${userId}`;
+    const finalAvatarUrl = userAvatarUrl || `https://api.dicebear.com/8.x/thumbs/svg?seed=${userId}`;
 
     const logEntry: Omit<ActivityLog, 'id'> = {
         workspaceId,
         userId,
         userName: userName || 'Usuário Anônimo',
-        userAvatarUrl,
+        userAvatarUrl: finalAvatarUrl,
         action,
         details,
         timestamp: serverTimestamp(),

@@ -264,6 +264,21 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
         fetchAnalyticsData();
     }, [fetchAnalyticsData]);
 
+    const chartConfig = {
+      views: {
+        label: "Visualizações",
+        color: "hsl(var(--chart-1))",
+      },
+      desktop: {
+        label: "Desktop",
+        color: "hsl(var(--chart-1))",
+      },
+      mobile: {
+        label: "Mobile",
+        color: "hsl(var(--chart-2))",
+      },
+    } as const;
+
     const {
         totalViews,
         uniqueVisitors,
@@ -296,6 +311,8 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
             return Array.from(counts.entries()).sort((a,b) => b[1] - a[1]).slice(0, 5);
         };
         
+        const deviceData = countTop('deviceType');
+        
         return {
             totalViews: views.length,
             uniqueVisitors: uniqueVisitorSet.size,
@@ -303,7 +320,7 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
             topReferrers: countTop('referrer'),
             topBrowsers: countTop('browser'),
             topOS: countTop('os'),
-            deviceDistribution: countTop('deviceType').map(([name, value]) => ({ name, value, fill: name === 'Mobile' ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))' })),
+            deviceDistribution: deviceData.map(([name, value]) => ({ name, value, fill: name.toLowerCase() === 'mobile' ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-1))' }))
         };
     }, [views]);
     
@@ -381,17 +398,15 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                             <CardTitle>Visualizações nos últimos 14 dias</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             <div className="h-[300px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={viewsLast14Days}>
-                                        <CartesianGrid vertical={false} />
-                                        <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="#888888" fontSize={12} />
-                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                        <ChartTooltip content={<ChartTooltipContent />} />
-                                        <Bar dataKey="views" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                                <BarChart data={viewsLast14Days} accessibilityLayer>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="#888888" fontSize={12} />
+                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                    <Bar dataKey="views" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -400,19 +415,17 @@ function AnalyticsDashboard({ page, workspaceId }: AnalyticsDashboardProps) {
                         <Card>
                             <CardHeader><CardTitle>Dispositivos</CardTitle></CardHeader>
                             <CardContent>
-                               <div className="h-[200px]">
-                                 <ResponsiveContainer width="100%" height="100%">
+                               <ChartContainer config={chartConfig} className="h-[200px] w-full">
                                     <PieChart>
                                         <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                                         <Pie data={deviceDistribution} dataKey="value" nameKey="name">
-                                            {deviceDistribution.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            {deviceDistribution.map((entry) => (
+                                                <Cell key={entry.name} fill={entry.fill} />
                                             ))}
                                         </Pie>
                                         <ChartLegend content={<ChartLegendContent />} />
                                     </PieChart>
-                                 </ResponsiveContainer>
-                               </div>
+                               </ChartContainer>
                             </CardContent>
                         </Card>
                         <Card>

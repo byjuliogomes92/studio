@@ -5,6 +5,7 @@ import { getPage, logPageView, getPageBySlug } from '@/lib/firestore';
 import { generateHtml } from '@/lib/html-generator';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(
   request: NextRequest,

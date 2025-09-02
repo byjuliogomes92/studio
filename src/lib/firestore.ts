@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
 import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
+import { UAParser } from 'ua-parser-js';
 
 
 const getDbInstance = (): Firestore => {
@@ -178,12 +179,12 @@ export const updateUserRole = async (workspaceId: string, userId: string, role: 
     await updateDoc(memberDoc.ref, { role });
 
     await logActivity(workspaceId, updaterUser, 'MEMBER_ROLE_CHANGED', { memberName: updatedUser.email, newRole: role });
-}
+};
 
 
 // Projects
 
-export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'userId'>, user: User): Promise<Project> => {
+export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>, user: User): Promise<Project> => {
     const db = getDbInstance();
     const newProjectData = {
         ...projectData,
@@ -197,7 +198,6 @@ export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' |
         id: projectRef.id,
         ...projectData,
         createdAt: Timestamp.now(), 
-        userId: user.uid
     };
 };
 
@@ -288,14 +288,14 @@ const generateSlug = (name: string) => {
   return `${slugBase}-${Date.now()}`;
 };
 
-export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt' | 'slug'>, user: User): Promise<string> => {
+export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>, user: User): Promise<string> => {
     const db = getDbInstance();
     const pageId = doc(collection(db, 'dummy_id_generator')).id; 
 
     const pageWithTimestamps = {
       ...pageData,
       id: pageId,
-      slug: generateSlug(pageData.name),
+      slug: pageData.slug || generateSlug(pageData.name),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -433,7 +433,7 @@ export const duplicatePage = async (pageId: string, user: User): Promise<CloudPa
         throw new Error("Página original não encontrada.");
     }
     
-    const { id, createdAt, updatedAt, slug, ...pageDataToCopy } = originalPage;
+    const { id, createdAt, updatedAt, ...pageDataToCopy } = originalPage;
 
     pageDataToCopy.name = `Cópia de ${originalPage.name}`;
     
@@ -671,52 +671,12 @@ export const updateUserProgress = async (userId: string, objective: keyof Onboar
 };
 
 // Analytics
-const parseUserAgent = (ua: string): { os: string, browser: string, deviceType: string } => {
-    if (!ua) return { os: 'N/A', browser: 'N/A', deviceType: 'N/A' };
-
-    let os = 'N/A', browser = 'N/A', deviceType = 'Desktop';
-
-    // Device Type
-    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
-        deviceType = "Tablet";
-    } else if (/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
-        deviceType = 'Mobile';
-    }
-
-    // OS
-    if (/windows phone/i.test(ua)) os = "Windows Phone";
-    else if (/windows nt 10/i.test(ua)) os = "Windows";
-    else if (/windows nt 6.3/i.test(ua)) os = "Windows";
-    else if (/windows nt 6.2/i.test(ua)) os = "Windows";
-    else if (/windows nt 6.1/i.test(ua)) os = "Windows";
-    else if (/windows nt 6.0/i.test(ua)) os = "Windows";
-    else if (/windows nt 5.1/i.test(ua)) os = "Windows";
-    else if (/windows nt 5.0/i.test(ua)) os = "Windows";
-    else if (/macintosh|mac os x/i.test(ua)) os = "macOS";
-    else if (/android/i.test(ua)) os = "Android";
-    else if (/iphone|ipad|ipod/i.test(ua)) os = "iOS";
-    else if (/linux/i.test(ua)) os = "Linux";
-    else if (/cros/i.test(ua)) os = "Chrome OS";
-
-
-    // Browser
-    if (/edg/i.test(ua)) browser = "Edge";
-    else if (/chrome|crios/i.test(ua) && !/edg/i.test(ua)) browser = "Chrome";
-    else if (/firefox|fxios/i.test(ua)) browser = "Firefox";
-    else if (/safari/i.test(ua) && !/chrome|crios|edg/i.test(ua)) browser = "Safari";
-    else if (/msie/i.test(ua) || /trident/i.test(ua)) browser = "Internet Explorer";
-    else if (/opr/i.test(ua)) browser = "Opera";
-
-
-    return { os, browser, deviceType };
-};
-
-
 export const logPageView = async (pageData: CloudPage, headers: Headers): Promise<void> => {
     const db = getDbInstance();
     const userAgent = headers.get('user-agent') || '';
-    const { os, browser, deviceType } = parseUserAgent(userAgent);
-
+    
+    const parser = new UAParser(userAgent);
+    const uaResult = parser.getResult();
 
     const viewData: Omit<PageView, 'id'> = {
         pageId: pageData.id,
@@ -727,9 +687,9 @@ export const logPageView = async (pageData: CloudPage, headers: Headers): Promis
         city: headers.get('x-vercel-ip-city') || undefined,
         userAgent: userAgent,
         referrer: headers.get('referer') || undefined,
-        os,
-        browser,
-        deviceType,
+        os: uaResult.os.name,
+        browser: uaResult.browser.name,
+        deviceType: uaResult.device.type || 'desktop',
     };
 
     try {

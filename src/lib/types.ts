@@ -324,7 +324,8 @@ export type ActivityLogAction =
     | 'MEMBER_INVITED' | 'MEMBER_REMOVED' | 'MEMBER_ROLE_CHANGED' | 'MEMBER_JOINED'
     | 'WORKSPACE_RENAMED'
     | 'TEMPLATE_CREATED' | 'TEMPLATE_DELETED'
-    | 'BRAND_CREATED' | 'BRAND_DELETED' | 'BRAND_UPDATED';
+    | 'BRAND_CREATED' | 'BRAND_DELETED' | 'BRAND_UPDATED'
+    | 'NOTIFICATION_CREATED';
 
 export interface ActivityLog {
     id: string;
@@ -335,4 +336,12 @@ export interface ActivityLog {
     action: ActivityLogAction;
     details: { [key: string]: any };
     timestamp: any;
+}
+
+export interface AppNotification {
+    id: string;
+    title: string;
+    url: string;
+    readBy: string[]; // Array of user IDs who have read it
+    createdAt: any;
 }

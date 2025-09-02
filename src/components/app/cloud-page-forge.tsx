@@ -10,7 +10,7 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,6 +24,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { ComponentSettings } from "./component-settings";
 import { ScrollArea } from "../ui/scroll-area";
 import { ToastAction } from "../ui/toast";
+import { Switch } from "../ui/switch";
+import { shortenUrl } from "@/ai/flows/shorten-url-flow";
 
 
 interface CloudPageForgeProps {
@@ -78,7 +80,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const { state: pageState, setState: setPageState, undo, canUndo, resetState } = useHistoryState<CloudPage | null>(initialPageState);
   
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
-  const [pageName, setPageName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -86,10 +87,17 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [isSaveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
-  const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
+  
+  // New state for publish modal
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [pageSlug, setPageSlug] = useState("");
+  const [pageUrl, setPageUrl] = useState("");
+  const [useBitly, setUseBitly] = useState(false);
+  const [shortUrl, setShortUrl] = useState<string | null>(null);
+  const [brand, setBrand] = useState<Brand | null>(null);
 
-
-  const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState) || pageName !== savedPageState?.name;
+  const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
+  const hasBitlyConfig = !!(brand && brand.integrations?.bitly?.encryptedAccessToken);
   
   const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId);
 
@@ -112,35 +120,24 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           
           if (pageData && pageData.workspaceId === activeWorkspace.id) {
             pageData = produce(pageData, draft => {
+              if (!draft.slug) {
+                  draft.slug = pageData.id;
+              }
               let maxOrder = -1;
               draft.components.forEach(c => {
-                // Initialize parentId to null if it's undefined
-                if (c.parentId === undefined) {
-                  c.parentId = null;
-                }
-                 // Initialize order if it's undefined
+                if (c.parentId === undefined) c.parentId = null;
                 if (c.parentId === null) {
-                  if (typeof c.order !== 'number') {
-                    maxOrder++;
-                    c.order = maxOrder;
-                  } else if (c.order > maxOrder) {
-                    maxOrder = c.order;
-                  }
+                  if (typeof c.order !== 'number') c.order = ++maxOrder;
+                  else if (c.order > maxOrder) maxOrder = c.order;
                 }
               });
-
-              // Handle children ordering
               const parents = draft.components.filter(c => c.type === 'Columns');
               parents.forEach(p => {
                 let maxChildOrder = -1;
                 draft.components.forEach(c => {
                   if (c.parentId === p.id) {
-                    if (typeof c.order !== 'number') {
-                      maxChildOrder++;
-                      c.order = maxChildOrder;
-                    } else if (c.order > maxChildOrder) {
-                      maxChildOrder = c.order;
-                    }
+                    if (typeof c.order !== 'number') c.order = ++maxChildOrder;
+                    else if (c.order > maxChildOrder) maxChildOrder = c.order;
                   }
                 });
               });
@@ -148,9 +145,15 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
             const cleanPageState = { ...pageData, name: pageData.name };
             setInitialPageState(cleanPageState);
-            setSavedPageState(cleanPageState); // Set the initial saved state
-            resetState(cleanPageState); // Initialize history
-            setPageName(cleanPageState.name);
+            setSavedPageState(cleanPageState);
+            resetState(cleanPageState);
+            setPageSlug(pageData.slug || pageData.id);
+
+            if(pageData.brandId) {
+                const brandData = await getBrand(pageData.brandId);
+                setBrand(brandData);
+            }
+
           } else {
             toast({ variant: "destructive", title: "Erro", description: "Página não encontrada ou acesso negado." });
             router.push('/');
@@ -172,69 +175,14 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if(!authLoading && user) {
         fetchPage();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId, router, user, toast, authLoading, searchParams, activeWorkspace]);
   
   
   useEffect(() => {
-    if (!pageState || !pageState.brandId) return;
-
-    const applyBrandStyles = (brand: Brand) => {
-        setPageState(prev => {
-            if (!prev) return null;
-            let needsUpdate = false;
-            
-            // Use a deep copy to avoid direct state mutation
-            const newState = JSON.parse(JSON.stringify(prev));
-
-            // Update meta info
-            if (newState.meta.faviconUrl !== brand.faviconUrl || newState.meta.loaderImageUrl !== brand.loaderImageUrl) {
-                needsUpdate = true;
-                newState.meta.faviconUrl = brand.faviconUrl;
-                newState.meta.loaderImageUrl = brand.loaderImageUrl;
-            }
-
-            // Update global styles
-            if (
-                newState.styles.themeColor !== brand.themeColor ||
-                newState.styles.themeColorHover !== brand.themeColorHover ||
-                newState.styles.fontFamily !== brand.fontFamily
-            ) {
-                needsUpdate = true;
-                newState.styles.themeColor = brand.themeColor;
-                newState.styles.themeColorHover = brand.themeColorHover;
-                newState.styles.fontFamily = brand.fontFamily;
-            }
-            
-            // Update Header logo
-            const headerIndex = newState.components.findIndex((c: PageComponent) => c.type === 'Header');
-            if (headerIndex !== -1 && newState.components[headerIndex].props.logoUrl !== brand.logoUrl) {
-                needsUpdate = true;
-                newState.components[headerIndex].props.logoUrl = brand.logoUrl;
-            }
-
-            // Update Footer text
-            const footerIndex = newState.components.findIndex((c: PageComponent) => c.type === 'Footer');
-            if (footerIndex !== -1) {
-                const currentYear = new Date().getFullYear();
-                const newFooterText = `© ${currentYear} ${brand.name}. Todos os direitos reservados.`;
-                if (newState.components[footerIndex].props.footerText1 !== newFooterText) {
-                    needsUpdate = true;
-                    newState.components[footerIndex].props.footerText1 = newFooterText;
-                }
-            }
-            
-            return needsUpdate ? newState : prev;
-        });
+    if (pageState?.slug) {
+        setPageUrl(`${window.location.origin}/api/pages/${pageState.slug}`);
     }
-
-    getBrand(pageState.brandId).then(brand => {
-        if (brand) {
-            applyBrandStyles(brand);
-        }
-    });
-
-}, [pageState?.brandId, setPageState]);
+  }, [pageState?.slug]);
 
   
   // Keyboard shortcut for Undo
@@ -272,26 +220,16 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
   const checkOnboardingProgress = async (savedPage: CloudPage) => {
     if (!user) return;
-    
-    // Check for first form added
     if (savedPage.components.some(c => c.type === 'Form')) {
       const updatedProgress = await updateUserProgress(user.uid, 'addedFirstForm');
       if (updatedProgress.objectives.addedFirstForm) {
-        toast({
-          title: "🎉 Objetivo Concluído!",
-          description: "Você adicionou seu primeiro formulário."
-        });
+        toast({ title: "🎉 Objetivo Concluído!", description: "Você adicionou seu primeiro formulário." });
       }
     }
-    
-    // Check for first AMPScript added
     if (savedPage.meta.customAmpscript && savedPage.meta.customAmpscript.trim() !== '') {
       const updatedProgress = await updateUserProgress(user.uid, 'addedFirstAmpscript');
        if (updatedProgress.objectives.addedFirstAmpscript) {
-        toast({
-          title: "🎉 Objetivo Concluído!",
-          description: "Você adicionou seu primeiro AMPScript."
-        });
+        toast({ title: "🎉 Objetivo Concluído!", description: "Você adicionou seu primeiro AMPScript." });
       }
     }
   };
@@ -299,28 +237,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const handleSave = async () => {
     if (!pageState || !user) return;
     setIsSaving(true);
-    
     try {
-      const finalPageState = { 
-          ...pageState, 
-          name: pageName,
-      };
+      const finalPageState = { ...pageState };
       await updatePage(pageId, finalPageState);
-      // After saving, update the saved state and reset history.
       setSavedPageState(finalPageState);
       resetState(finalPageState);
-      toast({ 
-        title: "Rascunho salvo!",
-        description: `Suas alterações na página "${pageName}" foram salvas.`,
-        action: (
-          <ToastAction altText="Como publicar?" onClick={() => setIsHowToUseOpen(true)}>
-            <Info className="mr-2 h-4 w-4" />
-            Como publicar?
-          </ToastAction>
-        ),
-      });
-
-      // Check onboarding progress after saving
+      toast({ title: "Rascunho salvo!", description: `Suas alterações na página "${pageState.name}" foram salvas.` });
       await checkOnboardingProgress(finalPageState);
     } catch(error) {
          toast({ variant: "destructive", title: "Erro ao salvar", description: "Não foi possível salvar a página." });
@@ -333,32 +255,27 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const handlePublish = async () => {
       if (!pageState || !user) return;
       setIsPublishing(true);
+      
+      const finalPageState = { ...pageState, slug: pageSlug };
+
       try {
-          const finalPageState = { 
-              ...pageState, 
-              name: pageName,
-          };
-          // First, save any pending changes to the draft
           if (hasUnsavedChanges) {
               await updatePage(pageId, finalPageState);
               setSavedPageState(finalPageState);
               resetState(finalPageState);
           }
-          // Now, publish the saved state to the live version
           await publishPage(pageId, finalPageState);
-          
-          toast({
-              title: "Página publicada!",
-              description: `As alterações em "${pageName}" estão agora disponíveis publicamente.`,
-              action: (
-                <ToastAction altText="Como publicar?" onClick={() => setIsHowToUseOpen(true)}>
-                  <Info className="mr-2 h-4 w-4" />
-                  Ver URL
-                </ToastAction>
-              ),
-          });
-      } catch (error) {
-          toast({ variant: "destructive", title: "Erro ao publicar", description: "Não foi possível publicar a página." });
+
+          if (useBitly && hasBitlyConfig) {
+              const result = await shortenUrl({ brandId: pageState.brandId, longUrl: pageUrl });
+              setShortUrl(result.shortUrl);
+              toast({ title: "Página Publicada e Link Encurtado!", description: "Suas alterações estão no ar." });
+          } else {
+              toast({ title: "Página publicada!", description: `As alterações em "${finalPageState.name}" estão agora disponíveis publicamente.` });
+          }
+
+      } catch (error: any) {
+          toast({ variant: "destructive", title: "Erro ao publicar", description: error.message || "Não foi possível publicar a página." });
           console.error("Publish error:", error);
       } finally {
           setIsPublishing(false);
@@ -394,13 +311,9 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         setTemplateName("");
         setTemplateDescription("");
         
-        // Check onboarding progress
         const updatedProgress = await updateUserProgress(user.uid, 'createdFirstTemplate');
          if (updatedProgress.objectives.createdFirstTemplate) {
-            toast({
-              title: "🎉 Objetivo Concluído!",
-              description: "Você criou seu primeiro template."
-            });
+            toast({ title: "🎉 Objetivo Concluído!", description: "Você criou seu primeiro template." });
          }
     } catch (error) {
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar o template." });
@@ -426,10 +339,9 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const handleBackNavigation = () => {
     if (hasUnsavedChanges) {
       if (!window.confirm("Você tem alterações não salvas. Deseja sair mesmo assim?")) {
-        return; // User canceled the navigation
+        return; 
       }
     }
-
     if (pageState?.projectId) {
       router.push(`/project/${pageState.projectId}`);
     } else {
@@ -452,6 +364,15 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             )
         };
     });
+  };
+  
+  const handlePageNameChange = (newName: string) => {
+    setPageState(prev => prev ? { ...prev, name: newName } : null);
+  };
+  
+  const handleCopyUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast({ title: "URL copiada!" });
   };
 
   if (isLoading || authLoading || !pageState) {
@@ -517,10 +438,70 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 {isSaving ? 'Salvando...' : 'Salvar Rascunho'}
             </Button>
-             <Button onClick={handlePublish} disabled={isPublishing || isSaving}>
-                {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-                {isPublishing ? 'Publicando...' : 'Publicar'}
-            </Button>
+             <Dialog open={isPublishModalOpen} onOpenChange={setIsPublishModalOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={isPublishing || isSaving}>
+                  {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+                  {isPublishing ? 'Publicando...' : 'Publicar'}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Publicar Página</DialogTitle>
+                  <DialogDescription>
+                    Configure a URL final e confirme a publicação.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="page-slug">Slug da URL</Label>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground p-2 rounded-md bg-muted whitespace-nowrap">.../api/pages/</span>
+                            <Input id="page-slug" value={pageSlug} onChange={(e) => setPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} className="min-w-0" />
+                        </div>
+                    </div>
+                    {hasBitlyConfig && (
+                        <div className="flex items-center space-x-2">
+                            <Switch id="use-bitly" checked={useBitly} onCheckedChange={setUseBitly} />
+                            <Label htmlFor="use-bitly">Encurtar URL com Bitly</Label>
+                        </div>
+                    )}
+                    {(shortUrl || pageUrl) && !isPublishing && (
+                        <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
+                            <h4 className="font-medium text-sm">URL Final</h4>
+                             {shortUrl && (
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">URL Curta (Bitly)</Label>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0">{shortUrl}</a>
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(shortUrl)}><Copy className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(shortUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
+                                        </div>
+                                    </div>
+                                </div>
+                             )}
+                             <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">URL Completa</Label>
+                                <div className="flex items-center justify-between gap-2">
+                                    <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0 break-all">{pageUrl}</a>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(pageUrl)}><Copy className="h-4 w-4"/></Button>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(pageUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsPublishModalOpen(false)}>Cancelar</Button>
+                  <Button onClick={handlePublish} disabled={isPublishing}>
+                    {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Confirmar e Publicar"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
         </div>
       </header>
       <div className="flex flex-grow overflow-hidden">
@@ -532,8 +513,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         setPageState={setPageState}
                         selectedComponentId={selectedComponentId}
                         setSelectedComponentId={setSelectedComponentId}
-                        pageName={pageName}
-                        setPageName={setPageName}
+                        pageName={pageState.name}
+                        setPageName={handlePageNameChange}
                     />
                 </aside>
             </ResizablePanel>

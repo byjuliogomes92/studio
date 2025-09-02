@@ -1,43 +1,42 @@
 
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getAuth, onAuthStateChanged, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, Auth, GoogleAuthProvider, signInWithPopup, updateProfile } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
-import type { Workspace } from '@/lib/types';
-import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb } from '@/lib/firestore';
+import type { Workspace, UserProfileType } from '@/lib/types';
+import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete } from '@/lib/firestore';
 import { produce } from 'immer';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isGoogleAuthEnabled: boolean;
   isUpdatingAvatar: boolean;
   activeWorkspace: Workspace | null;
   workspaces: Workspace[];
   switchWorkspace: (workspaceId: string) => void;
   updateWorkspaceName: (workspaceId: string, newName: string) => Promise<void>;
   login: (email: string, password: string) => Promise<any>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<any>;
+  signup: (email: string, password: string, firstName: string, lastName: string, profileType: UserProfileType, companyName?: string) => Promise<any>;
   loginWithGoogle: () => Promise<any>;
   logout: () => void;
   updateUserAvatar: () => Promise<void>;
   updateUserName: (firstName: string, lastName: string) => Promise<void>;
+  reloadWorkspaces: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const publicRoutes = ['/login', '/signup', '/debug-workspace'];
+const publicRoutes = ['/login', '/signup', '/debug-workspace', '/welcome'];
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [auth, setAuth] = useState<Auth | null>(null);
-  const [isGoogleAuthEnabled, setIsGoogleAuthEnabled] = useState(false);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
 
@@ -45,81 +44,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const authInstance = getAuth(app);
-      setAuth(authInstance);
-      setIsGoogleAuthEnabled(window.location.hostname === 'cloudpagestudio.vercel.app');
-
-      const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
-        setUser(currentUser);
-        if (!currentUser) {
-            // Clear workspace state on logout
-            setWorkspaces([]);
-            setActiveWorkspace(null);
-            setLoading(false);
-        }
-      });
-
-      return () => unsubscribe();
-    } else {
-        setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      getWorkspacesForUser(user.uid)
-        .then(async (userWorkspaces) => {
-          if (userWorkspaces.length > 0) {
-            setWorkspaces(userWorkspaces);
-            const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
-            const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
-            setActiveWorkspace(found || userWorkspaces[0]);
-          } else {
-            // If user has no workspaces, create a default one
-            try {
-              const newWorkspace = await createWorkspace(user.uid, user.email || 'Usuário', 'Meu Workspace');
-              setWorkspaces([newWorkspace]);
-              setActiveWorkspace(newWorkspace);
-            } catch (error) {
-              console.error("Failed to create default workspace:", error);
-              toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível criar seu workspace inicial.' });
-            }
-          }
-        })
-        .finally(() => setLoading(false));
-    } else {
-      // No user, not loading.
-      if (!publicRoutes.includes(pathname)) {
-        setLoading(false);
+  const fetchWorkspaces = useCallback(async (userId: string) => {
+    try {
+      const userWorkspaces = await getWorkspacesForUser(userId);
+      setWorkspaces(userWorkspaces);
+      if (userWorkspaces.length > 0) {
+        const lastWorkspaceId = localStorage.getItem('activeWorkspaceId');
+        const found = userWorkspaces.find(w => w.id === lastWorkspaceId);
+        setActiveWorkspace(found || userWorkspaces[0]);
+      } else {
+        setActiveWorkspace(null); 
       }
+    } catch (error) {
+      console.error("Failed to fetch workspaces:", error);
+      toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
     }
-  }, [user, toast]);
+  }, [toast]);
+
 
   useEffect(() => {
-    // This effect should only run on the client side for route protection
-    if (typeof window !== 'undefined' && !loading && !user && !publicRoutes.includes(pathname)) {
+    const authInstance = getAuth(app);
+    setAuth(authInstance);
+
+    const unsubscribe = onAuthStateChanged(authInstance, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        await fetchWorkspaces(currentUser.uid);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [fetchWorkspaces]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+
+    if (!user && !isPublicRoute) {
       router.push('/login');
+    } else if (user) {
+        isProfileComplete(user.uid).then(complete => {
+            if (!complete && pathname !== '/welcome') {
+                router.push('/welcome');
+            }
+        });
     }
-  }, [loading, user, router, pathname]);
+  }, [user, loading, pathname, router]);
 
   const switchWorkspace = (workspaceId: string) => {
     const newActiveWorkspace = workspaces.find(w => w.id === workspaceId);
     if (newActiveWorkspace) {
       setActiveWorkspace(newActiveWorkspace);
       localStorage.setItem('activeWorkspaceId', workspaceId);
-      // We don't need a full page reload, but we might want to trigger a data refetch
-      // on the component level. For now, we'll just switch context.
-      // A full router.refresh() might be too heavy.
-      window.location.reload(); // Simple solution for now
+      window.location.reload(); 
     }
   };
 
   const updateWorkspaceName = async (workspaceId: string, newName: string) => {
-    await updateWorkspaceNameInDb(workspaceId, newName);
+    if (!user || !activeWorkspace) return;
+    const oldName = activeWorkspace.name;
+    await updateWorkspaceNameInDb(workspaceId, newName, user);
     
-    // Update local state to reflect the change immediately
+    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName: oldName, newName });
+
     const updateState = (ws: Workspace) => produce(ws, draft => {
         if(draft.id === workspaceId) {
             draft.name = newName;
@@ -137,8 +126,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return signInWithEmailAndPassword(auth, email, password);
   }
 
-  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signup = async (email: string, password: string, firstName: string, lastName: string, profileType: UserProfileType, companyName?: string) => {
     if (!auth) throw new Error("Firebase Auth not initialized");
+    
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${user.uid}`;
@@ -146,20 +136,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         displayName: `${firstName} ${lastName}`,
         photoURL: avatarUrl
     });
-    setUser({ ...user, displayName: `${firstName} ${lastName}`, photoURL: avatarUrl } as User);
+
+    setUser(produce(user, draft => {
+        draft.displayName = `${firstName} ${lastName}`;
+        draft.photoURL = avatarUrl;
+    }));
+    
+    let workspaceName: string;
+    if (profileType === 'owner' && companyName) {
+        workspaceName = companyName;
+    } else {
+        workspaceName = `Workspace de ${firstName}`;
+    }
+
+    const newWorkspace = await createWorkspace(user.uid, workspaceName, profileType);
+    setWorkspaces([newWorkspace]);
+    setActiveWorkspace(newWorkspace);
+
     return userCredential;
   }
 
   const loginWithGoogle = async () => {
     if (!auth) throw new Error("Firebase Auth not initialized");
-    if (!isGoogleAuthEnabled) throw new Error("Google Auth is not enabled for this domain.");
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    if (result.user && !result.user.photoURL) {
-        const avatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${result.user.uid}`;
-        await updateProfile(result.user, { photoURL: avatarUrl });
-        setUser({ ...result.user, photoURL: avatarUrl } as User);
+    
+    const profileComplete = await isProfileComplete(result.user.uid);
+    if (!profileComplete) {
+      router.push('/welcome');
     }
+    
     return result;
   };
 
@@ -177,11 +183,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     await updateProfile(auth.currentUser, { displayName: newDisplayName });
-    // Create a new plain object from the user to update state
-    setUser({
-        ...user,
-        displayName: newDisplayName
-    } as User);
+    const updatedUser = { ...auth.currentUser };
+    setUser(updatedUser as User);
   };
 
   const updateUserAvatar = async () => {
@@ -204,7 +207,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     loading,
-    isGoogleAuthEnabled,
     isUpdatingAvatar,
     login,
     signup,
@@ -216,14 +218,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     workspaces,
     switchWorkspace,
     updateWorkspaceName,
+    reloadWorkspaces: () => user ? fetchWorkspaces(user.uid) : Promise.resolve(),
   };
-
-  if (loading && !publicRoutes.includes(pathname)) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Logo className="h-10 w-10 animate-spin text-primary" />
-        </div>
-      );
+  
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+          <Logo className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

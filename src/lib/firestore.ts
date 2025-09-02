@@ -201,7 +201,7 @@ export const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>)
     };
 };
 
-export const updateProject = async (projectId: string, data: Partial<Project>): Promise<void> => {
+export const updateProject = async (projectId: string, data: Partial<Project>, user: User): Promise<void> => {
     const db = getDbInstance();
     const projectRef = doc(db, "projects", projectId);
     await updateDoc(projectRef, data);
@@ -209,7 +209,7 @@ export const updateProject = async (projectId: string, data: Partial<Project>): 
     const projectSnap = await getDoc(projectRef);
     const projectData = projectSnap.data();
     if(projectData) {
-        await logActivity(projectData.workspaceId, projectData.userId, '', 'PROJECT_UPDATED', { projectName: projectData.name });
+        await logActivity(projectData.workspaceId, user.uid, user.displayName, 'PROJECT_UPDATED', { projectName: projectData.name });
     }
 }
 

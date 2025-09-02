@@ -218,7 +218,7 @@ export function ProjectDashboard() {
   };
 
   const handleUpdateProject = async () => {
-    if (!projectToEdit || newProjectName.trim() === "") {
+    if (!projectToEdit || newProjectName.trim() === "" || !user) {
         toast({ variant: "destructive", title: "Erro", description: "O nome do projeto não pode ser vazio." });
         return;
     }
@@ -228,7 +228,7 @@ export function ProjectDashboard() {
             icon: selectedIcon,
             color: selectedColor
         };
-        await updateProject(projectToEdit.id, updatedData);
+        await updateProject(projectToEdit.id, updatedData, user);
         setProjects(prev => prev.map(p => p.id === projectToEdit.id ? { ...p, ...updatedData } : p));
         toast({ title: "Projeto atualizado!" });
     } catch (error) {

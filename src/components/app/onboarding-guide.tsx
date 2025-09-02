@@ -34,7 +34,7 @@ export function OnboardingGuide({ objectives, onClose }: OnboardingGuideProps) {
       onOpenChange={setIsOpen}
       className="w-full"
     >
-      <Card>
+      <Card className="bg-accent/40">
         <CardHeader className="flex flex-row items-center justify-between p-3">
           <div>
             <CardTitle className="text-base">Guia de Início Rápido</CardTitle>

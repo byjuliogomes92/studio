@@ -197,25 +197,144 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
         return embedUrl ? `<div class="video-container" style="${styleString}"><iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '<p>URL do vídeo inválida.</p>';
     case 'Countdown':
         const targetDate = component.props.targetDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+        const countdownStyles = component.props.styles || {};
+        const labels = component.props.labels || { days: 'Dias', hours: 'Horas', minutes: 'Minutos', seconds: 'Segundos' };
+        
+        let countdownHtml = '';
+        switch(component.props.style) {
+            case 'circles':
+                 countdownHtml = `
+                    <div class="countdown-item">
+                        <svg class="countdown-svg" viewBox="0 0 100 100">
+                            <circle class="countdown-svg-bg" cx="50" cy="50" r="45"></circle>
+                            <circle class="countdown-svg-fg" id="countdown-circle-days-${component.id}" cx="50" cy="50" r="45"></circle>
+                        </svg>
+                        <div class="countdown-number" id="countdown-days-${component.id}">0</div>
+                        <div class="countdown-label">${labels.days}</div>
+                    </div>
+                    <div class="countdown-item">
+                         <svg class="countdown-svg" viewBox="0 0 100 100">
+                            <circle class="countdown-svg-bg" cx="50" cy="50" r="45"></circle>
+                            <circle class="countdown-svg-fg" id="countdown-circle-hours-${component.id}" cx="50" cy="50" r="45"></circle>
+                        </svg>
+                        <div class="countdown-number" id="countdown-hours-${component.id}">0</div>
+                        <div class="countdown-label">${labels.hours}</div>
+                    </div>
+                    <div class="countdown-item">
+                        <svg class="countdown-svg" viewBox="0 0 100 100">
+                            <circle class="countdown-svg-bg" cx="50" cy="50" r="45"></circle>
+                            <circle class="countdown-svg-fg" id="countdown-circle-minutes-${component.id}" cx="50" cy="50" r="45"></circle>
+                        </svg>
+                        <div class="countdown-number" id="countdown-minutes-${component.id}">0</div>
+                        <div class="countdown-label">${labels.minutes}</div>
+                    </div>
+                    <div class="countdown-item">
+                        <svg class="countdown-svg" viewBox="0 0 100 100">
+                            <circle class="countdown-svg-bg" cx="50" cy="50" r="45"></circle>
+                            <circle class="countdown-svg-fg" id="countdown-circle-seconds-${component.id}" cx="50" cy="50" r="45"></circle>
+                        </svg>
+                        <div class="countdown-number" id="countdown-seconds-${component.id}">0</div>
+                        <div class="countdown-label">${labels.seconds}</div>
+                    </div>
+                `;
+                break;
+            case 'minimal':
+                countdownHtml = `
+                    <div class="countdown-item">
+                        <div class="countdown-number" id="countdown-days-${component.id}">0</div>
+                        <div class="countdown-label">${labels.days}</div>
+                    </div>
+                    <div class="countdown-separator">:</div>
+                    <div class="countdown-item">
+                        <div class="countdown-number" id="countdown-hours-${component.id}">0</div>
+                        <div class="countdown-label">${labels.hours}</div>
+                    </div>
+                     <div class="countdown-separator">:</div>
+                    <div class="countdown-item">
+                        <div class="countdown-number" id="countdown-minutes-${component.id}">0</div>
+                        <div class="countdown-label">${labels.minutes}</div>
+                    </div>
+                     <div class="countdown-separator">:</div>
+                    <div class="countdown-item">
+                        <div class="countdown-number" id="countdown-seconds-${component.id}">0</div>
+                        <div class="countdown-label">${labels.seconds}</div>
+                    </div>
+                `;
+                 break;
+            default: // blocks
+                countdownHtml = `
+                    <div class="countdown-item">
+                        <div class="countdown-number" id="countdown-days-${component.id}">0</div>
+                        <div class="countdown-label">${labels.days}</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-number" id="countdown-hours-${component.id}">0</div>
+                        <div class="countdown-label">${labels.hours}</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-number" id="countdown-minutes-${component.id}">0</div>
+                        <div class="countdown-label">${labels.minutes}</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-number" id="countdown-seconds-${component.id}">0</div>
+                        <div class="countdown-label">${labels.seconds}</div>
+                    </div>
+                `;
+        }
+
         return `
-            <div id="countdown-${component.id}" class="countdown" style="${styleString}"></div>
+            <div id="countdown-${component.id}" class="countdown-container countdown-${component.props.style || 'blocks'}" style="${getStyleString(countdownStyles)}">
+                ${countdownHtml}
+            </div>
             <script>
               (function() {
                 var target = new Date("${targetDate}").getTime();
-                var el = document.getElementById("countdown-${component.id}");
-                if (!el) return;
+                var countdownId = "countdown-${component.id}";
+                
+                var daysEl = document.getElementById("countdown-days-${component.id}");
+                var hoursEl = document.getElementById("countdown-hours-${component.id}");
+                var minutesEl = document.getElementById("countdown-minutes-${component.id}");
+                var secondsEl = document.getElementById("countdown-seconds-${component.id}");
+
+                var daysCircle = document.getElementById("countdown-circle-days-${component.id}");
+                var hoursCircle = document.getElementById("countdown-circle-hours-${component.id}");
+                var minutesCircle = document.getElementById("countdown-circle-minutes-${component.id}");
+                var secondsCircle = document.getElementById("countdown-circle-seconds-${component.id}");
+
+                if (!daysEl || !hoursEl || !minutesEl || !secondsEl) return;
+                
+                var radius = 45;
+                var circumference = 2 * Math.PI * radius;
+                if(daysCircle) daysCircle.style.strokeDasharray = circumference;
+                if(hoursCircle) hoursCircle.style.strokeDasharray = circumference;
+                if(minutesCircle) minutesCircle.style.strokeDasharray = circumference;
+                if(secondsCircle) secondsCircle.style.strokeDasharray = circumference;
+                
                 var x = setInterval(function() {
                   var now = new Date().getTime();
                   var distance = target - now;
+                  
+                  if (distance < 0) {
+                    clearInterval(x);
+                    document.getElementById(countdownId).innerHTML = "<div class='countdown-expired'>EXPIRADO</div>";
+                    return;
+                  }
+
                   var days = Math.floor(distance / (1000 * 60 * 60 * 24));
                   var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                   var minutes = Math.floor((distance % (1000 * 60 * 60)) / 1000 / 60);
                   var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                  el.innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
-                  if (distance < 0) {
-                    clearInterval(x);
-                    el.innerHTML = "EXPIRADO";
-                  }
+                  
+                  daysEl.innerHTML = String(days).padStart(2, '0');
+                  hoursEl.innerHTML = String(hours).padStart(2, '0');
+                  minutesEl.innerHTML = String(minutes).padStart(2, '0');
+                  secondsEl.innerHTML = String(seconds).padStart(2, '0');
+
+                  if (daysCircle) daysCircle.style.strokeDashoffset = circumference - (days / 30) * circumference;
+                  if (hoursCircle) hoursCircle.style.strokeDashoffset = circumference - (hours / 24) * circumference;
+                  if (minutesCircle) minutesCircle.style.strokeDashoffset = circumference - (minutes / 60) * circumference;
+                  if (secondsCircle) secondsCircle.style.strokeDashoffset = circumference - (seconds / 60) * circumference;
+
                 }, 1000);
               })();
             </script>`;
@@ -908,6 +1027,10 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 const getClientSideScripts = (pageState: CloudPage) => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
+    
+    const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
+    const emblaCarouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
+    const emblaAutoplayScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel-autoplay@latest/embla-carousel-autoplay.umd.js"></script>' : '';
 
     const script = `
     <script>
@@ -954,6 +1077,39 @@ const getClientSideScripts = (pageState: CloudPage) => {
                 }
             });
         });
+    }
+    
+    function setupCarousels() {
+        if (typeof EmblaCarousel !== 'undefined') {
+            const autoplayPlugin = typeof EmblaCarouselAutoplay !== 'undefined' ? EmblaCarouselAutoplay.default : null;
+            document.querySelectorAll('.carousel-container').forEach(container => {
+                const viewport = container.querySelector('.carousel-viewport');
+                const optionsStr = container.dataset.options || '{}';
+                let options = {};
+                try {
+                    options = JSON.parse(optionsStr);
+                } catch(e) {
+                    console.error('Could not parse carousel options: ', e);
+                }
+
+                const plugins = [];
+                if (options.autoplay && autoplayPlugin) {
+                    plugins.push(autoplayPlugin({ delay: options.delay || 4000, stopOnInteraction: false }));
+                }
+
+                if(options.loop && container.classList.contains('logo-carousel')) {
+                    const innerContainer = container.querySelector('.carousel-inner');
+                    const slides = Array.from(innerContainer.children);
+                    slides.forEach(slide => {
+                        innerContainer.appendChild(slide.cloneNode(true));
+                    });
+                }
+                
+                if (viewport) {
+                    EmblaCarousel(viewport, options, plugins);
+                }
+            });
+        }
     }
     
     function setSocialIconStyles() {
@@ -1145,13 +1301,14 @@ const getClientSideScripts = (pageState: CloudPage) => {
         setupForms();
         setupAccordions();
         setupTabs();
+        setupCarousels();
         setSocialIconStyles();
         handleConditionalFields();
     });
 </script>
     `;
 
-    return `${lottiePlayerScript}${script}`;
+    return `${lottiePlayerScript}${emblaCarouselScript}${emblaAutoplayScript}${script}`;
 };
 
 const getPrefillAmpscript = (pageState: CloudPage): string => {
@@ -1185,7 +1342,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const ssjsScript = getFormSubmissionScript(pageState);
 
-  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp'];
+  const fullWidthTypes: ComponentType[] = ['Header', 'Banner', 'Footer', 'Stripe', 'WhatsApp', 'Carousel'];
   
   const security = getSecurityScripts(pageState);
   
@@ -1196,13 +1353,14 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const headerComponent = components.find(c => c.type === 'Header' && c.parentId === null);
   const bannerComponent = components.find(c => c.type === 'Banner' && c.parentId === null);
   const footerComponent = components.find(c => c.type === 'Footer' && c.parentId === null);
+  const carouselComponents = components.filter(c => c.type === 'Carousel' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview)).join('\n');
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
   const mainComponents = renderComponents(components.filter(c => !fullWidthTypes.includes(c.type) && c.parentId === null), components, pageState, isForPreview);
   
-  const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${id}" alt="" width="1" height="1" style="display:none" />`;
+  const trackingPixel = isForPreview ? '' : `<img src="${baseUrl}/api/track/${pageState.slug || id}" alt="" width="1" height="1" style="display:none" />`;
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
@@ -1332,8 +1490,15 @@ ${trackingScripts}
         padding: 20px 40px;
         color: #333;
     }
+
+    .component-wrapper {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 1rem;
+    }
     
-    .content-wrapper .component-wrapper > * {
+    .component-wrapper > * {
         text-align: left;
         margin-top: 1em;
         margin-bottom: 1em;
@@ -1364,11 +1529,90 @@ ${trackingScripts}
         height: 100%;
     }
 
-    .countdown {
-        font-size: 2em;
-        font-weight: bold;
-        color: ${styles.themeColor};
+    /* Countdown Styles */
+    .countdown-container {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        padding: 20px;
         text-align: center;
+    }
+    .countdown-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+    .countdown-number {
+        font-weight: bold;
+        line-height: 1;
+    }
+    .countdown-label {
+        text-transform: uppercase;
+        font-size: 0.7em;
+        letter-spacing: 1px;
+    }
+    .countdown-expired {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+    /* Style: Blocks */
+    .countdown-blocks .countdown-item {
+        background-color: ${styles.themeColor || '#f0f0f0'};
+        color: ${styles.backgroundColor || '#333'};
+        padding: 15px;
+        border-radius: 8px;
+        min-width: 80px;
+    }
+    .countdown-blocks .countdown-number {
+        font-size: 2.5em;
+    }
+    .countdown-blocks .countdown-label {
+        font-size: 0.8em;
+    }
+     /* Style: Circles */
+    .countdown-circles .countdown-item {
+        width: 100px;
+        height: 100px;
+        justify-content: center;
+    }
+    .countdown-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+    .countdown-svg-bg {
+        fill: none;
+        stroke: #e0e0e0;
+        stroke-width: 5;
+    }
+    .countdown-svg-fg {
+        fill: none;
+        stroke: var(--theme-color);
+        stroke-width: 5;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 1s linear;
+    }
+    .countdown-circles .countdown-number {
+        font-size: 2em;
+    }
+    .countdown-circles .countdown-label {
+        font-size: 0.7em;
+    }
+    /* Style: Minimal */
+    .countdown-minimal .countdown-number {
+        font-size: 2.5em;
+    }
+    .countdown-minimal .countdown-label {
+        font-size: 0.8em;
+    }
+    .countdown-minimal .countdown-separator {
+        font-size: 2.5em;
+        line-height: 1.5;
+        color: var(--theme-color);
     }
     
     .custom-button, .thank-you-message a.custom-button {
@@ -1954,6 +2198,7 @@ ${ssjsScript}
     <img src="${meta.loaderImageUrl || 'https://placehold.co/150x150.png'}" alt="Loader">
   </div>
   ${stripeComponents}
+  ${carouselComponents}
   <div class="container">
     ${headerComponent ? renderComponent(headerComponent, pageState, isForPreview) : ''}
     ${bannerComponent ? renderComponent(bannerComponent, pageState, isForPreview) : ''}
@@ -1971,5 +2216,5 @@ ${ssjsScript}
   %%[ ENDIF ]%%
 </body>
 </html>
-`
+`;
 }

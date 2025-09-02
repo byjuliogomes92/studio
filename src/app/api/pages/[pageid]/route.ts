@@ -1,7 +1,7 @@
 
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getPage, logPageView } from '@/lib/firestore';
+import { getPage, logPageView, getPageBySlug } from '@/lib/firestore';
 import { generateHtml } from '@/lib/html-generator';
 
 export const dynamic = 'force-dynamic';
@@ -13,12 +13,15 @@ export async function GET(
   const { pageid } = params;
 
   if (!pageid) {
-    return new NextResponse('Page ID is required', { status: 400 });
+    return new NextResponse('Page ID or Slug is required', { status: 400 });
   }
 
   try {
-    // Always serve the 'published' version of the page
-    const pageData = await getPage(pageid, 'published');
+    // Try fetching by ID first, then by slug
+    let pageData = await getPage(pageid, 'published');
+    if (!pageData) {
+        pageData = await getPageBySlug(pageid, 'published');
+    }
 
     if (!pageData || !pageData.projectId || !pageData.workspaceId) {
       // If the page doesn't exist or is missing crucial data, it's a 404

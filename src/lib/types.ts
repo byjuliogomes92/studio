@@ -173,6 +173,7 @@ export type LoaderAnimation = 'pulse' | 'spin';
 export interface CloudPage {
   id: string;
   name: string;
+  slug: string;
   projectId: string;
   workspaceId: string;
   brandId: string;

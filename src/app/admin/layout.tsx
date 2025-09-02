@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarGroupLabel } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,11 +19,14 @@ function AdminSidebar() {
     const userInitials = user?.displayName?.split(' ').map(n => n[0]).join('') || user?.email?.[0].toUpperCase() || 'A';
     
     const navItems = [
+      { type: 'label', label: 'Visão Geral' },
       { path: '/admin', icon: BarChart, label: 'Dashboard' },
+      { type: 'label', label: 'Gerenciamento' },
       { path: '/admin/users', icon: Users, label: 'Usuários' },
       { path: '/admin/support', icon: MessageSquare, label: 'Suporte' },
       { path: '/admin/notifications', icon: Bell, label: 'Notificações' },
       { path: '/admin/settings', icon: Settings, label: 'Configurações' },
+      { type: 'label', label: 'Ferramentas' },
       { path: '/admin/set-admin', icon: ShieldQuestion, label: 'Tornar Admin' }
     ];
 
@@ -38,18 +41,23 @@ function AdminSidebar() {
             </SidebarHeader>
             <SidebarContent className="p-2">
                 <SidebarMenu>
-                    {navItems.map(item => (
-                       <SidebarMenuItem key={item.path}>
-                            <SidebarMenuButton 
-                                onClick={() => router.push(item.path)} 
-                                tooltip={item.label}
-                                isActive={pathname.startsWith(item.path)}
-                            >
-                                <item.icon />
-                                <span>{item.label}</span>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
+                    {navItems.map((item, index) => {
+                       if (item.type === 'label') {
+                           return <SidebarGroupLabel key={`label-${index}`} className="mt-4">{item.label}</SidebarGroupLabel>;
+                       }
+                       return (
+                           <SidebarMenuItem key={item.path}>
+                                <SidebarMenuButton 
+                                    onClick={() => router.push(item.path!)} 
+                                    tooltip={item.label}
+                                    isActive={pathname === item.path || (pathname.startsWith(item.path!) && item.path !== '/admin')}
+                                >
+                                    <item.icon />
+                                    <span>{item.label}</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                       )
+                    })}
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter className="p-2">

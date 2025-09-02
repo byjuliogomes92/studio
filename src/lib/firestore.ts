@@ -3,7 +3,7 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { UAParser } from 'ua-parser-js';
@@ -798,3 +798,17 @@ export const getActivityLogsForWorkspace = async (workspaceId: string): Promise<
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
 }
+
+// Notifications
+export const addNotification = async (notificationData: Omit<AppNotification, 'id' | 'readBy' | 'createdAt'>, user: User): Promise<void> => {
+    const db = getDbInstance();
+    const newNotificationData = {
+        ...notificationData,
+        readBy: [],
+        createdAt: serverTimestamp(),
+    };
+    await addDoc(collection(db, 'notifications'), newNotificationData);
+    
+    // No workspace to log to for global notifications, so we might skip this or log to a global admin workspace
+    // For now, skipping logging for notifications.
+};

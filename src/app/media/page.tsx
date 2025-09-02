@@ -28,7 +28,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
-import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library, Database, Check, Hand } from 'lucide-react';
+import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library, Database, Check, Hand, ArrowUpDown, LayoutGrid, List } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -40,6 +40,12 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLab
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
+import { format } from 'date-fns';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "size-desc" | "size-asc";
+type ViewMode = "grid" | "list";
+
 
 function formatBytes(bytes: number, decimals = 2) {
   if (!bytes || bytes === 0) return '0 Bytes';
@@ -207,6 +213,9 @@ export default function MediaLibraryPage() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<SortOption>("createdAt-desc");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
 
   // Notifications state
   const [notifications, setNotifications] = useState([
@@ -264,16 +273,25 @@ export default function MediaLibraryPage() {
   
   const handleFileUpload = async (files: FileList) => {
     if (!user || !activeWorkspace) return;
+    
+    const currentUsage = mediaAssets.reduce((total, asset) => total + asset.size, 0);
+    let cumulativeNewSize = 0;
 
     for (const file of Array.from(files)) {
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-            toast({ variant: 'destructive', title: 'Arquivo muito grande', description: `O arquivo "${file.name}" excede o limite de 5MB.` });
-            continue;
-        }
-        if (!file.type.startsWith('image/')) {
-            toast({ variant: 'destructive', title: 'Tipo de arquivo inválido', description: `O arquivo "${file.name}" não é uma imagem.` });
-            continue;
-        }
+      if (currentUsage + cumulativeNewSize + file.size > STORAGE_LIMIT_BYTES) {
+        toast({ variant: 'destructive', title: 'Limite de Armazenamento Excedido', description: `O upload de "${file.name}" faria seu workspace ultrapassar o limite de 100 MB.` });
+        continue;
+      }
+      cumulativeNewSize += file.size;
+
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          toast({ variant: 'destructive', title: 'Arquivo muito grande', description: `O arquivo "${file.name}" excede o limite de 5MB.` });
+          continue;
+      }
+      if (!file.type.startsWith('image/')) {
+          toast({ variant: 'destructive', title: 'Tipo de arquivo inválido', description: `O arquivo "${file.name}" não é uma imagem.` });
+          continue;
+      }
 
         const tempId = `uploading-${file.name}-${Date.now()}`;
         const tempUrl = URL.createObjectURL(file);
@@ -374,13 +392,26 @@ export default function MediaLibraryPage() {
       return Array.from(tagsSet).sort();
   }, [mediaAssets]);
 
-  const filteredAssets = useMemo(() => {
-    return mediaAssets.filter(asset => {
-        const matchesSearch = asset.fileName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesTag = activeTag ? (asset.tags || []).includes(activeTag) : true;
-        return matchesSearch && matchesTag;
-    });
-  }, [mediaAssets, searchTerm, activeTag]);
+  const filteredAndSortedAssets = useMemo(() => {
+      return mediaAssets
+        .filter(asset => {
+            const matchesSearch = asset.fileName.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesTag = activeTag ? (asset.tags || []).includes(activeTag) : true;
+            return matchesSearch && matchesTag;
+        })
+        .sort((a, b) => {
+            switch(sortOption) {
+                case 'name-asc': return a.fileName.localeCompare(b.fileName);
+                case 'name-desc': return b.fileName.localeCompare(a.fileName);
+                case 'createdAt-asc': return (a.createdAt?.toDate() || 0) > (b.createdAt?.toDate() || 0) ? 1 : -1;
+                case 'size-asc': return a.size - b.size;
+                case 'size-desc': return b.size - a.size;
+                case 'createdAt-desc':
+                default:
+                    return (a.createdAt?.toDate() || 0) < (b.createdAt?.toDate() || 0) ? 1 : -1;
+            }
+        });
+  }, [mediaAssets, searchTerm, activeTag, sortOption]);
 
   const isUploading = uploadingFiles.size > 0;
 
@@ -393,6 +424,49 @@ export default function MediaLibraryPage() {
   }
   
   const userInitials = user?.displayName?.split(' ').map(n => n[0]).join('') || user?.email?.[0].toUpperCase() || 'U';
+
+  const assetActions = (asset: MediaAsset) => (
+      <div className="flex items-center justify-end">
+          <Popover>
+              <PopoverTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                      <Edit className="h-4 w-4" />
+                  </Button>
+              </PopoverTrigger>
+              <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
+          </Popover>
+          <Popover>
+              <PopoverTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                      <Tag className="h-4 w-4" />
+                  </Button>
+              </PopoverTrigger>
+              <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
+          </Popover>
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleCopyUrl(asset.url); }}>
+              <Copy className="h-4 w-4" />
+          </Button>
+          <AlertDialog>
+              <AlertDialogTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
+                      <Trash2 className="h-4 w-4" />
+                  </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                  <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir Arquivo?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                          Tem certeza que deseja excluir "{asset.fileName}"? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDeleteMedia([asset])}>Excluir</AlertDialogAction>
+                  </AlertDialogFooter>
+              </AlertDialogContent>
+          </AlertDialog>
+      </div>
+  );
 
   return (
     <>
@@ -512,7 +586,7 @@ export default function MediaLibraryPage() {
       <main className="p-6 space-y-6">
         <UploadDropzone onUpload={handleFileUpload} disabled={isUploading || !activeWorkspace} />
         
-        <div className="p-3 border rounded-lg bg-card">
+        <div className="border rounded-lg bg-card p-3">
               <div className="flex items-center justify-between mb-1">
                   <h3 className="text-sm font-medium flex items-center gap-2">
                       <Database className="h-4 w-4 text-muted-foreground" />
@@ -537,22 +611,47 @@ export default function MediaLibraryPage() {
                 />
             </div>
             <div className="flex items-center gap-2">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                            <ArrowUpDown className="mr-2 h-4 w-4" />
+                            Ordenar
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                         <DropdownMenuItem onClick={() => setSortOption("createdAt-desc")}>Mais Recentes</DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => setSortOption("createdAt-asc")}>Mais Antigos</DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => setSortOption("name-asc")}>Nome (A-Z)</DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => setSortOption("name-desc")}>Nome (Z-A)</DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => setSortOption("size-desc")}>Mais Pesado</DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => setSortOption("size-asc")}>Mais Leve</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <div className="flex items-center rounded-md border bg-background p-1">
+                    <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8"><LayoutGrid className="h-4 w-4"/></Button>
+                    <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8"><List className="h-4 w-4"/></Button>
+                </div>
                 <Button variant={isSelectionMode ? "secondary" : "outline"} onClick={() => setIsSelectionMode(!isSelectionMode)}>
                     {isSelectionMode ? <X className="mr-2 h-4 w-4" /> : <Hand className="mr-2 h-4 w-4" />}
                     {isSelectionMode ? 'Cancelar' : 'Selecionar'}
                 </Button>
-                <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-sm font-medium">Tags:</span>
-                    <Badge variant={!activeTag ? "default" : "secondary"} onClick={() => setActiveTag(null)} className="cursor-pointer">Todos</Badge>
-                    {allTags.map(tag => (
-                         <Badge key={tag} variant={activeTag === tag ? "default" : "secondary"} onClick={() => setActiveTag(tag)} className="cursor-pointer">
-                            {tag}
-                        </Badge>
-                    ))}
-                </div>
             </div>
         </div>
         
+        <div className="flex flex-wrap gap-2">
+            {allTags.map(tag => (
+                 <Badge key={tag} variant={activeTag === tag ? "default" : "secondary"} onClick={() => setActiveTag(tag === activeTag ? null : tag)} className="cursor-pointer">
+                    {tag}
+                </Badge>
+            ))}
+            {activeTag && (
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setActiveTag(null)}>
+                    <X className="h-4 w-4" />
+                </Button>
+            )}
+        </div>
+
+        {viewMode === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
           {Array.from(uploadingFiles.entries()).map(([tempId, { progress, tempUrl, file }]) => (
               <Card key={tempId} className="group relative overflow-hidden">
@@ -579,7 +678,7 @@ export default function MediaLibraryPage() {
                 </CardContent>
               </Card>
           ))}
-          {filteredAssets.map((asset) => (
+          {filteredAndSortedAssets.map((asset) => (
              <Dialog key={asset.id}>
                 <div className="group relative">
                    <DialogTrigger asChild disabled={isSelectionMode}>
@@ -605,46 +704,9 @@ export default function MediaLibraryPage() {
                                     isSelectionMode && selectedIds.has(asset.id) && "opacity-100"
                                 )}>
                                     {!isSelectionMode && (
-                                    <div className="flex justify-end gap-1">
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
-                                        </Popover>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                                    <Tag className="h-4 w-4" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
-                                        </Popover>
-                                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleCopyUrl(asset.url); }}>
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button size="icon" variant="destructive" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Excluir Arquivo?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        Tem certeza que deseja excluir "{asset.fileName}"? Esta ação não pode ser desfeita.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteMedia([asset])}>Excluir</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
+                                        <div className="flex justify-end gap-1">
+                                            {assetActions(asset)}
+                                        </div>
                                     )}
                                     <div className="text-white text-xs p-1 bg-black/50 rounded-md">
                                         <p className="font-bold truncate">{asset.fileName}</p>
@@ -682,7 +744,49 @@ export default function MediaLibraryPage() {
             </Dialog>
           ))}
         </div>
-        {mediaAssets.length === 0 && !isUploading && (
+        ) : (
+            <div className="border rounded-lg bg-card">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12"></TableHead>
+                            <TableHead>Nome do Arquivo</TableHead>
+                            <TableHead>Tamanho</TableHead>
+                            <TableHead>Data de Upload</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredAndSortedAssets.map(asset => (
+                            <TableRow key={asset.id} className={cn(isSelectionMode && "cursor-pointer")} onClick={() => isSelectionMode && handleToggleSelection(asset.id)}>
+                                <TableCell>
+                                    {isSelectionMode ? (
+                                        <div className="w-6 h-6 border-2 rounded-md flex items-center justify-center">
+                                            {selectedIds.has(asset.id) && <Check className="h-5 w-5 text-primary"/>}
+                                        </div>
+                                    ) : (
+                                         <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Image src={asset.url} alt={asset.fileName} width={40} height={40} className="rounded-md object-cover aspect-square"/>
+                                            </DialogTrigger>
+                                             <DialogContent className="max-w-4xl h-auto p-2 bg-transparent border-none shadow-none">
+                                                <Image src={asset.url} alt={asset.fileName} width={1200} height={800} className="object-contain w-full h-auto max-h-[90vh] rounded-lg"/>
+                                            </DialogContent>
+                                        </Dialog>
+                                    )}
+                                </TableCell>
+                                <TableCell className="font-medium truncate max-w-xs">{asset.fileName}</TableCell>
+                                <TableCell>{formatBytes(asset.size)}</TableCell>
+                                <TableCell>{asset.createdAt?.toDate ? format(asset.createdAt.toDate(), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                <TableCell>{assetActions(asset)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        )}
+
+        {(mediaAssets.length === 0 && !isUploading) && (
              <div className="text-center py-10">
                 <p className="text-muted-foreground">Sua biblioteca está vazia. Use a área acima para começar.</p>
             </div>
@@ -719,5 +823,3 @@ export default function MediaLibraryPage() {
     </>
   );
 }
-
-    

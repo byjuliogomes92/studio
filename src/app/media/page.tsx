@@ -478,24 +478,22 @@ export default function MediaLibraryPage() {
       </header>
      
       <main className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <UploadDropzone onUpload={handleFileUpload} disabled={isUploading || !activeWorkspace} />
-          <Card className="flex flex-col justify-center">
-            <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-2">
-                    <Database className="h-6 w-6 text-primary" />
-                    <h3 className="text-lg font-semibold">Uso do Armazenamento</h3>
+        <div className="space-y-4">
+            <UploadDropzone onUpload={handleFileUpload} disabled={isUploading || !activeWorkspace} />
+            
+            <div className="p-4 rounded-lg border bg-card">
+                 <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                        <Database className="h-4 w-4 text-muted-foreground" />
+                        Uso do Armazenamento
+                    </h3>
+                    <div className="text-sm">
+                        <span className="font-medium">{formatBytes(currentUsageBytes)}</span>
+                        <span className="text-muted-foreground"> / {formatBytes(STORAGE_LIMIT_BYTES)}</span>
+                    </div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                    Cada workspace tem um limite de armazenamento. Organize seus arquivos para otimizar o uso.
-                </p>
-                <Progress value={usagePercentage} className="w-full mb-2" />
-                <div className="flex justify-between text-sm">
-                    <span>Usado: {formatBytes(currentUsageBytes)}</span>
-                    <span className="text-muted-foreground">Limite: {formatBytes(STORAGE_LIMIT_BYTES)}</span>
-                </div>
-            </CardContent>
-          </Card>
+                <Progress value={usagePercentage} className="w-full h-2" />
+            </div>
         </div>
         
         <div className="flex flex-col md:flex-row gap-4 justify-between">
@@ -636,3 +634,5 @@ export default function MediaLibraryPage() {
     </>
   );
 }
+
+    

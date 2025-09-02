@@ -1,10 +1,9 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { uploadMedia, getMediaForWorkspace, deleteMedia, updateMediaTags } from '@/lib/firestore';
+import { uploadMedia, getMediaForWorkspace, deleteMedia, updateMedia } from '@/lib/firestore';
 import type { MediaAsset } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,13 +19,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X } from 'lucide-react';
+import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (bytes === 0) return '0 Bytes';
@@ -62,7 +62,7 @@ function TagEditor({ asset, onTagsUpdate }: { asset: MediaAsset; onTagsUpdate: (
     };
     
     return (
-        <PopoverContent onClick={(e) => e.stopPropagation()}>
+        <PopoverContent onClick={(e) => e.stopPropagation()} className="w-80">
             <div className="space-y-4">
                 <p className="font-medium">Editar Tags</p>
                 <div className="flex flex-wrap gap-1">
@@ -84,6 +84,38 @@ function TagEditor({ asset, onTagsUpdate }: { asset: MediaAsset; onTagsUpdate: (
                     />
                     <Button onClick={handleAddTag} size="sm">Adicionar</Button>
                 </div>
+            </div>
+        </PopoverContent>
+    )
+}
+
+function FileNameEditor({ asset, onNameUpdate }: { asset: MediaAsset; onNameUpdate: (assetId: string, newName: string) => void; }) {
+    const [fileName, setFileName] = useState(asset.fileName);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        if (!fileName.trim() || fileName.trim() === asset.fileName) return;
+        setIsSaving(true);
+        await onNameUpdate(asset.id, fileName.trim());
+        setIsSaving(false);
+    }
+    
+    return (
+        <PopoverContent onClick={(e) => e.stopPropagation()} className="w-80">
+            <div className="space-y-4">
+                <p className="font-medium">Editar Nome do Arquivo</p>
+                <div className="space-y-2">
+                  <Label htmlFor={`filename-${asset.id}`} className="sr-only">Nome do Arquivo</Label>
+                  <Input
+                    id={`filename-${asset.id}`}
+                    value={fileName}
+                    onChange={(e) => setFileName(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleSave} size="sm" disabled={isSaving || fileName.trim() === asset.fileName}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Salvar
+                </Button>
             </div>
         </PopoverContent>
     )
@@ -170,16 +202,16 @@ export default function MediaLibraryPage() {
     toast({ title: 'URL copiada!' });
   }
 
-  const handleTagsUpdate = async (assetId: string, tags: string[]) => {
+  const handleMediaUpdate = async (assetId: string, data: Partial<Pick<MediaAsset, 'fileName' | 'tags'>>) => {
       try {
-          await updateMediaTags(assetId, tags);
+          await updateMedia(assetId, data);
           setMediaAssets(prev => prev.map(asset => 
-              asset.id === assetId ? { ...asset, tags } : asset
+              asset.id === assetId ? { ...asset, ...data } : asset
           ));
-          toast({ title: 'Tags atualizadas!' });
+          toast({ title: 'Mídia atualizada!' });
       } catch (error: any) {
-          console.error("Failed to update tags:", error);
-          toast({ variant: "destructive", title: "Erro ao atualizar tags", description: error.message });
+          console.error("Failed to update media:", error);
+          toast({ variant: "destructive", title: "Erro ao atualizar", description: error.message });
       }
   }
 
@@ -285,10 +317,18 @@ export default function MediaLibraryPage() {
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                            </PopoverTrigger>
+                            <FileNameEditor asset={asset} onNameUpdate={(assetId, newName) => handleMediaUpdate(assetId, { fileName: newName })} />
+                        </Popover>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                                     <Tag className="h-4 w-4" />
                                 </Button>
                             </PopoverTrigger>
-                            <TagEditor asset={asset} onTagsUpdate={handleTagsUpdate} />
+                            <TagEditor asset={asset} onTagsUpdate={(assetId, tags) => handleMediaUpdate(assetId, { tags })} />
                         </Popover>
                         <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => handleCopyUrl(asset.url)}>
                             <Copy className="h-4 w-4" />

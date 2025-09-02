@@ -602,10 +602,10 @@ export const uploadMedia = async (file: File, workspaceId: string, userId: strin
     return { ...mediaData, id: docRef.id, createdAt: Timestamp.now() };
 }
 
-export const updateMediaTags = async (mediaId: string, tags: string[]): Promise<void> => {
+export const updateMedia = async (mediaId: string, data: Partial<Pick<MediaAsset, 'fileName' | 'tags'>>): Promise<void> => {
     const db = getDbInstance();
     const mediaRef = doc(db, 'media', mediaId);
-    await updateDoc(mediaRef, { tags });
+    await updateDoc(mediaRef, data);
 }
 
 export const getMediaForWorkspace = async (workspaceId: string): Promise<MediaAsset[]> => {

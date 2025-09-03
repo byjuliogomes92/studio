@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { uploadMedia, getMediaForWorkspace, deleteMedia, updateMedia, STORAGE_LIMIT_BYTES } from '@/lib/firestore';
+import { uploadMedia, getMediaForWorkspace, deleteMedia, updateMedia, STORAGE_LIMIT_BYTES, bulkUpdateMediaTags } from '@/lib/firestore';
 import type { MediaAsset } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -107,6 +107,43 @@ function TagEditor({ asset, onTagsUpdate }: { asset: MediaAsset; onTagsUpdate: (
         </PopoverContent>
     )
 }
+
+function BulkTagPopover({ onBulkTag }: { onBulkTag: (tags: string[]) => void }) {
+    const [tagInput, setTagInput] = useState('');
+
+    const handleAdd = () => {
+        if (tagInput.trim()) {
+            const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
+            onBulkTag(tags);
+            setTagInput('');
+        }
+    };
+    
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                 <Button variant="outline">
+                    <Tag className="mr-2 h-4 w-4" />
+                    Adicionar Tags
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+                <div className="space-y-2">
+                    <Label htmlFor="bulk-tag-input">Tags para adicionar</Label>
+                    <Input 
+                        id="bulk-tag-input"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        placeholder="Ex: campanha, banner"
+                    />
+                    <p className="text-xs text-muted-foreground">Separe múltiplas tags com vírgula.</p>
+                </div>
+                 <Button onClick={handleAdd} size="sm" className="mt-2 w-full">Aplicar Tags</Button>
+            </PopoverContent>
+        </Popover>
+    )
+}
+
 
 function FileNameEditor({ asset, onNameUpdate }: { asset: MediaAsset; onNameUpdate: (assetId: string, newName: string) => void; }) {
     const [fileName, setFileName] = useState(asset.fileName);
@@ -378,6 +415,28 @@ export default function MediaLibraryPage() {
       const assetsToDelete = mediaAssets.filter(asset => selectedIds.has(asset.id));
       handleDeleteMedia(assetsToDelete);
   }
+
+  const handleBulkTag = async (tagsToAdd: string[]) => {
+      if (selectedIds.size === 0 || tagsToAdd.length === 0 || !user || !activeWorkspace) return;
+      try {
+          const assetIds = Array.from(selectedIds);
+          await bulkUpdateMediaTags(assetIds, tagsToAdd, activeWorkspace.id);
+          
+          // Optimistically update UI
+          setMediaAssets(prev => prev.map(asset => {
+              if (selectedIds.has(asset.id)) {
+                  const newTags = Array.from(new Set([...(asset.tags || []), ...tagsToAdd]));
+                  return { ...asset, tags: newTags };
+              }
+              return asset;
+          }));
+
+          toast({ title: `${tagsToAdd.length} tag(s) adicionada(s) a ${selectedIds.size} arquivo(s).` });
+      } catch (error: any) {
+          console.error("Bulk tagging failed:", error);
+          toast({ variant: "destructive", title: "Erro ao adicionar tags", description: error.message });
+      }
+  };
   
   const currentUsageBytes = useMemo(() => {
     return mediaAssets.reduce((total, asset) => total + asset.size, 0);
@@ -802,6 +861,7 @@ export default function MediaLibraryPage() {
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
                 <div className="flex items-center gap-4 bg-background border rounded-lg shadow-lg p-3">
                     <p className="text-sm font-medium">{selectedIds.size} item(s) selecionado(s)</p>
+                     <BulkTagPopover onBulkTag={handleBulkTag} />
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive">

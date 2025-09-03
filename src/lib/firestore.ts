@@ -656,6 +656,25 @@ export const updateMedia = async (mediaId: string, data: Partial<Pick<MediaAsset
     }
 }
 
+export const bulkUpdateMediaTags = async (assetIds: string[], tagsToAdd: string[], workspaceId: string): Promise<void> => {
+    const db = getDbInstance();
+    const batch = writeBatch(db);
+
+    for (const assetId of assetIds) {
+        const docRef = doc(db, 'media', assetId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const existingTags = docSnap.data().tags || [];
+            const newTags = Array.from(new Set([...existingTags, ...tagsToAdd]));
+            batch.update(docRef, { tags: newTags });
+        }
+    }
+
+    await batch.commit();
+    // Consider adding a single activity log for this bulk action
+}
+
+
 export const getMediaForWorkspace = async (workspaceId: string): Promise<MediaAsset[]> => {
     if (!workspaceId) return [];
     const db = getDbInstance();

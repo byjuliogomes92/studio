@@ -33,9 +33,12 @@ import { renderCalendly } from './html-components/calendly';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
+    const headerComponent = allComponents.find(c => c.type === 'Header');
+    const isHeaderOverlay = headerComponent?.props.overlay || false;
+
     return components
         .sort((a, b) => a.order - b.order)
-        .map(component => {
+        .map((component, index) => {
             const styles = component.props.styles || {};
             const animationType = pageState.styles.animationType || 'none';
             const animationDuration = pageState.styles.animationDuration || 1;
@@ -50,17 +53,18 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents, hideAmpscript);
 
-            // FloatingImages are positioned absolutely and don't need the standard wrapper.
             if (component.type === 'FloatingImage' || component.type === 'FloatingButton' || component.type === 'Calendly') {
                 return renderedComponent;
             }
 
-            // For Columns with full width, the background is handled by its own renderer
             if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
                  return renderedComponent;
             }
+            
+            // NEW: Conditionally add a style to remove top padding for the first element after an overlay header
+            const conditionalWrapperStyle = (isHeaderOverlay && index === 0) ? 'padding-top: 0;' : '';
 
-            return `<div class="${sectionClass}" ${animationAttrs}>
+            return `<div class="${sectionClass}" ${animationAttrs} style="${conditionalWrapperStyle}">
                        <div class="section-container">
                          ${renderedComponent}
                        </div>
@@ -804,11 +808,11 @@ const renderLoader = (meta: CloudPage['meta'], themeColor: string): string => {
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false): string {
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
-  // Decide whether to show AMPScript based on context
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
-  const ssjsScript = getFormSubmissionScript(pageState);
+  const ssjsScript = shouldHideAmpscript ? '' : getFormSubmissionScript(pageState);
   const security = getSecurityScripts(pageState);
+  const securityAmpscript = shouldHideAmpscript ? 'VAR @isAuthenticated, @LoginURL\nSET @isAuthenticated = true' : security.amscript;
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
@@ -841,19 +845,13 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     position: relative; /* Needed for absolute positioned children */
   `;
 
-  const mainStyles = `
-    width: 100%;
-    overflow-x: hidden;
-    ${isHeaderOverlay ? '' : 'padding-top: var(--header-height, 0px);'}
-  `;
-
   const initialAmpscript = `%%[ 
     VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
     ENDIF
     ${meta.customAmpscript || ''}
-    ${security.amscript}
+    ${securityAmpscript}
     ${prefillAmpscript || ''}
 ]%%`;
 
@@ -898,7 +896,8 @@ ${trackingScripts.head}
     }
 
     main {
-      ${mainStyles}
+      width: 100%;
+      overflow-x: hidden;
     }
 
     #loader {
@@ -995,11 +994,6 @@ ${trackingScripts.head}
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      padding: 1rem;
-    }
-    .page-header[data-overlay="true"] .header-inner-contained,
-    .page-header[data-overlay="true"] .header-inner-full {
-        padding: 1rem 0;
     }
     .page-header .header-inner-contained {
       margin: 0 auto;
@@ -1078,9 +1072,6 @@ ${trackingScripts.head}
     .mobile-menu-toggle { display: none; background: none; border: none; cursor: pointer; color: inherit; }
 
     @media (max-width: 768px) {
-        main {
-            padding-top: ${isHeaderOverlay ? '0' : 'var(--header-height, 0px)'};
-        }
         .page-header .header-nav-container {
             display: none; /* Hide desktop nav container */
         }
@@ -1995,12 +1986,22 @@ ${clientSideScripts}
 </head>
 <body>
 ${!isForPreview ? trackingScripts.body : ''}
-  ${!isForPreview ? `
+  ${shouldHideAmpscript ? `
+    ${renderLoader(meta, styles.themeColor)}
+    ${stripeComponents}
+    <div id="mobile-menu-overlay"></div>
+    <main>
+      ${mainContentHtml}
+    </main>
+    ${floatingElementsHtml}
+    ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', shouldHideAmpscript) : ''}
+    ${cookieBannerHtml}
+  ` : `
     %%[ IF @isAuthenticated == true THEN ]%%
     ${renderLoader(meta, styles.themeColor)}
     ${stripeComponents}
     <div id="mobile-menu-overlay"></div>
-    <main style="${mainStyles}">
+    <main>
       ${mainContentHtml}
     </main>
     ${floatingElementsHtml}
@@ -2009,16 +2010,6 @@ ${!isForPreview ? trackingScripts.body : ''}
     %%[ ELSE ]%%
     ${security.body}
     %%[ ENDIF ]%%
-    ` : `
-    ${renderLoader(meta, styles.themeColor)}
-    ${stripeComponents}
-    <div id="mobile-menu-overlay"></div>
-    <main style="${mainStyles}">
-      ${mainContentHtml}
-    </main>
-    ${floatingElementsHtml}
-    ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', shouldHideAmpscript) : ''}
-    ${cookieBannerHtml}
     `}
 </body>
 </html>`;

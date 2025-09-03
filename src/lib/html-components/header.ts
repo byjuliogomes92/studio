@@ -2,9 +2,10 @@
 import type { PageComponent, HeaderLink } from '@/lib/types';
 
 function getStyleString(styles: any = {}): string {
+    const forbiddenKeys = ['maxWidth'];
     return Object.entries(styles)
       .map(([key, value]) => {
-        if (!value) return '';
+        if (!value || forbiddenKeys.includes(key)) return '';
         const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
         return `${cssKey}: ${value};`;
       })
@@ -122,12 +123,13 @@ export function renderHeader(component: PageComponent): string {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
         </button>
     `;
-
+    
     const containerClass = isFullWidth ? 'header-inner-full' : 'header-inner-contained';
+    const containerStyle = !isFullWidth ? `max-width: ${styles.maxWidth || '1200px'};` : '';
 
     return `
         <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} style="${inlineStyles}">
-            <div class="${containerClass}">
+            <div class="${containerClass}" style="${containerStyle}">
                 ${innerContent}
             </div>
         </header>

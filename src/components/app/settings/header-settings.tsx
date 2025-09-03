@@ -47,6 +47,7 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange }: Com
     const showButton = layout.includes('button');
     const backgroundType = props.backgroundType || 'solid';
     const buttonProps = props.buttonProps || {};
+    const styles = props.styles || {};
 
     return (
         <div className="space-y-4">
@@ -163,6 +164,17 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange }: Com
                     onCheckedChange={(checked) => onPropChange('isFullWidth', checked)}
                 />
             </div>
+            {!props.isFullWidth && (
+                <div className="space-y-2">
+                    <Label htmlFor="header-max-width">Largura Máxima do Conteúdo</Label>
+                    <Input
+                        id="header-max-width"
+                        value={styles.maxWidth || '1200px'}
+                        onChange={(e) => onSubPropChange('styles', 'maxWidth', e.target.value)}
+                        placeholder="Ex: 1200px ou 90%"
+                    />
+                </div>
+            )}
             <div className="flex items-center justify-between">
                 <Label htmlFor="header-overlay">Sobrepor na primeira seção</Label>
                 <Switch

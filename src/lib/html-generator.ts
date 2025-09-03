@@ -56,7 +56,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             }
 
             // For Columns with full width, the background is handled by its own renderer
-            if (component.type === 'Columns' && styles?.isFullWidth) {
+            if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
                  return renderedComponent;
             }
 
@@ -982,40 +982,28 @@ ${trackingScripts.head}
     .section-wrapper[style*="background-color"] {
         /* This element will have the background color */
     }
-
-    .section-container {
-        width: 100%;
-        max-width: 1200px;
-        padding: 20px;
-    }
     
     .page-header {
         width: 100%;
         transition: background 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
         z-index: 50; 
-        background: var(--current-bg, var(--initial-bg, transparent));
+    }
+    .page-header .header-inner-contained,
+    .page-header .header-inner-full {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 1rem;
     }
     .page-header .header-inner-contained {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      max-width: 1200px;
       margin: 0 auto;
-      padding: 1rem;
-    }
-     .page-header .header-inner-full {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      padding: 1rem;
     }
     .page-header[data-overlay="true"] {
         position: absolute;
         top: 0;
         left: 0;
-        background: transparent; /* Overlay starts transparent */
+        background: transparent !important; /* Start transparent, allow JS to change */
     }
     .page-header[data-sticky="true"] {
         position: sticky;
@@ -1023,7 +1011,7 @@ ${trackingScripts.head}
     }
     .page-header.scrolled {
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      background: var(--bg-scroll, #ffffff);
+      background: var(--bg-scroll, #ffffff) !important;
     }
     .page-header .header-logo {
         flex-shrink: 0;
@@ -1089,75 +1077,31 @@ ${trackingScripts.head}
             padding-top: ${isHeaderOverlay ? '0' : 'var(--header-height, 0px)'};
         }
         .page-header .header-nav-container {
-            display: flex; /* Keep it flex for drawer/overlay */
-        }
-        .page-header .header-nav ul {
-            flex-direction: column;
-            width: 100%;
-            gap: 1rem !important;
+            display: none; /* Hide desktop nav container */
         }
         .mobile-menu-toggle { display: block; margin-left: auto; }
         
         /* Push Down Behavior */
+        .page-header[data-mobile-menu-behavior="push"] .header-inner-contained,
+        .page-header[data-mobile-menu-behavior="push"] .header-inner-full {
+           flex-wrap: wrap;
+        }
         .page-header[data-mobile-menu-behavior="push"] .header-nav-container {
-            display: none;
             flex-direction: column;
             width: 100%;
             align-items: flex-start;
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s ease-in-out;
+            margin-top: 1rem;
         }
         .page-header[data-mobile-menu-behavior="push"].mobile-menu-open .header-nav-container {
             display: flex;
         }
-
-        /* Drawer Behavior */
-        body.menu-drawer-open { overflow: hidden; }
-        .page-header[data-mobile-menu-behavior="drawer"] .header-nav-container {
-            position: fixed;
-            top: 0;
-            right: -80%;
-            width: 80%;
-            height: 100%;
-            background-color: #fff;
-            box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+        .page-header[data-mobile-menu-behavior="push"] .header-nav ul {
             flex-direction: column;
-            padding: 2rem;
-            box-sizing: border-box;
-            transition: right 0.3s ease-in-out;
-            z-index: 1001;
-        }
-        body.menu-drawer-open .page-header[data-mobile-menu-behavior="drawer"] .header-nav-container {
-            right: 0;
-        }
-        
-        /* Overlay Behavior */
-        body.menu-overlay-open { overflow: hidden; }
-        .page-header[data-mobile-menu-behavior="overlay"] .header-nav-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.9);
-            color: white;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2rem;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-            z-index: 1001;
-        }
-         body.menu-overlay-open .page-header[data-mobile-menu-behavior="overlay"] .header-nav-container {
-            opacity: 1;
-            visibility: visible;
-        }
-        .page-header[data-mobile-menu-behavior="overlay"] .header-nav ul,
-        .page-header[data-mobile-menu-behavior="drawer"] .header-nav ul {
-            align-items: center;
-        }
-        .page-header[data-mobile-menu-behavior="overlay"] .header-nav a {
-            font-size: 1.5rem;
+            width: 100%;
+            gap: 1rem !important;
         }
     }
 
@@ -2060,7 +2004,7 @@ ${isForPreview ? '' : trackingScripts.body}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`
+</html>`;
 
   finalHtml = finalHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 

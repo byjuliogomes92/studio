@@ -71,11 +71,11 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
     const columnCount = props.columnCount || 2;
     const columnWidths = props.columnWidths || [];
     const validWidths = Array.isArray(columnWidths) && columnWidths.length === columnCount && columnWidths.every(w => w !== null && w > 0);
-    const totalWidth = validWidths ? columnWidths.reduce((a, b) => a + b, 0) : 0;
+    const totalWidth = validWidths ? columnWidths.reduce((a: number, b: number) => a + (b || 0), 0) : 0;
     
     let gridTemplateColumns;
-    if (validWidths && totalWidth === 100) {
-        gridTemplateColumns = columnWidths.map((w: number) => `${w}%`).join(' ');
+    if (validWidths && totalWidth > 0 && totalWidth <= 100) { // Check if total is valid
+        gridTemplateColumns = columnWidths.map((w: number) => w ? `${w}%` : '1fr').join(' ');
     } else {
         gridTemplateColumns = `repeat(${columnCount}, 1fr)`;
     }

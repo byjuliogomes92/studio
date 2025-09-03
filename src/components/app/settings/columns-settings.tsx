@@ -50,12 +50,24 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange }: Co
                                 type="number"
                                 value={columnWidths[index] || ''}
                                 onChange={(e) => handleWidthChange(index, e.target.value)}
-                                placeholder={`${100/columnCount}%`}
+                                placeholder={`${(100/columnCount).toFixed(0)}%`}
                              />
                         ))}
                     </div>
                 </div>
             )}
+             <div className="space-y-2">
+                <Label>Alinhamento dos Itens na Coluna</Label>
+                 <Select value={styles.justifyContent || 'flex-start'} onValueChange={(value) => onSubPropChange('styles', 'justifyContent', value)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="flex-start">Esquerda</SelectItem>
+                        <SelectItem value="center">Centro</SelectItem>
+                        <SelectItem value="flex-end">Direita</SelectItem>
+                        <SelectItem value="space-between">Espaçado</SelectItem>
+                    </SelectContent>
+                 </Select>
+            </div>
             <div className="flex items-center justify-between">
                 <Label htmlFor="columns-full-width">Largura Total (Full Bleed)</Label>
                  <Switch

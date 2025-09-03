@@ -621,13 +621,17 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         if (!header) return;
 
         const setHeaderStyle = (isScrolled) => {
-            const bgColor = isScrolled ? header.dataset.bgScroll : header.dataset.bgTop;
-            const textColor = isScrolled ? header.dataset.textColorScroll : header.dataset.textColorTop;
-            header.style.backgroundColor = bgColor;
-            header.style.color = textColor;
+            const bgStyle = header.dataset.bgScroll || 'background-color: #ffffff;';
+            const textColor = header.dataset.textColorScroll || '#000000';
+            
             if (isScrolled) {
+                header.style.cssText += bgStyle; // Append background styles
+                header.style.color = textColor;
                 header.classList.add('scrolled');
             } else {
+                // Reset to initial (transparent or defined color)
+                header.style.background = 'transparent'; 
+                header.style.color = 'inherit';
                 header.classList.remove('scrolled');
             }
         };
@@ -642,6 +646,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
             }
         }, { passive: true });
     }
+
 
     function setupMobileMenu() {
         const body = document.body;
@@ -847,7 +852,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     width: 100%;
     overflow-x: hidden; /* Prevent horizontal scroll */
     position: relative; /* Needed for absolute positioned children */
-    ${isHeaderOverlay ? 'padding-top: 80px;' : ''} /* Adjust based on header height */
   `;
 
   const initialAmpscript = `%%[ 
@@ -901,6 +905,7 @@ ${trackingScripts.head}
     main {
       width: 100%;
       overflow-x: hidden; /* Prevent horizontal scroll */
+      ${isHeaderOverlay ? 'padding-top: 0;' : ''}
     }
 
     #loader {
@@ -1006,6 +1011,8 @@ ${trackingScripts.head}
         position: absolute;
         top: 0;
         left: 0;
+        background: transparent;
+        color: white; /* Default for overlays, can be overridden */
     }
     .page-header[data-sticky="true"] {
         position: sticky;
@@ -1013,6 +1020,8 @@ ${trackingScripts.head}
     }
     .page-header.scrolled {
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      color: var(--text-color-scroll);
+      background: var(--bg-scroll);
     }
     .page-header .header-logo {
         flex-shrink: 0;
@@ -1999,10 +2008,6 @@ ${trackingScripts.head}
         }
         .columns-container:not([style*="--column-count: 1"]) {
             grid-template-columns: 1fr;
-        }
-        .form-container .row {
-            flex-direction: column;
-            gap: 10px;
         }
         .footer-section .columns-container {
             grid-template-columns: 1fr;

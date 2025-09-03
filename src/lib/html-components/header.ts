@@ -10,12 +10,14 @@ export function renderHeader(component: PageComponent): string {
         buttonUrl, 
         logoHeight = 40,
         isSticky = false,
-        overlay = false, // New prop
-        backgroundColor = '#ffffff00',
-        textColor = '#000000',
-        backgroundColorOnScroll = '#ffffffff',
+        overlay = false,
+        backgroundColorOnScroll = '#ffffff',
         textColorOnScroll = '#000000',
-        mobileMenuBehavior = 'push'
+        mobileMenuBehavior = 'push',
+        borderRadius,
+        backgroundType = 'solid',
+        gradientFrom,
+        gradientTo,
     } = component.props;
     
     const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
@@ -29,11 +31,16 @@ export function renderHeader(component: PageComponent): string {
         
     const navHtml = showMenu ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : '';
 
+    let backgroundStyle = '';
+    if(backgroundType === 'gradient' && gradientFrom && gradientTo) {
+        backgroundStyle = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
+    } else if (backgroundType === 'solid') {
+        backgroundStyle = `background-color: ${backgroundColorOnScroll};`; // Use main color for solid
+    }
+
     const stickyAttrs = isSticky ? `
         data-sticky="true"
-        data-bg-top="${backgroundColor}"
-        data-text-color-top="${textColor}"
-        data-bg-scroll="${backgroundColorOnScroll}"
+        data-bg-scroll="${backgroundStyle}"
         data-text-color-scroll="${textColorOnScroll}"
     ` : '';
 
@@ -56,8 +63,12 @@ export function renderHeader(component: PageComponent): string {
         rightContent = `<div class="header-nav-container">${buttonHtml}</div>`;
     }
 
+    const inlineStyles = `
+      ${borderRadius ? `border-radius: ${borderRadius};` : ''}
+    `;
+
     return `
-        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} data-mobile-menu-behavior="${mobileMenuBehavior}">
+        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} data-mobile-menu-behavior="${mobileMenuBehavior}" style="${inlineStyles}">
             ${leftContent}
             ${centerContent}
             ${rightContent}

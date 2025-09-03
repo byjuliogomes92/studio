@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant, CloudPage, Action, CalendlyEmbedType } from "@/lib/types";
@@ -684,6 +683,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
         const layout = props.layout || 'logo-left-menu-right';
         const showMenu = layout.includes('menu');
         const showButton = layout.includes('button');
+        const backgroundType = props.backgroundType || 'solid';
         return (
             <div className="space-y-4">
                 <ImageInput 
@@ -744,7 +744,7 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                     </div>
                 )}
                 <Separator />
-                <h4 className="font-medium text-sm pt-2">Posicionamento</h4>
+                <h4 className="font-medium text-sm pt-2">Posicionamento e Estilo</h4>
                 <div className="flex items-center justify-between">
                     <Label htmlFor="header-overlay">Sobrepor na primeira seção</Label>
                     <Switch
@@ -761,30 +761,38 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         onCheckedChange={(checked) => onPropChange('isSticky', checked)}
                     />
                 </div>
-                {props.isSticky && (
-                    <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                    <Label>Cantos do Cabeçalho</Label>
+                    <Input id="header-border-radius" value={props.borderRadius || ''} onChange={e => onPropChange('borderRadius', e.target.value)} placeholder="Ex: 0px ou 0.5rem" />
+                </div>
+                 <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                    <Label>Estilo de Fundo (Aparece com "Fixo no Topo")</Label>
+                    <Select value={backgroundType} onValueChange={(value) => onPropChange('backgroundType', value)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="solid">Cor Sólida</SelectItem>
+                            <SelectItem value="gradient">Gradiente</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {backgroundType === 'solid' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="header-bg-color">Cor de Fundo</Label>
+                            <Input id="header-bg-color" type="color" value={props.backgroundColorOnScroll || '#ffffff'} onChange={(e) => onPropChange('backgroundColorOnScroll', e.target.value)} className="p-1 h-10"/>
+                        </div>
+                    )}
+                     {backgroundType === 'gradient' && (
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="header-bg">Fundo (Topo)</Label>
-                                <Input id="header-bg" type="color" value={props.backgroundColor || '#ffffff00'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
+                                <Label>Cor Inicial</Label>
+                                <Input type="color" value={props.gradientFrom || '#000000'} onChange={(e) => onPropChange('gradientFrom', e.target.value)} className="p-1 h-10" />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="header-text-color">Texto (Topo)</Label>
-                                <Input id="header-text-color" type="color" value={props.textColor || '#000000'} onChange={(e) => onPropChange('textColor', e.target.value)} className="p-1 h-10"/>
+                                <Label>Cor Final</Label>
+                                <Input type="color" value={props.gradientTo || '#434343'} onChange={(e) => onPropChange('gradientTo', e.target.value)} className="p-1 h-10" />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="header-bg-scroll">Fundo (Rolagem)</Label>
-                                <Input id="header-bg-scroll" type="color" value={props.backgroundColorOnScroll || '#ffffffff'} onChange={(e) => onPropChange('backgroundColorOnScroll', e.target.value)} className="p-1 h-10"/>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="header-text-scroll">Texto (Rolagem)</Label>
-                                <Input id="header-text-scroll" type="color" value={props.textColorOnScroll || '#000000'} onChange={(e) => onPropChange('textColorOnScroll', e.target.value)} className="p-1 h-10"/>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                    )}
+                 </div>
                 <Separator />
                 <h4 className="font-medium text-sm pt-2">Menu Mobile</h4>
                 <div className="space-y-2">
@@ -887,9 +895,21 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                             </div>
                         )}
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="columns-text-color">Cor do Texto (Hero)</Label>
-                    <Input id="columns-text-color" type="color" value={styles.color || '#FFFFFF'} onChange={(e) => onSubPropChange('styles', 'color', e.target.value)} className="p-1 h-10"/>
+                 <div className="p-4 border rounded-lg bg-muted/40 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="is-hero">Seção Hero</Label>
+                        <Switch
+                            id="is-hero"
+                            checked={styles.isHero || false}
+                            onCheckedChange={(checked) => onSubPropChange('styles', 'isHero', checked)}
+                        />
+                    </div>
+                    {styles.isHero && (
+                        <div className="space-y-2">
+                            <Label htmlFor="columns-text-color">Cor do Texto (Hero)</Label>
+                            <Input id="columns-text-color" type="color" value={styles.color || '#FFFFFF'} onChange={(e) => onSubPropChange('styles', 'color', e.target.value)} className="p-1 h-10"/>
+                        </div>
+                    )}
                 </div>
             </div>
         );

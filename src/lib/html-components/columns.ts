@@ -29,6 +29,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
         overlayEnabled,
         overlayColor,
         overlayOpacity,
+        justifyContent,
         ...otherStyles 
     } = styles;
     
@@ -83,6 +84,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
     const finalContainerStyle = `
         --column-count: ${columnCount};
         grid-template-columns: ${gridTemplateColumns};
+        --justify-content: ${justifyContent || 'flex-start'};
         ${styleString}
     `;
 
@@ -103,7 +105,8 @@ function getStyleString(styles: any = {}): string {
     const forbiddenKeys = [
         'isFullWidth', 'backgroundType', 'backgroundImageUrl', 
         'backgroundColor', 'gradientFrom', 'gradientTo', 
-        'overlayEnabled', 'overlayColor', 'overlayOpacity'
+        'overlayEnabled', 'overlayColor', 'overlayOpacity',
+        'justifyContent'
     ];
     return Object.entries(styles)
       .map(([key, value]) => {

@@ -979,6 +979,7 @@ ${trackingScripts.head}
     
     .component-layout-inline {
         width: auto;
+        flex-grow: 0;
     }
     
     .section-container {
@@ -1852,6 +1853,7 @@ ${trackingScripts.head}
         flex-wrap: wrap;
         align-content: flex-start;
         gap: 10px;
+        justify-content: var(--justify-content, 'flex-start');
     }
     .section-overlay {
         position: absolute;

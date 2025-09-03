@@ -110,17 +110,19 @@ function TagEditor({ asset, onTagsUpdate }: { asset: MediaAsset; onTagsUpdate: (
 
 function BulkTagPopover({ onBulkTag }: { onBulkTag: (tags: string[]) => void }) {
     const [tagInput, setTagInput] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
 
     const handleAdd = () => {
         if (tagInput.trim()) {
             const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
             onBulkTag(tags);
             setTagInput('');
+            setIsOpen(false); // Close popover on action
         }
     };
     
     return (
-        <Popover>
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
                  <Button variant="outline">
                     <Tag className="mr-2 h-4 w-4" />

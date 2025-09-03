@@ -10,23 +10,21 @@ export function renderImage(component: PageComponent): string {
         'max-width': '100%',
         'height': 'auto',
         'border-radius': '8px',
-        'display': 'block', // Ensure image is a block element for margin auto to work if needed
+        'display': 'block', // Keep as block to respect container's alignment logic
     };
 
     if (width) {
         imageStyles.width = width;
     }
 
-    const styleString = getStyleString(styles);
     const imageStyleString = Object.entries(imageStyles)
       .map(([key, value]) => `${key}: ${value};`)
       .join(' ');
       
-    // The alignment is now controlled by the parent column's justify-content, so we don't force text-align here.
-    return `
-        <div style="${styleString}">
-            <img src="${src}" alt="${alt}" style="${imageStyleString}" data-ai-hint="website abstract">
-        </div>`;
+    // Apply additional styles from the settings panel directly to the image
+    const customStyleString = getStyleString(styles);
+
+    return `<img src="${src}" alt="${alt}" style="${imageStyleString}${customStyleString}" data-ai-hint="website abstract">`;
 }
 
 function getStyleString(styles: any = {}): string {

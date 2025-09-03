@@ -312,19 +312,24 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
              break;
         }
         case 'product-showcase': {
-            const parentId = `cols-${baseId}`;
+            const sectionContainerId = `section-${baseId}`;
+            const productsContainerId = `products-${baseId}`;
              componentsToAdd = [
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Nossos Produtos', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: null, column: 0 },
-                { id: parentId, type: 'Columns', props: { columnCount, styles: { gap: '1.5rem', alignItems: 'stretch' } }, order: 1, parentId: null, column: 0 },
+                // Main container for the whole section (acts as a "Section" component)
+                { id: sectionContainerId, type: 'Columns', props: { columnCount: 1, styles: { paddingTop: '3rem', paddingBottom: '3rem', } }, order: 0, parentId: null, column: 0 },
+                // Title inside the main container
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Nossos Produtos', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: sectionContainerId, column: 0 },
+                // Nested container for the products
+                { id: productsContainerId, type: 'Columns', props: { columnCount, styles: { gap: '1.5rem', alignItems: 'stretch' } }, order: 1, parentId: sectionContainerId, column: 0 },
              ];
               for(let i=0; i<columnCount; i++) {
                  componentsToAdd.push(
-                    { id: `img-${baseId}-${i}`, type: 'Image', props: { src: `https://picsum.photos/400/400` }, order: 0, parentId, column: i },
-                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', props: { text: `Nome do Produto ${i+1}`, styles: { fontSize: '1.2rem', marginTop: '1rem' } }, order: 1, parentId, column: i },
-                    { id: `para-${baseId}-${i}`, type: 'Paragraph', props: { text: `Breve descrição do produto.` }, order: 2, parentId, column: i },
-                    { id: `price-old-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 99,90`, styles: { textDecoration: 'line-through', color: '#9CA3AF' } }, order: 3, parentId, column: i },
-                    { id: `price-new-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 79,90`, styles: { fontWeight: 'bold', fontSize: '1.25rem' } }, order: 4, parentId, column: i },
-                    { id: `btn-${baseId}-${i}`, type: 'Button', props: { text: 'Comprar', href: '#', align: 'left' }, order: 5, parentId, column: i },
+                    { id: `img-${baseId}-${i}`, type: 'Image', props: { src: `https://picsum.photos/400/400` }, order: 0, parentId: productsContainerId, column: i },
+                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', props: { text: `Nome do Produto ${i+1}`, styles: { fontSize: '1.2rem', marginTop: '1rem' } }, order: 1, parentId: productsContainerId, column: i },
+                    { id: `para-${baseId}-${i}`, type: 'Paragraph', props: { text: `Breve descrição do produto.` }, order: 2, parentId: productsContainerId, column: i },
+                    { id: `price-old-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 99,90`, styles: { textDecoration: 'line-through', color: '#9CA3AF' } }, order: 3, parentId: productsContainerId, column: i },
+                    { id: `price-new-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 79,90`, styles: { fontWeight: 'bold', fontSize: '1.25rem' } }, order: 4, parentId: productsContainerId, column: i },
+                    { id: `btn-${baseId}-${i}`, type: 'Button', props: { text: 'Comprar', href: '#', align: 'left' }, order: 5, parentId: productsContainerId, column: i },
                  );
              }
             break;

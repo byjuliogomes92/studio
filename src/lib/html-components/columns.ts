@@ -3,7 +3,6 @@ import type { PageComponent } from '@/lib/types';
 
 export function renderColumns(component: PageComponent, childrenHtml: string): string {
     const styles = component.props.styles || {};
-    // Separate custom styles from hero-specific props
     const { isFullWidth, backgroundType, backgroundImageUrl, backgroundColor, gradientFrom, gradientTo, ...otherStyles } = styles;
     
     let styleString = getStyleString(otherStyles);

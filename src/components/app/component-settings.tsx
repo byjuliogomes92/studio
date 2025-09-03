@@ -62,6 +62,13 @@ const lucideIcons = [
     { value: 'zap', label: 'Raio' },
 ];
 
+const floatingButtonIcons = [
+    { value: 'plus', label: 'Mais', svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" y2="19"></line><line x1="5" y1="12" y2="19" y1="12"></line></svg>' },
+    { value: 'message-circle', label: 'Mensagem', svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"></path></svg>' },
+    { value: 'arrow-up', label: 'Seta para Cima', svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>' },
+    { value: 'download', label: 'Download', svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" y2="3"></line></svg>' },
+]
+
 const stripeIcons = [
     { value: 'none', label: 'Sem ícone' },
     { value: 'megaphone', label: 'Megafone' },
@@ -797,6 +804,10 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
         const backgroundType = styles.backgroundType || 'solid';
         return (
             <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="column-count">Número de Colunas</Label>
+                    <Input id="column-count" type="number" min="1" max="4" value={props.columnCount || 2} onChange={e => onPropChange('columnCount', parseInt(e.target.value, 10) || 1)} />
+                </div>
                 <div className="flex items-center justify-between">
                     <Label htmlFor="columns-full-width">Largura Total (Full Bleed)</Label>
                      <Switch
@@ -1063,6 +1074,35 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                       placeholder="Texto descritivo para a imagem"
                   />
               </div>
+          </div>
+        );
+      case "FloatingImage":
+        return (
+          <div className="space-y-4">
+             <ImageInput 
+                label="URL da Imagem"
+                value={props.imageUrl || ""}
+                onPropChange={onPropChange}
+                propName="imageUrl"
+                tooltipText="URL da imagem flutuante. Use PNGs com fundo transparente para melhores resultados."
+            />
+            <div className="space-y-2">
+                <Label htmlFor="fi-width">Largura</Label>
+                <Input id="fi-width" value={props.width || '150px'} onChange={e => onPropChange('width', e.target.value)} placeholder="Ex: 150px ou 10%" />
+            </div>
+             <div className="space-y-2">
+                <Label>Posicionamento</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Topo" value={props.top || ''} onChange={e => onPropChange('top', e.target.value)} />
+                    <Input placeholder="Direita" value={props.right || ''} onChange={e => onPropChange('right', e.target.value)} />
+                    <Input placeholder="Baixo" value={props.bottom || ''} onChange={e => onPropChange('bottom', e.target.value)} />
+                    <Input placeholder="Esquerda" value={props.left || ''} onChange={e => onPropChange('left', e.target.value)} />
+                 </div>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="fi-zindex">Ordem da Camada (z-index)</Label>
+                <Input id="fi-zindex" type="number" value={props.zIndex || 10} onChange={e => onPropChange('zIndex', parseInt(e.target.value, 10))} />
+            </div>
           </div>
         );
     case 'Video':
@@ -2176,6 +2216,125 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                       <Input id="calendly-prefill-email" value={props.prefill?.email || ''} onChange={e => onSubPropChange('prefill', 'email', e.target.value)} placeholder="Ex: EMAIL"/>
                   </div>
               </div>
+          );
+      case 'FloatingButton':
+          return (
+             <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Tipo de Botão</Label>
+                     <Select value={props.type || 'icon'} onValueChange={value => onPropChange('type', value)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="icon">Ícone</SelectItem>
+                            <SelectItem value="image">Imagem</SelectItem>
+                        </SelectContent>
+                     </Select>
+                </div>
+
+                {props.type === 'image' ? (
+                     <ImageInput 
+                        label="URL da Imagem"
+                        value={props.imageUrl || ""}
+                        onPropChange={onPropChange}
+                        propName="imageUrl"
+                        tooltipText="Use uma imagem quadrada ou redonda. PNG com transparência é ideal."
+                    />
+                ) : (
+                    <div className="space-y-2">
+                        <Label>Ícone</Label>
+                        <Select value={props.icon || 'plus'} onValueChange={value => onPropChange('icon', value)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {floatingButtonIcons.map(icon => (
+                                    <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
+                 <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="fb-action-type">Ação do Botão</Label>
+                  <Select
+                    value={props.action?.type || 'URL'}
+                    onValueChange={(value) => onPropChange('action', { ...props.action, type: value })}
+                  >
+                    <SelectTrigger id="fb-action-type">
+                      <SelectValue placeholder="Selecione uma ação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="URL">Ir para URL externa</SelectItem>
+                      <SelectItem value="PAGE">Ir para outra página</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                 {(!props.action || props.action.type === 'URL') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="fb-href">URL do Link</Label>
+                    <Input
+                      id="fb-href"
+                      value={props.action?.url || ''}
+                      onChange={(e) => onPropChange('action', { ...props.action, url: e.target.value, type: 'URL' })}
+                      placeholder="https://exemplo.com"
+                    />
+                  </div>
+                )}
+                 {(props.action?.type === 'PAGE') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="fb-page-id">Página de Destino</Label>
+                    <Select
+                      value={props.action?.pageId || ''}
+                      onValueChange={(value) => onPropChange('action', { ...props.action, pageId: value, type: 'PAGE' })}
+                    >
+                      <SelectTrigger id="fb-page-id">
+                        <SelectValue placeholder="Selecione uma página..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projectPages.map(page => (
+                          <SelectItem key={page.id} value={page.id}>
+                            {page.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <Separator />
+                <h4 className="font-medium text-sm pt-2">Estilo e Posição</h4>
+                 <div className="space-y-2">
+                    <Label>Posição</Label>
+                    <Select value={props.position || 'bottom-right'} onValueChange={value => onPropChange('position', value)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                             <SelectItem value="bottom-right">Canto Inferior Direito</SelectItem>
+                             <SelectItem value="bottom-left">Canto Inferior Esquerdo</SelectItem>
+                             <SelectItem value="top-right">Canto Superior Direito</SelectItem>
+                             <SelectItem value="top-left">Canto Superior Esquerdo</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="fb-size">Tamanho (px)</Label>
+                        <Input id="fb-size" type="number" value={props.size || 60} onChange={e => onPropChange('size', parseInt(e.target.value, 10))} />
+                     </div>
+                     <div className="space-y-2">
+                        <Label>Cor de Fundo</Label>
+                        <Input type="color" value={props.backgroundColor || '#000000'} onChange={e => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10" />
+                     </div>
+                </div>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="fb-show-on-scroll">Mostrar após rolagem</Label>
+                    <Switch id="fb-show-on-scroll" checked={props.showOnScroll || false} onCheckedChange={c => onPropChange('showOnScroll', c)} />
+                </div>
+                {props.showOnScroll && (
+                     <div className="space-y-2">
+                        <Label htmlFor="fb-scroll-offset">Offset da Rolagem (px)</Label>
+                        <Input id="fb-scroll-offset" type="number" value={props.scrollOffset || 100} onChange={e => onPropChange('scrollOffset', parseInt(e.target.value, 10))} />
+                     </div>
+                )}
+
+             </div>
           );
       default:
         return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;

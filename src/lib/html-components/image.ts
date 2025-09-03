@@ -2,11 +2,28 @@
 import type { PageComponent } from '@/lib/types';
 
 export function renderImage(component: PageComponent): string {
+    const { src = 'https://placehold.co/800x200.png', alt = 'Placeholder image', width } = component.props;
     const styles = component.props.styles || {};
+    
+    // Combine base styles with the dynamic width property
+    const imageStyles: { [key: string]: string } = {
+        'max-width': '100%',
+        'height': 'auto',
+        'border-radius': '8px',
+    };
+
+    if (width) {
+        imageStyles.width = width;
+    }
+
     const styleString = getStyleString(styles);
+    const imageStyleString = Object.entries(imageStyles)
+      .map(([key, value]) => `${key}: ${value};`)
+      .join(' ');
+      
     return `
         <div style="text-align: center; ${styleString}">
-            <img src="${component.props.src || 'https://placehold.co/800x200.png'}" alt="${component.props.alt || 'Placeholder image'}" style="max-width: 100%; height: auto; border-radius: 8px;" data-ai-hint="website abstract">
+            <img src="${src}" alt="${alt}" style="${imageStyleString}" data-ai-hint="website abstract">
         </div>`;
 }
 

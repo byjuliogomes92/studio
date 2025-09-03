@@ -630,11 +630,17 @@ const getClientSideScripts = (pageState: CloudPage): string => {
                 header.classList.add('scrolled');
             } else {
                 // Reset to initial (transparent or defined color)
-                header.style.background = 'transparent'; 
+                if(!header.hasAttribute('data-overlay')) {
+                    header.style.background = header.dataset.initialBg || 'transparent'; 
+                } else {
+                    header.style.background = 'transparent';
+                }
                 header.style.color = 'inherit';
                 header.classList.remove('scrolled');
             }
         };
+
+        header.dataset.initialBg = header.style.background;
         
         setHeaderStyle(false); // Set initial styles
 
@@ -854,6 +860,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     position: relative; /* Needed for absolute positioned children */
   `;
 
+  const mainStyles = `
+    width: 100%;
+    overflow-x: hidden;
+    margin-top: ${isHeaderOverlay ? '0' : 'var(--header-height, 0px)'};
+  `;
+
   const initialAmpscript = `%%[ 
     VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
     IF EMPTY(RequestParameter("__isPost")) THEN
@@ -903,9 +915,7 @@ ${trackingScripts.head}
     }
 
     main {
-      width: 100%;
-      overflow-x: hidden; /* Prevent horizontal scroll */
-      ${isHeaderOverlay ? 'padding-top: 0;' : ''}
+      ${mainStyles}
     }
 
     #loader {
@@ -2034,7 +2044,7 @@ ${isForPreview ? '' : trackingScripts.body}
   ${renderLoader(meta, styles.themeColor)}
   ${stripeComponents}
   <div id="mobile-menu-overlay"></div>
-  <main>
+  <main style="${mainStyles}">
     ${mainContentHtml}
   </main>
   ${floatingElementsHtml}

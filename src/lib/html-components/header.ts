@@ -35,7 +35,7 @@ export function renderHeader(component: PageComponent): string {
     if(backgroundType === 'gradient' && gradientFrom && gradientTo) {
         backgroundStyle = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
     } else if (backgroundType === 'solid') {
-        backgroundStyle = `background-color: ${backgroundColorOnScroll};`; // Use main color for solid
+        backgroundStyle = `background-color: ${backgroundColorOnScroll};`; 
     }
 
     const stickyAttrs = isSticky ? `
@@ -63,7 +63,11 @@ export function renderHeader(component: PageComponent): string {
         rightContent = `<div class="header-nav-container">${buttonHtml}</div>`;
     }
 
+    // Apply initial background if not overlaying
+    const initialBackground = !overlay ? backgroundStyle : '';
+    
     const inlineStyles = `
+      ${initialBackground}
       ${borderRadius ? `border-radius: ${borderRadius};` : ''}
     `;
 

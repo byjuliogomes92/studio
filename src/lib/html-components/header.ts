@@ -31,16 +31,16 @@ export function renderHeader(component: PageComponent): string {
         
     const navHtml = showMenu ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : '';
 
-    let backgroundStyle = '';
-    if(backgroundType === 'gradient' && gradientFrom && gradientTo) {
-        backgroundStyle = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
+    let backgroundStyleOnScroll = '';
+    if (backgroundType === 'gradient' && gradientFrom && gradientTo) {
+        backgroundStyleOnScroll = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
     } else if (backgroundType === 'solid') {
-        backgroundStyle = `background-color: ${backgroundColorOnScroll};`; 
+        backgroundStyleOnScroll = `background-color: ${backgroundColorOnScroll};`; 
     }
 
     const stickyAttrs = isSticky ? `
         data-sticky="true"
-        data-bg-scroll="${backgroundStyle}"
+        data-bg-scroll="${backgroundStyleOnScroll}"
         data-text-color-scroll="${textColorOnScroll}"
     ` : '';
 
@@ -64,7 +64,7 @@ export function renderHeader(component: PageComponent): string {
     }
 
     // Apply initial background if not overlaying
-    const initialBackground = !overlay ? backgroundStyle : '';
+    const initialBackground = !overlay ? backgroundStyleOnScroll : 'background: transparent;';
     
     const inlineStyles = `
       ${initialBackground}
@@ -72,7 +72,7 @@ export function renderHeader(component: PageComponent): string {
     `;
 
     return `
-        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} data-mobile-menu-behavior="${mobileMenuBehavior}" style="${inlineStyles}">
+        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} style="${inlineStyles}">
             ${leftContent}
             ${centerContent}
             ${rightContent}

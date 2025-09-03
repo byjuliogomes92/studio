@@ -26,7 +26,7 @@ import { ButtonSettings } from './settings/button-settings';
 import { DownloadButtonSettings } from './settings/download-button-settings';
 import { FloatingButtonSettings } from './settings/floating-button-settings';
 import { FormSettings } from './settings/form-settings';
-import { ListManagerSettings } from './settings/list-manager-settings';
+import { ListManagerSettings } from './settings/list-managers';
 import { VotingSettings } from './settings/voting-settings';
 import { StripeSettings } from './settings/stripe-settings';
 import { NPSSettings } from './settings/nps-settings';

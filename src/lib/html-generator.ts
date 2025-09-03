@@ -51,6 +51,8 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
 
             let sectionClass = `component-wrapper animate-on-scroll`;
             
+            // This is the fix for the inline image alignment issue.
+            // If a component has layout: 'inline' it will have this class applied.
             if (component.props.layout === 'inline') {
                 sectionClass += ' component-layout-inline';
             }
@@ -68,7 +70,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                 return renderedComponent;
             }
 
-            // Root components get the padded container. Children do not.
+            // Root components get the padded container. Children inside columns do not.
             if (component.parentId === null) {
                 return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
                            <div class="section-container-padded">
@@ -983,13 +985,8 @@ ${trackingScripts.head}
         display: inline-block;
         width: auto;
         vertical-align: top;
-    }
-    
-    .section-container {
-      width: 100%;
-      max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
+        flex-grow: 0;
+        flex-shrink: 1;
     }
     
     .section-container-padded {
@@ -1011,7 +1008,6 @@ ${trackingScripts.head}
         width: 100%;
         position: relative;
     }
-    .section-wrapper > .section-container,
     .section-wrapper > .columns-container {
         position: relative;
         z-index: 1;
@@ -1081,6 +1077,7 @@ ${trackingScripts.head}
         padding: 0;
         list-style: none;
         display: flex;
+        align-items: center;
         gap: 1.5rem;
     }
     .page-header .header-nav a {
@@ -1088,11 +1085,13 @@ ${trackingScripts.head}
         color: var(--custom-link-color);
         font-weight: 500;
         transition: color 0.2s ease;
+        display: inline-block;
+        padding: 0.5rem 0;
     }
     .page-header .header-nav a:hover {
         color: var(--custom-link-hover-color);
     }
-    .page-header .header-button {
+    .page-header .header-button, .page-header .header-nav a.header-button {
         color: white;
         padding: 0.5rem 1rem;
         border-radius: 0.375rem;
@@ -1146,6 +1145,7 @@ ${trackingScripts.head}
         .page-header[data-mobile-menu-behavior="push"] .header-nav ul {
             flex-direction: column;
             width: 100%;
+            align-items: flex-start;
             gap: 1rem !important;
         }
     }

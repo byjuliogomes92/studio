@@ -77,6 +77,9 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     Carousel: View,
     FTPUpload: UploadCloud,
     DataExtensionUpload: UploadCloud,
+    FloatingImage: Image,
+    FloatingButton: MousePointerClick,
+    Calendly: CalendarClock,
 };
 
 const googleFonts = [

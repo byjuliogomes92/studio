@@ -68,12 +68,15 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                 return renderedComponent;
             }
 
-            // Root components get the padded container
-            return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
-                       <div class="section-container-padded">
-                         ${renderedComponent}
-                       </div>
-                    </div>`;
+            // Root components get the padded container. Children do not.
+            if (component.parentId === null) {
+                return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
+                           <div class="section-container-padded">
+                             ${renderedComponent}
+                           </div>
+                        </div>`;
+            }
+            return `<div class="${sectionClass}" ${animationAttrs}>${renderedComponent}</div>`;
         })
         .join('\n');
 }
@@ -89,16 +92,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
             .sort((a,b) => a.order - b.order);
           
           columnsContent += `<div class="column">${
-                columnComponents.map(colComponent => {
-                     const animationType = pageState.styles.animationType || 'none';
-                     const hasAnimation = animationType !== 'none';
-                     const animationAttrs = hasAnimation ? `data-animation="${animationType}"` : '';
-                     let sectionClass = `component-wrapper animate-on-scroll`;
-                     if (colComponent.props.layout === 'inline') {
-                         sectionClass += ' component-layout-inline';
-                     }
-                    return `<div class="${sectionClass}" ${animationAttrs}>${renderSingleComponent(colComponent, pageState, isForPreview, '', hideAmpscript)}</div>`
-                }).join('\n')
+                renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)
             }</div>`;
         }
         return columnsContent;
@@ -986,8 +980,9 @@ ${trackingScripts.head}
     }
     
     .component-layout-inline {
+        display: inline-block;
         width: auto;
-        flex-grow: 0;
+        vertical-align: top;
     }
     
     .section-container {
@@ -1860,6 +1855,7 @@ ${trackingScripts.head}
         display: flex;
         flex-wrap: wrap;
         align-content: flex-start;
+        align-items: flex-start;
         gap: 10px;
         justify-content: var(--justify-content, 'flex-start');
     }

@@ -11,7 +11,7 @@ export function renderHeader(component: PageComponent): string {
         logoHeight = 40,
         isSticky = false,
         overlay = false,
-        backgroundColor, // The new initial background color property
+        backgroundColor = '#ffffff', // Default to white
         backgroundColorOnScroll = '#ffffff',
         textColorOnScroll = '#000000',
         mobileMenuBehavior = 'push',
@@ -32,16 +32,9 @@ export function renderHeader(component: PageComponent): string {
         
     const navHtml = showMenu ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : '';
 
-    let backgroundStyleOnScroll = '';
-    if (backgroundType === 'gradient' && gradientFrom && gradientTo) {
-        backgroundStyleOnScroll = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
-    } else { // Defaults to solid
-        backgroundStyleOnScroll = `background-color: ${backgroundColorOnScroll};`; 
-    }
-
     const stickyAttrs = isSticky ? `
         data-sticky="true"
-        data-bg-scroll="${backgroundStyleOnScroll}"
+        data-bg-scroll="${backgroundColorOnScroll}"
         data-text-color-scroll="${textColorOnScroll}"
     ` : '';
 
@@ -62,15 +55,17 @@ export function renderHeader(component: PageComponent): string {
     } else if (layout === 'logo-left-menu-center-button-right') {
         centerContent = `<div class="header-nav-container">${navHtml}</div>`;
         rightContent = `<div class="header-nav-container">${buttonHtml}</div>`;
+    } else if (layout === 'logo-center-menu-below') {
+        // Handled by CSS flex-direction
     }
 
     // Apply initial background
     let initialBackground = '';
     if (overlay) {
-        initialBackground = 'background: transparent;';
+        initialBackground = 'background-color: transparent;';
     } else if (backgroundType === 'gradient' && gradientFrom && gradientTo) {
         initialBackground = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
-    } else if (backgroundColor) {
+    } else { // Defaults to solid
         initialBackground = `background-color: ${backgroundColor};`;
     }
     
@@ -90,3 +85,5 @@ export function renderHeader(component: PageComponent): string {
         </header>
     `;
 }
+
+    

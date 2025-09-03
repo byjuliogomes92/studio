@@ -619,17 +619,15 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     function setupStickyHeader() {
         const header = document.querySelector('.page-header[data-sticky="true"]');
         if (!header) return;
-        const initialHeaderBg = header.style.background;
-        const initialHeaderColor = header.style.color;
+        
+        const scrollBg = header.dataset.bgScroll;
 
         window.addEventListener('scroll', () => {
             if (window.scrollY > 50) {
-                header.style.background = header.dataset.bgScroll || '#ffffff';
-                header.style.color = header.dataset.textColorScroll || '#000000';
+                header.style.setProperty('--current-bg', scrollBg);
                 header.classList.add('scrolled');
             } else {
-                header.style.background = initialHeaderBg;
-                header.style.color = initialHeaderColor;
+                header.style.removeProperty('--current-bg');
                 header.classList.remove('scrolled');
             }
         }, { passive: true });
@@ -846,6 +844,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     width: 100%;
     overflow-x: hidden;
     margin-top: ${isHeaderOverlay ? '0' : 'var(--header-height, 0px)'};
+    padding-top: ${isHeaderOverlay ? 'var(--header-height, 0px)' : '0'};
   `;
 
   const initialAmpscript = `%%[ 
@@ -882,6 +881,8 @@ ${trackingScripts.head}
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
       --theme-color-hover: ${styles.themeColorHover || '#333333'};
+      --header-link-color: ${headerComponent?.props.linkColor || '#333333'};
+      --header-link-hover-color: ${headerComponent?.props.linkHoverColor || '#000000'};
     }
     html {
       box-sizing: border-box;
@@ -996,14 +997,14 @@ ${trackingScripts.head}
         width: 100%;
         padding: 1rem;
         box-sizing: border-box;
-        transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        transition: background 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
         z-index: 50; /* Keep header on top */
+        background: var(--current-bg, transparent);
     }
     .page-header[data-overlay="true"] {
         position: absolute;
         top: 0;
         left: 0;
-        color: white; /* Default for overlays, can be overridden */
     }
     .page-header[data-sticky="true"] {
         position: sticky;
@@ -1011,8 +1012,6 @@ ${trackingScripts.head}
     }
     .page-header.scrolled {
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      color: var(--text-color-scroll);
-      background: var(--bg-scroll);
     }
     .page-header .header-logo {
         flex-shrink: 0;
@@ -1038,8 +1037,15 @@ ${trackingScripts.head}
     }
     .page-header .header-nav a {
         text-decoration: none;
-        color: inherit;
+        color: var(--header-link-color, #333333);
         font-weight: 500;
+        transition: color 0.2s ease;
+    }
+    .page-header.scrolled .header-nav a {
+       color: var(--text-color-scroll, #000000);
+    }
+    .page-header .header-nav a:hover {
+        color: var(--header-link-hover-color, #000000);
     }
     .page-header .header-button {
         background-color: var(--theme-color);
@@ -2041,3 +2047,5 @@ ${isForPreview ? '' : trackingScripts.body}
 
   return finalHtml;
 }
+
+    

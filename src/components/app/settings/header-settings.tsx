@@ -79,7 +79,21 @@ export function HeaderSettings({ component, onPropChange }: ComponentSettingsPro
                 </RadioGroup>
             </div>
             {showMenu && (
-                <HeaderLinksManager links={props.links || []} onPropChange={onPropChange} />
+                <div className="p-3 border rounded-md space-y-3 bg-muted/30">
+                    <h4 className="font-medium text-sm">Itens de Menu</h4>
+                    <HeaderLinksManager links={props.links || []} onPropChange={onPropChange} />
+                     <Separator/>
+                     <div className="grid grid-cols-2 gap-2 pt-2">
+                         <div className="space-y-1">
+                            <Label htmlFor="header-link-color">Cor do Texto</Label>
+                            <Input id="header-link-color" type="color" value={props.linkColor || '#333333'} onChange={(e) => onPropChange('linkColor', e.target.value)} className="p-1 h-10"/>
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="header-link-hover-color">Cor (Hover)</Label>
+                            <Input id="header-link-hover-color" type="color" value={props.linkHoverColor || '#000000'} onChange={(e) => onPropChange('linkHoverColor', e.target.value)} className="p-1 h-10"/>
+                        </div>
+                    </div>
+                </div>
             )}
             {showButton && (
                 <div className="p-3 border rounded-md space-y-3 bg-muted/30">
@@ -167,3 +181,5 @@ export function HeaderSettings({ component, onPropChange }: ComponentSettingsPro
         </div>
     );
 }
+
+    

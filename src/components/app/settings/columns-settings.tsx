@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ImageInput } from "./image-input";
+import { produce } from "immer";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -18,12 +19,43 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange }: Co
     const { props } = component;
     const styles = props.styles || {};
     const backgroundType = styles.backgroundType || 'solid';
+    const columnCount = props.columnCount || 2;
+    const columnWidths = props.columnWidths || [];
+
+    const handleWidthChange = (index: number, value: string) => {
+        const newWidths = produce(columnWidths, (draft: any[]) => {
+            // Ensure the array is long enough
+            while (draft.length < columnCount) {
+                draft.push(null);
+            }
+            draft[index] = value === '' ? null : parseInt(value, 10);
+        });
+        onPropChange('columnWidths', newWidths);
+    };
+
     return (
         <div className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="column-count">Número de Colunas</Label>
-                <Input id="column-count" type="number" min="1" max="4" value={props.columnCount || 2} onChange={e => onPropChange('columnCount', parseInt(e.target.value, 10) || 1)} />
+                <Input id="column-count" type="number" min="1" max="6" value={columnCount} onChange={e => onPropChange('columnCount', parseInt(e.target.value, 10) || 1)} />
             </div>
+            {columnCount > 1 && (
+                <div className="space-y-2">
+                    <Label>Largura das Colunas (%)</Label>
+                    <p className="text-xs text-muted-foreground">A soma deve ser 100. Deixe em branco para dividir igualmente.</p>
+                    <div className="grid grid-cols-4 gap-2">
+                        {Array.from({ length: columnCount }).map((_, index) => (
+                             <Input 
+                                key={index}
+                                type="number"
+                                value={columnWidths[index] || ''}
+                                onChange={(e) => handleWidthChange(index, e.target.value)}
+                                placeholder={`${100/columnCount}%`}
+                             />
+                        ))}
+                    </div>
+                </div>
+            )}
             <div className="flex items-center justify-between">
                 <Label htmlFor="columns-full-width">Largura Total (Full Bleed)</Label>
                  <Switch

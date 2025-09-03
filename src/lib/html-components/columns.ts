@@ -17,7 +17,8 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 export function renderColumns(component: PageComponent, childrenHtml: string): string {
-    const styles = component.props.styles || {};
+    const { props } = component;
+    const styles = props.styles || {};
     const { 
         isFullWidth, 
         backgroundType, 
@@ -65,15 +66,34 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
     }
 
     const className = `columns-container ${heroClass}`;
+
+    // Handle column widths
+    const columnCount = props.columnCount || 2;
+    const columnWidths = props.columnWidths || [];
+    const validWidths = Array.isArray(columnWidths) && columnWidths.length === columnCount && columnWidths.every(w => w !== null && w > 0);
+    const totalWidth = validWidths ? columnWidths.reduce((a, b) => a + b, 0) : 0;
     
+    let gridTemplateColumns;
+    if (validWidths && totalWidth === 100) {
+        gridTemplateColumns = columnWidths.map((w: number) => `${w}%`).join(' ');
+    } else {
+        gridTemplateColumns = `repeat(${columnCount}, 1fr)`;
+    }
+
+    const finalContainerStyle = `
+        --column-count: ${columnCount};
+        grid-template-columns: ${gridTemplateColumns};
+        ${styleString}
+    `;
+
     if (isFullWidth) {
         return `<div class="section-wrapper" style="${backgroundStyle}">
                     <div class="section-overlay" style="${overlayStyle}"></div>
-                    <div class="${className}" style="--column-count: ${component.props.columnCount || 2}; ${styleString}">${childrenHtml}</div>
+                    <div class="${className}" style="${finalContainerStyle}">${childrenHtml}</div>
                 </div>`;
     }
 
-    return `<div class="${className}" style="--column-count: ${component.props.columnCount || 2}; ${backgroundStyle} ${styleString}">
+    return `<div class="${className}" style="${backgroundStyle} ${finalContainerStyle}">
                 <div class="section-overlay" style="${overlayStyle}"></div>
                 ${childrenHtml}
             </div>`;

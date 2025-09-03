@@ -71,8 +71,15 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             if (isFirstAfterOverlay) {
                 wrapperStyle = 'padding-top: 0;';
             }
+            
+            // **Correction Logic**: Components inside a column (with a parentId) should not have the extra container div.
+            if (component.parentId) {
+                return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
+                            ${renderedComponent}
+                        </div>`;
+            }
 
-
+            // Components at the root level still need the container for padding and max-width.
             const containerClass = (component.type === 'Header' && (isHeaderOverlay || headerComponent?.props.isFullWidth))
                 ? 'section-container'
                 : 'section-container-padded';
@@ -656,10 +663,12 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         const header = document.querySelector('.page-header[data-overlay="true"]');
         if (!header) return;
 
-        const firstSection = document.querySelector('.columns-container');
-        if (firstSection) {
+        const firstSection = document.querySelector('.component-wrapper');
+        const columnsContainer = firstSection?.querySelector('.columns-container');
+
+        if (columnsContainer) {
             const headerHeight = header.offsetHeight;
-            firstSection.style.paddingTop = headerHeight + 'px';
+            columnsContainer.style.paddingTop = headerHeight + 'px';
         }
     }
 
@@ -2068,5 +2077,3 @@ ${!isForPreview ? trackingScripts.body : ''}
 
   return finalHtml;
 }
-
-    

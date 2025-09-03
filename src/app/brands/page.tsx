@@ -413,10 +413,10 @@ export default function BrandsPage() {
                             <div className="p-4 border rounded-md space-y-3">
                                 <h5 className="font-medium flex items-center gap-2"><Sun className="h-4 w-4"/> Tema Claro</h5>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <Input type="color" value={currentBrand.colors?.light?.primary} onChange={e => handleBrandFieldChange('colors.light.primary', e.target.value)} title="Cor Primária"/>
-                                    <Input type="color" value={currentBrand.colors?.light?.primaryHover} onChange={e => handleBrandFieldChange('colors.light.primaryHover', e.target.value)} title="Cor Primária (Hover)"/>
-                                    <Input type="color" value={currentBrand.colors?.light?.background} onChange={e => handleBrandFieldChange('colors.light.background', e.target.value)} title="Fundo"/>
-                                    <Input type="color" value={currentBrand.colors?.light?.foreground} onChange={e => handleBrandFieldChange('colors.light.foreground', e.target.value)} title="Texto"/>
+                                  <div className="space-y-1"><Label className="text-xs">Primária</Label><Input type="text" value={currentBrand.colors?.light?.primary} onChange={e => handleBrandFieldChange('colors.light.primary', e.target.value)} /></div>
+                                  <div className="space-y-1"><Label className="text-xs">Primária (Hover)</Label><Input type="text" value={currentBrand.colors?.light?.primaryHover} onChange={e => handleBrandFieldChange('colors.light.primaryHover', e.target.value)} /></div>
+                                  <div className="space-y-1"><Label className="text-xs">Fundo</Label><Input type="text" value={currentBrand.colors?.light?.background} onChange={e => handleBrandFieldChange('colors.light.background', e.target.value)} /></div>
+                                  <div className="space-y-1"><Label className="text-xs">Texto</Label><Input type="text" value={currentBrand.colors?.light?.foreground} onChange={e => handleBrandFieldChange('colors.light.foreground', e.target.value)} /></div>
                                 </div>
                             </div>
                         )}
@@ -425,10 +425,10 @@ export default function BrandsPage() {
                             <div className="p-4 border rounded-md space-y-3">
                                 <h5 className="font-medium flex items-center gap-2"><Moon className="h-4 w-4"/> Tema Escuro</h5>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <Input type="color" value={currentBrand.colors?.dark?.primary} onChange={e => handleBrandFieldChange('colors.dark.primary', e.target.value)} title="Cor Primária"/>
-                                    <Input type="color" value={currentBrand.colors?.dark?.primaryHover} onChange={e => handleBrandFieldChange('colors.dark.primaryHover', e.target.value)} title="Cor Primária (Hover)"/>
-                                    <Input type="color" value={currentBrand.colors?.dark?.background} onChange={e => handleBrandFieldChange('colors.dark.background', e.target.value)} title="Fundo"/>
-                                    <Input type="color" value={currentBrand.colors?.dark?.foreground} onChange={e => handleBrandFieldChange('colors.dark.foreground', e.target.value)} title="Texto"/>
+                                  <div className="space-y-1"><Label className="text-xs">Primária</Label><Input type="text" value={currentBrand.colors?.dark?.primary} onChange={e => handleBrandFieldChange('colors.dark.primary', e.target.value)} /></div>
+                                  <div className="space-y-1"><Label className="text-xs">Primária (Hover)</Label><Input type="text" value={currentBrand.colors?.dark?.primaryHover} onChange={e => handleBrandFieldChange('colors.dark.primaryHover', e.target.value)} /></div>
+                                  <div className="space-y-1"><Label className="text-xs">Fundo</Label><Input type="text" value={currentBrand.colors?.dark?.background} onChange={e => handleBrandFieldChange('colors.dark.background', e.target.value)} /></div>
+                                  <div className="space-y-1"><Label className="text-xs">Texto</Label><Input type="text" value={currentBrand.colors?.dark?.foreground} onChange={e => handleBrandFieldChange('colors.dark.foreground', e.target.value)} /></div>
                                 </div>
                             </div>
                         )}

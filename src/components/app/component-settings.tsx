@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant, CloudPage, Action, CalendlyEmbedType } from "@/lib/types";
@@ -35,6 +36,7 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { MediaLibraryDialog } from "./media-library-dialog";
+import { Slider } from "../ui/slider";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -848,13 +850,41 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                         )}
 
                         {backgroundType === 'image' && (
-                             <ImageInput 
-                                label="URL da Imagem de Fundo"
-                                value={styles.backgroundImageUrl || ""}
-                                onPropChange={(prop, value) => onSubPropChange('styles', prop, value)}
-                                propName="backgroundImageUrl"
-                                tooltipText="URL para a imagem de fundo da seção."
-                            />
+                            <div className="space-y-4">
+                                <ImageInput 
+                                    label="URL da Imagem de Fundo"
+                                    value={styles.backgroundImageUrl || ""}
+                                    onPropChange={(prop, value) => onSubPropChange('styles', prop, value)}
+                                    propName="backgroundImageUrl"
+                                    tooltipText="URL para a imagem de fundo da seção."
+                                />
+                                <Separator />
+                                 <div className="flex items-center justify-between">
+                                    <Label htmlFor="overlay-enabled">Habilitar Sobreposição (Overlay)</Label>
+                                    <Switch
+                                        id="overlay-enabled"
+                                        checked={styles.overlayEnabled || false}
+                                        onCheckedChange={(checked) => onSubPropChange('styles', 'overlayEnabled', checked)}
+                                    />
+                                </div>
+                                {styles.overlayEnabled && (
+                                    <div className="space-y-4 pt-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="overlay-color">Cor da Sobreposição</Label>
+                                            <Input id="overlay-color" type="color" value={styles.overlayColor || '#000000'} onChange={(e) => onSubPropChange('styles', 'overlayColor', e.target.value)} className="p-1 h-10"/>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="overlay-opacity">Opacidade da Sobreposição ({Math.round((styles.overlayOpacity || 0.5) * 100)}%)</Label>
+                                            <Slider
+                                                id="overlay-opacity"
+                                                min={0} max={1} step={0.05}
+                                                value={[styles.overlayOpacity || 0.5]}
+                                                onValueChange={(value) => onSubPropChange('styles', 'overlayOpacity', value[0])}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         )}
                 </div>
                 <div className="space-y-2">

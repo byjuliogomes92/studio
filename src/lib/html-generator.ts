@@ -963,8 +963,12 @@ ${trackingScripts.head}
     
     .section-wrapper {
         width: 100%;
-        display: flex;
-        justify-content: center;
+        position: relative;
+    }
+    .section-wrapper > .section-container,
+    .section-wrapper > .columns-container {
+        position: relative;
+        z-index: 1;
     }
     .animate-on-scroll {
         opacity: 0;
@@ -1829,30 +1833,16 @@ ${trackingScripts.head}
     .columns-container .column {
         flex: 1;
         min-width: 0;
-    }
-
-    /* Hero Specific Styles */
-    .hero-section {
-        color: white; /* Default text color for heroes */
-    }
-    .hero-section h1, .hero-section h2, .hero-section p {
-        color: inherit; /* Inherit color from the hero-section */
-    }
-    .hero-section[style*="background-image"] {
-        background-size: cover;
-        background-position: center center;
         position: relative;
-    }
-    .hero-section[style*="background-image"]::before {
-        content: '';
-        position: absolute;
-        top: 0; right: 0; bottom: 0; left: 0;
-        background-color: rgba(0,0,0,0.5); /* Dimming overlay */
-        z-index: 0;
-    }
-    .columns-container.hero-section > .column {
-        position: relative; /* Ensure text is above the overlay */
         z-index: 1;
+    }
+    .section-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
     }
 
     .carousel-container { position: relative; }

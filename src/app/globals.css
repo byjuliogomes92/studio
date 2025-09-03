@@ -78,19 +78,19 @@
 
 
 @layer components {
+    .section-wrapper {
+        position: relative;
+    }
+    .section-wrapper > .section-container, 
+    .section-wrapper > .columns-container,
+    .columns-container > .column {
+        position: relative;
+        z-index: 1;
+    }
     .hero-section {
         color: white; /* Default text color for heroes */
     }
     .hero-section h1, .hero-section h2, .hero-section p {
         color: inherit; /* Inherit color from the hero-section */
-    }
-    .hero-section[style*="background-image"] {
-        background-size: cover;
-        background-position: center center;
-        position: relative;
-    }
-    .columns-container.hero-section > .column {
-        position: relative; /* Ensure text is above the overlay */
-        z-index: 1;
     }
 }

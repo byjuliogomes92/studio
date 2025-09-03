@@ -91,8 +91,8 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     const propsA = component.props;
     const propsB = { ...propsA, ...variantB };
 
-    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview, childrenHtml);
-    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview, childrenHtml);
+    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview, childrenHtml, hideAmpscript);
+    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview, childrenHtml, hideAmpscript);
 
     const randomVar = `v(@Random_${component.id.slice(-5)})`;
     const hiddenInput = `<input type="hidden" name="VARIANTE_${component.id.toUpperCase()}" value="%%=v(@VARIANTE_${component.id.toUpperCase()})=%%">`;
@@ -111,7 +111,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     ${hiddenInput}
     `;
   }
-  return renderSingleComponent(component, pageState, isForPreview, childrenHtml);
+  return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
 };
 
 const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = '', hideAmpscript: boolean = false): string => {
@@ -810,7 +810,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const clientSideScripts = getClientSideScripts(pageState);
   
-  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '')).join('\n');
+  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', hideAmpscript)).join('\n');
   const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
   
   const trackingScripts = getTrackingScripts(meta.tracking);
@@ -818,7 +818,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const googleFont = styles.fontFamily || 'Roboto';
   
   const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe' && c.type !== 'WhatsApp' && c.type !== 'FloatingImage' && c.type !== 'FloatingButton'), components, pageState, isForPreview, hideAmpscript);
-  const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '')).join('\n');
+  const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', hideAmpscript)).join('\n');
 
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
@@ -873,8 +873,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-${isForPreview ? '' : initialAmpscript}
-${isForPreview ? '' : ssjsScript}
+${isForPreview || hideAmpscript ? '' : initialAmpscript}
+${isForPreview || hideAmpscript ? '' : ssjsScript}
 ${trackingScripts.head}
 <style>
     :root {
@@ -996,6 +996,10 @@ ${trackingScripts.head}
       width: 100%;
       padding: 1rem;
     }
+    .page-header[data-overlay="true"] .header-inner-contained,
+    .page-header[data-overlay="true"] .header-inner-full {
+        padding: 1rem 0;
+    }
     .page-header .header-inner-contained {
       margin: 0 auto;
     }
@@ -1004,10 +1008,6 @@ ${trackingScripts.head}
         top: 0;
         left: 0;
         background: transparent !important; /* Start transparent, allow JS to change */
-    }
-    .page-header[data-overlay="true"] .header-inner-contained,
-    .page-header[data-overlay="true"] .header-inner-full {
-      padding: 1rem;
     }
     .page-header[data-sticky="true"] {
         position: sticky;
@@ -1993,7 +1993,17 @@ ${trackingScripts.head}
 ${clientSideScripts}
 </head>
 <body>
-${isForPreview ? '' : trackingScripts.body}
+${isForPreview || hideAmpscript ? '' : trackingScripts.body}
+  ${isForPreview || hideAmpscript ? `
+  ${renderLoader(meta, styles.themeColor)}
+  ${stripeComponents}
+  <div id="mobile-menu-overlay"></div>
+  <main style="${mainStyles}">
+    ${mainContentHtml}
+  </main>
+  ${floatingElementsHtml}
+  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', hideAmpscript) : ''}
+  ${cookieBannerHtml}` : `
   %%[ IF @isAuthenticated == true THEN ]%%
   ${renderLoader(meta, styles.themeColor)}
   ${stripeComponents}
@@ -2002,11 +2012,12 @@ ${isForPreview ? '' : trackingScripts.body}
     ${mainContentHtml}
   </main>
   ${floatingElementsHtml}
-  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '') : ''}
-  ${isForPreview ? '' : cookieBannerHtml}
+  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', hideAmpscript) : ''}
+  ${cookieBannerHtml}
   %%[ ELSE ]%%
   ${security.body}
   %%[ ENDIF ]%%
+  `}
 </body>
 </html>`;
 
@@ -2014,5 +2025,3 @@ ${isForPreview ? '' : trackingScripts.body}
 
   return finalHtml;
 }
-
-    

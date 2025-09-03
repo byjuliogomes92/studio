@@ -56,14 +56,6 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             }
 
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents, hideAmpscript);
-
-            if (component.type === 'FloatingImage' || component.type === 'FloatingButton' || component.type === 'Calendly') {
-                return renderedComponent;
-            }
-
-            if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
-                 return renderedComponent;
-            }
             
             let wrapperStyle = '';
             // Remove top padding from the first component after an overlay header
@@ -71,21 +63,14 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             if (isFirstAfterOverlay) {
                 wrapperStyle = 'padding-top: 0;';
             }
-            
-            // **Correction Logic**: Components inside a column (with a parentId) should not have the extra container div.
-            if (component.parentId) {
-                return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
-                            ${renderedComponent}
-                        </div>`;
+
+            if (component.type === 'FloatingImage' || component.type === 'FloatingButton' || component.type === 'Calendly' || (component.type === 'Columns' && component.props.styles?.isFullWidth)) {
+                return renderedComponent;
             }
 
-            // Components at the root level still need the container for padding and max-width.
-            const containerClass = (component.type === 'Header' && (isHeaderOverlay || headerComponent?.props.isFullWidth))
-                ? 'section-container'
-                : 'section-container-padded';
-
+            // Root components get the padded container
             return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
-                       <div class="${containerClass}">
+                       <div class="section-container-padded">
                          ${renderedComponent}
                        </div>
                     </div>`;
@@ -99,8 +84,22 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
         const columnCount = component.props.columnCount || 2;
         let columnsContent = '';
         for (let i = 0; i < columnCount; i++) {
-          const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
-          columnsContent += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)}</div>`;
+          const columnComponents = allComponents
+            .filter(c => c.parentId === component.id && c.column === i)
+            .sort((a,b) => a.order - b.order);
+          
+          columnsContent += `<div class="column">${
+                columnComponents.map(colComponent => {
+                     const animationType = pageState.styles.animationType || 'none';
+                     const hasAnimation = animationType !== 'none';
+                     const animationAttrs = hasAnimation ? `data-animation="${animationType}"` : '';
+                     let sectionClass = `component-wrapper animate-on-scroll`;
+                     if (colComponent.props.layout === 'inline') {
+                         sectionClass += ' component-layout-inline';
+                     }
+                    return `<div class="${sectionClass}" ${animationAttrs}>${renderSingleComponent(colComponent, pageState, isForPreview, '', hideAmpscript)}</div>`
+                }).join('\n')
+            }</div>`;
         }
         return columnsContent;
       })()

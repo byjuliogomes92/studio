@@ -1,0 +1,92 @@
+
+import type { PageComponent } from "@/lib/types";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ImageInput } from "./image-input";
+
+interface ComponentSettingsProps {
+  component: PageComponent;
+  onSubPropChange: (prop: string, subProp: string, value: any) => void;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+    if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+        return `rgba(0,0,0,${alpha})`; // fallback
+    }
+    let c = hex.substring(1).split('');
+    if (c.length === 3) {
+        c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+    }
+    const i = parseInt(c.join(''), 16);
+    const r = (i >> 16) & 255;
+    const g = (i >> 8) & 255;
+    const b = i & 255;
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
+export function DivSettings({ component, onSubPropChange }: ComponentSettingsProps) {
+    const styles = component.props.styles || {};
+    const backgroundType = styles.backgroundType || 'solid';
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <Label htmlFor="div-full-width">Largura Total (Full Bleed)</Label>
+                <Switch
+                    id="div-full-width"
+                    checked={styles.isFullWidth || false}
+                    onCheckedChange={(checked) => onSubPropChange('styles', 'isFullWidth', checked)}
+                />
+            </div>
+            
+            <Separator />
+            
+            <div className="p-4 border rounded-lg bg-muted/40 space-y-4">
+                <Label>Estilo de Fundo</Label>
+                <Select value={backgroundType} onValueChange={(value) => onSubPropChange('styles', 'backgroundType', value)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="solid">Cor Sólida</SelectItem>
+                        <SelectItem value="gradient">Gradiente</SelectItem>
+                        <SelectItem value="image">Imagem</SelectItem>
+                    </SelectContent>
+                </Select>
+                
+                {backgroundType === 'solid' && (
+                    <div className="space-y-2">
+                        <Label htmlFor="div-bg-color">Cor de Fundo</Label>
+                        <Input id="div-bg-color" type="color" value={styles.backgroundColor || '#ffffff'} onChange={(e) => onSubPropChange('styles', 'backgroundColor', e.target.value)} className="p-1 h-10"/>
+                    </div>
+                )}
+
+                {backgroundType === 'gradient' && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Cor Inicial</Label>
+                            <Input type="color" value={styles.gradientFrom || '#000000'} onChange={(e) => onSubPropChange('styles', 'gradientFrom', e.target.value)} className="p-1 h-10" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Cor Final</Label>
+                            <Input type="color" value={styles.gradientTo || '#434343'} onChange={(e) => onSubPropChange('styles', 'gradientTo', e.target.value)} className="p-1 h-10" />
+                        </div>
+                    </div>
+                )}
+
+                {backgroundType === 'image' && (
+                    <div className="space-y-4">
+                        <ImageInput 
+                            label="URL da Imagem de Fundo"
+                            value={styles.backgroundImageUrl || ""}
+                            onPropChange={(prop, value) => onSubPropChange('styles', prop, value)}
+                            propName="backgroundImageUrl"
+                            tooltipText="URL para a imagem de fundo da seção."
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

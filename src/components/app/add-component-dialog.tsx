@@ -47,6 +47,7 @@ import {
   ImageIcon,
   PlusCircle,
   CalendarClock,
+  Layers3,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -79,6 +80,8 @@ const componentList: {
   {
     category: "Estrutura",
     components: [
+      { name: "Div", icon: Layers3, enabled: true },
+      { name: "Columns", icon: Columns, enabled: true },
       { name: "Banner", icon: Image, enabled: true },
       { name: "Stripe", icon: PanelTop, enabled: true },
       { name: "Footer", icon: AlignEndVertical, enabled: true },
@@ -98,7 +101,6 @@ const componentList: {
   {
     category: "Layout",
     components: [
-      { name: "Columns", icon: Columns, enabled: true },
       { name: "Button", icon: MousePointerClick, enabled: true },
       { name: "DownloadButton", icon: Download, enabled: true },
       { name: "Carousel", icon: View, enabled: true },
@@ -264,25 +266,25 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'hero-background-image':
             componentsToAdd = [
                 {
-                    id: `hero-bg-${baseId}`,
-                    type: 'Columns',
+                    id: `div-hero-bg-${baseId}`,
+                    type: 'Div',
                     props: {
-                        columnCount: 1,
                         styles: {
-                            isHero: true,
+                            isFullWidth: true,
                             backgroundImageUrl: 'https://picsum.photos/1200/800',
                             paddingTop: '8rem',
                             paddingBottom: '8rem',
                             paddingLeft: '2rem',
                             paddingRight: '2rem',
                             textAlign: 'center',
+                            color: '#FFFFFF'
                         }
                     },
                     order: 0, parentId: null, column: 0
                 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF' } }, order: 0, parentId: `hero-bg-${baseId}`, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '1rem auto', color: 'rgba(255, 255, 255, 0.9)' } }, order: 1, parentId: `hero-bg-${baseId}`, column: 0 },
-                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Chamada para Ação', href: '#' }, order: 2, parentId: `hero-bg-${baseId}`, column: 0 },
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem' } }, order: 0, parentId: `div-hero-bg-${baseId}`, column: 0 },
+                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '1rem auto' } }, order: 1, parentId: `div-hero-bg-${baseId}`, column: 0 },
+                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Chamada para Ação', href: '#' }, order: 2, parentId: `div-hero-bg-${baseId}`, column: 0 },
             ];
             break;
         case 'hero-split-right':
@@ -292,7 +294,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             const imageColumn = isImageRight ? 1 : 0;
             const parentId = `hero-split-${baseId}`;
             componentsToAdd = [
-                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { isHero: true, alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
+                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
                  { id: `title-${baseId}`, type: 'Title', props: { text: 'Resolva um Problema Real', styles: { fontSize: '2.5rem' } }, order: 0, parentId, column: textColumn },
                  { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.' }, order: 1, parentId, column: textColumn },
                  { id: `btn-${baseId}`, type: 'Button', props: { text: 'Saiba Mais', href: '#', align: 'left' }, order: 2, parentId, column: textColumn },
@@ -303,7 +305,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'hero-lead-capture': {
              const parentId = `hero-lead-${baseId}`;
              componentsToAdd = [
-                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { isHero: true, alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
+                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
                  { id: `title-${baseId}`, type: 'Title', props: { text: 'Receba a Oferta Exclusiva', styles: { fontSize: '2.5rem' } }, order: 0, parentId, column: 0 },
                  { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.' }, order: 1, parentId, column: 0 },
                  { id: `form-${baseId}`, type: 'Form', props: { fields: { email: {enabled: true, conditional: null, prefillFromUrl: false } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' }, formAlign: 'left', buttonAlign: 'left' }, order: 2, parentId, column: 0 },
@@ -315,8 +317,8 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             const sectionContainerId = `section-${baseId}`;
             const productsContainerId = `products-${baseId}`;
              componentsToAdd = [
-                // Main container for the whole section (acts as a "Section" component)
-                { id: sectionContainerId, type: 'Columns', props: { columnCount: 1, styles: { paddingTop: '3rem', paddingBottom: '3rem', } }, order: 0, parentId: null, column: 0 },
+                // Main container for the whole section (acts as a "Div" component)
+                { id: sectionContainerId, type: 'Div', props: { styles: { paddingTop: '3rem', paddingBottom: '3rem', } }, order: 0, parentId: null, column: 0 },
                 // Title inside the main container
                 { id: `title-${baseId}`, type: 'Title', props: { text: 'Nossos Produtos', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: sectionContainerId, column: 0 },
                 // Nested container for the products

@@ -30,72 +30,91 @@ import { renderDataExtensionUpload } from './html-components/data-extension-uplo
 import { renderFloatingImage } from './html-components/floating-image';
 import { renderFloatingButton } from './html-components/floating-button';
 import { renderCalendly } from './html-components/calendly';
+import { renderDiv } from './html-components/div';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
     return components
       .map((component) => {
-        const childrenHtml = component.type === 'Columns'
-          ? (() => {
-              const columnCount = component.props.columnCount || 2;
-              let columnsContent = '';
-              for (let i = 0; i < columnCount; i++) {
-                const columnComponents = allComponents
-                  .filter(c => c.parentId === component.id && c.column === i)
-                  .sort((a,b) => a.order - b.order);
-                
-                columnsContent += `<div class="column">${
-                      renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)
-                  }</div>`;
-              }
-              return columnsContent;
-            })()
-          : '';
+        const childrenHtml = (() => {
+            if (component.type === 'Columns') {
+                const columnCount = component.props.columnCount || 2;
+                let columnsContent = '';
+                for (let i = 0; i < columnCount; i++) {
+                    const columnComponents = allComponents
+                      .filter(c => c.parentId === component.id && c.column === i)
+                      .sort((a,b) => a.order - b.order);
+                    columnsContent += `<div class="column" style="${getColumnStyle(component.props.columnStyles, i)}">${renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)}</div>`;
+                }
+                return columnsContent;
+            } else if (component.type === 'Div') {
+                const divChildren = allComponents
+                    .filter(c => c.parentId === component.id)
+                    .sort((a, b) => a.order - b.order);
+                return renderComponents(divChildren, allComponents, pageState, isForPreview, hideAmpscript);
+            }
+            return '';
+        })();
         return renderComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
       }).join('\n');
-  }
+}
+
+const getColumnStyle = (columnStyles: any[] = [], index: number): string => {
+    const styles = columnStyles[index] || {};
+    return Object.entries(styles)
+      .map(([key, value]) => {
+        if (!value) return '';
+        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+        return `${cssKey}: ${value};`;
+      })
+      .join(' ');
+}
+
 
 const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string, hideAmpscript: boolean = false): string => {
   const styles = component.props.styles || {};
-  const entranceAnimation = styles.animationType || 'none';
-  const animationDuration = styles.animationDuration || 1;
-  const animationDelay = styles.animationDelay || 0;
-  const loopAnimation = styles.loopAnimation || 'none';
-  const loopAnimationDuration = styles.loopAnimationDuration;
-  const loopAnimationTimingFunction = styles.loopAnimationTimingFunction;
-  
-  const hasEntranceAnimation = entranceAnimation !== 'none';
-  const entranceAnimationAttrs = hasEntranceAnimation
-    ? `data-animation="${entranceAnimation}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
-    : '';
+  const {
+      animationType: entranceAnimation = 'none',
+      animationDuration = 1,
+      animationDelay = 0,
+      loopAnimation = 'none',
+      loopAnimationDuration,
+      loopAnimationTimingFunction,
+      ...otherStyles
+  } = styles;
 
-  let sectionClass = `component-wrapper`;
-  if (hasEntranceAnimation) {
-    sectionClass += ` animate-on-scroll`;
+  const layout = component.props.layout || {};
+
+  let wrapperClass = 'component-wrapper';
+
+  if (entranceAnimation !== 'none') {
+    wrapperClass += ' animate-on-scroll';
   }
   
-  let inlineLoopStyle = '';
-  if (loopAnimation && loopAnimation !== 'none') {
-    sectionClass += ` animation-loop--${loopAnimation}`;
-    if (loopAnimationDuration) {
-        inlineLoopStyle += `animation-duration: ${loopAnimationDuration};`;
-    }
-    if (loopAnimationTimingFunction) {
-        inlineLoopStyle += `animation-timing-function: ${loopAnimationTimingFunction};`;
-    }
+  if (loopAnimation !== 'none') {
+      wrapperClass += ` animation-loop--${loopAnimation}`;
   }
   
-  if (component.props.layout === 'inline') {
-      sectionClass += ' component-layout-inline';
+  if (layout.alignSelf) {
+      otherStyles['margin'] = 
+        layout.alignSelf === 'center' ? 'auto' :
+        layout.alignSelf === 'flex-start' ? '0 auto 0 0' :
+        layout.alignSelf === 'flex-end' ? '0 0 0 auto' : '0';
   }
 
+  const wrapperStyle = getStyleString(otherStyles);
+
+  const animationAttrs = entranceAnimation !== 'none'
+    ? `style="--animation-name: ${entranceAnimation}; --animation-duration: ${animationDuration}s; --animation-delay: ${animationDelay}s; ${wrapperStyle}"`
+    : `style="${wrapperStyle}"`;
+  
   // Floating components and Stripe are handled specially as they don't sit inside the padded container
   if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe'].includes(component.type)) {
     return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
-  // Columns that are full-width provide their own outer structure
-  if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
+  // Divs and full-width Columns provide their own outer structure
+  if ((component.type === 'Div' || component.type === 'Columns') && component.props.styles?.isFullWidth) {
       return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
@@ -108,21 +127,21 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   // Check if this component is the very first one after an overlay header
   const isFirstAfterOverlay = isHeaderOverlay && 
       component.parentId === null && 
-      pageState.components.filter(c => c.parentId === null && c.type !== 'Header')
+      pageState.components.filter(c => c.parentId === null && !['Header', 'Stripe'].includes(c.type))
                         .sort((a,b) => a.order - b.order)[0]?.id === component.id;
 
-  let wrapperStyle = '';
+  let containerStyle = '';
   if (isFirstAfterOverlay) {
-      wrapperStyle = 'padding-top: 0;';
+      containerStyle = 'padding-top: 0;';
   }
 
   // Components inside another component (e.g., in a column) don't get the padded container
   if (component.parentId !== null) {
-     return `<div class="${sectionClass}" ${entranceAnimationAttrs} style="${inlineLoopStyle}">${renderedComponent}</div>`;
+     return `<div class="${wrapperClass}" ${animationAttrs}>${renderedComponent}</div>`;
   }
   
   // Root-level components get the padded container
-  return `<div class="${sectionClass}" ${entranceAnimationAttrs} style="${wrapperStyle}${inlineLoopStyle}">
+  return `<div class="${wrapperClass}" ${animationAttrs} style="${containerStyle}">
              <div class="section-container-padded">
                ${renderedComponent}
              </div>
@@ -151,6 +170,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'Map': return renderMap(component);
     case 'SocialIcons': return renderSocialIcons(component);
     case 'Columns': return renderColumns(component, childrenHtml);
+    case 'Div': return renderDiv(component, childrenHtml);
     case 'WhatsApp': return renderWhatsApp(component);
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState);
@@ -159,6 +179,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'FloatingImage': return renderFloatingImage(component);
     case 'FloatingButton': return renderFloatingButton(component);
     case 'Calendly': return renderCalendly(component);
+    case 'Footer': return renderFooter(component);
     default:
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
@@ -408,14 +429,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const el = entry.target;
-                    const animationName = el.dataset.animation;
-                    if (animationName && animationName !== 'none') {
-                        el.style.animationDuration = el.dataset.animationDuration;
-                        el.style.animationDelay = el.dataset.animationDelay;
-                        el.classList.add('animate-' + animationName, 'is-visible');
-                    } else {
-                        el.classList.add('is-visible');
-                    }
+                    el.classList.add('is-visible');
                     observer.unobserve(el);
                 }
             });
@@ -1003,21 +1017,23 @@ ${trackingScripts.head}
         width: 100%;
         position: relative;
     }
-    .section-wrapper > .columns-container {
+    .section-wrapper > .columns-container,
+    .section-wrapper > .div-container {
         position: relative;
         z-index: 1;
     }
     .animate-on-scroll {
         opacity: 0;
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        animation-fill-mode: forwards;
     }
     .animate-on-scroll.is-visible {
         opacity: 1;
+        animation-name: var(--animation-name, none);
+        animation-duration: var(--animation-duration, 1s);
+        animation-delay: var(--animation-delay, 0s);
     }
-    .animate-on-scroll.is-visible.animate-fadeIn { animation-name: fadeInUp; }
-    .animate-on-scroll.is-visible.animate-fadeInUp { animation-name: fadeInUp; }
-    .animate-on-scroll.is-visible.animate-fadeInLeft { animation-name: fadeInLeft; }
-    .animate-on-scroll.is-visible.animate-fadeInRight { animation-name: fadeInRight; }
-    
+
     .animation-loop--pulse { animation: pulse 2s infinite; }
     .animation-loop--bounce { animation: bounce 1s infinite; }
     .animation-loop--rotate { animation: rotate 4s linear infinite; }
@@ -1846,24 +1862,32 @@ ${trackingScripts.head}
         height: 24px;
     }
 
+    .columns-container, .div-container {
+        display: flex;
+        gap: 20px;
+        width: 100%;
+        position: relative; /* For hero text overlay */
+    }
     .columns-container {
         display: grid;
         grid-template-columns: var(--grid-template-columns, repeat(var(--column-count, 2), 1fr));
         gap: 20px;
-        width: 100%;
-        position: relative; /* For hero text overlay */
-        justify-content: var(--justify-content, 'flex-start');
     }
-    .columns-container .column {
+     .div-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px; /* Default gap for children in a Div */
+    }
+    .columns-container .column, .div-container > .component-wrapper {
         min-width: 0;
         position: relative;
         z-index: 1;
         display: flex;
-        flex-wrap: wrap;
-        align-content: flex-start;
-        align-items: flex-start;
+        flex-direction: column;
         gap: 10px;
+        justify-content: var(--justify-content, 'flex-start');
     }
+
     .section-overlay {
         position: absolute;
         top: 0;
@@ -2033,7 +2057,9 @@ ${trackingScripts.head}
     }
     .animate-on-scroll.is-visible {
         animation-fill-mode: both;
-        animation-name: var(--animation-name);
+        animation-name: var(--animation-name, none);
+        animation-duration: var(--animation-duration);
+        animation-delay: var(--animation-delay);
     }
 
 
@@ -2091,4 +2117,14 @@ ${!isForPreview ? trackingScripts.body : ''}
   finalHtml = finalHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
   return finalHtml;
+}
+
+function getStyleString(styles: any = {}): string {
+    return Object.entries(styles)
+      .map(([key, value]) => {
+        if (!value) return '';
+        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+        return `${cssKey}: ${value};`;
+      })
+      .join(' ');
 }

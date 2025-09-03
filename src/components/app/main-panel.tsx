@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text } from "lucide-react";
+import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -20,12 +20,27 @@ import {
 import { HowToUseDialog } from "./how-to-use-dialog";
 import type { CloudPage } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
 interface MainPanelProps {
   pageState: CloudPage;
   setPageState: Dispatch<SetStateAction<CloudPage | null>>;
   onDataExtensionKeyChange: (newKey: string) => void;
 }
+
+interface Device {
+    name: string;
+    width: number;
+    height: number;
+    icon: React.ElementType;
+}
+  
+const devices: Device[] = [
+    { name: 'Desktop', width: 1920, height: 1080, icon: Monitor },
+    { name: 'Tablet', width: 768, height: 1024, icon: Tablet },
+    { name: 'iPhone 12 Pro', width: 390, height: 844, icon: Smartphone },
+    { name: 'Samsung S20 Ultra', width: 412, height: 915, icon: Smartphone },
+];
 
 function WysiwygToolbar({ editor, iframe, onAction }: { editor: HTMLElement | null, iframe: HTMLIFrameElement | null, onAction: () => void }) {
     if (!editor || !iframe?.contentWindow) return null;
@@ -95,9 +110,10 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [selectedDevice, setSelectedDevice] = useState<Device>(devices[0]);
+
 
   const [activeEditor, setActiveEditor] = useState<HTMLElement | null>(null);
   const [toolbarUpdate, setToolbarUpdate] = useState(0);
@@ -294,12 +310,21 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
               <Button variant="ghost" size="icon" onClick={handleOpenInNewTab} aria-label="Abrir em nova aba">
                   <ExternalLink className="h-5 w-5"/>
               </Button>
-              <Button variant={previewMode === 'desktop' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('desktop')} aria-label="Visualização Desktop">
-                  <Monitor className="h-5 w-5"/>
-              </Button>
-              <Button variant={previewMode === 'mobile' ? 'secondary' : 'ghost'} size="icon" onClick={() => setPreviewMode('mobile')} aria-label="Visualização Mobile">
-                  <Smartphone className="h-5 w-5"/>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                        <selectedDevice.icon className="h-5 w-5" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    {devices.map(device => (
+                        <DropdownMenuItem key={device.name} onClick={() => setSelectedDevice(device)}>
+                            <device.icon className="mr-2 h-4 w-4" />
+                            <span>{device.name}</span>
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
           </div>
         </div>
         <div className="flex-grow overflow-auto">
@@ -311,8 +336,9 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
                   title="Preview da Cloud Page"
                   className={cn(
                       "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
-                      previewMode === 'desktop' ? 'w-full h-full' : 'w-[375px] h-[667px]'
+                      selectedDevice.name === 'Desktop' ? 'w-full h-full' : ''
                   )}
+                  style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : {}}
               />
             </div>
           </TabsContent>

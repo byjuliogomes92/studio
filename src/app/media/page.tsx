@@ -117,7 +117,7 @@ function BulkTagPopover({ onBulkTag }: { onBulkTag: (tags: string[]) => void }) 
             const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
             onBulkTag(tags);
             setTagInput('');
-            setIsOpen(false); // Close popover on action
+            setIsOpen(false);
         }
     };
     

@@ -473,6 +473,16 @@ export default function MediaLibraryPage() {
         });
   }, [mediaAssets, searchTerm, activeTag, sortOption]);
 
+    const handleSelectAll = () => {
+        if (selectedIds.size === filteredAndSortedAssets.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredAndSortedAssets.map(asset => asset.id)));
+        }
+    };
+
+    const isAllSelected = selectedIds.size > 0 && selectedIds.size === filteredAndSortedAssets.length;
+
   const isUploading = uploadingFiles.size > 0;
 
   if (isLoading || authLoading) {
@@ -857,31 +867,39 @@ export default function MediaLibraryPage() {
         )}
       </main>
       
-       {isSelectionMode && selectedIds.size > 0 && (
+       {isSelectionMode && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
                 <div className="flex items-center gap-4 bg-background border rounded-lg shadow-lg p-3">
                     <p className="text-sm font-medium">{selectedIds.size} item(s) selecionado(s)</p>
-                     <BulkTagPopover onBulkTag={handleBulkTag} />
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir Selecionados
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                             <AlertDialogHeader>
-                                <AlertDialogTitle>Excluir {selectedIds.size} itens?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleBulkDelete}>Excluir</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                     <Button variant="outline" onClick={handleSelectAll}>
+                        <CheckCheck className="mr-2 h-4 w-4" />
+                        {isAllSelected ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                    </Button>
+                    {selectedIds.size > 0 && (
+                        <>
+                           <BulkTagPopover onBulkTag={handleBulkTag} />
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Excluir {selectedIds.size} itens?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleBulkDelete}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </>
+                    )}
                 </div>
             </div>
         )}

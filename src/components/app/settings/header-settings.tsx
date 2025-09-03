@@ -116,8 +116,8 @@ export function HeaderSettings({ component, onPropChange }: ComponentSettingsPro
                 <Label>Cantos do Cabeçalho</Label>
                 <Input id="header-border-radius" value={props.borderRadius || ''} onChange={e => onPropChange('borderRadius', e.target.value)} placeholder="Ex: 0px ou 0.5rem" />
             </div>
-             <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-                <Label>Estilo de Fundo (Aparece com "Fixo no Topo")</Label>
+             <div className="p-4 border rounded-lg bg-muted/40 space-y-4">
+                <Label>Estilo de Fundo</Label>
                 <Select value={backgroundType} onValueChange={(value) => onPropChange('backgroundType', value)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -125,10 +125,17 @@ export function HeaderSettings({ component, onPropChange }: ComponentSettingsPro
                         <SelectItem value="gradient">Gradiente</SelectItem>
                     </SelectContent>
                 </Select>
+
                 {backgroundType === 'solid' && (
-                    <div className="space-y-2">
-                        <Label htmlFor="header-bg-color">Cor de Fundo</Label>
-                        <Input id="header-bg-color" type="color" value={props.backgroundColorOnScroll || '#ffffff'} onChange={(e) => onPropChange('backgroundColorOnScroll', e.target.value)} className="p-1 h-10"/>
+                    <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                            <Label htmlFor="header-bg-color">Cor de Fundo Inicial</Label>
+                            <Input id="header-bg-color" type="color" value={props.backgroundColor || '#ffffff'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="header-bg-scroll-color">Cor de Fundo (na Rolagem)</Label>
+                            <Input id="header-bg-scroll-color" type="color" value={props.backgroundColorOnScroll || '#ffffff'} onChange={(e) => onPropChange('backgroundColorOnScroll', e.target.value)} className="p-1 h-10"/>
+                        </div>
                     </div>
                 )}
                  {backgroundType === 'gradient' && (

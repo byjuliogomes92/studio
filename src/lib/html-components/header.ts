@@ -11,6 +11,7 @@ export function renderHeader(component: PageComponent): string {
         logoHeight = 40,
         isSticky = false,
         overlay = false,
+        backgroundColor, // The new initial background color property
         backgroundColorOnScroll = '#ffffff',
         textColorOnScroll = '#000000',
         mobileMenuBehavior = 'push',
@@ -34,7 +35,7 @@ export function renderHeader(component: PageComponent): string {
     let backgroundStyleOnScroll = '';
     if (backgroundType === 'gradient' && gradientFrom && gradientTo) {
         backgroundStyleOnScroll = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
-    } else if (backgroundType === 'solid') {
+    } else { // Defaults to solid
         backgroundStyleOnScroll = `background-color: ${backgroundColorOnScroll};`; 
     }
 
@@ -63,8 +64,15 @@ export function renderHeader(component: PageComponent): string {
         rightContent = `<div class="header-nav-container">${buttonHtml}</div>`;
     }
 
-    // Apply initial background if not overlaying
-    const initialBackground = !overlay ? backgroundStyleOnScroll : 'background: transparent;';
+    // Apply initial background
+    let initialBackground = '';
+    if (overlay) {
+        initialBackground = 'background: transparent;';
+    } else if (backgroundType === 'gradient' && gradientFrom && gradientTo) {
+        initialBackground = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
+    } else if (backgroundColor) {
+        initialBackground = `background-color: ${backgroundColor};`;
+    }
     
     const inlineStyles = `
       ${initialBackground}

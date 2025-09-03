@@ -619,36 +619,18 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     function setupStickyHeader() {
         const header = document.querySelector('.page-header[data-sticky="true"]');
         if (!header) return;
-
-        const setHeaderStyle = (isScrolled) => {
-            const bgStyle = header.dataset.bgScroll || 'background-color: #ffffff;';
-            const textColor = header.dataset.textColorScroll || '#000000';
-            
-            if (isScrolled) {
-                header.style.cssText += bgStyle; // Append background styles
-                header.style.color = textColor;
-                header.classList.add('scrolled');
-            } else {
-                // Reset to initial (transparent or defined color)
-                if(!header.hasAttribute('data-overlay')) {
-                    header.style.background = header.dataset.initialBg || 'transparent'; 
-                } else {
-                    header.style.background = 'transparent';
-                }
-                header.style.color = 'inherit';
-                header.classList.remove('scrolled');
-            }
-        };
-
-        header.dataset.initialBg = header.style.background;
-        
-        setHeaderStyle(false); // Set initial styles
+        const initialHeaderBg = header.style.background;
+        const initialHeaderColor = header.style.color;
 
         window.addEventListener('scroll', () => {
             if (window.scrollY > 50) {
-                setHeaderStyle(true);
+                header.style.background = header.dataset.bgScroll || '#ffffff';
+                header.style.color = header.dataset.textColorScroll || '#000000';
+                header.classList.add('scrolled');
             } else {
-                setHeaderStyle(false);
+                header.style.background = initialHeaderBg;
+                header.style.color = initialHeaderColor;
+                header.classList.remove('scrolled');
             }
         }, { passive: true });
     }
@@ -1021,7 +1003,6 @@ ${trackingScripts.head}
         position: absolute;
         top: 0;
         left: 0;
-        background: transparent;
         color: white; /* Default for overlays, can be overridden */
     }
     .page-header[data-sticky="true"] {

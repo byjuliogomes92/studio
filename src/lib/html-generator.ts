@@ -28,6 +28,7 @@ import { renderFooter } from './html-components/footer';
 import { renderFTPUpload } from './html-components/ftpupload';
 import { renderDataExtensionUpload } from './html-components/data-extension-upload';
 import { renderFloatingImage } from './html-components/floating-image';
+import { renderFloatingButton } from './html-components/floating-button';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -49,7 +50,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
 
             // FloatingImages are positioned absolutely and don't need the standard wrapper.
-            if (component.type === 'FloatingImage') {
+            if (component.type === 'FloatingImage' || component.type === 'FloatingButton') {
                 return renderedComponent;
             }
 
@@ -141,6 +142,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'DataExtensionUpload': return renderDataExtensionUpload(component);
     case 'Footer': return renderFooter(component);
     case 'FloatingImage': return renderFloatingImage(component);
+    case 'FloatingButton': return renderFloatingButton(component);
     default:
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
@@ -697,6 +699,23 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         });
     }
 
+    function setupFloatingButtons() {
+        document.querySelectorAll('.floating-button-wrapper[data-show-on-scroll="true"]').forEach(button => {
+            const offset = parseInt(button.dataset.scrollOffset, 10) || 100;
+            
+            const checkPosition = () => {
+                if (window.scrollY > offset) {
+                    button.classList.add('visible');
+                } else {
+                    button.classList.remove('visible');
+                }
+            };
+            
+            window.addEventListener('scroll', checkPosition, { passive: true });
+            checkPosition();
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
         if (loader) {
@@ -728,7 +747,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         setSocialIconStyles();
         handleConditionalFields();
         setupStickyHeader();
-        setupCarousels();
+        setupFloatingButtons();
         setupAnimations();
     });
     </script>
@@ -803,7 +822,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe'), components, pageState, isForPreview);
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe' && c.type !== 'WhatsApp' && c.type !== 'FloatingImage' && c.type !== 'FloatingButton'), components, pageState, isForPreview);
+  const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '')).join('\n');
+
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
@@ -1894,7 +1915,34 @@ ${trackingScripts.head}
         width: 32px;
         height: 32px;
     }
-
+    .floating-button-wrapper {
+        position: fixed;
+        z-index: 100;
+    }
+    .floating-button-wrapper[data-show-on-scroll="true"] {
+        transform: translateY(200%);
+        transition: transform 0.3s ease-in-out;
+    }
+    .floating-button-wrapper.visible {
+        transform: translateY(0);
+    }
+    .floating-button-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transition: transform 0.2s ease;
+    }
+    .floating-button-link:hover {
+        transform: scale(1.1);
+    }
+    .floating-button-link img, .floating-button-link svg {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
     .password-protection-container {
         display: flex;
         align-items: center;
@@ -1990,6 +2038,7 @@ ${isForPreview ? '' : trackingScripts.body}
   <main>
     ${mainContentHtml}
   </main>
+  ${floatingElementsHtml}
   ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '') : ''}
   ${isForPreview ? '' : cookieBannerHtml}
   %%[ ELSE ]%%
@@ -2002,3 +2051,5 @@ ${isForPreview ? '' : trackingScripts.body}
 
   return finalHtml;
 }
+
+    

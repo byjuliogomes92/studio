@@ -28,7 +28,8 @@ export type ComponentType =
   | 'DownloadButton'
   | 'FTPUpload'
   | 'DataExtensionUpload'
-  | 'FloatingImage';
+  | 'FloatingImage'
+  | 'FloatingButton';
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';
 
@@ -390,3 +391,5 @@ export interface TicketComment {
     comment: string;
     createdAt: any;
 }
+
+    

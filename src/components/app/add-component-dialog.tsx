@@ -45,6 +45,7 @@ import {
   HelpCircle,
   UploadCloud,
   ImageIcon,
+  PlusCircle,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -106,6 +107,7 @@ const componentList: {
       { name: "SocialIcons", icon: Share2, enabled: true },
       { name: "WhatsApp", icon: Zap, enabled: true },
       { name: "FloatingImage", icon: ImageIcon, enabled: true },
+      { name: "FloatingButton", icon: PlusCircle, enabled: true },
     ],
   },
   {
@@ -573,3 +575,5 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
     </Dialog>
   );
 }
+
+    

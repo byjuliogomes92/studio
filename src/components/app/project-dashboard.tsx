@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -227,7 +226,7 @@ export function ProjectDashboard() {
             icon: selectedIcon,
             color: selectedColor
         };
-        await updateProject(projectToEdit.id, updatedData, user);
+        await updateProject(projectToEdit.id, updatedData, user.uid);
         setProjects(prev => prev.map(p => p.id === projectToEdit.id ? { ...p, ...updatedData } : p));
         toast({ title: "Projeto atualizado!" });
     } catch (error) {
@@ -254,7 +253,7 @@ export function ProjectDashboard() {
     }
 
     try {
-      await deleteProject(projectToDelete.id);
+      await deleteProject(projectToDelete.id, user.uid);
       setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
       toast({ title: "Projeto excluído!" });
     } catch (error) {

@@ -721,7 +721,7 @@ export function PageList({ projectId }: PageListProps) {
   const handleDeletePage = async () => {
      if (!pageToDelete || !user) return;
     try {
-      await deletePage(pageToDelete.id, user);
+      await deletePage(pageToDelete.id, user.uid);
       setPages(prev => prev.filter(p => p.id !== pageToDelete.id));
       toast({ title: "Página excluída!" });
     } catch (error) {
@@ -735,7 +735,7 @@ export function PageList({ projectId }: PageListProps) {
     if(!user) return;
     toast({ title: "Copiando página...", description: "Por favor, aguarde." });
     try {
-      const newPage = await duplicatePage(pageId, user);
+      const newPage = await duplicatePage(pageId, user.uid);
       setPages(prev => [newPage, ...prev]);
       toast({ title: "Página duplicada!", description: `A página "${newPage.name}" foi criada com sucesso.` });
     } catch(error) {

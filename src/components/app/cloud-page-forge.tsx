@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -270,8 +269,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
               setSavedPageState(finalPageState);
               resetState(finalPageState);
           }
-          // Pass the user to the publishPage function for logging
-          await publishPage(pageId, finalPageState, user);
+          
+          await publishPage(pageId, finalPageState, user.uid);
 
           if (useBitly && hasBitlyConfig) {
               const result = await shortenUrl({ brandId: pageState.brandId, longUrl: pageUrl });
@@ -312,7 +311,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             meta: restOfMeta,
         };
 
-        await addTemplate(templateData, user);
+        await addTemplate(templateData, user.uid);
         toast({ title: "Template salvo!", description: `O template "${templateName}" foi criado com sucesso.` });
         setSaveTemplateModalOpen(false);
         setTemplateName("");

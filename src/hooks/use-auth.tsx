@@ -133,11 +133,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateWorkspaceName = async (workspaceId: string, newName: string) => {
     if (!user || !activeWorkspace) return;
-    const oldName = activeWorkspace.name;
-    await updateWorkspaceNameInDb(workspaceId, newName, user);
+    await updateWorkspaceNameInDb(workspaceId, newName, user.uid);
     
-    await logActivity(workspaceId, user.uid, user.displayName, 'WORKSPACE_RENAMED', { oldName: oldName, newName });
-
     const updateState = (ws: Workspace) => produce(ws, draft => {
         if(draft.id === workspaceId) {
             draft.name = newName;

@@ -156,6 +156,14 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange }: Com
             <Separator />
             <h4 className="font-medium text-sm pt-2">Posicionamento e Estilo</h4>
             <div className="flex items-center justify-between">
+                <Label htmlFor="header-full-width">Largura Total</Label>
+                <Switch
+                    id="header-full-width"
+                    checked={props.isFullWidth || false}
+                    onCheckedChange={(checked) => onPropChange('isFullWidth', checked)}
+                />
+            </div>
+            <div className="flex items-center justify-between">
                 <Label htmlFor="header-overlay">Sobrepor na primeira seção</Label>
                 <Switch
                     id="header-overlay"
@@ -226,5 +234,3 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange }: Com
         </div>
     );
 }
-
-    

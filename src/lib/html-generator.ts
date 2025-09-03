@@ -625,8 +625,10 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         window.addEventListener('scroll', () => {
             if (window.scrollY > 50) {
                 header.classList.add('scrolled');
+                header.style.backgroundColor = scrollBg;
             } else {
                 header.classList.remove('scrolled');
+                header.style.backgroundColor = ''; // Reverts to initial style
             }
         }, { passive: true });
     }
@@ -841,6 +843,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const mainStyles = `
     width: 100%;
     overflow-x: hidden;
+    ${isHeaderOverlay ? 'padding-top: 0;' : ''}
   `;
 
   const initialAmpscript = `%%[ 
@@ -987,21 +990,32 @@ ${trackingScripts.head}
     }
     
     .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         width: 100%;
-        padding: 1rem;
-        box-sizing: border-box;
         transition: background 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
         z-index: 50; 
-        background: var(--current-bg, ${headerComponent?.props.overlay ? 'transparent' : 'var(--initial-bg, transparent)'});
+        background: var(--current-bg, var(--initial-bg, transparent));
+    }
+    .page-header .header-inner-contained {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+     .page-header .header-inner-full {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 1rem;
     }
     .page-header[data-overlay="true"] {
         position: absolute;
         top: 0;
         left: 0;
-        --initial-bg: transparent; /* Default to transparent if overlaying */
+        background: transparent; /* Overlay starts transparent */
     }
     .page-header[data-sticky="true"] {
         position: sticky;
@@ -1009,7 +1023,7 @@ ${trackingScripts.head}
     }
     .page-header.scrolled {
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      background-color: ${headerComponent?.props.backgroundColorOnScroll || '#ffffff'};
+      background: var(--bg-scroll, #ffffff);
     }
     .page-header .header-logo {
         flex-shrink: 0;
@@ -1057,12 +1071,16 @@ ${trackingScripts.head}
       width: 1.1em;
       height: 1.1em;
     }
-    .page-header[data-layout="logo-center-menu-below"] {
+    .page-header[data-layout="logo-center-menu-below"] .header-inner-contained,
+    .page-header[data-layout="logo-center-menu-below"] .header-inner-full {
         flex-direction: column;
         gap: 1rem;
     }
     .page-header[data-layout="logo-only-left"] .header-logo { margin-right: auto; }
-    .page-header[data-layout="logo-only-center"] { justify-content: center; }
+    .page-header[data-layout="logo-only-center"] .header-inner-contained,
+    .page-header[data-layout="logo-only-center"] .header-inner-full {
+        justify-content: center;
+    }
 
     .mobile-menu-toggle { display: none; background: none; border: none; cursor: pointer; color: inherit; }
 
@@ -2004,9 +2022,6 @@ ${trackingScripts.head}
 
 
     @media (max-width: 768px) {
-        main {
-            padding-top: ${isHeaderOverlay ? '0' : 'var(--header-height, 0px)'};
-        }
         .columns-container:not([style*="--column-count: 1"]) {
             grid-template-columns: 1fr;
         }
@@ -2051,5 +2066,3 @@ ${isForPreview ? '' : trackingScripts.body}
 
   return finalHtml;
 }
-
-    

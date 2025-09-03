@@ -61,15 +61,13 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                  return renderedComponent;
             }
             
-            // NEW: Conditionally add a style to remove top padding for the first element after an overlay header
-            const conditionalWrapperStyle = (isHeaderOverlay && index === 0) ? 'padding-top: 0;' : '';
+            const wrapperStyle = (isHeaderOverlay && index === 0 && (component.type !== 'Header')) ? 'padding-top: 0;' : '';
 
-             // NEW: Logic to add padding class conditionally
-            const containerClass = (component.type === 'Header' && isHeaderOverlay)
+             const containerClass = (component.type === 'Header' && isHeaderOverlay)
                 ? 'section-container'
-                : 'section-container section-container-padded';
+                : 'section-container-padded';
 
-            return `<div class="${sectionClass}" ${animationAttrs} style="${conditionalWrapperStyle}">
+            return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
                        <div class="${containerClass}">
                          ${renderedComponent}
                        </div>
@@ -382,6 +380,8 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
     const hasAutoplayCarousel = hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay);
     const hasCalendly = pageState.components.some(c => c.type === 'Calendly');
+    const headerComponent = pageState.components.find(c => c.type === 'Header');
+    const isHeaderOverlay = headerComponent?.props.overlay || false;
 
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
     const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
@@ -642,6 +642,17 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         }, { passive: true });
     }
 
+    function setupOverlayHeader() {
+        const header = document.querySelector('.page-header[data-overlay="true"]');
+        if (!header) return;
+
+        const firstSection = document.querySelector('main > .component-wrapper:first-of-type');
+        if (firstSection) {
+            const headerHeight = header.offsetHeight;
+            firstSection.style.paddingTop = headerHeight + 'px';
+        }
+    }
+
 
     function setupMobileMenu() {
         const body = document.body;
@@ -753,6 +764,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         setupStickyHeader();
         setupFloatingButtons();
         setupAnimations();
+        ${isHeaderOverlay ? 'setupOverlayHeader();' : ''}
     });
     </script>
     `;
@@ -834,7 +846,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const headerComponent = components.find(c => c.type === 'Header');
-  const isHeaderOverlay = headerComponent?.props.overlay || false;
   
   const bodyStyles = `
     background-color: ${styles.backgroundColor};
@@ -953,6 +964,7 @@ ${trackingScripts.head}
     
     .component-wrapper {
       width: 100%;
+      padding-top: 20px;
     }
     
     .section-container {
@@ -961,11 +973,12 @@ ${trackingScripts.head}
       margin-left: auto;
       margin-right: auto;
     }
-
-    .section-container-padded {
-        padding: 20px;
-    }
     
+    .section-container-padded {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
     .section-wrapper {
         width: 100%;
         position: relative;

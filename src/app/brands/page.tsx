@@ -112,10 +112,16 @@ function ImageUrlInput({ label, value, onSelect, tooltip }: { label: string; val
     );
 }
 
-function ColorInput({ label, value, onChange }: { label: string, value: string, onChange: (value: string) => void }) {
+function ColorInput({ label, value, onChange, tooltip }: { label: string, value: string, onChange: (value: string) => void, tooltip: string }) {
     return (
         <div className="space-y-1">
-            <Label className="text-xs">{label}</Label>
+            <div className="flex items-center gap-1.5">
+                <Label className="text-xs">{label}</Label>
+                 <Tooltip>
+                    <TooltipTrigger asChild><HelpCircle className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
+                    <TooltipContent><p>{tooltip}</p></TooltipContent>
+                </Tooltip>
+            </div>
             <div className="relative flex items-center">
                 <Input 
                     type="text" 
@@ -437,10 +443,10 @@ export default function BrandsPage() {
                             <div className="p-4 border rounded-md space-y-3">
                                 <h5 className="font-medium flex items-center gap-2"><Sun className="h-4 w-4"/> Tema Claro</h5>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <ColorInput label="Primária" value={currentBrand.colors?.light?.primary || '#000000'} onChange={value => handleBrandFieldChange('colors.light.primary', value)} />
-                                  <ColorInput label="Primária (Hover)" value={currentBrand.colors?.light?.primaryHover || '#000000'} onChange={value => handleBrandFieldChange('colors.light.primaryHover', value)} />
-                                  <ColorInput label="Fundo" value={currentBrand.colors?.light?.background || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.light.background', value)} />
-                                  <ColorInput label="Texto" value={currentBrand.colors?.light?.foreground || '#000000'} onChange={value => handleBrandFieldChange('colors.light.foreground', value)} />
+                                  <ColorInput label="Primária" value={currentBrand.colors?.light?.primary || '#000000'} onChange={value => handleBrandFieldChange('colors.light.primary', value)} tooltip="Cor principal para botões e links." />
+                                  <ColorInput label="Primária (Hover)" value={currentBrand.colors?.light?.primaryHover || '#000000'} onChange={value => handleBrandFieldChange('colors.light.primaryHover', value)} tooltip="Cor dos botões ao passar o mouse."/>
+                                  <ColorInput label="Fundo" value={currentBrand.colors?.light?.background || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.light.background', value)} tooltip="Cor de fundo geral da página."/>
+                                  <ColorInput label="Texto" value={currentBrand.colors?.light?.foreground || '#000000'} onChange={value => handleBrandFieldChange('colors.light.foreground', value)} tooltip="Cor principal do texto."/>
                                 </div>
                             </div>
                         )}
@@ -449,10 +455,10 @@ export default function BrandsPage() {
                             <div className="p-4 border rounded-md space-y-3">
                                 <h5 className="font-medium flex items-center gap-2"><Moon className="h-4 w-4"/> Tema Escuro</h5>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <ColorInput label="Primária" value={currentBrand.colors?.dark?.primary || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.primary', value)} />
-                                  <ColorInput label="Primária (Hover)" value={currentBrand.colors?.dark?.primaryHover || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.primaryHover', value)} />
-                                  <ColorInput label="Fundo" value={currentBrand.colors?.dark?.background || '#000000'} onChange={value => handleBrandFieldChange('colors.dark.background', value)} />
-                                  <ColorInput label="Texto" value={currentBrand.colors?.dark?.foreground || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.foreground', value)} />
+                                  <ColorInput label="Primária" value={currentBrand.colors?.dark?.primary || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.primary', value)} tooltip="Cor principal para botões e links."/>
+                                  <ColorInput label="Primária (Hover)" value={currentBrand.colors?.dark?.primaryHover || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.primaryHover', value)} tooltip="Cor dos botões ao passar o mouse."/>
+                                  <ColorInput label="Fundo" value={currentBrand.colors?.dark?.background || '#000000'} onChange={value => handleBrandFieldChange('colors.dark.background', value)} tooltip="Cor de fundo geral da página."/>
+                                  <ColorInput label="Texto" value={currentBrand.colors?.dark?.foreground || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.foreground', value)} tooltip="Cor principal do texto."/>
                                 </div>
                             </div>
                         )}

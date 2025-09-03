@@ -804,21 +804,22 @@ const renderLoader = (meta: CloudPage['meta'], themeColor: string): string => {
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false): string {
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
-  const ssjsScript = getFormSubmissionScript(pageState);
+  // Decide whether to show AMPScript based on context
+  const shouldHideAmpscript = isForPreview && hideAmpscript;
 
+  const ssjsScript = getFormSubmissionScript(pageState);
   const security = getSecurityScripts(pageState);
-  
   const clientSideScripts = getClientSideScripts(pageState);
   
-  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', hideAmpscript)).join('\n');
+  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
   const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe' && c.type !== 'WhatsApp' && c.type !== 'FloatingImage' && c.type !== 'FloatingButton'), components, pageState, isForPreview, hideAmpscript);
-  const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', hideAmpscript)).join('\n');
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe' && c.type !== 'WhatsApp' && c.type !== 'FloatingImage' && c.type !== 'FloatingButton'), components, pageState, isForPreview, shouldHideAmpscript);
+  const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
 
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
@@ -873,8 +874,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-${isForPreview || hideAmpscript ? '' : initialAmpscript}
-${isForPreview || hideAmpscript ? '' : ssjsScript}
+${shouldHideAmpscript ? '' : initialAmpscript}
+${shouldHideAmpscript ? '' : ssjsScript}
 ${trackingScripts.head}
 <style>
     :root {
@@ -1993,31 +1994,32 @@ ${trackingScripts.head}
 ${clientSideScripts}
 </head>
 <body>
-${isForPreview || hideAmpscript ? '' : trackingScripts.body}
-  ${isForPreview || hideAmpscript ? `
-  ${renderLoader(meta, styles.themeColor)}
-  ${stripeComponents}
-  <div id="mobile-menu-overlay"></div>
-  <main style="${mainStyles}">
-    ${mainContentHtml}
-  </main>
-  ${floatingElementsHtml}
-  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', hideAmpscript) : ''}
-  ${cookieBannerHtml}` : `
-  %%[ IF @isAuthenticated == true THEN ]%%
-  ${renderLoader(meta, styles.themeColor)}
-  ${stripeComponents}
-  <div id="mobile-menu-overlay"></div>
-  <main style="${mainStyles}">
-    ${mainContentHtml}
-  </main>
-  ${floatingElementsHtml}
-  ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', hideAmpscript) : ''}
-  ${cookieBannerHtml}
-  %%[ ELSE ]%%
-  ${security.body}
-  %%[ ENDIF ]%%
-  `}
+${!isForPreview ? trackingScripts.body : ''}
+  ${!isForPreview ? `
+    %%[ IF @isAuthenticated == true THEN ]%%
+    ${renderLoader(meta, styles.themeColor)}
+    ${stripeComponents}
+    <div id="mobile-menu-overlay"></div>
+    <main style="${mainStyles}">
+      ${mainContentHtml}
+    </main>
+    ${floatingElementsHtml}
+    ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', shouldHideAmpscript) : ''}
+    ${cookieBannerHtml}
+    %%[ ELSE ]%%
+    ${security.body}
+    %%[ ENDIF ]%%
+    ` : `
+    ${renderLoader(meta, styles.themeColor)}
+    ${stripeComponents}
+    <div id="mobile-menu-overlay"></div>
+    <main style="${mainStyles}">
+      ${mainContentHtml}
+    </main>
+    ${floatingElementsHtml}
+    ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', shouldHideAmpscript) : ''}
+    ${cookieBannerHtml}
+    `}
 </body>
 </html>`;
 

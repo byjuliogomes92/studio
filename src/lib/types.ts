@@ -172,6 +172,7 @@ export type LoopAnimationType = 'none' | 'pulse' | 'bounce' | 'rotate' | 'floati
 export interface PageComponent {
   id: string;
   type: ComponentType;
+  layerName?: string;
   props: any;
   parentId?: string | null; 
   column?: number;        

@@ -203,7 +203,7 @@ function ComponentItem({
             >
                 <div className="flex items-center gap-2 truncate">
                   <Icon className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{component.type}</span>
+                  <span className="truncate">{component.layerName || component.type}</span>
                   {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />}
                 </div>
             </Button>

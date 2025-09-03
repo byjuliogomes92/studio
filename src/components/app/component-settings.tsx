@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { produce } from 'immer';
-import { Star, Scaling, Film } from "lucide-react";
+import { Star, Scaling, Film, Layers } from "lucide-react";
+import { Input } from "../ui/input";
 
 // Importe os novos componentes de configuração
 import { HeaderSettings } from './settings/header-settings';
@@ -96,6 +97,13 @@ export function ComponentSettings({ component, onComponentChange, projectPages }
     });
     onComponentChange(component.id, updatedComponent);
   };
+  
+  const handleLayerNameChange = (name: string) => {
+    const updatedComponent = produce(component, draft => {
+        draft.layerName = name;
+    });
+    onComponentChange(component.id, updatedComponent);
+  };
 
   const handleSubPropChange = (prop: string, subProp: string, value: any) => {
     const updatedComponent = produce(component, draft => {
@@ -152,6 +160,21 @@ export function ComponentSettings({ component, onComponentChange, projectPages }
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        <div className="space-y-2">
+            <Label htmlFor="layer-name" className="flex items-center gap-2 text-xs uppercase text-muted-foreground">
+                <Layers className="h-3 w-3"/>
+                Nome da Camada
+            </Label>
+            <Input
+                id="layer-name"
+                value={component.layerName || ''}
+                onChange={(e) => handleLayerNameChange(e.target.value)}
+                placeholder={component.type}
+            />
+        </div>
+        
+        <Separator />
+
         <div>
             <h3 className="text-sm font-medium mb-4">Configurações Gerais</h3>
             {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages)}

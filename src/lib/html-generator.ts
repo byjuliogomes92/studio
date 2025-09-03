@@ -67,7 +67,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             
             let wrapperStyle = '';
             // Remove top padding from the first component after an overlay header
-            const isFirstAfterOverlay = isHeaderOverlay && component.parentId === null && index === 0;
+            const isFirstAfterOverlay = isHeaderOverlay && component.parentId === null && allComponents.filter(c => c.parentId === null && c.type !== 'Header').sort((a,b) => a.order - b.order)[0]?.id === component.id;
             if (isFirstAfterOverlay) {
                 wrapperStyle = 'padding-top: 0;';
             }
@@ -379,7 +379,7 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
 </div>
 %%[ ENDIF ]%%`;
 
-        return { ssjs: '', amscript, body: body };
+        return { ssjs: '', amscript, body: '' };
     }
 
     return { ssjs: '', amscript: amscript + 'SET @isAuthenticated = true', body: '' };
@@ -658,8 +658,8 @@ const getClientSideScripts = (pageState: CloudPage): string => {
 
         const firstSection = document.querySelector('.columns-container');
         if (firstSection) {
-             const headerHeight = header.offsetHeight;
-             firstSection.style.paddingTop = headerHeight + 'px';
+            const headerHeight = header.offsetHeight;
+            firstSection.style.paddingTop = headerHeight + 'px';
         }
     }
 
@@ -974,12 +974,10 @@ ${trackingScripts.head}
     
     .component-wrapper {
       padding-top: 20px;
+      width: 100%;
     }
     
     .component-layout-inline {
-        display: inline-block;
-        vertical-align: top;
-        margin-right: 15px; 
         width: auto;
     }
     
@@ -2068,3 +2066,5 @@ ${!isForPreview ? trackingScripts.body : ''}
 
   return finalHtml;
 }
+
+    

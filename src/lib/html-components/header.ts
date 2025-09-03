@@ -3,7 +3,7 @@ import type { PageComponent, HeaderLayout, MobileMenuBehavior, CloudPage } from 
 
 function getStyleString(styles: any = {}): string {
     // This is for styles applied to the inner container, so we exclude outer container styles.
-    const forbiddenKeys = ['maxWidth', 'backgroundColor', 'backgroundType', 'gradientFrom', 'gradientTo', 'borderRadius'];
+    const forbiddenKeys = ['maxWidth', 'backgroundColor', 'backgroundType', 'gradientFrom', 'gradientTo', 'borderRadius', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'];
     return Object.entries(styles)
       .map(([key, value]) => {
         if (!value || forbiddenKeys.includes(key)) return '';
@@ -55,7 +55,7 @@ export function renderHeader(component: PageComponent): string {
         'arrow-right': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
         'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
         'plus': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
-        'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
+        'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
         'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
         'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
     };
@@ -97,23 +97,6 @@ export function renderHeader(component: PageComponent): string {
     } else if (layout === 'logo-center-menu-below') {
         // Handled by CSS flex-direction
     }
-
-    let outerBackgroundStyle = '';
-    let innerBackgroundStyle = '';
-
-    if (isFullWidth) {
-        if (backgroundType === 'gradient') {
-          outerBackgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
-        } else {
-          outerBackgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
-        }
-    } else {
-        if (backgroundType === 'gradient') {
-          innerBackgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
-        } else {
-          innerBackgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
-        }
-    }
     
     const otherStyleString = getStyleString(styles);
 
@@ -128,30 +111,46 @@ export function renderHeader(component: PageComponent): string {
     
     const containerClass = isFullWidth ? 'header-inner-full' : 'header-inner-contained';
     
-    const paddingStyles = `
+    let finalInnerContainerStyles = `
         padding-top: 1rem;
         padding-bottom: 1rem;
-        padding-left: ${overlay ? '0px' : '1rem'};
-        padding-right: ${overlay ? '0px' : '1rem'};
+        padding-left: 1rem;
+        padding-right: 1rem;
     `;
+    
+    if (overlay) {
+        finalInnerContainerStyles += 'padding-left: 0px; padding-right: 0px;';
+    }
 
-    const innerContainerStyles = `
-      ${containerClass === 'header-inner-contained' ? `max-width: ${styles.maxWidth || '1200px'};` : ''}
-      ${paddingStyles}
-      ${borderRadius ? `border-radius: ${borderRadius};` : ''}
-      ${innerBackgroundStyle}
-    `;
-
-    const headerStyles = `
+    if (!isFullWidth) {
+        finalInnerContainerStyles += `max-width: ${styles.maxWidth || '1200px'};`;
+        if (backgroundType === 'gradient') {
+          finalInnerContainerStyles += `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
+        } else {
+          finalInnerContainerStyles += `background-color: ${backgroundColor || 'transparent'};`;
+        }
+        if (borderRadius) {
+          finalInnerContainerStyles += `border-radius: ${borderRadius};`;
+        }
+    }
+    
+    let finalOuterHeaderStyles = `
         --custom-link-color: ${linkColor || '#333333'};
         --custom-link-hover-color: ${linkHoverColor || '#000000'};
         ${otherStyleString}
-        ${outerBackgroundStyle}
     `;
 
+    if (isFullWidth) {
+        if (backgroundType === 'gradient') {
+          finalOuterHeaderStyles += `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
+        } else {
+          finalOuterHeaderStyles += `background-color: ${backgroundColor || 'transparent'};`;
+        }
+    }
+
     return `
-        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} style="${headerStyles}">
-            <div class="${containerClass}" style="${innerContainerStyles}">
+        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} style="${finalOuterHeaderStyles}">
+            <div class="${containerClass}" style="${finalInnerContainerStyles}">
                 ${innerContent}
             </div>
         </header>

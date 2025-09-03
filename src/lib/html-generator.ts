@@ -51,7 +51,6 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
 
             let sectionClass = `component-wrapper animate-on-scroll`;
             
-            // NEW: Add class for inline layout
             if (component.props.layout === 'inline') {
                 sectionClass += ' component-layout-inline';
             }
@@ -66,11 +65,13 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                  return renderedComponent;
             }
             
-            // Quando o header é overlay, remove o padding-top do primeiro wrapper
             let wrapperStyle = '';
-            if (isHeaderOverlay && component.parentId === null && index === 0) {
-              wrapperStyle = 'padding-top: 0;';
+            // Remove top padding from the first component after an overlay header
+            const isFirstAfterOverlay = isHeaderOverlay && component.parentId === null && index === 0;
+            if (isFirstAfterOverlay) {
+                wrapperStyle = 'padding-top: 0;';
             }
+
 
             const containerClass = (component.type === 'Header' && (isHeaderOverlay || headerComponent?.props.isFullWidth))
                 ? 'section-container'
@@ -655,13 +656,10 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         const header = document.querySelector('.page-header[data-overlay="true"]');
         if (!header) return;
 
-        const firstSection = document.querySelector('.component-wrapper:not(:has(.page-header))');
+        const firstSection = document.querySelector('.columns-container');
         if (firstSection) {
-            const heroContainer = firstSection.querySelector('.columns-container');
-            if (heroContainer) {
-                const headerHeight = header.offsetHeight;
-                heroContainer.style.paddingTop = headerHeight + 'px';
-            }
+             const headerHeight = header.offsetHeight;
+             firstSection.style.paddingTop = headerHeight + 'px';
         }
     }
 
@@ -926,8 +924,6 @@ ${trackingScripts.head}
     main {
       width: 100%;
       overflow-x: hidden;
-      /* NEW: Adjust padding based on header state */
-      padding-top: ${headerComponent?.props.overlay ? '0' : '20px'};
     }
 
     #loader {
@@ -977,19 +973,14 @@ ${trackingScripts.head}
     }
     
     .component-wrapper {
-      width: 100%;
+      padding-top: 20px;
     }
     
-    /* NEW: Remove default top padding from component-wrapper */
-    .component-wrapper:not(:first-child) {
-        padding-top: 20px;
-    }
-
     .component-layout-inline {
         display: inline-block;
-        vertical-align: top; /* Or middle, depending on desired alignment */
-        /* You might want to add some right margin to space them out */
+        vertical-align: top;
         margin-right: 15px; 
+        width: auto;
     }
     
     .section-container {
@@ -1006,12 +997,6 @@ ${trackingScripts.head}
       margin-right: auto;
       padding-left: 1rem;
       padding-right: 1rem;
-    }
-    
-    /* When header is overlay, the direct container inside shouldn't have horizontal padding */
-    .page-header[data-overlay="true"] .section-container-padded {
-        padding-left: 0;
-        padding-right: 0;
     }
     
     .page-header[data-overlay="true"] .header-inner-contained {
@@ -1862,10 +1847,13 @@ ${trackingScripts.head}
         position: relative; /* For hero text overlay */
     }
     .columns-container .column {
-        flex: 1;
         min-width: 0;
         position: relative;
         z-index: 1;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+        gap: 10px;
     }
     .section-overlay {
         position: absolute;

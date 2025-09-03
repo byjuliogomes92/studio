@@ -32,7 +32,7 @@ import { renderFloatingButton } from './html-components/floating-button';
 import { renderCalendly } from './html-components/calendly';
 
 
-function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
+function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
     return components
         .sort((a, b) => a.order - b.order)
         .map(component => {
@@ -48,7 +48,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
 
             const sectionClass = `component-wrapper animate-on-scroll`;
             
-            const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
+            const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents, hideAmpscript);
 
             // FloatingImages are positioned absolutely and don't need the standard wrapper.
             if (component.type === 'FloatingImage' || component.type === 'FloatingButton' || component.type === 'Calendly') {
@@ -69,21 +69,21 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
         .join('\n');
 }
 
-const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, allComponents: PageComponent[]): string => {
+const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, allComponents: PageComponent[], hideAmpscript: boolean = false): string => {
   const childrenHtml = component.type === 'Columns'
     ? (() => {
         const columnCount = component.props.columnCount || 2;
         let columnsContent = '';
         for (let i = 0; i < columnCount; i++) {
           const columnComponents = allComponents.filter(c => c.parentId === component.id && c.column === i);
-          columnsContent += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview)}</div>`;
+          columnsContent += `<div class="column">${renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)}</div>`;
         }
         return columnsContent;
       })()
     : '';
     
   if (isForPreview) {
-    return renderSingleComponent(component, pageState, isForPreview, childrenHtml);
+    return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
   if (component.abTestEnabled) {
@@ -114,13 +114,13 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   return renderSingleComponent(component, pageState, isForPreview, childrenHtml);
 };
 
-const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = ''): string => {
+const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = '', hideAmpscript: boolean = false): string => {
   switch (component.type) {
     case 'Header': return renderHeader(component);
     case 'Banner': return renderBanner(component);
-    case 'Title': return renderTitle(component, isForPreview);
-    case 'Subtitle': return renderSubtitle(component, isForPreview);
-    case 'Paragraph': return renderParagraph(component, isForPreview);
+    case 'Title': return renderTitle(component, isForPreview, hideAmpscript);
+    case 'Subtitle': return renderSubtitle(component, isForPreview, hideAmpscript);
+    case 'Paragraph': return renderParagraph(component, isForPreview, hideAmpscript);
     case 'Divider': return renderDivider(component);
     case 'Image': return renderImage(component);
     case 'Video': return renderVideo(component);
@@ -801,7 +801,7 @@ const renderLoader = (meta: CloudPage['meta'], themeColor: string): string => {
 };
 
 
-export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = ''): string {
+export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false): string {
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
   const ssjsScript = getFormSubmissionScript(pageState);
@@ -817,7 +817,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe' && c.type !== 'WhatsApp' && c.type !== 'FloatingImage' && c.type !== 'FloatingButton'), components, pageState, isForPreview);
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe' && c.type !== 'WhatsApp' && c.type !== 'FloatingImage' && c.type !== 'FloatingButton'), components, pageState, isForPreview, hideAmpscript);
   const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '')).join('\n');
 
 
@@ -1004,6 +1004,10 @@ ${trackingScripts.head}
         top: 0;
         left: 0;
         background: transparent !important; /* Start transparent, allow JS to change */
+    }
+    .page-header[data-overlay="true"] .header-inner-contained,
+    .page-header[data-overlay="true"] .header-inner-full {
+      padding: 1rem;
     }
     .page-header[data-sticky="true"] {
         position: sticky;
@@ -2010,3 +2014,5 @@ ${isForPreview ? '' : trackingScripts.body}
 
   return finalHtml;
 }
+
+    

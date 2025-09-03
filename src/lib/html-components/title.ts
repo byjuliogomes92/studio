@@ -1,12 +1,16 @@
 
 import type { PageComponent } from '@/lib/types';
 
-export function renderTitle(component: PageComponent, isForPreview: boolean): string {
+export function renderTitle(component: PageComponent, isForPreview: boolean, hideAmpscript: boolean = false): string {
     const styles = component.props.styles || {};
     const styleString = getStyleString(styles);
     const editableAttrs = isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="text"` : '';
     const dataBinding = component.props.dataBinding;
-    const text = dataBinding ? `%%=v(@${dataBinding})=%%` : (component.props.text || 'Título Principal');
+    let text = component.props.text || 'Título Principal';
+    
+    if (dataBinding && !hideAmpscript) {
+        text = `%%=v(@${dataBinding})=%%`;
+    }
     
     return `<h1 style="${styleString}" ${editableAttrs}>${text}</h1>`;
 }
@@ -20,3 +24,5 @@ function getStyleString(styles: any = {}): string {
       })
       .join(' ');
 }
+
+    

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet } from "lucide-react";
+import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet, Code } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -113,13 +113,14 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [selectedDevice, setSelectedDevice] = useState<Device>(devices[0]);
+  const [hideAmpscript, setHideAmpscript] = useState(false);
 
 
   const [activeEditor, setActiveEditor] = useState<HTMLElement | null>(null);
   const [toolbarUpdate, setToolbarUpdate] = useState(0);
 
   // Generate HTML for preview and for final code separately
-  const previewHtmlCode = generateHtml(pageState, true);
+  const previewHtmlCode = generateHtml(pageState, true, '', hideAmpscript);
   const finalHtmlCode = generateHtml(pageState, false);
 
   const handleInlineEdit = useCallback((componentId: string, propName: string, newContent: string) => {
@@ -307,6 +308,18 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
                 <Info className="mr-2 h-4 w-4" />
                 Como Publicar
               </Button>
+              <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => setHideAmpscript(!hideAmpscript)} data-state={hideAmpscript ? 'active' : 'inactive'}>
+                            <Code className="h-5 w-5"/>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{hideAmpscript ? 'Mostrar' : 'Ocultar'} código AMPScript</p>
+                    </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button variant="ghost" size="icon" onClick={handleOpenInNewTab} aria-label="Abrir em nova aba">
                   <ExternalLink className="h-5 w-5"/>
               </Button>
@@ -402,3 +415,5 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     </>
   );
 }
+
+    

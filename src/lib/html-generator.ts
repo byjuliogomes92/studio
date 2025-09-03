@@ -842,9 +842,12 @@ ${trackingScripts.head}
     }
     html {
       box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     *, *:before, *:after {
       box-sizing: inherit;
+      word-wrap: break-word; /* Crucial for preventing overflow */
     }
     body {
         background-color: ${styles.backgroundColor};
@@ -853,15 +856,15 @@ ${trackingScripts.head}
         background-repeat: no-repeat;
         background-attachment: fixed;
         font-family: "${googleFont}", sans-serif;
-        font-weight: 500;
-        font-style: normal;
+        font-weight: 400;
         margin: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
         width: 100%;
-        overflow-x: hidden;
+        overflow-x: hidden; /* Prevent horizontal scroll */
+    }
+
+    main {
+      width: 100%;
+      overflow-x: hidden; /* Prevent horizontal scroll */
     }
 
     #loader {
@@ -1876,6 +1879,7 @@ ${trackingScripts.head}
         justify-content: center;
         flex-grow: 1;
         width: 100%;
+        min-height: 100vh;
     }
     .password-form {
         background: white;
@@ -1926,7 +1930,8 @@ ${trackingScripts.head}
 
     @media (max-width: 768px) {
         .section-container {
-            padding: 15px;
+            padding-left: 15px;
+            padding-right: 15px;
         }
         .columns-container:not([style*="--column-count: 1"]) {
             grid-template-columns: 1fr;

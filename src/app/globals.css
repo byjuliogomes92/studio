@@ -89,14 +89,7 @@
         background-position: center center;
         position: relative;
     }
-    .hero-section[style*="background-image"]::before {
-        content: '';
-        position: absolute;
-        top: 0; right: 0; bottom: 0; left: 0;
-        background-color: rgba(0,0,0,0.5); /* Dimming overlay */
-        z-index: 0;
-    }
-    .hero-section > .column {
+    .columns-container.hero-section > .column {
         position: relative; /* Ensure text is above the overlay */
         z-index: 1;
     }

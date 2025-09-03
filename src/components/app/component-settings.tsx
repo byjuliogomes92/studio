@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant, CloudPage } from "@/lib/types";
@@ -73,6 +72,7 @@ const stripeIcons = [
 const headerLayouts: { value: HeaderLayout; label: string; viz: React.ReactNode }[] = [
     { value: 'logo-left-menu-right', label: 'Logo Esquerda, Menu Direita', viz: <div className="space-y-1 w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
     { value: 'logo-left-menu-button-right', label: 'Logo Esquerda, Menu e Botão Direita', viz: <div className="space-y-1 w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div><div className="w-4 h-2 ml-auto rounded-sm bg-primary"></div></div> },
+    { value: 'logo-left-menu-center-button-right', label: 'Logo Esq, Menu Centro, Botão Dir', viz: <div className="flex justify-between items-center w-full"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-8 h-1 rounded-sm bg-current/50"></div><div className="w-4 h-2 rounded-sm bg-primary"></div></div> },
     { value: 'logo-center-menu-below', label: 'Logo Central, Menu Abaixo', viz: <div className="flex flex-col items-center w-full space-y-1"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-full h-1 rounded-sm bg-current/50"></div></div> },
     { value: 'logo-left-button-right', label: 'Logo Esquerda, Botão Direita', viz: <div className="flex justify-between w-full items-center"><div className="w-4 h-2 rounded-sm bg-current"></div><div className="w-4 h-2 rounded-sm bg-primary"></div></div> },
     { value: 'logo-only-center', label: 'Apenas Logo (Centro)', viz: <div className="flex justify-center w-full"><div className="w-6 h-3 rounded-sm bg-current"></div></div> },

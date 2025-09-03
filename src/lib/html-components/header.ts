@@ -39,14 +39,28 @@ export function renderHeader(component: PageComponent): string {
 
     const overlayAttr = overlay ? 'data-overlay="true"' : '';
     
-    const navContainer = `<div class="header-nav-container">${navHtml}${buttonHtml}</div>`;
+    let leftContent = `<div class="header-logo">
+                <img src="${logoUrl}" alt="Logo" style="height: ${logoHeight}px;">
+            </div>`;
+    let centerContent = '';
+    let rightContent = '';
+
+    if (layout === 'logo-left-menu-button-right') {
+        rightContent = `<div class="header-nav-container">${navHtml}${buttonHtml}</div>`;
+    } else if (layout === 'logo-left-menu-right') {
+        rightContent = `<div class="header-nav-container">${navHtml}</div>`;
+    } else if (layout === 'logo-left-button-right') {
+        rightContent = `<div class="header-nav-container">${buttonHtml}</div>`;
+    } else if (layout === 'logo-left-menu-center-button-right') {
+        centerContent = `<div class="header-nav-container">${navHtml}</div>`;
+        rightContent = `<div class="header-nav-container">${buttonHtml}</div>`;
+    }
 
     return `
         <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} data-mobile-menu-behavior="${mobileMenuBehavior}">
-            <div class="header-logo">
-                <img src="${logoUrl}" alt="Logo" style="height: ${logoHeight}px;">
-            </div>
-            ${(showMenu || showButton) ? navContainer : ''}
+            ${leftContent}
+            ${centerContent}
+            ${rightContent}
             <button class="mobile-menu-toggle">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
             </button>

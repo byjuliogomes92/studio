@@ -985,6 +985,9 @@ ${trackingScripts.head}
     .page-header.scrolled {
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     }
+    .page-header .header-logo {
+        flex-shrink: 0;
+    }
     .page-header .header-logo img {
         width: auto;
     }
@@ -992,6 +995,10 @@ ${trackingScripts.head}
         display: flex;
         align-items: center;
         gap: 1.5rem;
+    }
+    .page-header[data-layout="logo-left-menu-center-button-right"] .header-nav-container:nth-child(2) {
+        flex-grow: 1;
+        justify-content: center;
     }
     .page-header .header-nav ul {
         margin: 0;

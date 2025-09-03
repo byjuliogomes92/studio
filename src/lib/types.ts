@@ -147,7 +147,8 @@ export type HeaderLayout =
   | 'logo-center-menu-below'
   | 'logo-left-button-right'
   | 'logo-only-center'
-  | 'logo-only-left';
+  | 'logo-only-left'
+  | 'logo-left-menu-center-button-right';
 
 export type MobileMenuBehavior = 'push' | 'drawer' | 'overlay';
 

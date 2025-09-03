@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { produce } from 'immer';
-import { Star, Scaling } from "lucide-react";
+import { Star, Scaling, Film } from "lucide-react";
 
 // Importe os novos componentes de configuração
 import { HeaderSettings } from './settings/header-settings';
@@ -37,6 +37,7 @@ import { FTPUploadSettings } from './settings/ftpupload-settings';
 import { DataExtensionUploadSettings } from './settings/data-extension-upload-settings';
 import { CalendlySettings } from './settings/calendly-settings';
 import { SpacingSettings } from "./settings/spacing-settings";
+import { AnimationSettings } from "./settings/animation-settings";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -165,6 +166,13 @@ export function ComponentSettings({ component, onComponentChange, projectPages }
 
         <Separator />
         
+        <div>
+            <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Film className="h-4 w-4" /> Animações</h3>
+            <AnimationSettings props={component.props} onPropChange={handlePropChange} />
+        </div>
+
+        <Separator />
+        
         <div className="space-y-4">
              <div className="flex items-center justify-between">
                 <Label htmlFor="ab-test-enabled" className="flex items-center gap-2 font-semibold">
@@ -193,6 +201,11 @@ export function ComponentSettings({ component, onComponentChange, projectPages }
                      <div>
                         <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Scaling className="h-4 w-4" /> Espaçamento (Variante)</h3>
                         <SpacingSettings props={variantProps} onPropChange={(prop, value) => handleVariantPropChange(0, prop, value)} />
+                     </div>
+                     <Separator/>
+                     <div>
+                        <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Film className="h-4 w-4" /> Animações (Variante)</h3>
+                        <AnimationSettings props={variantProps} onPropChange={(prop, value) => handleVariantPropChange(0, prop, value)} />
                      </div>
                 </div>
             )}

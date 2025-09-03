@@ -33,109 +33,80 @@ import { renderCalendly } from './html-components/calendly';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
-    const headerComponent = allComponents.find(c => c.type === 'Header');
-    const isHeaderOverlay = headerComponent?.props.overlay || false;
-
     return components
-        .sort((a, b) => a.order - b.order)
-        .map((component, index) => {
-            const styles = component.props.styles || {};
-            const animationType = pageState.styles.animationType || 'none';
-            const animationDuration = pageState.styles.animationDuration || 1;
-            const animationDelay = pageState.styles.animationDelay || 0;
-            
-            const hasAnimation = animationType !== 'none';
-            const animationAttrs = hasAnimation
-              ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
-              : '';
+      .map((component) => {
+        const childrenHtml = component.type === 'Columns'
+          ? (() => {
+              const columnCount = component.props.columnCount || 2;
+              let columnsContent = '';
+              for (let i = 0; i < columnCount; i++) {
+                const columnComponents = allComponents
+                  .filter(c => c.parentId === component.id && c.column === i)
+                  .sort((a,b) => a.order - b.order);
+                
+                columnsContent += `<div class="column">${
+                      renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)
+                  }</div>`;
+              }
+              return columnsContent;
+            })()
+          : '';
+        return renderComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+      });
+  }
 
-            let sectionClass = `component-wrapper animate-on-scroll`;
-            
-            // If a component has layout: 'inline' it will have this class applied.
-            if (component.props.layout === 'inline') {
-                sectionClass += ' component-layout-inline';
-            }
-
-            const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents, hideAmpscript);
-            
-            let wrapperStyle = '';
-            // Remove top padding from the first component after an overlay header
-            const isFirstAfterOverlay = isHeaderOverlay && component.parentId === null && allComponents.filter(c => c.parentId === null && c.type !== 'Header').sort((a,b) => a.order - b.order)[0]?.id === component.id;
-            if (isFirstAfterOverlay) {
-                wrapperStyle = 'padding-top: 0;';
-            }
-            
-            if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
-                return renderedComponent;
-            }
-
-            // Floating components should not be wrapped as they are positioned absolutely
-            if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe'].includes(component.type)) {
-                return renderedComponent;
-            }
-
-            // Only wrap root components (not inside a column) in the padded container
-            if (component.parentId === null) {
-                return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
-                           <div class="section-container-padded">
-                             ${renderedComponent}
-                           </div>
-                        </div>`;
-            }
-
-            return `<div class="${sectionClass}" ${animationAttrs}>${renderedComponent}</div>`;
-        })
-        .join('\n');
-}
-
-const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, allComponents: PageComponent[], hideAmpscript: boolean = false): string => {
-  const childrenHtml = component.type === 'Columns'
-    ? (() => {
-        const columnCount = component.props.columnCount || 2;
-        let columnsContent = '';
-        for (let i = 0; i < columnCount; i++) {
-          const columnComponents = allComponents
-            .filter(c => c.parentId === component.id && c.column === i)
-            .sort((a,b) => a.order - b.order);
-          
-          columnsContent += `<div class="column">${
-                renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)
-            }</div>`;
-        }
-        return columnsContent;
-      })()
+const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string, hideAmpscript: boolean = false): string => {
+  const styles = component.props.styles || {};
+  const entranceAnimation = styles.animationType || 'none';
+  const animationDuration = styles.animationDuration || 1;
+  const animationDelay = styles.animationDelay || 0;
+  const loopAnimation = styles.loopAnimation || 'none';
+  
+  const hasEntranceAnimation = entranceAnimation !== 'none';
+  const entranceAnimationAttrs = hasEntranceAnimation
+    ? `data-animation="${entranceAnimation}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
     : '';
-    
-  if (isForPreview) {
-    return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+
+  let sectionClass = `component-wrapper`;
+  if (hasEntranceAnimation) {
+    sectionClass += ` animate-on-scroll`;
+  }
+  if (loopAnimation !== 'none') {
+    sectionClass += ` animation-loop--${loopAnimation}`;
+  }
+  
+  if (component.props.layout === 'inline') {
+      sectionClass += ' component-layout-inline';
   }
 
-  if (component.abTestEnabled) {
-    const variantB = (component.abTestVariants && component.abTestVariants[0]) || {};
-    const propsA = component.props;
-    const propsB = { ...propsA, ...variantB };
+  const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+  
+  const headerComponent = pageState.components.find(c => c.type === 'Header');
+  const isHeaderOverlay = headerComponent?.props.overlay || false;
+  const isFirstAfterOverlay = isHeaderOverlay && component.parentId === null && pageState.components.filter(c => c.parentId === null && c.type !== 'Header').sort((a,b) => a.order - b.order)[0]?.id === component.id;
 
-    const componentA = renderSingleComponent({ ...component, props: propsA, abTestEnabled: false }, pageState, isForPreview, childrenHtml, hideAmpscript);
-    const componentB = renderSingleComponent({ ...component, props: propsB, abTestEnabled: false }, pageState, isForPreview, childrenHtml, hideAmpscript);
-
-    const randomVar = `v(@Random_${component.id.slice(-5)})`;
-    const hiddenInput = `<input type="hidden" name="VARIANTE_${component.id.toUpperCase()}" value="%%=v(@VARIANTE_${component.id.toUpperCase()})=%%">`;
-    
-    return `%%[
-      SET ${randomVar} = Mod(Random(1,100), 2)
-      IF ${randomVar} == 0 THEN
-        SET @VARIANTE_${component.id.toUpperCase()} = "A"
-    ]%%
-      <div class="ab-variant-a">${componentA}</div>
-    %%[ ELSE
-        SET @VARIANTE_${component.id.toUpperCase()} = "B"
-    ]%%
-      <div class="ab-variant-b">${componentB}</div>
-    %%[ ENDIF ]%%
-    ${hiddenInput}
-    `;
+  let wrapperStyle = '';
+  if (isFirstAfterOverlay) {
+      wrapperStyle = 'padding-top: 0;';
   }
-  return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+  
+  if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
+      return renderedComponent;
+  }
+
+  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe'].includes(component.type)) {
+      return renderedComponent;
+  }
+
+  if (component.parentId !== null) {
+     return `<div class="${sectionClass}" ${entranceAnimationAttrs}>${renderedComponent}</div>`;
+  }
+  
+  return `<div class="${sectionClass}" ${entranceAnimationAttrs} style="${wrapperStyle}">
+             <div class="section-container-padded">
+               ${renderedComponent}
+             </div>
+          </div>`;
 };
 
 const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = '', hideAmpscript: boolean = false): string => {
@@ -338,14 +309,14 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 
 const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
     const security = pageState.meta.security;
-    let amscript = 'SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))\n';
+    const baseVars = `VAR @isAuthenticated, @LoginURL\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))\n`;
 
     if (!security || security.type === 'none') {
-        return { ssjs: '', amscript: amscript + 'SET @isAuthenticated = true', body: '' };
+        return { ssjs: '', amscript: baseVars + 'SET @isAuthenticated = true', body: '' };
     }
 
     if (security.type === 'sso') {
-        amscript += `
+        const amscript = baseVars + `
   TRY 
     SET @IsAuthenticated_Temp = Request.GetUserInfo()
     SET @isAuthenticated = true
@@ -357,7 +328,7 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
     
     if (security.type === 'password' && security.passwordConfig) {
         const config = security.passwordConfig;
-        amscript += `
+        const amscript = baseVars + `
   VAR @submittedPassword, @identifier, @correctPassword
   SET @isAuthenticated = false
   SET @submittedPassword = RequestParameter("page_password")
@@ -389,7 +360,7 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
         return { ssjs: '', amscript, body: '' };
     }
 
-    return { ssjs: '', amscript: amscript + 'SET @isAuthenticated = true', body: '' };
+    return { ssjs: '', amscript: baseVars + 'SET @isAuthenticated = true', body: '' };
 }
 
 const getClientSideScripts = (pageState: CloudPage): string => {
@@ -847,8 +818,21 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
   const ssjsScript = shouldHideAmpscript ? '' : getFormSubmissionScript(pageState);
+  
+  const prefillAmpscript = getPrefillAmpscript(pageState);
   const security = getSecurityScripts(pageState);
-  const securityAmpscript = shouldHideAmpscript ? 'SET @isAuthenticated = true' : security.amscript;
+  
+  const initialAmpscript = `%%[ 
+    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
+    IF EMPTY(RequestParameter("__isPost")) THEN
+      SET @showThanks = "false"
+    ENDIF
+    ${security.amscript}
+    ${meta.customAmpscript || ''}
+    ${prefillAmpscript || ''}
+]%%`;
+
+
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
@@ -858,11 +842,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'WhatsApp', 'FloatingImage', 'FloatingButton'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'WhatsApp', 'FloatingImage', 'FloatingButton'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript).join('\n');
   const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
 
-
-  const prefillAmpscript = getPrefillAmpscript(pageState);
 
   const headerComponent = components.find(c => c.type === 'Header');
   
@@ -880,15 +862,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     position: relative; /* Needed for absolute positioned children */
   `;
 
-  const initialAmpscript = `%%[ 
-    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN, @isAuthenticated, @LoginURL
-    IF EMPTY(RequestParameter("__isPost")) THEN
-      SET @showThanks = "false"
-    ENDIF
-    ${meta.customAmpscript || ''}
-    ${securityAmpscript}
-    ${prefillAmpscript || ''}
-]%%`;
 
   let finalHtml = `<!DOCTYPE html>
 <html>
@@ -988,8 +961,6 @@ ${trackingScripts.head}
     
     .component-layout-inline {
         display: inline-block;
-        flex-grow: 0;
-        flex-shrink: 0;
         width: auto;
         vertical-align: top;
     }
@@ -1027,6 +998,14 @@ ${trackingScripts.head}
     .animate-on-scroll.is-visible.animate-fadeInUp { animation-name: fadeInUp; }
     .animate-on-scroll.is-visible.animate-fadeInLeft { animation-name: fadeInLeft; }
     .animate-on-scroll.is-visible.animate-fadeInRight { animation-name: fadeInRight; }
+    
+    .animation-loop--pulse { animation: pulse 2s infinite; }
+    .animation-loop--bounce { animation: bounce 1s infinite; }
+    .animation-loop--rotate { animation: rotate 4s linear infinite; }
+    .animation-loop--floating { animation: floating 3s ease-in-out infinite; }
+    .animation-loop--shake { animation: shake 0.5s infinite; }
+    .animation-loop--wave { animation: wave 2s ease-in-out infinite; }
+    .animation-loop--swing { animation: swing 2s ease-in-out infinite; }
 
 
     .section-wrapper[style*="background-color"] {
@@ -1090,14 +1069,15 @@ ${trackingScripts.head}
         color: var(--custom-link-color);
         font-weight: 500;
         transition: color 0.2s ease;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
         padding: 0.5rem 0;
+        font-size: var(--custom-link-font-size);
     }
-    .page-header .header-nav a:hover {
+    .page-header .header-nav a:not(.header-button):hover {
         color: var(--custom-link-hover-color);
     }
     .page-header .header-button, .page-header .header-nav a.header-button {
-        color: white;
         padding: 0.5rem 1rem;
         border-radius: 0.375rem;
         text-decoration: none;
@@ -1106,6 +1086,7 @@ ${trackingScripts.head}
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
+        transition: background-color 0.2s ease;
     }
     .header-button .lucide-icon {
       width: 1.1em;
@@ -2012,6 +1993,22 @@ ${trackingScripts.head}
     @keyframes fadeInRight { from { opacity: 0; transform: translate3d(50px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+    @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-20px);} 60% {transform: translateY(-10px);} }
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes floating { 0% { transform: translate(0, 0px); } 50% { transform: translate(0, 8px); } 100% { transform: translate(0, -0px); } }
+    @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+    @keyframes wave { 0%, 40%, 100% { transform: translateY(0); } 20% { transform: translateY(-15px); } }
+    @keyframes swing { 20% { transform: rotate3d(0, 0, 1, 15deg); } 40% { transform: rotate3d(0, 0, 1, -10deg); } 60% { transform: rotate3d(0, 0, 1, 5deg); } 80% { transform: rotate3d(0, 0, 1, -5deg); } 100% { transform: rotate3d(0, 0, 1, 0deg); } }
+
+
+    .animation-loop--bounce { animation: bounce 2s infinite; }
+    .animation-loop--rotate { animation: rotate 5s linear infinite; }
+    .animation-loop--floating { animation: floating 3s ease-in-out infinite; }
+    .animation-loop--shake { animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both infinite; }
+    .animation-loop--wave { animation: wave 2.5s ease-in-out infinite; }
+    .animation-loop--swing { animation: swing 2s ease-out infinite; transform-origin: top center; }
+
+
     .animate-on-scroll {
         opacity: 0;
     }
@@ -2022,7 +2019,7 @@ ${trackingScripts.head}
 
     @media (max-width: 768px) {
         .columns-container {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: var(--grid-template-columns-mobile, 1fr) !important;
         }
         .footer-section .columns-container {
             grid-template-columns: 1fr;

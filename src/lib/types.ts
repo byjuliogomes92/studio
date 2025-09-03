@@ -167,6 +167,7 @@ export interface Action {
 }
 
 export type AnimationType = 'none' | 'fadeIn' | 'fadeInUp' | 'fadeInLeft' | 'fadeInRight';
+export type LoopAnimationType = 'none' | 'pulse' | 'bounce' | 'rotate' | 'floating' | 'shake' | 'wave' | 'swing';
 
 export interface PageComponent {
   id: string;
@@ -207,6 +208,7 @@ export interface CloudPage {
     animationType?: AnimationType;
     animationDuration?: number;
     animationDelay?: number;
+    loopAnimation?: LoopAnimationType;
   };
   components: PageComponent[];
   meta: {

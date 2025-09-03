@@ -49,8 +49,13 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
               ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
               : '';
 
-            const sectionClass = `component-wrapper animate-on-scroll`;
+            let sectionClass = `component-wrapper animate-on-scroll`;
             
+            // NEW: Add class for inline layout
+            if (component.props.layout === 'inline') {
+                sectionClass += ' component-layout-inline';
+            }
+
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents, hideAmpscript);
 
             if (component.type === 'FloatingImage' || component.type === 'FloatingButton' || component.type === 'Calendly') {
@@ -62,7 +67,10 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             }
             
             // Quando o header é overlay, remove o padding-top do primeiro wrapper
-            const wrapperStyle = (isHeaderOverlay && index === 0) ? 'padding-top: 0;' : '';
+            let wrapperStyle = '';
+            if (isHeaderOverlay && component.parentId === null && index === 0) {
+              wrapperStyle = 'padding-top: 0;';
+            }
 
             const containerClass = (component.type === 'Header' && (isHeaderOverlay || headerComponent?.props.isFullWidth))
                 ? 'section-container'
@@ -650,8 +658,8 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         const firstSection = document.querySelector('.component-wrapper:not(:has(.page-header))');
         if (firstSection) {
             const heroContainer = firstSection.querySelector('.columns-container');
-            const headerHeight = header.offsetHeight;
             if (heroContainer) {
+                const headerHeight = header.offsetHeight;
                 heroContainer.style.paddingTop = headerHeight + 'px';
             }
         }
@@ -918,6 +926,8 @@ ${trackingScripts.head}
     main {
       width: 100%;
       overflow-x: hidden;
+      /* NEW: Adjust padding based on header state */
+      padding-top: ${headerComponent?.props.overlay ? '0' : '20px'};
     }
 
     #loader {
@@ -968,7 +978,18 @@ ${trackingScripts.head}
     
     .component-wrapper {
       width: 100%;
-      padding-top: 20px;
+    }
+    
+    /* NEW: Remove default top padding from component-wrapper */
+    .component-wrapper:not(:first-child) {
+        padding-top: 20px;
+    }
+
+    .component-layout-inline {
+        display: inline-block;
+        vertical-align: top; /* Or middle, depending on desired alignment */
+        /* You might want to add some right margin to space them out */
+        margin-right: 15px; 
     }
     
     .section-container {
@@ -983,9 +1004,21 @@ ${trackingScripts.head}
       max-width: 1200px;
       margin-left: auto;
       margin-right: auto;
-      padding-left: 20px;
-      padding-right: 20px;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
+    
+    /* When header is overlay, the direct container inside shouldn't have horizontal padding */
+    .page-header[data-overlay="true"] .section-container-padded {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    
+    .page-header[data-overlay="true"] .header-inner-contained {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
 
     .section-wrapper {
         width: 100%;
@@ -1190,7 +1223,7 @@ ${trackingScripts.head}
     .countdown-circle-svg circle { fill: none; stroke-width: 4; }
     .countdown-circle-svg .countdown-circle-progress { stroke: var(--theme-color); stroke-dasharray: 113; transition: stroke-dashoffset 1s linear; }
 
-    .custom-button, .thank-you-message a.custom-button {
+    .custom-button, .thank-you-message a.custom-button, .button-wrapper a {
       color: white !important;
       padding: 10px 20px;
       text-decoration: none;
@@ -1221,7 +1254,7 @@ ${trackingScripts.head}
         text-decoration: underline !important;
     }
     
-    .custom-button:hover, .thank-you-message a.custom-button:hover {
+    .custom-button:hover, .thank-you-message a.custom-button:hover, .button-wrapper a:hover {
       background-color: var(--theme-color-hover);
     }
 
@@ -2047,4 +2080,3 @@ ${!isForPreview ? trackingScripts.body : ''}
 
   return finalHtml;
 }
-

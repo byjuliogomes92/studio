@@ -1,5 +1,4 @@
 
-
 import type { PageComponent } from '@/lib/types';
 
 export function renderButton(component: PageComponent): string {
@@ -20,7 +19,8 @@ export function renderButton(component: PageComponent): string {
     const styleString = getStyleString(styles);
     const className = `custom-button custom-button--${variant}`;
     
-    return `<div style="text-align: ${align}; ${styleString}"><a href="${href}" target="_blank" class="${className}">${text}</a></div>`;
+    // O wrapper agora controla o alinhamento do bloco do botão
+    return `<div class="button-wrapper" style="text-align: ${align}; ${styleString}"><a href="${href}" target="_blank" class="${className}">${text}</a></div>`;
 }
 
 function getStyleString(styles: any = {}): string {

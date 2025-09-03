@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AiGenerateTextDialog } from "./ai-generate-text-dialog";
 import { Wand2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -102,18 +103,30 @@ export function ButtonSettings({ component, onPropChange, projectPages }: Compon
                     </SelectContent>
                 </Select>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="button-align">Alinhamento</Label>
-                 <Select value={props.align || 'center'} onValueChange={(value) => onPropChange('align', value)}>
-                    <SelectTrigger>
-                    <SelectValue placeholder="Selecione o alinhamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                    <SelectItem value="left">Esquerda</SelectItem>
-                    <SelectItem value="center">Centro</SelectItem>
-                    <SelectItem value="right">Direita</SelectItem>
-                    </SelectContent>
-                </Select>
+             <Separator />
+             <div className="space-y-2">
+                <Label>Alinhamento e Layout</Label>
+                <div className="grid grid-cols-2 gap-2">
+                    <Select value={props.align || 'center'} onValueChange={(value) => onPropChange('align', value)}>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Alinhar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="left">Esquerda</SelectItem>
+                        <SelectItem value="center">Centro</SelectItem>
+                        <SelectItem value="right">Direita</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={props.layout || 'block'} onValueChange={(value) => onPropChange('layout', value)}>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Layout" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="block">Em Bloco</SelectItem>
+                        <SelectItem value="inline">Em Linha</SelectItem>
+                        </SelectContent>
+                    </Select>
+                 </div>
             </div>
         </div>
     );

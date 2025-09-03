@@ -8,8 +8,29 @@ export function renderFloatingImage(component: PageComponent): string {
         position = 'top-left',
         offsetX = '20px',
         offsetY = '20px',
-        zIndex = 10 
+        zIndex = 10,
+        styles = {}
     } = component.props;
+
+    const {
+        animationType,
+        animationDuration,
+        animationDelay,
+        loopAnimation
+    } = styles;
+
+    const hasEntranceAnimation = animationType && animationType !== 'none';
+    const entranceAnimationAttrs = hasEntranceAnimation
+        ? `data-animation="${animationType}" data-animation-duration="${animationDuration || 1}s" data-animation-delay="${animationDelay || 0}s"`
+        : '';
+
+    let className = 'floating-image';
+    if (hasEntranceAnimation) {
+        className += ' animate-on-scroll';
+    }
+    if (loopAnimation && loopAnimation !== 'none') {
+        className += ` animation-loop--${loopAnimation}`;
+    }
 
     const styleProps: Record<string, string | number> = {
         position: 'absolute',
@@ -77,5 +98,5 @@ export function renderFloatingImage(component: PageComponent): string {
       .map(([key, value]) => `${key}: ${value};`)
       .join(' ');
       
-    return `<img src="${imageUrl}" alt="Floating element" style="${styleString}" />`;
+    return `<img src="${imageUrl}" alt="Floating element" class="${className}" style="${styleString}" ${entranceAnimationAttrs} />`;
 }

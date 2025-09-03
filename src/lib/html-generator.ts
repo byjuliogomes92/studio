@@ -61,6 +61,8 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   const animationDuration = styles.animationDuration || 1;
   const animationDelay = styles.animationDelay || 0;
   const loopAnimation = styles.loopAnimation || 'none';
+  const loopAnimationDuration = styles.loopAnimationDuration;
+  const loopAnimationTimingFunction = styles.loopAnimationTimingFunction;
   
   const hasEntranceAnimation = entranceAnimation !== 'none';
   const entranceAnimationAttrs = hasEntranceAnimation
@@ -71,45 +73,56 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   if (hasEntranceAnimation) {
     sectionClass += ` animate-on-scroll`;
   }
-  if (loopAnimation !== 'none') {
+  
+  let inlineLoopStyle = '';
+  if (loopAnimation && loopAnimation !== 'none') {
     sectionClass += ` animation-loop--${loopAnimation}`;
+    if (loopAnimationDuration) {
+        inlineLoopStyle += `animation-duration: ${loopAnimationDuration};`;
+    }
+    if (loopAnimationTimingFunction) {
+        inlineLoopStyle += `animation-timing-function: ${loopAnimationTimingFunction};`;
+    }
   }
   
   if (component.props.layout === 'inline') {
       sectionClass += ' component-layout-inline';
   }
 
+  // Floating components and Stripe are handled specially as they don't sit inside the padded container
+  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe'].includes(component.type)) {
+    return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+  }
+
+  // Columns that are full-width provide their own outer structure
+  if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
+      return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+  }
+
+  // Render the component's HTML
   const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   
   const headerComponent = pageState.components.find(c => c.type === 'Header');
   const isHeaderOverlay = headerComponent?.props.overlay || false;
-  const isFirstAfterOverlay = isHeaderOverlay && component.parentId === null && pageState.components.filter(c => c.parentId === null && c.type !== 'Header').sort((a,b) => a.order - b.order)[0]?.id === component.id;
+  
+  // Check if this component is the very first one after an overlay header
+  const isFirstAfterOverlay = isHeaderOverlay && 
+      component.parentId === null && 
+      pageState.components.filter(c => c.parentId === null && c.type !== 'Header')
+                        .sort((a,b) => a.order - b.order)[0]?.id === component.id;
 
   let wrapperStyle = '';
   if (isFirstAfterOverlay) {
       wrapperStyle = 'padding-top: 0;';
   }
-  
-  if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
-      return renderedComponent;
-  }
-  
-  // Floating components need the wrapper for animation, but not the section-container-padded
-  if (['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(component.type)) {
-      return `<div class="${sectionClass}" ${entranceAnimationAttrs}>${renderedComponent}</div>`;
-  }
 
-  // Stripe is a special case that is always full-width and doesn't get padded container
-  if (component.type === 'Stripe') {
-      return renderedComponent;
-  }
-
-  // All other components
+  // Components inside another component (e.g., in a column) don't get the padded container
   if (component.parentId !== null) {
-     return `<div class="${sectionClass}" ${entranceAnimationAttrs}>${renderedComponent}</div>`;
+     return `<div class="${sectionClass}" ${entranceAnimationAttrs} style="${inlineLoopStyle}">${renderedComponent}</div>`;
   }
   
-  return `<div class="${sectionClass}" ${entranceAnimationAttrs} style="${wrapperStyle}">
+  // Root-level components get the padded container
+  return `<div class="${sectionClass}" ${entranceAnimationAttrs} style="${wrapperStyle}${inlineLoopStyle}">
              <div class="section-container-padded">
                ${renderedComponent}
              </div>
@@ -143,7 +156,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'Form': return renderForm(component, pageState);
     case 'FTPUpload': return renderFTPUpload(component, pageState);
     case 'DataExtensionUpload': return renderDataExtensionUpload(component);
-    case 'Footer': return renderFooter(component);
     case 'FloatingImage': return renderFloatingImage(component);
     case 'FloatingButton': return renderFloatingButton(component);
     case 'Calendly': return renderCalendly(component);
@@ -319,11 +331,11 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
     const baseVars = `VAR @isAuthenticated, @LoginURL\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))\n`;
 
     if (!security || security.type === 'none') {
-        return { ssjs: '', amscript: baseVars + 'SET @isAuthenticated = true', body: '' };
+        return { ssjs: '', amscript: 'SET @isAuthenticated = true', body: '' };
     }
 
     if (security.type === 'sso') {
-        const amscript = baseVars + `
+        const amscript = `
   TRY 
     SET @IsAuthenticated_Temp = Request.GetUserInfo()
     SET @isAuthenticated = true
@@ -335,7 +347,7 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
     
     if (security.type === 'password' && security.passwordConfig) {
         const config = security.passwordConfig;
-        const amscript = baseVars + `
+        const amscript = `
   VAR @submittedPassword, @identifier, @correctPassword
   SET @isAuthenticated = false
   SET @submittedPassword = RequestParameter("page_password")
@@ -367,7 +379,7 @@ const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: str
         return { ssjs: '', amscript, body: '' };
     }
 
-    return { ssjs: '', amscript: baseVars + 'SET @isAuthenticated = true', body: '' };
+    return { ssjs: '', amscript: 'SET @isAuthenticated = true', body: '' };
 }
 
 const getClientSideScripts = (pageState: CloudPage): string => {
@@ -830,7 +842,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const security = getSecurityScripts(pageState);
   
   const initialAmpscript = `%%[ 
-    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
+    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN, @isAuthenticated, @LoginURL
+    SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
     ENDIF
@@ -843,14 +856,13 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
-  const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'WhatsApp', 'FloatingImage', 'FloatingButton'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
-  const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
+  const floatingElementsHtml = components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
 
 
   const headerComponent = components.find(c => c.type === 'Header');
@@ -1840,6 +1852,7 @@ ${trackingScripts.head}
         gap: 20px;
         width: 100%;
         position: relative; /* For hero text overlay */
+        justify-content: var(--justify-content, 'flex-start');
     }
     .columns-container .column {
         min-width: 0;
@@ -1850,7 +1863,6 @@ ${trackingScripts.head}
         align-content: flex-start;
         align-items: flex-start;
         gap: 10px;
-        justify-content: var(--justify-content, 'flex-start');
     }
     .section-overlay {
         position: absolute;
@@ -2021,12 +2033,13 @@ ${trackingScripts.head}
     }
     .animate-on-scroll.is-visible {
         animation-fill-mode: both;
+        animation-name: var(--animation-name);
     }
 
 
     @media (max-width: 768px) {
         .columns-container {
-            grid-template-columns: var(--grid-template-columns-mobile, 1fr) !important;
+            grid-template-columns: 1fr !important;
         }
         .footer-section .columns-container {
             grid-template-columns: 1fr;
@@ -2057,7 +2070,6 @@ ${!isForPreview ? trackingScripts.body : ''}
       ${mainContentHtml}
     </main>
     ${floatingElementsHtml}
-    ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', shouldHideAmpscript) : ''}
     ${cookieBannerHtml}
   ` : `
     %%[ IF @isAuthenticated == true THEN ]%%
@@ -2068,7 +2080,6 @@ ${!isForPreview ? trackingScripts.body : ''}
       ${mainContentHtml}
     </main>
     ${floatingElementsHtml}
-    ${whatsAppComponent ? renderSingleComponent(whatsAppComponent, pageState, isForPreview, '', shouldHideAmpscript) : ''}
     ${cookieBannerHtml}
     %%[ ELSE ]%%
     ${security.body}

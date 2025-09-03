@@ -624,10 +624,8 @@ const getClientSideScripts = (pageState: CloudPage): string => {
 
         window.addEventListener('scroll', () => {
             if (window.scrollY > 50) {
-                header.style.setProperty('--current-bg', scrollBg);
                 header.classList.add('scrolled');
             } else {
-                header.style.removeProperty('--current-bg');
                 header.classList.remove('scrolled');
             }
         }, { passive: true });
@@ -843,8 +841,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const mainStyles = `
     width: 100%;
     overflow-x: hidden;
-    margin-top: ${isHeaderOverlay ? '0' : 'var(--header-height, 0px)'};
-    padding-top: ${isHeaderOverlay ? 'var(--header-height, 0px)' : '0'};
   `;
 
   const initialAmpscript = `%%[ 
@@ -998,13 +994,14 @@ ${trackingScripts.head}
         padding: 1rem;
         box-sizing: border-box;
         transition: background 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-        z-index: 50; /* Keep header on top */
-        background: var(--current-bg, transparent);
+        z-index: 50; 
+        background: var(--current-bg, ${headerComponent?.props.overlay ? 'transparent' : 'var(--initial-bg, transparent)'});
     }
     .page-header[data-overlay="true"] {
         position: absolute;
         top: 0;
         left: 0;
+        --initial-bg: transparent; /* Default to transparent if overlaying */
     }
     .page-header[data-sticky="true"] {
         position: sticky;
@@ -1012,6 +1009,7 @@ ${trackingScripts.head}
     }
     .page-header.scrolled {
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      background-color: ${headerComponent?.props.backgroundColorOnScroll || '#ffffff'};
     }
     .page-header .header-logo {
         flex-shrink: 0;
@@ -1037,23 +1035,27 @@ ${trackingScripts.head}
     }
     .page-header .header-nav a {
         text-decoration: none;
-        color: var(--header-link-color, #333333);
+        color: var(--custom-link-color);
         font-weight: 500;
         transition: color 0.2s ease;
     }
-    .page-header.scrolled .header-nav a {
-       color: var(--text-color-scroll, #000000);
-    }
     .page-header .header-nav a:hover {
-        color: var(--header-link-hover-color, #000000);
+        color: var(--custom-link-hover-color);
     }
     .page-header .header-button {
-        background-color: var(--theme-color);
         color: white;
         padding: 0.5rem 1rem;
         border-radius: 0.375rem;
         text-decoration: none;
         white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .header-button .lucide-icon {
+      width: 1.1em;
+      height: 1.1em;
     }
     .page-header[data-layout="logo-center-menu-below"] {
         flex-direction: column;
@@ -1065,6 +1067,9 @@ ${trackingScripts.head}
     .mobile-menu-toggle { display: none; background: none; border: none; cursor: pointer; color: inherit; }
 
     @media (max-width: 768px) {
+        main {
+            padding-top: ${isHeaderOverlay ? '0' : 'var(--header-height, 0px)'};
+        }
         .page-header .header-nav-container {
             display: flex; /* Keep it flex for drawer/overlay */
         }
@@ -1999,9 +2004,8 @@ ${trackingScripts.head}
 
 
     @media (max-width: 768px) {
-        .section-container {
-            padding-left: 15px;
-            padding-right: 15px;
+        main {
+            padding-top: ${isHeaderOverlay ? '0' : 'var(--header-height, 0px)'};
         }
         .columns-container:not([style*="--column-count: 1"]) {
             grid-template-columns: 1fr;

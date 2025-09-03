@@ -11,14 +11,16 @@ export function renderHeader(component: PageComponent): string {
         logoHeight = 40,
         isSticky = false,
         overlay = false,
-        backgroundColor = '#ffffff', // Default to white
+        backgroundColor = '#ffffff', 
         backgroundColorOnScroll = '#ffffff',
-        textColorOnScroll = '#000000',
+        linkColor, // Renamed from textColorOnScroll
+        linkHoverColor,
         mobileMenuBehavior = 'push',
         borderRadius,
         backgroundType = 'solid',
         gradientFrom,
         gradientTo,
+        buttonProps = {}
     } = component.props;
     
     const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
@@ -26,8 +28,31 @@ export function renderHeader(component: PageComponent): string {
     const showMenu = layout.includes('menu');
     const showButton = layout.includes('button');
     
+    const { 
+        bgColor: buttonBgColor = 'var(--theme-color)',
+        textColor: buttonTextColor = '#FFFFFF',
+        icon: buttonIcon,
+        iconPosition = 'left'
+    } = buttonProps;
+
+    const lucideIconSvgs: Record<string, string> = {
+        send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
+        'arrow-right': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+        'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
+        'plus': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+        'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
+        'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
+    };
+    
+    const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
+
     const buttonHtml = showButton && buttonText && buttonUrl 
-        ? `<a href="${buttonUrl}" class="header-button">${buttonText}</a>` 
+        ? `<a href="${buttonUrl}" class="header-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">
+            ${iconPosition === 'left' ? iconHtml : ''}
+            <span>${buttonText}</span>
+            ${iconPosition === 'right' ? iconHtml : ''}
+           </a>` 
         : '';
         
     const navHtml = showMenu ? `<nav class="header-nav"><ul>${menuItems}</ul></nav>` : '';
@@ -35,7 +60,6 @@ export function renderHeader(component: PageComponent): string {
     const stickyAttrs = isSticky ? `
         data-sticky="true"
         data-bg-scroll="${backgroundColorOnScroll}"
-        data-text-color-scroll="${textColorOnScroll}"
     ` : '';
 
     const overlayAttr = overlay ? 'data-overlay="true"' : '';
@@ -62,16 +86,23 @@ export function renderHeader(component: PageComponent): string {
     // Apply initial background
     let initialBackground = '';
     if (overlay) {
-        initialBackground = 'background-color: transparent;';
-    } else if (backgroundType === 'gradient' && gradientFrom && gradientTo) {
-        initialBackground = `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`;
-    } else { // Defaults to solid
-        initialBackground = `background-color: ${backgroundColor};`;
+        // If overlay is active, the background might be semi-transparent or solid
+        // The user can control this with the color picker (by choosing a color with alpha)
+        initialBackground = backgroundType === 'gradient'
+          ? `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`
+          : `background-color: ${backgroundColor || 'transparent'};`;
+    } else {
+        // If not overlay, always apply the selected background
+        initialBackground = backgroundType === 'gradient'
+          ? `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`
+          : `background-color: ${backgroundColor};`;
     }
     
     const inlineStyles = `
       ${initialBackground}
       ${borderRadius ? `border-radius: ${borderRadius};` : ''}
+      --custom-link-color: ${linkColor || '#333333'};
+      --custom-link-hover-color: ${linkHoverColor || '#000000'};
     `;
 
     return `
@@ -85,5 +116,3 @@ export function renderHeader(component: PageComponent): string {
         </header>
     `;
 }
-
-    

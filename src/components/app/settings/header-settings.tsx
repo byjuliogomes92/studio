@@ -28,12 +28,25 @@ const headerLayouts: { value: HeaderLayout; label: string; viz: React.ReactNode 
     { value: 'logo-only-left', label: 'Apenas Logo (Esquerda)', viz: <div className="flex justify-start w-full"><div className="w-6 h-3 rounded-sm bg-current"></div></div> },
 ];
 
-export function HeaderSettings({ component, onPropChange }: ComponentSettingsProps) {
+const lucideIcons = [
+    { value: 'none', label: 'Sem ícone' },
+    { value: 'send', label: 'Enviar' },
+    { value: 'arrow-right', label: 'Seta para a Direita' },
+    { value: 'check-circle', label: 'Círculo de Verificação' },
+    { value: 'plus', label: 'Mais' },
+    { value: 'download', label: 'Download' },
+    { value: 'star', label: 'Estrela' },
+    { value: 'zap', label: 'Raio' },
+];
+
+
+export function HeaderSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
     const { props } = component;
     const layout = props.layout || 'logo-left-menu-right';
     const showMenu = layout.includes('menu');
     const showButton = layout.includes('button');
     const backgroundType = props.backgroundType || 'solid';
+    const buttonProps = props.buttonProps || {};
 
     return (
         <div className="space-y-4">
@@ -106,6 +119,38 @@ export function HeaderSettings({ component, onPropChange }: ComponentSettingsPro
                         <Label htmlFor="header-button-url">URL do Botão</Label>
                         <Input id="header-button-url" value={props.buttonUrl || ''} onChange={(e) => onPropChange('buttonUrl', e.target.value)} />
                      </div>
+                     <Separator />
+                     <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                            <Label htmlFor="header-btn-bg-color">Cor do Fundo</Label>
+                            <Input id="header-btn-bg-color" type="color" value={buttonProps.bgColor || '#3b82f6'} onChange={(e) => onSubPropChange('buttonProps', 'bgColor', e.target.value)} className="p-1 h-10"/>
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="header-btn-text-color">Cor do Texto</Label>
+                            <Input id="header-btn-text-color" type="color" value={buttonProps.textColor || '#FFFFFF'} onChange={(e) => onSubPropChange('buttonProps', 'textColor', e.target.value)} className="p-1 h-10"/>
+                        </div>
+                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="header-btn-icon">Ícone do Botão</Label>
+                        <Select value={buttonProps.icon || 'none'} onValueChange={(value) => onSubPropChange('buttonProps', 'icon', value)}>
+                            <SelectTrigger id="header-btn-icon"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {lucideIcons.map(icon => <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                     </div>
+                      {buttonProps.icon && buttonProps.icon !== 'none' && (
+                        <div className="space-y-2">
+                           <Label>Posição do Ícone</Label>
+                           <Select value={buttonProps.iconPosition || 'left'} onValueChange={(value) => onSubPropChange('buttonProps', 'iconPosition', value)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="left">Esquerda</SelectItem>
+                                    <SelectItem value="right">Direita</SelectItem>
+                                </SelectContent>
+                           </Select>
+                        </div>
+                     )}
                 </div>
             )}
             <Separator />

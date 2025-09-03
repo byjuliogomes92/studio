@@ -1,5 +1,5 @@
 
-import type { PageComponent, HeaderLink, CloudPage } from "@/lib/types";
+import type { PageComponent, HeaderLink, CloudPage, ButtonVariant } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Plus } from "lucide-react";
 import { produce } from 'immer';
 import { ImageInput } from "./image-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -14,15 +16,15 @@ interface ComponentSettingsProps {
 }
 
 export function HeaderLinksManager({ links, onPropChange }: { links: HeaderLink[], onPropChange: (prop: string, value: any) => void }) {
-    const handleLinkChange = (index: number, field: keyof HeaderLink, value: string) => {
+    const handleLinkChange = (index: number, field: keyof HeaderLink, value: any) => {
         const newLinks = produce(links, draft => {
-            draft[index][field] = value;
+            (draft[index] as any)[field] = value;
         });
         onPropChange('links', newLinks);
     };
 
     const addLink = () => {
-        const newLink: HeaderLink = { id: `link-${Date.now()}`, text: 'Novo Link', url: '#' };
+        const newLink: HeaderLink = { id: `link-${Date.now()}`, text: 'Novo Link', url: '#', style: 'link' };
         onPropChange('links', [...(links || []), newLink]);
     };
 
@@ -51,6 +53,32 @@ export function HeaderLinksManager({ links, onPropChange }: { links: HeaderLink[
                             <Input id={`link-url-${link.id}`} value={link.url} onChange={e => handleLinkChange(index, 'url', e.target.value)} />
                         </div>
                     </div>
+                    <Separator />
+                    <div className="space-y-2">
+                        <Label className="text-xs">Estilo</Label>
+                        <Select value={link.style || 'link'} onValueChange={(value: 'link' | 'button') => handleLinkChange(index, 'style', value)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="link">Apenas Link</SelectItem>
+                                <SelectItem value="button">Botão</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {link.style === 'button' && (
+                        <div className="space-y-2">
+                            <Label className="text-xs">Variante do Botão</Label>
+                            <Select value={link.variant || 'default'} onValueChange={(value: ButtonVariant) => handleLinkChange(index, 'variant', value)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="default">Padrão</SelectItem>
+                                    <SelectItem value="destructive">Destrutivo</SelectItem>
+                                    <SelectItem value="outline">Contorno</SelectItem>
+                                    <SelectItem value="secondary">Secundário</SelectItem>
+                                    <SelectItem value="ghost">Fantasma</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                 </div>
             ))}
             <Button variant="outline" className="w-full" onClick={addLink}>

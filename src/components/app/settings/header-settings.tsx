@@ -97,7 +97,11 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange }: Com
                     <h4 className="font-medium text-sm">Itens de Menu</h4>
                     <HeaderLinksManager links={props.links || []} onPropChange={onPropChange} />
                      <Separator/>
-                     <div className="grid grid-cols-2 gap-2 pt-2">
+                     <div className="space-y-2 pt-2">
+                        <Label htmlFor="header-link-font-size">Tamanho da Fonte do Menu</Label>
+                        <Input id="header-link-font-size" value={props.linkFontSize || '16px'} onChange={(e) => onPropChange('linkFontSize', e.target.value)} placeholder="Ex: 16px ou 1rem"/>
+                    </div>
+                     <div className="grid grid-cols-2 gap-2">
                          <div className="space-y-1">
                             <Label htmlFor="header-link-color">Cor do Texto</Label>
                             <Input id="header-link-color" type="color" value={props.linkColor || '#333333'} onChange={(e) => onPropChange('linkColor', e.target.value)} className="p-1 h-10"/>

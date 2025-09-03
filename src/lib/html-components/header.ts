@@ -1,5 +1,5 @@
 
-import type { PageComponent, HeaderLayout, MobileMenuBehavior, CloudPage } from "@/lib/types";
+import type { PageComponent, HeaderLayout, MobileMenuBehavior, CloudPage, HeaderLink } from "@/lib/types";
 
 function getStyleString(styles: any = {}): string {
     // This is for styles applied to the inner container, so we exclude outer container styles.
@@ -28,6 +28,7 @@ export function renderHeader(component: PageComponent): string {
         backgroundColorOnScroll = '#ffffff',
         linkColor,
         linkHoverColor,
+        linkFontSize,
         mobileMenuBehavior = 'push',
         borderRadius,
         backgroundType = 'solid',
@@ -38,7 +39,11 @@ export function renderHeader(component: PageComponent): string {
         styles = {}
     } = component.props;
     
-    const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
+    const menuItems = links.map((link: HeaderLink) => {
+        const isButton = link.style === 'button';
+        const buttonClass = isButton ? `header-button custom-button--${link.variant || 'default'}` : '';
+        return `<li><a href="${link.url}" class="${buttonClass}">${link.text}</a></li>`;
+    }).join('');
     
     const showMenu = layout.includes('menu');
     const showButton = layout.includes('button');
@@ -113,6 +118,7 @@ export function renderHeader(component: PageComponent): string {
     let finalOuterHeaderStyles = `
         --custom-link-color: ${linkColor || '#333333'};
         --custom-link-hover-color: ${linkHoverColor || '#000000'};
+        --custom-link-font-size: ${linkFontSize || '16px'};
         ${otherStyleString}
     `;
 

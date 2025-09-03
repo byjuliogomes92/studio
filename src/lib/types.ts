@@ -182,6 +182,7 @@ export type SecurityType = 'none' | 'sso' | 'password';
 export type LoaderType = 'none' | 'image' | 'animation';
 export type LoaderAnimation = 'pulse' | 'spin';
 
+export type CalendlyEmbedType = 'inline' | 'popup_button' | 'popup_text';
 
 export interface CloudPage {
   id: string;

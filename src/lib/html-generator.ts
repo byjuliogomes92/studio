@@ -51,7 +51,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
 
             // FloatingImages are positioned absolutely and don't need the standard wrapper.
-            if (component.type === 'FloatingImage' || component.type === 'FloatingButton') {
+            if (component.type === 'FloatingImage' || component.type === 'FloatingButton' || component.type === 'Calendly') {
                 return renderedComponent;
             }
 
@@ -379,7 +379,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     const autoplayPluginScript = hasAutoplayCarousel 
       ? '<script src="https://unpkg.com/embla-carousel-autoplay@latest/embla-carousel-autoplay.umd.js"></script>' 
       : '';
-    const calendlyScript = hasCalendly ? '<link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet"><script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript" async></script>' : '';
+    const calendlyScript = hasCalendly ? '<script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>' : '';
 
 
     const script = `

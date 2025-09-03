@@ -109,42 +109,46 @@ export function renderHeader(component: PageComponent): string {
         </button>
     `;
     
-    const containerClass = isFullWidth ? 'header-inner-full' : 'header-inner-contained';
-    
-    let finalInnerContainerStyles = `padding-top: 1rem; padding-bottom: 1rem;`;
-
-    // Apply lateral padding UNLESS overlay is true
-    if (!overlay) {
-        finalInnerContainerStyles += 'padding-left: 1rem; padding-right: 1rem;';
-    }
-
-    if (!isFullWidth) {
-        finalInnerContainerStyles += `max-width: ${styles.maxWidth || '1200px'};`;
-    }
-    
+    // START: Refactored Styling Logic
     let finalOuterHeaderStyles = `
         --custom-link-color: ${linkColor || '#333333'};
         --custom-link-hover-color: ${linkHoverColor || '#000000'};
         ${otherStyleString}
     `;
 
-    // Apply background color or gradient to the correct element
+    let finalInnerContainerStyles = `
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    `;
+
     let backgroundStyle = '';
     if (backgroundType === 'gradient') {
       backgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
-    } else {
-      backgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
+    } else if (backgroundColor && backgroundColor !== 'transparent') {
+      backgroundStyle = `background-color: ${backgroundColor};`;
     }
 
-    // Apply background to the outer header for full-width, and inner for contained.
     if (isFullWidth) {
         finalOuterHeaderStyles += backgroundStyle;
     } else {
         finalInnerContainerStyles += backgroundStyle;
-         if (borderRadius) {
+        if (borderRadius) {
           finalInnerContainerStyles += `border-radius: ${borderRadius};`;
         }
     }
+
+    if (overlay) {
+        finalInnerContainerStyles += `padding-left: 0; padding-right: 0;`;
+    } else {
+        finalInnerContainerStyles += `padding-left: 1rem; padding-right: 1rem;`;
+    }
+
+    const containerClass = isFullWidth ? 'header-inner-full' : 'header-inner-contained';
+    
+    if (!isFullWidth) {
+        finalInnerContainerStyles += `max-width: ${styles.maxWidth || '1200px'};`;
+    }
+    // END: Refactored Styling Logic
 
 
     return `

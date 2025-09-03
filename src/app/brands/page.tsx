@@ -112,6 +112,30 @@ function ImageUrlInput({ label, value, onSelect, tooltip }: { label: string; val
     );
 }
 
+function ColorInput({ label, value, onChange }: { label: string, value: string, onChange: (value: string) => void }) {
+    return (
+        <div className="space-y-1">
+            <Label className="text-xs">{label}</Label>
+            <div className="relative flex items-center">
+                <Input 
+                    type="text" 
+                    value={value} 
+                    onChange={e => onChange(e.target.value)} 
+                    className="pl-10"
+                />
+                <div className="absolute left-1.5 h-7 w-7 rounded-md border" style={{ backgroundColor: value }}>
+                     <Input 
+                        type="color" 
+                        value={value} 
+                        onChange={e => onChange(e.target.value)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function BrandsPage() {
   const router = useRouter();
   const { user, loading: authLoading, activeWorkspace } = useAuth();
@@ -413,10 +437,10 @@ export default function BrandsPage() {
                             <div className="p-4 border rounded-md space-y-3">
                                 <h5 className="font-medium flex items-center gap-2"><Sun className="h-4 w-4"/> Tema Claro</h5>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <div className="space-y-1"><Label className="text-xs">Primária</Label><Input type="text" value={currentBrand.colors?.light?.primary} onChange={e => handleBrandFieldChange('colors.light.primary', e.target.value)} /></div>
-                                  <div className="space-y-1"><Label className="text-xs">Primária (Hover)</Label><Input type="text" value={currentBrand.colors?.light?.primaryHover} onChange={e => handleBrandFieldChange('colors.light.primaryHover', e.target.value)} /></div>
-                                  <div className="space-y-1"><Label className="text-xs">Fundo</Label><Input type="text" value={currentBrand.colors?.light?.background} onChange={e => handleBrandFieldChange('colors.light.background', e.target.value)} /></div>
-                                  <div className="space-y-1"><Label className="text-xs">Texto</Label><Input type="text" value={currentBrand.colors?.light?.foreground} onChange={e => handleBrandFieldChange('colors.light.foreground', e.target.value)} /></div>
+                                  <ColorInput label="Primária" value={currentBrand.colors?.light?.primary || '#000000'} onChange={value => handleBrandFieldChange('colors.light.primary', value)} />
+                                  <ColorInput label="Primária (Hover)" value={currentBrand.colors?.light?.primaryHover || '#000000'} onChange={value => handleBrandFieldChange('colors.light.primaryHover', value)} />
+                                  <ColorInput label="Fundo" value={currentBrand.colors?.light?.background || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.light.background', value)} />
+                                  <ColorInput label="Texto" value={currentBrand.colors?.light?.foreground || '#000000'} onChange={value => handleBrandFieldChange('colors.light.foreground', value)} />
                                 </div>
                             </div>
                         )}
@@ -425,10 +449,10 @@ export default function BrandsPage() {
                             <div className="p-4 border rounded-md space-y-3">
                                 <h5 className="font-medium flex items-center gap-2"><Moon className="h-4 w-4"/> Tema Escuro</h5>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <div className="space-y-1"><Label className="text-xs">Primária</Label><Input type="text" value={currentBrand.colors?.dark?.primary} onChange={e => handleBrandFieldChange('colors.dark.primary', e.target.value)} /></div>
-                                  <div className="space-y-1"><Label className="text-xs">Primária (Hover)</Label><Input type="text" value={currentBrand.colors?.dark?.primaryHover} onChange={e => handleBrandFieldChange('colors.dark.primaryHover', e.target.value)} /></div>
-                                  <div className="space-y-1"><Label className="text-xs">Fundo</Label><Input type="text" value={currentBrand.colors?.dark?.background} onChange={e => handleBrandFieldChange('colors.dark.background', e.target.value)} /></div>
-                                  <div className="space-y-1"><Label className="text-xs">Texto</Label><Input type="text" value={currentBrand.colors?.dark?.foreground} onChange={e => handleBrandFieldChange('colors.dark.foreground', e.target.value)} /></div>
+                                  <ColorInput label="Primária" value={currentBrand.colors?.dark?.primary || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.primary', value)} />
+                                  <ColorInput label="Primária (Hover)" value={currentBrand.colors?.dark?.primaryHover || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.primaryHover', value)} />
+                                  <ColorInput label="Fundo" value={currentBrand.colors?.dark?.background || '#000000'} onChange={value => handleBrandFieldChange('colors.dark.background', value)} />
+                                  <ColorInput label="Texto" value={currentBrand.colors?.dark?.foreground || '#FFFFFF'} onChange={value => handleBrandFieldChange('colors.dark.foreground', value)} />
                                 </div>
                             </div>
                         )}

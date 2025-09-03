@@ -840,6 +840,12 @@ ${trackingScripts.head}
       --theme-color: ${styles.themeColor || '#000000'};
       --theme-color-hover: ${styles.themeColorHover || '#333333'};
     }
+    html {
+      box-sizing: border-box;
+    }
+    *, *:before, *:after {
+      box-sizing: inherit;
+    }
     body {
         background-color: ${styles.backgroundColor};
         background-image: url(${styles.backgroundImage});
@@ -854,7 +860,8 @@ ${trackingScripts.head}
         flex-direction: column;
         align-items: center;
         min-height: 100vh;
-        box-sizing: border-box;
+        width: 100%;
+        overflow-x: hidden;
     }
 
     #loader {
@@ -913,7 +920,6 @@ ${trackingScripts.head}
       margin-left: auto;
       margin-right: auto;
       padding: 20px;
-      box-sizing: border-box;
     }
     
     .section-wrapper {
@@ -941,7 +947,6 @@ ${trackingScripts.head}
         width: 100%;
         max-width: 1200px;
         padding: 20px;
-        box-sizing: border-box;
     }
     
     .page-header {
@@ -1220,7 +1225,6 @@ ${trackingScripts.head}
         margin: 0;
         border: 1px solid #ccc;
         border-radius: 5px;
-        box-sizing: border-box;
         font-family: "${googleFont}", sans-serif;
         font-weight: 700;
         font-style: normal;
@@ -1455,7 +1459,6 @@ ${trackingScripts.head}
         line-height: 1.43;
         letter-spacing: 0.01071em;
         user-select: text !important;
-        box-sizing: inherit;
         width: 100%;
         margin-top: auto;
     }
@@ -1467,14 +1470,12 @@ ${trackingScripts.head}
         padding: 32px 80px;
         background-color: #FAFAFA;
         font-size: xx-small;
-        box-sizing: border-box;
     }
 
     .MuiGrid-container {
         width: 100%;
         display: flex;
         flex-wrap: wrap;
-        box-sizing: border-box;
         flex-direction: column;
         align-items: center;
         gap: 10px;
@@ -1894,7 +1895,6 @@ ${trackingScripts.head}
         margin-top: 10px;
         border: 1px solid #ccc;
         border-radius: 5px;
-        box-sizing: border-box;
     }
     .password-form button {
         width: 100%;
@@ -1925,9 +1925,8 @@ ${trackingScripts.head}
 
 
     @media (max-width: 768px) {
-        .component-wrapper > .section-container {
-            padding-left: 15px;
-            padding-right: 15px;
+        .section-container {
+            padding: 15px;
         }
         .columns-container:not([style*="--column-count: 1"]) {
             grid-template-columns: 1fr;
@@ -1970,7 +1969,7 @@ ${isForPreview ? '' : trackingScripts.body}
   ${security.body}
   %%[ ENDIF ]%%
 </body>
-</html>`;
+</html>`
 
   finalHtml = finalHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 

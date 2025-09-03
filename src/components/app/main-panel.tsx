@@ -105,6 +105,27 @@ function WysiwygToolbar({ editor, iframe, onAction }: { editor: HTMLElement | nu
     );
 }
 
+function AmpscriptIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            {...props}
+        >
+            <path d="M5.5 15h13" />
+            <path d="M5.5 9h13" />
+            <path d="M4 20l-2-8 2-8" />
+            <path d="M20 20l2-8-2-8" />
+        </svg>
+    );
+}
 
 export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }: MainPanelProps) {
   const { toast } = useToast();
@@ -312,7 +333,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
                   <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="outline" size="icon" onClick={() => setHideAmpscript(!hideAmpscript)} data-state={hideAmpscript ? 'active' : 'inactive'}>
-                            <Code className="h-5 w-5"/>
+                            <AmpscriptIcon className="h-5 w-5"/>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -415,5 +436,3 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     </>
   );
 }
-
-    

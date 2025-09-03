@@ -29,6 +29,7 @@ import { renderFTPUpload } from './html-components/ftpupload';
 import { renderDataExtensionUpload } from './html-components/data-extension-upload';
 import { renderFloatingImage } from './html-components/floating-image';
 import { renderFloatingButton } from './html-components/floating-button';
+import { renderCalendly } from './html-components/calendly';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -143,6 +144,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'Footer': return renderFooter(component);
     case 'FloatingImage': return renderFloatingImage(component);
     case 'FloatingButton': return renderFloatingButton(component);
+    case 'Calendly': return renderCalendly(component);
     default:
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
@@ -370,12 +372,14 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
     const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
     const hasAutoplayCarousel = hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay);
+    const hasCalendly = pageState.components.some(c => c.type === 'Calendly');
 
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
     const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
     const autoplayPluginScript = hasAutoplayCarousel 
       ? '<script src="https://unpkg.com/embla-carousel-autoplay@latest/embla-carousel-autoplay.umd.js"></script>' 
       : '';
+    const calendlyScript = hasCalendly ? '<link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet"><script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript" async></script>' : '';
 
 
     const script = `
@@ -753,7 +757,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     </script>
     `;
 
-    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${script}`;
+    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}`;
 };
 
 
@@ -2051,5 +2055,3 @@ ${isForPreview ? '' : trackingScripts.body}
 
   return finalHtml;
 }
-
-    

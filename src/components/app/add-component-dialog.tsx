@@ -46,6 +46,7 @@ import {
   UploadCloud,
   ImageIcon,
   PlusCircle,
+  CalendarClock,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -120,6 +121,7 @@ const componentList: {
       { name: "NPS", icon: Smile, enabled: true },
       { name: "FTPUpload", icon: UploadCloud, enabled: true },
       { name: "DataExtensionUpload", icon: UploadCloud, enabled: true },
+      { name: "Calendly", icon: CalendarClock, enabled: true },
       { name: "Chart", icon: BarChart, enabled: false },
     ],
   },
@@ -575,5 +577,3 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
     </Dialog>
   );
 }
-
-    

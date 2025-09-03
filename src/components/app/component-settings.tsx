@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { PageComponent, ComponentType, FormFieldConfig, CustomFormField, CustomFormFieldType, MediaAsset, HeaderLink, HeaderLayout, MobileMenuBehavior, ButtonVariant, CloudPage } from "@/lib/types";
@@ -733,10 +734,18 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                          </div>
                     </div>
                 )}
-                 <Separator />
-                <h4 className="font-medium text-sm pt-2">Comportamento Fixo (Sticky)</h4>
+                <Separator />
+                <h4 className="font-medium text-sm pt-2">Posicionamento</h4>
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="header-sticky">Fixo no Topo</Label>
+                    <Label htmlFor="header-overlay">Sobrepor na primeira seção</Label>
+                    <Switch
+                        id="header-overlay"
+                        checked={props.overlay || false}
+                        onCheckedChange={(checked) => onPropChange('overlay', checked)}
+                    />
+                </div>
+                 <div className="flex items-center justify-between">
+                    <Label htmlFor="header-sticky">Fixo no Topo (Sticky)</Label>
                     <Switch
                         id="header-sticky"
                         checked={props.isSticky || false}

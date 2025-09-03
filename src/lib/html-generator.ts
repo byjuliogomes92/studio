@@ -807,6 +807,24 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const prefillAmpscript = getPrefillAmpscript(pageState);
 
+  const headerComponent = components.find(c => c.type === 'Header');
+  const isHeaderOverlay = headerComponent?.props.overlay || false;
+  
+  const bodyStyles = `
+    background-color: ${styles.backgroundColor};
+    background-image: url(${styles.backgroundImage});
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    font-family: "${googleFont}", sans-serif;
+    font-weight: 400;
+    margin: 0;
+    width: 100%;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    position: relative; /* Needed for absolute positioned children */
+    ${isHeaderOverlay ? 'padding-top: 80px;' : ''} /* Adjust based on header height */
+  `;
+
   const initialAmpscript = `%%[ 
     VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
     IF EMPTY(RequestParameter("__isPost")) THEN
@@ -852,17 +870,7 @@ ${trackingScripts.head}
       word-wrap: break-word; /* Crucial for preventing overflow */
     }
     body {
-        background-color: ${styles.backgroundColor};
-        background-image: url(${styles.backgroundImage});
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-        font-family: "${googleFont}", sans-serif;
-        font-weight: 400;
-        margin: 0;
-        width: 100%;
-        overflow-x: hidden; /* Prevent horizontal scroll */
-        position: relative; /* Needed for absolute positioned children */
+        ${bodyStyles}
     }
 
     main {
@@ -963,11 +971,16 @@ ${trackingScripts.head}
         padding: 1rem;
         box-sizing: border-box;
         transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        z-index: 50; /* Keep header on top */
+    }
+    .page-header[data-overlay="true"] {
+        position: absolute;
+        top: 0;
+        left: 0;
     }
     .page-header[data-sticky="true"] {
         position: sticky;
         top: 0;
-        z-index: 50;
     }
     .page-header.scrolled {
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);

@@ -10,6 +10,7 @@ export function renderHeader(component: PageComponent): string {
         buttonUrl, 
         logoHeight = 40,
         isSticky = false,
+        overlay = false, // New prop
         backgroundColor = '#ffffff00',
         textColor = '#000000',
         backgroundColorOnScroll = '#ffffffff',
@@ -35,11 +36,13 @@ export function renderHeader(component: PageComponent): string {
         data-bg-scroll="${backgroundColorOnScroll}"
         data-text-color-scroll="${textColorOnScroll}"
     ` : '';
+
+    const overlayAttr = overlay ? 'data-overlay="true"' : '';
     
     const navContainer = `<div class="header-nav-container">${navHtml}${buttonHtml}</div>`;
 
     return `
-        <header class="page-header" data-layout="${layout}" ${stickyAttrs} data-mobile-menu-behavior="${mobileMenuBehavior}">
+        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} data-mobile-menu-behavior="${mobileMenuBehavior}">
             <div class="header-logo">
                 <img src="${logoUrl}" alt="Logo" style="height: ${logoHeight}px;">
             </div>

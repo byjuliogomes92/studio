@@ -52,7 +52,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             })()
           : '';
         return renderComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
-      });
+      }).join('\n');
   }
 
 const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string, hideAmpscript: boolean = false): string => {
@@ -93,11 +93,18 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
       return renderedComponent;
   }
+  
+  // Floating components need the wrapper for animation, but not the section-container-padded
+  if (['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(component.type)) {
+      return `<div class="${sectionClass}" ${entranceAnimationAttrs}>${renderedComponent}</div>`;
+  }
 
-  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe'].includes(component.type)) {
+  // Stripe is a special case that is always full-width and doesn't get padded container
+  if (component.type === 'Stripe') {
       return renderedComponent;
   }
 
+  // All other components
   if (component.parentId !== null) {
      return `<div class="${sectionClass}" ${entranceAnimationAttrs}>${renderedComponent}</div>`;
   }
@@ -835,15 +842,15 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const clientSideScripts = getClientSideScripts(pageState);
   
-  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
+  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
   const whatsAppComponent = components.find(c => c.type === 'WhatsApp');
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'WhatsApp', 'FloatingImage', 'FloatingButton'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript).join('\n');
-  const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'WhatsApp', 'FloatingImage', 'FloatingButton'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
+  const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
 
 
   const headerComponent = components.find(c => c.type === 'Header');

@@ -111,27 +111,15 @@ export function renderHeader(component: PageComponent): string {
     
     const containerClass = isFullWidth ? 'header-inner-full' : 'header-inner-contained';
     
-    let finalInnerContainerStyles = `
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-    `;
-    
-    if (overlay) {
-        finalInnerContainerStyles += 'padding-left: 0px; padding-right: 0px;';
+    let finalInnerContainerStyles = `padding-top: 1rem; padding-bottom: 1rem;`;
+
+    // Apply lateral padding UNLESS overlay is true
+    if (!overlay) {
+        finalInnerContainerStyles += 'padding-left: 1rem; padding-right: 1rem;';
     }
 
     if (!isFullWidth) {
         finalInnerContainerStyles += `max-width: ${styles.maxWidth || '1200px'};`;
-        if (backgroundType === 'gradient') {
-          finalInnerContainerStyles += `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
-        } else {
-          finalInnerContainerStyles += `background-color: ${backgroundColor || 'transparent'};`;
-        }
-        if (borderRadius) {
-          finalInnerContainerStyles += `border-radius: ${borderRadius};`;
-        }
     }
     
     let finalOuterHeaderStyles = `
@@ -140,13 +128,24 @@ export function renderHeader(component: PageComponent): string {
         ${otherStyleString}
     `;
 
+    // Apply background color or gradient to the correct element
+    let backgroundStyle = '';
+    if (backgroundType === 'gradient') {
+      backgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
+    } else {
+      backgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
+    }
+
+    // Apply background to the outer header for full-width, and inner for contained.
     if (isFullWidth) {
-        if (backgroundType === 'gradient') {
-          finalOuterHeaderStyles += `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
-        } else {
-          finalOuterHeaderStyles += `background-color: ${backgroundColor || 'transparent'};`;
+        finalOuterHeaderStyles += backgroundStyle;
+    } else {
+        finalInnerContainerStyles += backgroundStyle;
+         if (borderRadius) {
+          finalInnerContainerStyles += `border-radius: ${borderRadius};`;
         }
     }
+
 
     return `
         <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} style="${finalOuterHeaderStyles}">

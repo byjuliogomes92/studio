@@ -1,6 +1,17 @@
 
 import type { PageComponent, HeaderLink } from '@/lib/types';
 
+function getStyleString(styles: any = {}): string {
+    return Object.entries(styles)
+      .map(([key, value]) => {
+        if (!value) return '';
+        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+        return `${cssKey}: ${value};`;
+      })
+      .join(' ');
+}
+
+
 export function renderHeader(component: PageComponent): string {
     const { 
         layout = 'logo-left-menu-right', 
@@ -11,16 +22,17 @@ export function renderHeader(component: PageComponent): string {
         logoHeight = 40,
         isSticky = false,
         overlay = false,
-        backgroundColor = '#ffffff', 
+        backgroundColor = 'transparent', 
         backgroundColorOnScroll = '#ffffff',
-        linkColor, // Renamed from textColorOnScroll
+        linkColor,
         linkHoverColor,
         mobileMenuBehavior = 'push',
         borderRadius,
         backgroundType = 'solid',
         gradientFrom,
         gradientTo,
-        buttonProps = {}
+        buttonProps = {},
+        styles = {}
     } = component.props;
     
     const menuItems = links.map((link: HeaderLink) => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
@@ -85,24 +97,20 @@ export function renderHeader(component: PageComponent): string {
 
     // Apply initial background
     let initialBackground = '';
-    if (overlay) {
-        // If overlay is active, the background might be semi-transparent or solid
-        // The user can control this with the color picker (by choosing a color with alpha)
-        initialBackground = backgroundType === 'gradient'
-          ? `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`
-          : `background-color: ${backgroundColor || 'transparent'};`;
+    if (backgroundType === 'gradient') {
+      initialBackground = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
     } else {
-        // If not overlay, always apply the selected background
-        initialBackground = backgroundType === 'gradient'
-          ? `background: linear-gradient(to right, ${gradientFrom}, ${gradientTo});`
-          : `background-color: ${backgroundColor};`;
+      initialBackground = `background-color: ${backgroundColor || 'transparent'};`;
     }
     
+    const styleString = getStyleString(styles);
+
     const inlineStyles = `
       ${initialBackground}
       ${borderRadius ? `border-radius: ${borderRadius};` : ''}
       --custom-link-color: ${linkColor || '#333333'};
       --custom-link-hover-color: ${linkHoverColor || '#000000'};
+      ${styleString}
     `;
 
     return `

@@ -10,6 +10,7 @@ export function renderImage(component: PageComponent): string {
         'max-width': '100%',
         'height': 'auto',
         'border-radius': '8px',
+        'display': 'block', // Ensure image is a block element for margin auto to work if needed
     };
 
     if (width) {
@@ -21,8 +22,9 @@ export function renderImage(component: PageComponent): string {
       .map(([key, value]) => `${key}: ${value};`)
       .join(' ');
       
+    // The alignment is now controlled by the parent column's justify-content, so we don't force text-align here.
     return `
-        <div style="text-align: center; ${styleString}">
+        <div style="${styleString}">
             <img src="${src}" alt="${alt}" style="${imageStyleString}" data-ai-hint="website abstract">
         </div>`;
 }

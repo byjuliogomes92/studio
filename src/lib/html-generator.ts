@@ -61,9 +61,10 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                  return renderedComponent;
             }
             
-            const wrapperStyle = (isHeaderOverlay && index === 0 && (component.type !== 'Header')) ? 'padding-top: 0;' : '';
+            // Quando o header é overlay, remove o padding-top do primeiro wrapper
+            const wrapperStyle = (isHeaderOverlay && index === 0) ? 'padding-top: 0;' : '';
 
-             const containerClass = (component.type === 'Header' && isHeaderOverlay)
+            const containerClass = (component.type === 'Header' && (isHeaderOverlay || headerComponent?.props.isFullWidth))
                 ? 'section-container'
                 : 'section-container-padded';
 
@@ -646,10 +647,13 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         const header = document.querySelector('.page-header[data-overlay="true"]');
         if (!header) return;
 
-        const firstSection = document.querySelector('main > .component-wrapper:first-of-type');
+        const firstSection = document.querySelector('.component-wrapper:not(:has(.page-header))');
         if (firstSection) {
+            const heroContainer = firstSection.querySelector('.columns-container');
             const headerHeight = header.offsetHeight;
-            firstSection.style.paddingTop = headerHeight + 'px';
+            if (heroContainer) {
+                heroContainer.style.paddingTop = headerHeight + 'px';
+            }
         }
     }
 
@@ -975,8 +979,12 @@ ${trackingScripts.head}
     }
     
     .section-container-padded {
-        padding-left: 20px;
-        padding-right: 20px;
+      width: 100%;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 20px;
+      padding-right: 20px;
     }
 
     .section-wrapper {
@@ -2039,3 +2047,4 @@ ${!isForPreview ? trackingScripts.body : ''}
 
   return finalHtml;
 }
+

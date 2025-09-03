@@ -30,13 +30,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2, Sun, Moon, Type, Square, Circle, Hand, Image as ImageIcon, Text, Search } from "lucide-react";
+import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2, Sun, Moon, Type, Square, Circle, Hand, Image as ImageIcon, Text, Search, HelpCircle, Library } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
+import { MediaLibraryDialog } from "@/components/app/media-library-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 const googleFonts = ["Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Source Sans Pro", "Raleway", "Poppins", "Nunito", "Merriweather"];
 
@@ -86,6 +89,28 @@ const initialBrandState: Omit<Brand, "id" | "createdAt"> = {
     bitly: { encryptedAccessToken: "" },
   },
 };
+
+function ImageUrlInput({ label, value, onSelect, tooltip }: { label: string; value: string; onSelect: (url: string) => void, tooltip: string }) {
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+                <Label>{label}</Label>
+                <Tooltip>
+                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                    <TooltipContent><p>{tooltip}</p></TooltipContent>
+                </Tooltip>
+            </div>
+            <div className="flex items-center gap-2">
+                <Input value={value} onChange={(e) => onSelect(e.target.value)} />
+                <MediaLibraryDialog onSelectImage={onSelect}>
+                    <Button variant="outline" size="icon">
+                        <Library className="h-4 w-4" />
+                    </Button>
+                </MediaLibraryDialog>
+            </div>
+        </div>
+    );
+}
 
 export default function BrandsPage() {
   const router = useRouter();
@@ -311,6 +336,7 @@ export default function BrandsPage() {
             </DialogDescription>
           </DialogHeader>
           {currentBrand && (
+            <TooltipProvider>
             <Tabs defaultValue="visual" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="visual"><Palette className="mr-2 h-4 w-4" />Identidade Visual</TabsTrigger>
@@ -338,26 +364,36 @@ export default function BrandsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
                         <h4 className="font-semibold text-lg">Logos</h4>
-                        <div className="space-y-2">
-                            <Label htmlFor="logo-hl">Logo Horizontal (Fundo Claro)</Label>
-                            <Input id="logo-hl" value={currentBrand.logos?.horizontalLight || ''} onChange={(e) => handleBrandFieldChange('logos.horizontalLight', e.target.value)} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="logo-hd">Logo Horizontal (Fundo Escuro)</Label>
-                            <Input id="logo-hd" value={currentBrand.logos?.horizontalDark || ''} onChange={(e) => handleBrandFieldChange('logos.horizontalDark', e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="logo-il">Ícone (Fundo Claro)</Label>
-                            <Input id="logo-il" value={currentBrand.logos?.iconLight || ''} onChange={(e) => handleBrandFieldChange('logos.iconLight', e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="logo-id">Ícone (Fundo Escuro)</Label>
-                            <Input id="logo-id" value={currentBrand.logos?.iconDark || ''} onChange={(e) => handleBrandFieldChange('logos.iconDark', e.target.value)} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="logo-favicon">Favicon</Label>
-                            <Input id="logo-favicon" value={currentBrand.logos?.favicon || ''} onChange={(e) => handleBrandFieldChange('logos.favicon', e.target.value)} />
-                        </div>
+                        <ImageUrlInput
+                            label="Logo Horizontal (Fundo Claro)"
+                            value={currentBrand.logos?.horizontalLight || ''}
+                            onSelect={(url) => handleBrandFieldChange('logos.horizontalLight', url)}
+                            tooltip="Versão principal do logo para ser usada em fundos claros."
+                        />
+                        <ImageUrlInput
+                            label="Logo Horizontal (Fundo Escuro)"
+                            value={currentBrand.logos?.horizontalDark || ''}
+                            onSelect={(url) => handleBrandFieldChange('logos.horizontalDark', url)}
+                            tooltip="Versão do logo para ser usada em fundos escuros."
+                        />
+                         <ImageUrlInput
+                            label="Ícone (Fundo Claro)"
+                            value={currentBrand.logos?.iconLight || ''}
+                            onSelect={(url) => handleBrandFieldChange('logos.iconLight', url)}
+                            tooltip="Versão quadrada ou redonda do logo para avatares e espaços pequenos."
+                        />
+                        <ImageUrlInput
+                            label="Ícone (Fundo Escuro)"
+                            value={currentBrand.logos?.iconDark || ''}
+                            onSelect={(url) => handleBrandFieldChange('logos.iconDark', url)}
+                            tooltip="Versão do ícone para ser usada em fundos escuros."
+                        />
+                        <ImageUrlInput
+                            label="Favicon"
+                            value={currentBrand.logos?.favicon || ''}
+                            onSelect={(url) => handleBrandFieldChange('logos.favicon', url)}
+                            tooltip="Ícone que aparece na aba do navegador (geralmente .png ou .ico)."
+                        />
                     </div>
                      <div className="space-y-4">
                         <h4 className="font-semibold text-lg">Esquema de Cores</h4>
@@ -475,6 +511,7 @@ export default function BrandsPage() {
                 </div>
               </TabsContent>
             </Tabs>
+            </TooltipProvider>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>

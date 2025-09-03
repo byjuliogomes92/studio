@@ -1,18 +1,9 @@
-import type { SVGProps } from "react";
+import type { ImgHTMLAttributes } from "react";
 
-export const Logo = (props: SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+export const Logo = (props: ImgHTMLAttributes<HTMLImageElement>) => (
+  <img
+    src="https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/cloudpagestudio_logo_icon.svg?alt=media&token=2302b259-e195-45a2-9af0-0a64593dfde6"
+    alt="Cloud Page Studio Logo"
     {...props}
-  >
-    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-    <path d="m14 12-4 4 4 4" />
-    <path d="m10 12 4 4" />
-  </svg>
+  />
 );

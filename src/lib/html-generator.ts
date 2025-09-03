@@ -1843,7 +1843,7 @@ ${trackingScripts.head}
 
     .columns-container {
         display: grid;
-        grid-template-columns: repeat(var(--column-count, 2), 1fr);
+        grid-template-columns: var(--grid-template-columns, repeat(var(--column-count, 2), 1fr));
         gap: 20px;
         width: 100%;
         position: relative; /* For hero text overlay */
@@ -2016,8 +2016,8 @@ ${trackingScripts.head}
 
 
     @media (max-width: 768px) {
-        .columns-container:not([style*="--column-count: 1"]) {
-            grid-template-columns: 1fr;
+        .columns-container {
+            grid-template-columns: 1fr !important;
         }
         .footer-section .columns-container {
             grid-template-columns: 1fr;

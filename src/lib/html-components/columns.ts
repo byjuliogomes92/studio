@@ -83,7 +83,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
 
     const finalContainerStyle = `
         --column-count: ${columnCount};
-        grid-template-columns: ${gridTemplateColumns};
+        --grid-template-columns: ${gridTemplateColumns};
         --justify-content: ${justifyContent || 'flex-start'};
         ${styleString}
     `;

@@ -785,26 +785,61 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
       }
       case "Columns": {
         const styles = props.styles || {};
+        const backgroundType = styles.backgroundType || 'solid';
         return (
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="columns-full-width" className="font-semibold">Largura Total da Seção</Label>
+                    <Label htmlFor="columns-hero-mode" className="font-semibold">Seção Hero</Label>
                     <Switch
-                        id="columns-full-width"
-                        checked={styles.isFullWidth || false}
-                        onCheckedChange={(checked) => onSubPropChange('styles', 'isFullWidth', checked)}
+                        id="columns-hero-mode"
+                        checked={styles.isHero || false}
+                        onCheckedChange={(checked) => onSubPropChange('styles', 'isHero', checked)}
                     />
                 </div>
-                 {styles.isFullWidth && (
-                    <div className="space-y-2">
-                        <Label htmlFor="columns-bg-color">Cor de Fundo da Seção</Label>
-                        <Input 
-                          id="columns-bg-color"
-                          type="color"
-                          value={styles.backgroundColor || '#ffffff'}
-                          onChange={(e) => onSubPropChange('styles', 'backgroundColor', e.target.value)}
-                          className="p-1 h-10"
-                        />
+
+                {styles.isHero && (
+                    <div className="p-4 border rounded-lg bg-muted/40 space-y-4">
+                        <div className="space-y-2">
+                            <Label>Tipo de Fundo</Label>
+                            <Select value={backgroundType} onValueChange={(value) => onSubPropChange('styles', 'backgroundType', value)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="solid">Cor Sólida</SelectItem>
+                                    <SelectItem value="gradient">Gradiente</SelectItem>
+                                    <SelectItem value="image">Imagem</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        
+                        {backgroundType === 'solid' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="columns-bg-color">Cor de Fundo</Label>
+                                <Input id="columns-bg-color" type="color" value={styles.backgroundColor || '#ffffff'} onChange={(e) => onSubPropChange('styles', 'backgroundColor', e.target.value)} className="p-1 h-10"/>
+                            </div>
+                        )}
+
+                        {backgroundType === 'gradient' && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Cor Inicial</Label>
+                                    <Input type="color" value={styles.gradientFrom || '#000000'} onChange={(e) => onSubPropChange('styles', 'gradientFrom', e.target.value)} className="p-1 h-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Cor Final</Label>
+                                    <Input type="color" value={styles.gradientTo || '#434343'} onChange={(e) => onSubPropChange('styles', 'gradientTo', e.target.value)} className="p-1 h-10" />
+                                </div>
+                            </div>
+                        )}
+
+                        {backgroundType === 'image' && (
+                             <ImageInput 
+                                label="URL da Imagem de Fundo"
+                                value={styles.backgroundImageUrl || ""}
+                                onPropChange={(prop, value) => onSubPropChange('styles', prop, value)}
+                                propName="backgroundImageUrl"
+                                tooltipText="URL para a imagem de fundo da seção."
+                            />
+                        )}
                     </div>
                 )}
             </div>

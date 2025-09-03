@@ -43,7 +43,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
               ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
               : '';
 
-            const sectionClass = 'component-wrapper animate-on-scroll';
+            const sectionClass = `component-wrapper animate-on-scroll ${component.props.styles?.isHero ? 'hero-section' : ''}`;
             
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
 
@@ -1784,26 +1784,25 @@ ${trackingScripts.head}
     }
 
     /* Hero Specific Styles */
-    .hero-section > .columns-container[style*="--column-count: 1"] {
-        display: block; /* Override grid for background image hero */
-        padding: 0;
+    .hero-section {
+        color: white; /* Default text color for heroes */
     }
-    .columns-container[style*="background-image"] {
+    .hero-section h1, .hero-section h2, .hero-section p {
+        color: inherit; /* Inherit color from the hero-section */
+    }
+    .hero-section[style*="background-image"] {
         background-size: cover;
         background-position: center center;
         position: relative;
-        min-height: 50vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
     }
-    .columns-container[style*="background-image"]::before {
+    .hero-section[style*="background-image"]::before {
         content: '';
         position: absolute;
         top: 0; right: 0; bottom: 0; left: 0;
         background-color: rgba(0,0,0,0.5); /* Dimming overlay */
+        z-index: 0;
     }
-    .columns-container[style*="background-image"] > .column {
+    .hero-section > .column {
         position: relative; /* Ensure text is above the overlay */
         z-index: 1;
     }

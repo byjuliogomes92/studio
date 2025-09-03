@@ -51,7 +51,6 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
 
             let sectionClass = `component-wrapper animate-on-scroll`;
             
-            // This is the fix for the inline image alignment issue.
             // If a component has layout: 'inline' it will have this class applied.
             if (component.props.layout === 'inline') {
                 sectionClass += ' component-layout-inline';
@@ -65,12 +64,17 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             if (isFirstAfterOverlay) {
                 wrapperStyle = 'padding-top: 0;';
             }
-
-            if (component.type === 'FloatingImage' || component.type === 'FloatingButton' || component.type === 'Calendly' || (component.type === 'Columns' && component.props.styles?.isFullWidth)) {
+            
+            if (component.type === 'Columns' && component.props.styles?.isFullWidth) {
                 return renderedComponent;
             }
 
-            // Root components get the padded container. Children inside columns do not.
+            // Floating components should not be wrapped as they are positioned absolutely
+            if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe'].includes(component.type)) {
+                return renderedComponent;
+            }
+
+            // Only wrap root components (not inside a column) in the padded container
             if (component.parentId === null) {
                 return `<div class="${sectionClass}" ${animationAttrs} style="${wrapperStyle}">
                            <div class="section-container-padded">
@@ -78,6 +82,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                            </div>
                         </div>`;
             }
+
             return `<div class="${sectionClass}" ${animationAttrs}>${renderedComponent}</div>`;
         })
         .join('\n');
@@ -333,7 +338,7 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
 
 const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
     const security = pageState.meta.security;
-    let amscript = 'VAR @isAuthenticated, @LoginURL\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))\n';
+    let amscript = 'SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))\n';
 
     if (!security || security.type === 'none') {
         return { ssjs: '', amscript: amscript + 'SET @isAuthenticated = true', body: '' };
@@ -843,7 +848,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const ssjsScript = shouldHideAmpscript ? '' : getFormSubmissionScript(pageState);
   const security = getSecurityScripts(pageState);
-  const securityAmpscript = shouldHideAmpscript ? 'VAR @isAuthenticated, @LoginURL\nSET @isAuthenticated = true' : security.amscript;
+  const securityAmpscript = shouldHideAmpscript ? 'SET @isAuthenticated = true' : security.amscript;
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
@@ -853,7 +858,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && c.type !== 'Stripe' && c.type !== 'WhatsApp' && c.type !== 'FloatingImage' && c.type !== 'FloatingButton'), components, pageState, isForPreview, shouldHideAmpscript);
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'WhatsApp', 'FloatingImage', 'FloatingButton'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
   const floatingElementsHtml = components.filter(c => (c.type === 'FloatingImage' || c.type === 'FloatingButton') && c.parentId === null).map(c => renderSingleComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
 
 
@@ -876,7 +881,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   `;
 
   const initialAmpscript = `%%[ 
-    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
+    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN, @isAuthenticated, @LoginURL
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
     ENDIF
@@ -983,10 +988,10 @@ ${trackingScripts.head}
     
     .component-layout-inline {
         display: inline-block;
+        flex-grow: 0;
+        flex-shrink: 0;
         width: auto;
         vertical-align: top;
-        flex-grow: 0;
-        flex-shrink: 1;
     }
     
     .section-container-padded {

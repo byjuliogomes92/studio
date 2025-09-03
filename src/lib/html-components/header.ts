@@ -1,9 +1,9 @@
 
-import type { PageComponent, HeaderLink } from '@/lib/types';
+import type { PageComponent, HeaderLayout, MobileMenuBehavior, CloudPage } from "@/lib/types";
 
 function getStyleString(styles: any = {}): string {
     // This is for styles applied to the inner container, so we exclude outer container styles.
-    const forbiddenKeys = ['maxWidth', 'backgroundColor', 'backgroundType', 'gradientFrom', 'gradientTo'];
+    const forbiddenKeys = ['maxWidth', 'backgroundColor', 'backgroundType', 'gradientFrom', 'gradientTo', 'borderRadius'];
     return Object.entries(styles)
       .map(([key, value]) => {
         if (!value || forbiddenKeys.includes(key)) return '';
@@ -98,11 +98,21 @@ export function renderHeader(component: PageComponent): string {
         // Handled by CSS flex-direction
     }
 
-    let initialBackgroundStyle = '';
-    if (backgroundType === 'gradient') {
-      initialBackgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
+    let outerBackgroundStyle = '';
+    let innerBackgroundStyle = '';
+
+    if (isFullWidth) {
+        if (backgroundType === 'gradient') {
+          outerBackgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
+        } else {
+          outerBackgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
+        }
     } else {
-      initialBackgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
+        if (backgroundType === 'gradient') {
+          innerBackgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
+        } else {
+          innerBackgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
+        }
     }
     
     const otherStyleString = getStyleString(styles);
@@ -118,20 +128,25 @@ export function renderHeader(component: PageComponent): string {
     
     const containerClass = isFullWidth ? 'header-inner-full' : 'header-inner-contained';
     
+    const paddingStyles = `
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        padding-left: ${overlay ? '0px' : '1rem'};
+        padding-right: ${overlay ? '0px' : '1rem'};
+    `;
+
     const innerContainerStyles = `
       ${containerClass === 'header-inner-contained' ? `max-width: ${styles.maxWidth || '1200px'};` : ''}
-      padding-top: 1rem;
-      padding-bottom: 1rem;
-      padding-left: ${overlay ? '0px' : '1rem'};
-      padding-right: ${overlay ? '0px' : '1rem'};
+      ${paddingStyles}
       ${borderRadius ? `border-radius: ${borderRadius};` : ''}
+      ${innerBackgroundStyle}
     `;
 
     const headerStyles = `
         --custom-link-color: ${linkColor || '#333333'};
         --custom-link-hover-color: ${linkHoverColor || '#000000'};
-        ${initialBackgroundStyle}
         ${otherStyleString}
+        ${outerBackgroundStyle}
     `;
 
     return `

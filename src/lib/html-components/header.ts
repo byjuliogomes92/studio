@@ -98,24 +98,16 @@ export function renderHeader(component: PageComponent): string {
         // Handled by CSS flex-direction
     }
 
-    // Apply initial background
-    let initialBackground = '';
+    // Apply initial background to the inner container
+    let initialBackgroundStyle = '';
     if (backgroundType === 'gradient') {
-      initialBackground = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
+      initialBackgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
     } else {
-      initialBackground = `background-color: ${backgroundColor || 'transparent'};`;
+      initialBackgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
     }
     
-    // Other styles from the general styles prop, excluding those handled separately.
+    // Other styles from the general styles prop
     const otherStyleString = getStyleString(styles);
-
-    const inlineStyles = `
-      ${initialBackground}
-      ${borderRadius ? `border-radius: ${borderRadius};` : ''}
-      --custom-link-color: ${linkColor || '#333333'};
-      --custom-link-hover-color: ${linkHoverColor || '#000000'};
-      ${otherStyleString}
-    `;
 
     const innerContent = `
         ${leftContent}
@@ -127,14 +119,24 @@ export function renderHeader(component: PageComponent): string {
     `;
     
     const containerClass = isFullWidth ? 'header-inner-full' : 'header-inner-contained';
-    const containerStyle = !isFullWidth ? `max-width: ${styles.maxWidth || '1200px'};` : '';
+    
+    const innerContainerStyles = `
+      ${containerClass === 'header-inner-contained' ? `max-width: ${styles.maxWidth || '1200px'};` : ''}
+      ${initialBackgroundStyle}
+      ${borderRadius ? `border-radius: ${borderRadius};` : ''}
+    `;
+
+    const headerStyles = `
+        --custom-link-color: ${linkColor || '#333333'};
+        --custom-link-hover-color: ${linkHoverColor || '#000000'};
+        ${otherStyleString}
+    `;
 
     return `
-        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} style="${inlineStyles}">
-            <div class="${containerClass}" style="${containerStyle}">
+        <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} style="${headerStyles}">
+            <div class="${containerClass}" style="${innerContainerStyles}">
                 ${innerContent}
             </div>
         </header>
     `;
 }
-

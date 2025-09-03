@@ -2,7 +2,8 @@
 import type { PageComponent, HeaderLink } from '@/lib/types';
 
 function getStyleString(styles: any = {}): string {
-    const forbiddenKeys = ['maxWidth'];
+    // This is for styles applied to the inner container, so we exclude outer container styles.
+    const forbiddenKeys = ['maxWidth', 'backgroundColor', 'backgroundType', 'gradientFrom', 'gradientTo'];
     return Object.entries(styles)
       .map(([key, value]) => {
         if (!value || forbiddenKeys.includes(key)) return '';
@@ -105,14 +106,15 @@ export function renderHeader(component: PageComponent): string {
       initialBackground = `background-color: ${backgroundColor || 'transparent'};`;
     }
     
-    const styleString = getStyleString(styles);
+    // Other styles from the general styles prop, excluding those handled separately.
+    const otherStyleString = getStyleString(styles);
 
     const inlineStyles = `
       ${initialBackground}
       ${borderRadius ? `border-radius: ${borderRadius};` : ''}
       --custom-link-color: ${linkColor || '#333333'};
       --custom-link-hover-color: ${linkHoverColor || '#000000'};
-      ${styleString}
+      ${otherStyleString}
     `;
 
     const innerContent = `
@@ -135,3 +137,4 @@ export function renderHeader(component: PageComponent): string {
         </header>
     `;
 }
+

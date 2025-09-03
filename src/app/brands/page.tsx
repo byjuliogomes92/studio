@@ -399,7 +399,7 @@ export default function BrandsPage() {
                         <h4 className="font-semibold text-lg">Esquema de Cores</h4>
                          <div className="space-y-2">
                             <Label>Modo de Tema</Label>
-                             <Select value={currentBrand.colors?.theme} onValueChange={(value) => handleBrandFieldChange('colors.theme', value)}>
+                             <Select value={currentBrand.colors?.theme || 'light'} onValueChange={(value) => handleBrandFieldChange('colors.theme', value)}>
                                 <SelectTrigger><SelectValue/></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="light"><div className="flex items-center gap-2"><Sun className="h-4 w-4"/> Apenas Claro</div></SelectItem>
@@ -408,26 +408,30 @@ export default function BrandsPage() {
                                 </SelectContent>
                              </Select>
                         </div>
-
-                         <div className="p-4 border rounded-md space-y-3">
-                            <h5 className="font-medium flex items-center gap-2"><Sun className="h-4 w-4"/> Tema Claro</h5>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Input type="color" value={currentBrand.colors?.light?.primary} onChange={e => handleBrandFieldChange('colors.light.primary', e.target.value)} title="Cor Primária"/>
-                                <Input type="color" value={currentBrand.colors?.light?.primaryHover} onChange={e => handleBrandFieldChange('colors.light.primaryHover', e.target.value)} title="Cor Primária (Hover)"/>
-                                <Input type="color" value={currentBrand.colors?.light?.background} onChange={e => handleBrandFieldChange('colors.light.background', e.target.value)} title="Fundo"/>
-                                <Input type="color" value={currentBrand.colors?.light?.foreground} onChange={e => handleBrandFieldChange('colors.light.foreground', e.target.value)} title="Texto"/>
+                        
+                        {(currentBrand.colors?.theme === 'light' || currentBrand.colors?.theme === 'both') && (
+                            <div className="p-4 border rounded-md space-y-3">
+                                <h5 className="font-medium flex items-center gap-2"><Sun className="h-4 w-4"/> Tema Claro</h5>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Input type="color" value={currentBrand.colors?.light?.primary} onChange={e => handleBrandFieldChange('colors.light.primary', e.target.value)} title="Cor Primária"/>
+                                    <Input type="color" value={currentBrand.colors?.light?.primaryHover} onChange={e => handleBrandFieldChange('colors.light.primaryHover', e.target.value)} title="Cor Primária (Hover)"/>
+                                    <Input type="color" value={currentBrand.colors?.light?.background} onChange={e => handleBrandFieldChange('colors.light.background', e.target.value)} title="Fundo"/>
+                                    <Input type="color" value={currentBrand.colors?.light?.foreground} onChange={e => handleBrandFieldChange('colors.light.foreground', e.target.value)} title="Texto"/>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
-                         <div className="p-4 border rounded-md space-y-3">
-                            <h5 className="font-medium flex items-center gap-2"><Moon className="h-4 w-4"/> Tema Escuro</h5>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Input type="color" value={currentBrand.colors?.dark?.primary} onChange={e => handleBrandFieldChange('colors.dark.primary', e.target.value)} title="Cor Primária"/>
-                                <Input type="color" value={currentBrand.colors?.dark?.primaryHover} onChange={e => handleBrandFieldChange('colors.dark.primaryHover', e.target.value)} title="Cor Primária (Hover)"/>
-                                <Input type="color" value={currentBrand.colors?.dark?.background} onChange={e => handleBrandFieldChange('colors.dark.background', e.target.value)} title="Fundo"/>
-                                <Input type="color" value={currentBrand.colors?.dark?.foreground} onChange={e => handleBrandFieldChange('colors.dark.foreground', e.target.value)} title="Texto"/>
+                        {(currentBrand.colors?.theme === 'dark' || currentBrand.colors?.theme === 'both') && (
+                            <div className="p-4 border rounded-md space-y-3">
+                                <h5 className="font-medium flex items-center gap-2"><Moon className="h-4 w-4"/> Tema Escuro</h5>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Input type="color" value={currentBrand.colors?.dark?.primary} onChange={e => handleBrandFieldChange('colors.dark.primary', e.target.value)} title="Cor Primária"/>
+                                    <Input type="color" value={currentBrand.colors?.dark?.primaryHover} onChange={e => handleBrandFieldChange('colors.dark.primaryHover', e.target.value)} title="Cor Primária (Hover)"/>
+                                    <Input type="color" value={currentBrand.colors?.dark?.background} onChange={e => handleBrandFieldChange('colors.dark.background', e.target.value)} title="Fundo"/>
+                                    <Input type="color" value={currentBrand.colors?.dark?.foreground} onChange={e => handleBrandFieldChange('colors.dark.foreground', e.target.value)} title="Texto"/>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
               </TabsContent>

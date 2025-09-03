@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType, Action } from './types';
 import { getFormSubmissionScript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
@@ -906,14 +905,17 @@ ${trackingScripts.head}
     
     .component-wrapper {
       width: 100%;
+    }
+    
+    .section-container {
+      width: 100%;
       max-width: 1200px;
       margin-left: auto;
       margin-right: auto;
-      padding-left: 20px;
-      padding-right: 20px;
+      padding: 20px;
       box-sizing: border-box;
     }
-
+    
     .section-wrapper {
         width: 100%;
         display: flex;
@@ -1923,6 +1925,10 @@ ${trackingScripts.head}
 
 
     @media (max-width: 768px) {
+        .component-wrapper > .section-container {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
         .columns-container:not([style*="--column-count: 1"]) {
             grid-template-columns: 1fr;
         }

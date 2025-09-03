@@ -4,7 +4,7 @@ import type { PageComponent } from '@/lib/types';
 export function renderColumns(component: PageComponent, childrenHtml: string): string {
     const styles = component.props.styles || {};
     // Separate custom styles from hero-specific props
-    const { isHero, backgroundImageUrl, ...otherStyles } = styles;
+    const { isHero, backgroundImageUrl, isFullWidth, ...otherStyles } = styles;
     
     let styleString = getStyleString(otherStyles);
     
@@ -18,7 +18,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
 function getStyleString(styles: any = {}): string {
     return Object.entries(styles)
       .map(([key, value]) => {
-        if (!value || key === 'isHero') return '';
+        if (!value || key === 'isHero' || key === 'isFullWidth') return '';
         const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
         return `${cssKey}: ${value};`;
       })

@@ -843,7 +843,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const mainStyles = `
     width: 100%;
     overflow-x: hidden;
-    ${isHeaderOverlay ? 'padding-top: 0;' : ''}
+    ${isHeaderOverlay ? '' : 'padding-top: var(--header-height, 0px);'}
   `;
 
   const initialAmpscript = `%%[ 

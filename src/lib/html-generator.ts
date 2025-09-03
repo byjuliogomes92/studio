@@ -64,8 +64,13 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             // NEW: Conditionally add a style to remove top padding for the first element after an overlay header
             const conditionalWrapperStyle = (isHeaderOverlay && index === 0) ? 'padding-top: 0;' : '';
 
+             // NEW: Logic to add padding class conditionally
+            const containerClass = (component.type === 'Header' && isHeaderOverlay)
+                ? 'section-container'
+                : 'section-container section-container-padded';
+
             return `<div class="${sectionClass}" ${animationAttrs} style="${conditionalWrapperStyle}">
-                       <div class="section-container">
+                       <div class="${containerClass}">
                          ${renderedComponent}
                        </div>
                     </div>`;
@@ -955,7 +960,10 @@ ${trackingScripts.head}
       max-width: 1200px;
       margin-left: auto;
       margin-right: auto;
-      padding: 20px;
+    }
+
+    .section-container-padded {
+        padding: 20px;
     }
     
     .section-wrapper {

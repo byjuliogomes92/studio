@@ -44,6 +44,7 @@ import {
   Mail,
   HelpCircle,
   UploadCloud,
+  ImageIcon,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -104,6 +105,7 @@ const componentList: {
       { name: "Spacer", icon: StretchHorizontal, enabled: true },
       { name: "SocialIcons", icon: Share2, enabled: true },
       { name: "WhatsApp", icon: Zap, enabled: true },
+      { name: "FloatingImage", icon: ImageIcon, enabled: true },
     ],
   },
   {

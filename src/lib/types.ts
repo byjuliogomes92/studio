@@ -27,7 +27,8 @@ export type ComponentType =
   | 'Carousel'
   | 'DownloadButton'
   | 'FTPUpload'
-  | 'DataExtensionUpload';
+  | 'DataExtensionUpload'
+  | 'FloatingImage';
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';
 

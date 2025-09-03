@@ -27,6 +27,7 @@ import { renderForm } from './html-components/form';
 import { renderFooter } from './html-components/footer';
 import { renderFTPUpload } from './html-components/ftpupload';
 import { renderDataExtensionUpload } from './html-components/data-extension-upload';
+import { renderFloatingImage } from './html-components/floating-image';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean): string {
@@ -46,6 +47,11 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
             const sectionClass = `component-wrapper animate-on-scroll`;
             
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
+
+            // FloatingImages are positioned absolutely and don't need the standard wrapper.
+            if (component.type === 'FloatingImage') {
+                return renderedComponent;
+            }
 
             // For Columns with full width, the background is handled by its own renderer
             if (component.type === 'Columns' && styles?.isFullWidth) {
@@ -134,6 +140,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'FTPUpload': return renderFTPUpload(component, pageState);
     case 'DataExtensionUpload': return renderDataExtensionUpload(component);
     case 'Footer': return renderFooter(component);
+    case 'FloatingImage': return renderFloatingImage(component);
     default:
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;
@@ -855,6 +862,7 @@ ${trackingScripts.head}
         margin: 0;
         width: 100%;
         overflow-x: hidden; /* Prevent horizontal scroll */
+        position: relative; /* Needed for absolute positioned children */
     }
 
     main {

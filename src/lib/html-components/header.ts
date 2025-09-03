@@ -109,7 +109,7 @@ export function renderHeader(component: PageComponent): string {
         </button>
     `;
     
-    // START: Refactored Styling Logic
+    // --- START: NEW STYLING LOGIC ---
     let finalOuterHeaderStyles = `
         --custom-link-color: ${linkColor || '#333333'};
         --custom-link-hover-color: ${linkHoverColor || '#000000'};
@@ -119,8 +119,11 @@ export function renderHeader(component: PageComponent): string {
     let finalInnerContainerStyles = `
         padding-top: 1rem;
         padding-bottom: 1rem;
+        padding-left: 1rem; 
+        padding-right: 1rem;
     `;
-
+    
+    // Handle background
     let backgroundStyle = '';
     if (backgroundType === 'gradient') {
       backgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
@@ -129,27 +132,19 @@ export function renderHeader(component: PageComponent): string {
     }
 
     if (isFullWidth) {
+        // Background on the outer element, padding always on inner
         finalOuterHeaderStyles += backgroundStyle;
     } else {
+        // Background and border-radius on the inner element
         finalInnerContainerStyles += backgroundStyle;
         if (borderRadius) {
           finalInnerContainerStyles += `border-radius: ${borderRadius};`;
         }
-    }
-
-    if (overlay) {
-        finalInnerContainerStyles += `padding-left: 0; padding-right: 0;`;
-    } else {
-        finalInnerContainerStyles += `padding-left: 1rem; padding-right: 1rem;`;
+        finalInnerContainerStyles += `max-width: ${styles.maxWidth || '1200px'};`;
     }
 
     const containerClass = isFullWidth ? 'header-inner-full' : 'header-inner-contained';
-    
-    if (!isFullWidth) {
-        finalInnerContainerStyles += `max-width: ${styles.maxWidth || '1200px'};`;
-    }
-    // END: Refactored Styling Logic
-
+    // --- END: NEW STYLING LOGIC ---
 
     return `
         <header class="page-header" data-layout="${layout}" ${stickyAttrs} ${overlayAttr} style="${finalOuterHeaderStyles}">

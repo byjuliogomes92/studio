@@ -43,18 +43,13 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
               ? `data-animation="${animationType}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
               : '';
 
-            const sectionClass = `component-wrapper animate-on-scroll ${component.props.styles?.isHero ? 'hero-section' : ''}`;
+            const sectionClass = `component-wrapper animate-on-scroll`;
             
             const renderedComponent = renderComponent(component, pageState, isForPreview, allComponents);
 
-            // For Columns, the background is on the outer wrapper.
+            // For Columns with full width, the background is handled by its own renderer
             if (component.type === 'Columns' && styles?.isFullWidth) {
-                 const wrapperStyle = `background-color: ${styles?.backgroundColor || 'transparent'};`;
-                 return `<div class="${sectionClass}" style="${wrapperStyle}" ${animationAttrs}>
-                           <div class="section-container">
-                             ${renderedComponent}
-                           </div>
-                        </div>`;
+                 return renderedComponent;
             }
 
             return `<div class="${sectionClass}" ${animationAttrs}>
@@ -1802,7 +1797,7 @@ ${trackingScripts.head}
         background-color: rgba(0,0,0,0.5); /* Dimming overlay */
         z-index: 0;
     }
-    .hero-section > .column {
+    .columns-container.hero-section > .column {
         position: relative; /* Ensure text is above the overlay */
         z-index: 1;
     }

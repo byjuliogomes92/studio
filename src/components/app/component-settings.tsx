@@ -552,7 +552,7 @@ function HeaderLinksManager({ links, onPropChange }: { links: HeaderLink[], onPr
             <Label>Itens de Menu</Label>
             {links?.map((link, index) => (
                 <div key={link.id} className="p-3 border rounded-md space-y-3 bg-muted/30">
-                    <div className="flex items-center justify-end">
+                     <div className="flex items-center justify-end">
                         <Button variant="ghost" size="icon" onClick={() => removeLink(index)} className="h-7 w-7 text-destructive">
                             <Trash2 className="h-4 w-4" />
                         </Button>
@@ -789,27 +789,23 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
         return (
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="columns-hero-mode" className="font-semibold">Seção Hero</Label>
-                    <Switch
-                        id="columns-hero-mode"
-                        checked={styles.isHero || false}
-                        onCheckedChange={(checked) => onSubPropChange('styles', 'isHero', checked)}
+                    <Label htmlFor="columns-full-width">Largura Total (Full Bleed)</Label>
+                     <Switch
+                        id="columns-full-width"
+                        checked={styles.isFullWidth || false}
+                        onCheckedChange={(checked) => onSubPropChange('styles', 'isFullWidth', checked)}
                     />
                 </div>
-
-                {styles.isHero && (
-                    <div className="p-4 border rounded-lg bg-muted/40 space-y-4">
-                        <div className="space-y-2">
-                            <Label>Tipo de Fundo</Label>
-                            <Select value={backgroundType} onValueChange={(value) => onSubPropChange('styles', 'backgroundType', value)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="solid">Cor Sólida</SelectItem>
-                                    <SelectItem value="gradient">Gradiente</SelectItem>
-                                    <SelectItem value="image">Imagem</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                 <div className="p-4 border rounded-lg bg-muted/40 space-y-4">
+                        <Label>Estilo de Fundo</Label>
+                        <Select value={backgroundType} onValueChange={(value) => onSubPropChange('styles', 'backgroundType', value)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="solid">Cor Sólida</SelectItem>
+                                <SelectItem value="gradient">Gradiente</SelectItem>
+                                <SelectItem value="image">Imagem</SelectItem>
+                            </SelectContent>
+                        </Select>
                         
                         {backgroundType === 'solid' && (
                             <div className="space-y-2">
@@ -840,8 +836,11 @@ const renderComponentSettings = (type: ComponentType, props: any, onPropChange: 
                                 tooltipText="URL para a imagem de fundo da seção."
                             />
                         )}
-                    </div>
-                )}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="columns-text-color">Cor do Texto (Hero)</Label>
+                    <Input id="columns-text-color" type="color" value={styles.color || '#FFFFFF'} onChange={(e) => onSubPropChange('styles', 'color', e.target.value)} className="p-1 h-10"/>
+                </div>
             </div>
         );
       }

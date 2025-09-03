@@ -124,6 +124,7 @@ export function renderHeader(component: PageComponent): string {
       ${containerClass === 'header-inner-contained' ? `max-width: ${styles.maxWidth || '1200px'};` : ''}
       ${initialBackgroundStyle}
       ${borderRadius ? `border-radius: ${borderRadius};` : ''}
+      ${!overlay ? 'padding: 1rem;' : ''}
     `;
 
     const headerStyles = `

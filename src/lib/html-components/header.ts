@@ -98,7 +98,6 @@ export function renderHeader(component: PageComponent): string {
         // Handled by CSS flex-direction
     }
 
-    // Apply initial background to the inner container
     let initialBackgroundStyle = '';
     if (backgroundType === 'gradient') {
       initialBackgroundStyle = `background: linear-gradient(to right, ${gradientFrom || 'transparent'}, ${gradientTo || 'transparent'});`;
@@ -106,7 +105,6 @@ export function renderHeader(component: PageComponent): string {
       initialBackgroundStyle = `background-color: ${backgroundColor || 'transparent'};`;
     }
     
-    // Other styles from the general styles prop
     const otherStyleString = getStyleString(styles);
 
     const innerContent = `
@@ -122,14 +120,17 @@ export function renderHeader(component: PageComponent): string {
     
     const innerContainerStyles = `
       ${containerClass === 'header-inner-contained' ? `max-width: ${styles.maxWidth || '1200px'};` : ''}
-      ${initialBackgroundStyle}
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+      padding-left: ${overlay ? '0px' : '1rem'};
+      padding-right: ${overlay ? '0px' : '1rem'};
       ${borderRadius ? `border-radius: ${borderRadius};` : ''}
-      ${!overlay ? 'padding: 1rem;' : ''}
     `;
 
     const headerStyles = `
         --custom-link-color: ${linkColor || '#333333'};
         --custom-link-hover-color: ${linkHoverColor || '#000000'};
+        ${initialBackgroundStyle}
         ${otherStyleString}
     `;
 

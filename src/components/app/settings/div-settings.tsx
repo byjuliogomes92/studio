@@ -2,12 +2,11 @@
 import type { PageComponent } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ImageInput } from "./image-input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Slider } from "@/components/ui/slider";
+import { ImageInput } from "./image-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -73,7 +72,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange }: Compon
                             <ImageInput 
                                 label="URL da Imagem de Fundo"
                                 value={styles.backgroundImageUrl || ''}
-                                onPropChange={handleStyleChange} // Corrigido para passar a função correta
+                                onPropChange={(propName, value) => handleStyleChange(propName, value)}
                                 propName="backgroundImageUrl"
                                 tooltipText="URL para a imagem de fundo da seção."
                             />

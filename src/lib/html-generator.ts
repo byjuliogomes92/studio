@@ -38,7 +38,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
       .map((component) => {
         const childrenHtml = (() => {
             if (component.type === 'Columns' || component.type === 'Div') {
-                const columnCount = component.props.columnCount || 1;
+                const columnCount = component.props.columnCount || (component.type === 'Div' ? 1 : 0);
                 let columnsContent = '';
                 for (let i = 0; i < columnCount; i++) {
                     const columnComponents = allComponents
@@ -1860,6 +1860,15 @@ ${trackingScripts.head}
         display: flex;
         width: 100%;
         position: relative; /* For hero text overlay */
+    }
+    .div-container {
+        flex-direction: column; /* Default for Div */
+    }
+    .columns-container {
+        display: grid;
+        grid-template-columns: var(--grid-template-columns, repeat(var(--column-count, 2), 1fr));
+        gap: var(--gap, 20px);
+        align-items: var(--align-items, flex-start);
     }
     .div-container .column,
     .columns-container .column {

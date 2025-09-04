@@ -80,7 +80,6 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     FloatingImage: Image,
     FloatingButton: MousePointerClick,
     Calendly: CalendarClock,
-    Div: Layers3,
 };
 
 const googleFonts = [
@@ -180,7 +179,7 @@ function ComponentItem({
   isDraggable?: boolean;
 }) {
   const Icon = componentIcons[component.type] || Text;
-  const isContainer = ['Columns', 'Div'].includes(component.type);
+  const isContainer = ['Columns'].includes(component.type);
 
   const handleSelect = () => {
     if (selectedComponentId === component.id) {
@@ -494,9 +493,6 @@ export function SettingsPanel({
         
               // Default props for new components
               switch(type) {
-                  case 'Div':
-                      newComponent.props = { styles: { paddingTop: '1rem', paddingBottom: '1rem' } };
-                      break;
                   case 'Columns':
                       newComponent.props = { columnCount: 2 };
                       break;
@@ -682,7 +678,7 @@ export function SettingsPanel({
                 };
                 draft.components.push(duplicatedComp);
 
-                if (['Columns', 'Div'].includes(originalComp.type)) {
+                if (['Columns'].includes(originalComp.type)) {
                     const children = draft.components.filter(c => c.parentId === originalCompId);
                     children.forEach(child => {
                        duplicateRecursively(child.id, newId, child.column);
@@ -827,23 +823,6 @@ export function SettingsPanel({
                                 </Dropzone>
                             ))}
                         </div>
-                    </ComponentItem>
-                </SortableItem>
-            );
-        }
-        if (component.type === 'Div') {
-            return (
-                 <SortableItem key={component.id} component={component}>
-                    <ComponentItem
-                        component={component}
-                        selectedComponentId={selectedComponentId}
-                        setSelectedComponentId={setSelectedComponentId}
-                        removeComponent={removeComponent}
-                        duplicateComponent={duplicateComponent}
-                    >
-                       <Dropzone id={component.id}>
-                            {renderComponentsRecursive(component.id, 0)}
-                       </Dropzone>
                     </ComponentItem>
                 </SortableItem>
             );

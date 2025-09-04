@@ -40,7 +40,6 @@ import { CalendlySettings } from './calendly-settings';
 import { SpacingSettings } from "./spacing-settings";
 import { AnimationSettings } from "./animation-settings";
 import { LayoutSettings } from "./layout-settings";
-import { DivSettings } from './div-settings';
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -84,7 +83,6 @@ const renderComponentSettings = (
       case 'FTPUpload': return <FTPUploadSettings {...props} />;
       case 'DataExtensionUpload': return <DataExtensionUploadSettings {...props} />;
       case 'Calendly': return <CalendlySettings {...props} />;
-      case 'Div': return <DivSettings {...props} />;
       default:
         return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;
     }

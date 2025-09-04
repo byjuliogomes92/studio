@@ -80,7 +80,6 @@ const componentList: {
   {
     category: "Estrutura",
     components: [
-      { name: "Div", icon: Layers3, enabled: true },
       { name: "Columns", icon: Columns, enabled: true },
       { name: "Banner", icon: Image, enabled: true },
       { name: "Stripe", icon: PanelTop, enabled: true },
@@ -267,23 +266,23 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             componentsToAdd = [
                 {
                     id: `div-hero-bg-${baseId}`,
-                    type: 'Div',
+                    type: 'Columns',
                     props: {
+                        columnCount: 1,
                         styles: {
                             isFullWidth: true,
+                            backgroundType: 'image',
                             backgroundImageUrl: 'https://picsum.photos/1200/800',
                             paddingTop: '8rem',
                             paddingBottom: '8rem',
                             paddingLeft: '2rem',
                             paddingRight: '2rem',
-                            textAlign: 'center',
-                            color: '#FFFFFF'
                         }
                     },
                     order: 0, parentId: null, column: 0
                 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem' } }, order: 0, parentId: `div-hero-bg-${baseId}`, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '1rem auto' } }, order: 1, parentId: `div-hero-bg-${baseId}`, column: 0 },
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } }, order: 0, parentId: `div-hero-bg-${baseId}`, column: 0 },
+                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '1rem auto', color: '#FFFFFF', textAlign: 'center' } }, order: 1, parentId: `div-hero-bg-${baseId}`, column: 0 },
                 { id: `btn-${baseId}`, type: 'Button', props: { text: 'Chamada para Ação', href: '#' }, order: 2, parentId: `div-hero-bg-${baseId}`, column: 0 },
             ];
             break;
@@ -314,24 +313,19 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
              break;
         }
         case 'product-showcase': {
-            const sectionContainerId = `section-${baseId}`;
-            const productsContainerId = `products-${baseId}`;
+            const sectionContainerId = `products-cols-${baseId}`;
              componentsToAdd = [
-                // Main container for the whole section (acts as a "Div" component)
-                { id: sectionContainerId, type: 'Div', props: { styles: { paddingTop: '3rem', paddingBottom: '3rem', } }, order: 0, parentId: null, column: 0 },
-                // Title inside the main container
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Nossos Produtos', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: sectionContainerId, column: 0 },
-                // Nested container for the products
-                { id: productsContainerId, type: 'Columns', props: { columnCount, styles: { gap: '1.5rem', alignItems: 'stretch' } }, order: 1, parentId: sectionContainerId, column: 0 },
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Nossos Produtos', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: null, column: 0 },
+                { id: sectionContainerId, type: 'Columns', props: { columnCount, styles: { gap: '1.5rem', alignItems: 'stretch' } }, order: 1, parentId: null, column: 0 },
              ];
               for(let i=0; i<columnCount; i++) {
                  componentsToAdd.push(
-                    { id: `img-${baseId}-${i}`, type: 'Image', props: { src: `https://picsum.photos/400/400` }, order: 0, parentId: productsContainerId, column: i },
-                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', props: { text: `Nome do Produto ${i+1}`, styles: { fontSize: '1.2rem', marginTop: '1rem' } }, order: 1, parentId: productsContainerId, column: i },
-                    { id: `para-${baseId}-${i}`, type: 'Paragraph', props: { text: `Breve descrição do produto.` }, order: 2, parentId: productsContainerId, column: i },
-                    { id: `price-old-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 99,90`, styles: { textDecoration: 'line-through', color: '#9CA3AF' } }, order: 3, parentId: productsContainerId, column: i },
-                    { id: `price-new-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 79,90`, styles: { fontWeight: 'bold', fontSize: '1.25rem' } }, order: 4, parentId: productsContainerId, column: i },
-                    { id: `btn-${baseId}-${i}`, type: 'Button', props: { text: 'Comprar', href: '#', align: 'left' }, order: 5, parentId: productsContainerId, column: i },
+                    { id: `img-${baseId}-${i}`, type: 'Image', props: { src: `https://picsum.photos/400/400` }, order: 0, parentId: sectionContainerId, column: i },
+                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', props: { text: `Nome do Produto ${i+1}`, styles: { fontSize: '1.2rem', marginTop: '1rem' } }, order: 1, parentId: sectionContainerId, column: i },
+                    { id: `para-${baseId}-${i}`, type: 'Paragraph', props: { text: `Breve descrição do produto.` }, order: 2, parentId: sectionContainerId, column: i },
+                    { id: `price-old-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 99,90`, styles: { textDecoration: 'line-through', color: '#9CA3AF' } }, order: 3, parentId: sectionContainerId, column: i },
+                    { id: `price-new-${baseId}-${i}`, type: 'Paragraph', props: { text: `R$ 79,90`, styles: { fontWeight: 'bold', fontSize: '1.25rem' } }, order: 4, parentId: sectionContainerId, column: i },
+                    { id: `btn-${baseId}-${i}`, type: 'Button', props: { text: 'Comprar', href: '#', align: 'left' }, order: 5, parentId: sectionContainerId, column: i },
                  );
              }
             break;

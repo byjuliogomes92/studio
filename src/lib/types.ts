@@ -30,8 +30,7 @@ export type ComponentType =
   | 'DataExtensionUpload'
   | 'FloatingImage'
   | 'FloatingButton'
-  | 'Calendly'
-  | 'Div';
+  | 'Calendly';
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';
 

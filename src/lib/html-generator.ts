@@ -30,7 +30,6 @@ import { renderDataExtensionUpload } from './html-components/data-extension-uplo
 import { renderFloatingImage } from './html-components/floating-image';
 import { renderFloatingButton } from './html-components/floating-button';
 import { renderCalendly } from './html-components/calendly';
-import { renderDiv } from './html-components/div';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
@@ -47,11 +46,6 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                     columnsContent += `<div class="column" style="${getColumnStyle(component.props.columnStyles, i)}">${renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)}</div>`;
                 }
                 return columnsContent;
-            } else if (component.type === 'Div') {
-                const divChildren = allComponents
-                    .filter(c => c.parentId === component.id)
-                    .sort((a, b) => a.order - b.order);
-                return renderComponents(divChildren, allComponents, pageState, isForPreview, hideAmpscript);
             }
             return '';
         })();
@@ -111,8 +105,8 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
-  // Divs and full-width Columns provide their own outer structure
-  if ((component.type === 'Div' || component.type === 'Columns') && component.props.styles?.isFullWidth) {
+  // full-width Columns provide their own outer structure
+  if ((component.type === 'Columns') && component.props.styles?.isFullWidth) {
       return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
@@ -168,7 +162,6 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'Map': return renderMap(component);
     case 'SocialIcons': return renderSocialIcons(component);
     case 'Columns': return renderColumns(component, childrenHtml);
-    case 'Div': return renderDiv(component, childrenHtml);
     case 'WhatsApp': return renderWhatsApp(component);
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState);
@@ -1860,23 +1853,14 @@ ${trackingScripts.head}
         height: 24px;
     }
 
-    .columns-container, .div-container {
-        display: flex;
-        gap: 20px;
-        width: 100%;
-        position: relative; /* For hero text overlay */
-    }
     .columns-container {
         display: grid;
         grid-template-columns: var(--grid-template-columns, repeat(var(--column-count, 2), 1fr));
         gap: 20px;
+        width: 100%;
+        position: relative; /* For hero text overlay */
     }
-     .div-container {
-        display: flex;
-        flex-direction: column;
-        gap: 10px; /* Default gap for children in a Div */
-    }
-    .columns-container .column, .div-container > .component-wrapper {
+    .columns-container .column {
         min-width: 0;
         position: relative;
         z-index: 1;

@@ -720,91 +720,93 @@ export function SettingsPanel({
     });
   };
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+        return;
+    }
 
-        if (!active || !over) {
-            return;
-        }
+    setPageState((currentState) => {
+        if (!currentState) return null;
 
-        const activeId = active.id as string;
-        const overId = over.id as string;
+        return produce(currentState, (draft) => {
+            const activeComponent = draft.components.find(c => c.id === active.id);
+            if (!activeComponent) return;
 
-        if (activeId === overId) {
-            return;
-        }
-
-        setPageState((currentState) => {
-            if (!currentState) return null;
-
-            const components = [...currentState.components];
-            const activeComponentIndex = components.findIndex((c) => c.id === activeId);
-            const activeComponent = components[activeComponentIndex];
+            const activeIndex = draft.components.findIndex(c => c.id === active.id);
+            const overIndex = draft.components.findIndex(c => c.id === over.id);
+            const overComponent = draft.components[overIndex];
             
-            if (!activeComponent || activeComponent.type === 'Footer') return currentState;
+            const overIsContainer = over.data.current?.isDropzone;
 
-            const overData = over.data.current;
-            const overIsDropzone = overData?.accepts?.includes('component');
-            const overComponentIndex = components.findIndex((c) => c.id === overId);
-            const overComponent = components[overComponentIndex];
-
-            // Scenario 1: Moving to a new container (Div or Column)
-            if (overIsDropzone) {
-                const newParentId = over.id === 'root' ? null : over.id.toString().split('-')[0];
-                const newColumnIndex = over.id.toString().includes('-') ? parseInt(over.id.toString().split('-')[1], 10) : 0;
+            // Scenario 1: Moving into a container (Reparenting)
+            if (overIsContainer) {
+                const newParentId = over.id.toString().startsWith('root-dropzone') ? null : over.id.toString().split('-')[0];
+                const newColumn = over.id.toString().includes('-') ? parseInt(over.id.toString().split('-')[1], 10) : 0;
                 
-                return produce(currentState, draft => {
-                    const movedComponent = draft.components.find(c => c.id === activeId);
-                    if (!movedComponent) return;
-                    
-                    const oldParentId = movedComponent.parentId;
-                    const oldColumn = movedComponent.column;
-
-                    // Update parent and column
-                    movedComponent.parentId = newParentId;
-                    movedComponent.column = newColumnIndex;
-
-                    // Re-order old container
-                    draft.components
-                        .filter(c => c.parentId === oldParentId && c.column === oldColumn)
-                        .sort((a, b) => a.order - b.order)
-                        .forEach((c, i) => { c.order = i; });
-                        
-                    // Set order in new container
-                    const newSiblings = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex);
-                    movedComponent.order = newSiblings.length -1;
-                });
-            }
-
+                // Update parent and column
+                activeComponent.parentId = newParentId;
+                activeComponent.column = newColumn;
+                
+            } 
             // Scenario 2: Reordering within the same container
-            if (overComponent && activeComponent.parentId === overComponent.parentId && activeComponent.column === overComponent.column) {
-                const siblings = components
+            else if (overComponent && overComponent.parentId === activeComponent.parentId && overComponent.column === activeComponent.column) {
+                 const siblings = draft.components
                     .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
                     .sort((a,b) => a.order - b.order);
-                
-                const oldIndex = siblings.findIndex(s => s.id === activeId);
-                const newIndex = siblings.findIndex(s => s.id === overId);
+                 
+                 const oldIndex = siblings.findIndex(c => c.id === active.id);
+                 const newIndex = siblings.findIndex(c => c.id === over.id);
 
-                const reorderedSiblings = arrayMove(siblings, oldIndex, newIndex);
-                
-                return produce(currentState, draft => {
-                    reorderedSiblings.forEach((sibling, index) => {
+                 if (oldIndex !== -1 && newIndex !== -1) {
+                    const [movedItem] = siblings.splice(oldIndex, 1);
+                    siblings.splice(newIndex, 0, movedItem);
+
+                    // Update order of all siblings in the draft
+                    siblings.forEach((sibling, index) => {
                         const compToUpdate = draft.components.find(c => c.id === sibling.id);
                         if (compToUpdate) {
                             compToUpdate.order = index;
                         }
                     });
-                });
+                 }
+            } 
+            // Scenario 3: Moving into a different container (Reparenting)
+            else if (overComponent) {
+                 const newParentId = overComponent.parentId;
+                 const newColumn = overComponent.column;
+                 activeComponent.parentId = newParentId;
+                 activeComponent.column = newColumn;
             }
-            
-            return currentState; // No change if drop logic doesn't match
-        });
-    };
 
-  const renderComponentsRecursive = (parentId: string | null, column: number | null = null): React.ReactNode[] => {
+            // Recalculate order for all groups after any move
+            const parentIds = new Set(draft.components.map(c => c.parentId));
+            parentIds.forEach(pId => {
+                const containerComponent = draft.components.find(c => c.id === pId);
+                const numColumns = containerComponent?.type === 'Columns' ? (containerComponent.props.columnCount || 1) : 1;
+                
+                for(let i=0; i<numColumns; i++) {
+                    draft.components
+                        .filter(c => c.parentId === pId && c.column === i)
+                        .sort((a, b) => a.order - b.order)
+                        .forEach((c, index) => { c.order = index; });
+                }
+            });
+            // Recalculate order for root components
+            draft.components
+                .filter(c => c.parentId === null)
+                .sort((a, b) => a.order - b.order)
+                .forEach((c, index) => { c.order = index; });
+
+        });
+    });
+};
+
+  const renderComponentsRecursive = (parentId: string | null, column: number | null = 0): React.ReactNode[] => {
     const componentsToRender = pageState.components
-        .filter(c => c.parentId === parentId && (column === null || c.column === column) && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type))
-        .sort((a, b) => a.order - b.order);
+        .filter(c => c.parentId === parentId && (column === null || c.column === column))
+        .sort((a, b) => a.order - b.order)
+        .filter(c => !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type));
 
     return componentsToRender.map(component => {
         if (component.type === 'Columns') {
@@ -1054,8 +1056,8 @@ export function SettingsPanel({
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
-                      <Dropzone id="root">
-                          {renderComponentsRecursive(null)}
+                      <Dropzone id="root-dropzone">
+                          {renderComponentsRecursive(null, 0)}
                       </Dropzone>
                   </DndContext>
                   <AddComponentDialog onAddComponent={addComponent} />

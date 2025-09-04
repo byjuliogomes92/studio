@@ -9,6 +9,7 @@ import { ImageInput } from "./image-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
+  onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
 }
 
@@ -27,9 +28,14 @@ function hexToRgba(hex: string, alpha: number): string {
     return `rgba(${r},${g},${b},${alpha})`;
 }
 
-export function DivSettings({ component, onSubPropChange }: ComponentSettingsProps) {
+export function DivSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
     const styles = component.props.styles || {};
     const backgroundType = styles.backgroundType || 'solid';
+
+    const handleStyleChange = (prop: string, value: any) => {
+        const newStyles = { ...(component.props.styles || {}), [prop]: value };
+        onPropChange('styles', newStyles);
+    };
 
     return (
         <div className="space-y-4">
@@ -38,7 +44,7 @@ export function DivSettings({ component, onSubPropChange }: ComponentSettingsPro
                 <Switch
                     id="div-full-width"
                     checked={styles.isFullWidth || false}
-                    onCheckedChange={(checked) => onSubPropChange('styles', 'isFullWidth', checked)}
+                    onCheckedChange={(checked) => handleStyleChange('isFullWidth', checked)}
                 />
             </div>
             
@@ -46,7 +52,7 @@ export function DivSettings({ component, onSubPropChange }: ComponentSettingsPro
             
             <div className="p-4 border rounded-lg bg-muted/40 space-y-4">
                 <Label>Estilo de Fundo</Label>
-                <Select value={backgroundType} onValueChange={(value) => onSubPropChange('styles', 'backgroundType', value)}>
+                <Select value={backgroundType} onValueChange={(value) => handleStyleChange('backgroundType', value)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="solid">Cor Sólida</SelectItem>
@@ -58,7 +64,7 @@ export function DivSettings({ component, onSubPropChange }: ComponentSettingsPro
                 {backgroundType === 'solid' && (
                     <div className="space-y-2">
                         <Label htmlFor="div-bg-color">Cor de Fundo</Label>
-                        <Input id="div-bg-color" type="color" value={styles.backgroundColor || '#ffffff'} onChange={(e) => onSubPropChange('styles', 'backgroundColor', e.target.value)} className="p-1 h-10"/>
+                        <Input id="div-bg-color" type="color" value={styles.backgroundColor || '#ffffff'} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
                     </div>
                 )}
 
@@ -66,11 +72,11 @@ export function DivSettings({ component, onSubPropChange }: ComponentSettingsPro
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Cor Inicial</Label>
-                            <Input type="color" value={styles.gradientFrom || '#000000'} onChange={(e) => onSubPropChange('styles', 'gradientFrom', e.target.value)} className="p-1 h-10" />
+                            <Input type="color" value={styles.gradientFrom || '#000000'} onChange={(e) => handleStyleChange('gradientFrom', e.target.value)} className="p-1 h-10" />
                         </div>
                         <div className="space-y-2">
                             <Label>Cor Final</Label>
-                            <Input type="color" value={styles.gradientTo || '#434343'} onChange={(e) => onSubPropChange('styles', 'gradientTo', e.target.value)} className="p-1 h-10" />
+                            <Input type="color" value={styles.gradientTo || '#434343'} onChange={(e) => handleStyleChange('gradientTo', e.target.value)} className="p-1 h-10" />
                         </div>
                     </div>
                 )}
@@ -80,7 +86,7 @@ export function DivSettings({ component, onSubPropChange }: ComponentSettingsPro
                         <ImageInput 
                             label="URL da Imagem de Fundo"
                             value={styles.backgroundImageUrl || ""}
-                            onPropChange={(prop, value) => onSubPropChange('styles', prop, value)}
+                            onPropChange={(prop, value) => handleStyleChange(prop, value)}
                             propName="backgroundImageUrl"
                             tooltipText="URL para a imagem de fundo da seção."
                         />

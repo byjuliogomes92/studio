@@ -33,12 +33,12 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen">
         <AuthProvider>
-          <div className="flex-grow">
-            {children}
-            <CommandPalette />
-          </div>
-          <Toaster />
-          <AppFooter />
+            <div className="flex-grow flex flex-col">
+              <main className="flex-grow">{children}</main>
+              <CommandPalette />
+              <Toaster />
+              <AppFooter />
+            </div>
         </AuthProvider>
       </body>
     </html>

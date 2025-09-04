@@ -13,7 +13,7 @@ export function AppFooter() {
   }
 
   return (
-    <footer className="py-4 px-6 text-center text-sm text-muted-foreground border-t bg-card mt-auto" aria-hidden="false">
+    <footer className="py-4 px-6 text-center text-sm text-muted-foreground border-t bg-card" aria-hidden="false">
        <div className="flex justify-center items-center gap-4">
          <span>
             Desenvolvido por:{" "}

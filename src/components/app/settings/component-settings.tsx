@@ -55,6 +55,7 @@ const renderComponentSettings = (
   projectPages: CloudPage[]
 ) => {
     const props = { component, onPropChange, onSubPropChange, projectPages };
+    console.log("TIPO DO COMPONENTE SELECIONADO:", component.type);
     switch (component.type) {
       case "Div": return <DivSettings {...props} />;
       case "Header": return <HeaderSettings {...props} />;
@@ -91,6 +92,7 @@ const renderComponentSettings = (
 }
 
 export function ComponentSettings({ component, onComponentChange, projectPages }: ComponentSettingsProps) {
+  console.log('--- O COMPONENTE "ComponentSettings" RENDERIZOU COM ESTE COMPONENTE:', component);
   const abTestEnabled = component.abTestEnabled || false;
   const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
 

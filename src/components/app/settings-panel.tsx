@@ -140,7 +140,7 @@ function SortableItem({ component, children }: { component: PageComponent; child
 
 
 function Dropzone({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
-    const { setNodeRef, isOver } = useSortable({ id });
+    const { setNodeRef, isOver } = useSortable({ id, data: { isDropzone: true } });
 
     return (
         <div
@@ -735,11 +735,10 @@ export function SettingsPanel({
             if (!activeComponent) return;
             
             const overComponent = findComponent(overId);
-            const overContainer = ['Columns', 'Div'].includes(over.data.current?.component?.type) ? over.data.current?.component : null;
-            const overIsDropzone = !!over.data.current?.isDropzone;
+            const overIsDropzone = over.data.current?.isDropzone;
 
-            let newParentId: string | null = null;
-            let newColumnIndex: number = 0;
+            let newParentId: string | null = activeComponent.parentId;
+            let newColumnIndex: number = activeComponent.column || 0;
             let newOrder: number;
 
             if (overIsDropzone) {
@@ -749,11 +748,14 @@ export function SettingsPanel({
                     const [containerId, colIdx] = dropzoneId.split('-');
                     newParentId = containerId;
                     newColumnIndex = parseInt(colIdx, 10);
+                } else if (dropzoneId === 'root') { // Dropping into the root dropzone
+                    newParentId = null;
+                    newColumnIndex = 0;
                 } else { // It's a Div dropzone
                     newParentId = dropzoneId;
                     newColumnIndex = 0;
                 }
-                 const siblingsInNewContainer = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex);
+                const siblingsInNewContainer = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex);
                 newOrder = siblingsInNewContainer.length;
                 
             } else if (overComponent) {
@@ -774,31 +776,39 @@ export function SettingsPanel({
             const oldColumnIndex = activeComponent.column || 0;
             
             const activeComponentIndex = findComponentIndex(activeId);
-            const activeOriginalOrder = activeComponent.order;
+            
+            // Move the component in the array and update its properties
+            const [movedComponent] = draft.components.splice(activeComponentIndex, 1);
+            movedComponent.parentId = newParentId;
+            movedComponent.column = newColumnIndex;
+            movedComponent.order = newOrder;
 
-            // Update the dragged component
-            draft.components[activeComponentIndex].parentId = newParentId;
-            draft.components[activeComponentIndex].column = newColumnIndex;
-            draft.components[activeComponentIndex].order = newOrder;
-
-            // Re-order siblings in the old container
-            const oldSiblings = draft.components.filter(c => c.parentId === oldParentId && c.column === oldColumnIndex && c.id !== activeId);
-            oldSiblings.forEach(sibling => {
-                const siblingIndex = findComponentIndex(sibling.id);
-                if (sibling.order > activeOriginalOrder) {
-                    draft.components[siblingIndex].order -= 1;
-                }
-            });
+            // Find new position to insert
+            const siblingsInNewContainer = draft.components
+                .filter(c => c.parentId === newParentId && c.column === newColumnIndex)
+                .sort((a,b) => a.order - b.order);
 
             // Re-order siblings in the new container
-            const newSiblings = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex && c.id !== activeId);
-            newSiblings.forEach(sibling => {
-                 const siblingIndex = findComponentIndex(sibling.id);
-                if (sibling.order >= newOrder) {
-                    draft.components[siblingIndex].order += 1;
-                }
+            siblingsInNewContainer.splice(newOrder, 0, movedComponent);
+            
+            // Remove old siblings reference before re-ordering them
+            draft.components = draft.components.filter(c => !(c.parentId === newParentId && c.column === newColumnIndex));
+            
+            // Add re-ordered siblings back
+            siblingsInNewContainer.forEach((sibling, index) => {
+                sibling.order = index;
+                draft.components.push(sibling);
             });
 
+            // Re-order siblings in the old container if it's different
+            if(oldParentId !== newParentId || oldColumnIndex !== newColumnIndex) {
+                 const oldSiblings = draft.components
+                    .filter(c => c.parentId === oldParentId && c.column === oldColumnIndex)
+                    .sort((a,b) => a.order - b.order);
+                oldSiblings.forEach((sibling, index) => {
+                    sibling.order = index;
+                });
+            }
         });
     });
   };
@@ -862,7 +872,7 @@ export function SettingsPanel({
     });
 };
   
-  const stripeComponents = pageState.components.filter(c => c.type === 'Stripe');
+  const stripeComponents = pageState.components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => c.order).sort((a,b) => a-b).map(order => pageState.components.find(c => c.order === order && c.type === 'Stripe' && c.parentId === null)).filter(Boolean) as PageComponent[];
   
     const toDatetimeLocal = (date: any) => {
         if (!date) return '';
@@ -1387,7 +1397,7 @@ SET @name = AttributeValue("FirstName")
                 <AccordionContent className="space-y-4 pt-2 px-4">
                      <div className="space-y-2">
                         <Label htmlFor="security-type">Tipo de Proteção</Label>
-                        <Select value={pageState.meta.security.type} onValueChange={(value: SecurityType) => handleSecurityChange('type', value)}>
+                        <Select value={pageState.meta.security?.type || 'none'} onValueChange={(value: SecurityType) => handleSecurityChange('type', value)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione um tipo de proteção" />
                             </SelectTrigger>
@@ -1399,13 +1409,13 @@ SET @name = AttributeValue("FirstName")
                         </Select>
                     </div>
 
-                    {pageState.meta.security.type === 'sso' && (
+                    {pageState.meta.security?.type === 'sso' && (
                          <p className="text-sm text-muted-foreground">
                             Os usuários serão redirecionados para a tela de login do Salesforce Marketing Cloud se não estiverem autenticados.
                         </p>
                     )}
 
-                     {pageState.meta.security.type === 'password' && pageState.meta.security.passwordConfig && (
+                     {pageState.meta.security?.type === 'password' && pageState.meta.security.passwordConfig && (
                         <div className="space-y-4 pt-4 border-t">
                             <h4 className="font-medium text-sm">Configuração da Senha</h4>
                             <div className="space-y-2">

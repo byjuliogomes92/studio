@@ -185,7 +185,6 @@ function ComponentItem({
    
 
   const handleSelect = () => {
-    console.log(`Clicou para selecionar o componente -> ID: ${component.id}, Tipo: ${component.type}`);
     if (selectedComponentId === component.id) {
         setSelectedComponentId(null);
     } else {
@@ -792,9 +791,11 @@ export function SettingsPanel({
                         const sortedChildren = arrayMove(children, 0, 0); // Just to get a stable sort
                         
                         sortedChildren.forEach((child, index) => {
-                            const componentToUpdate = draft.components.find(c => c.id === child.id);
-                            if (componentToUpdate) {
-                                componentToUpdate.order = index;
+                            if (child) { // Check if child is not undefined
+                                const componentToUpdate = draft.components.find(c => c.id === child.id);
+                                if (componentToUpdate) {
+                                    componentToUpdate.order = index;
+                                }
                             }
                         });
                     }

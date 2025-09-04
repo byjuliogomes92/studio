@@ -55,7 +55,7 @@ const renderComponentSettings = (
   projectPages: CloudPage[]
 ) => {
     const props = { component, onPropChange, onSubPropChange, projectPages };
-    
+
     // Teste definitivo para garantir que DivSettings seja renderizado.
     if (component.type === "Div") {
         return <DivSettings {...props} />;

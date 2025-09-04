@@ -100,7 +100,24 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
   const hasBitlyConfig = !!(brand && brand.integrations?.bitly?.encryptedAccessToken);
 
-  const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId) ?? null;
+  // New robust way to find the selected component, including nested ones.
+  const findComponentById = (components: PageComponent[], id: string): PageComponent | null => {
+    for (const component of components) {
+      if (component.id === id) {
+        return component;
+      }
+      if (component.children) {
+        const foundInChildren = findComponentById(component.children, id);
+        if (foundInChildren) {
+          return foundInChildren;
+        }
+      }
+    }
+    // As a fallback, check the flat list (though the recursive search should be primary)
+    return pageState?.components.find(c => c.id === id) || null;
+  };
+  
+  const selectedComponent = pageState ? findComponentById(pageState.components, selectedComponentId || '') : null;
 
 
   useEffect(() => {
@@ -579,5 +596,3 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     </>
   );
 }
-
-    

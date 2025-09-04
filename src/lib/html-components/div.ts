@@ -20,6 +20,8 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
     const { props } = component;
     const styles = props.styles || {};
     const layout = props.layout || {};
+    const idOverride = props.idOverride || `div-container-${component.id}`;
+    const customClasses = props.customClasses || '';
 
     const {
         isFullWidth = false,
@@ -69,18 +71,16 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
         ${styleString}
     `;
 
-    const className = `div-container ${heroClass}`;
+    const className = `div-container ${heroClass} ${customClasses}`;
     
-    if (isFullWidth) {
-        return `<div class="section-wrapper" style="${backgroundStyle}">
-                    ${overlayHtml}
-                    <div class="${className}" style="${containerStyle}">${childrenHtml}</div>
-                </div>`;
-    }
-
-    return `<div class="${className}" style="${backgroundStyle} ${containerStyle}">
+    const wrapperClass = isFullWidth ? 'section-wrapper' : 'section-container-padded';
+    
+    const wrapperStyle = isFullWidth ? backgroundStyle : '';
+    const innerStyle = isFullWidth ? containerStyle : `${backgroundStyle} ${containerStyle}`;
+    
+    return `<div class="${wrapperClass}" style="${wrapperStyle}">
                 ${overlayHtml}
-                ${childrenHtml}
+                <div id="${idOverride}" class="${className}" style="${innerStyle}">${childrenHtml}</div>
             </div>`;
 }
 

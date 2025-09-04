@@ -51,6 +51,7 @@ interface SettingsPanelProps {
 }
 
 const componentIcons: Record<ComponentType, React.ElementType> = {
+    Div: Layers3,
     Header: AlignStartVertical,
     Footer: AlignEndVertical,
     Banner: Image,
@@ -179,7 +180,7 @@ function ComponentItem({
   isDraggable?: boolean;
 }) {
   const Icon = componentIcons[component.type] || Text;
-  const isContainer = ['Columns'].includes(component.type);
+  const isContainer = ['Columns', 'Div'].includes(component.type);
 
   const handleSelect = () => {
     if (selectedComponentId === component.id) {
@@ -493,6 +494,9 @@ export function SettingsPanel({
         
               // Default props for new components
               switch(type) {
+                  case 'Div':
+                      newComponent.props = { styles: {} };
+                      break;
                   case 'Columns':
                       newComponent.props = { columnCount: 2 };
                       break;
@@ -678,7 +682,7 @@ export function SettingsPanel({
                 };
                 draft.components.push(duplicatedComp);
 
-                if (['Columns'].includes(originalComp.type)) {
+                if (['Columns', 'Div'].includes(originalComp.type)) {
                     const children = draft.components.filter(c => c.parentId === originalCompId);
                     children.forEach(child => {
                        duplicateRecursively(child.id, newId, child.column);
@@ -716,130 +720,138 @@ export function SettingsPanel({
     });
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-        return;
-    }
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
 
-    setPageState((currentState) => {
-        if (!currentState) return null;
+        if (!over) return;
+        
+        const activeId = active.id.toString();
+        const overId = over.id.toString();
 
-        return produce(currentState, (draft) => {
-            const activeComponent = draft.components.find(c => c.id === active.id);
-            if (!activeComponent) return;
+        if (activeId === overId) return;
 
-            const activeIndex = draft.components.findIndex(c => c.id === active.id);
-            const overIndex = draft.components.findIndex(c => c.id === over.id);
-            const overComponent = draft.components[overIndex];
-            
-            const overIsContainer = over.data.current?.isDropzone;
+        setPageState(currentState => {
+            if (!currentState) return null;
 
-            // Scenario 1: Moving into a container (Reparenting)
-            if (overIsContainer) {
-                const newParentId = over.id.toString().startsWith('root-dropzone') ? null : over.id.toString().split('-')[0];
-                const newColumn = over.id.toString().includes('-') ? parseInt(over.id.toString().split('-')[1], 10) : 0;
-                
-                // Update parent and column
-                activeComponent.parentId = newParentId;
-                activeComponent.column = newColumn;
-                
-            } 
-            // Scenario 2: Reordering within the same container
-            else if (overComponent && overComponent.parentId === activeComponent.parentId && overComponent.column === activeComponent.column) {
-                 const siblings = draft.components
-                    .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
-                    .sort((a,b) => a.order - b.order);
-                 
-                 const oldIndex = siblings.findIndex(c => c.id === active.id);
-                 const newIndex = siblings.findIndex(c => c.id === over.id);
+            return produce(currentState, draft => {
+                const activeIndex = draft.components.findIndex(c => c.id === activeId);
+                if (activeIndex === -1) return;
 
-                 if (oldIndex !== -1 && newIndex !== -1) {
-                    const [movedItem] = siblings.splice(oldIndex, 1);
-                    siblings.splice(newIndex, 0, movedItem);
+                const activeComponent = draft.components[activeIndex];
+                const overIsDropzone = over.data.current?.isDropzone;
 
-                    // Update order of all siblings in the draft
-                    siblings.forEach((sibling, index) => {
-                        const compToUpdate = draft.components.find(c => c.id === sibling.id);
-                        if (compToUpdate) {
-                            compToUpdate.order = index;
+                if (overIsDropzone) { // Reparenting or moving to root/column
+                    const newParentId = overId.startsWith('root-dropzone') ? null : overId.split('-')[0];
+                    const newColumnIndex = overId.includes('-') ? parseInt(overId.split('-')[1], 10) : 0;
+                    
+                    activeComponent.parentId = newParentId;
+                    activeComponent.column = newColumnIndex;
+
+                    // Set order to be the last in the new container
+                    const newSiblings = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex && c.id !== activeId);
+                    activeComponent.order = newSiblings.length;
+
+                } else { // Reordering within the same container
+                    const overIndex = draft.components.findIndex(c => c.id === overId);
+                    if (overIndex === -1) return;
+                    
+                    const overComponent = draft.components[overIndex];
+                    
+                    if (activeComponent.parentId === overComponent.parentId && activeComponent.column === overComponent.column) {
+                        // Reordering
+                        const siblings = draft.components
+                            .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
+                            .sort((a,b) => a.order - b.order);
+
+                        const oldOrderIndex = siblings.findIndex(s => s.id === activeId);
+                        const newOrderIndex = siblings.findIndex(s => s.id === overId);
+                        
+                        if (oldOrderIndex !== -1 && newOrderIndex !== -1) {
+                           const [movedItem] = siblings.splice(oldOrderIndex, 1);
+                           siblings.splice(newOrderIndex, 0, movedItem);
+                           
+                           siblings.forEach((sibling, index) => {
+                               const compToUpdate = draft.components.find(c => c.id === sibling.id);
+                               if (compToUpdate) compToUpdate.order = index;
+                           });
                         }
-                    });
-                 }
-            } 
-            // Scenario 3: Moving into a different container (Reparenting)
-            else if (overComponent) {
-                 const newParentId = overComponent.parentId;
-                 const newColumn = overComponent.column;
-                 activeComponent.parentId = newParentId;
-                 activeComponent.column = newColumn;
-            }
-
-            // Recalculate order for all groups after any move
-            const parentIds = new Set(draft.components.map(c => c.parentId));
-            parentIds.forEach(pId => {
-                const containerComponent = draft.components.find(c => c.id === pId);
-                const numColumns = containerComponent?.type === 'Columns' ? (containerComponent.props.columnCount || 1) : 1;
-                
-                for(let i=0; i<numColumns; i++) {
-                    draft.components
-                        .filter(c => c.parentId === pId && c.column === i)
-                        .sort((a, b) => a.order - b.order)
-                        .forEach((c, index) => { c.order = index; });
+                    } else {
+                        // Reparenting to a different container by dropping on an item
+                        activeComponent.parentId = overComponent.parentId;
+                        activeComponent.column = overComponent.column;
+                        const newSiblings = draft.components.filter(c => c.parentId === overComponent.parentId && c.column === overComponent.column && c.id !== activeId);
+                        activeComponent.order = newSiblings.length;
+                    }
                 }
+
+                // Recalculate order for all groups after any move
+                const parentIds = new Set(draft.components.map(c => c.parentId));
+                parentIds.forEach(pId => {
+                    const containerComponent = draft.components.find(c => c.id === pId);
+                    const numColumns = (containerComponent?.type === 'Columns' || containerComponent?.type === 'Div') ? (containerComponent.props.columnCount || 1) : 1;
+                    
+                    for(let i=0; i<numColumns; i++) {
+                        draft.components
+                            .filter(c => c.parentId === pId && c.column === i)
+                            .sort((a, b) => a.order - b.order)
+                            .forEach((c, index) => { c.order = index; });
+                    }
+                });
+                draft.components
+                    .filter(c => c.parentId === null)
+                    .sort((a, b) => a.order - b.order)
+                    .forEach((c, index) => { c.order = index; });
             });
-            // Recalculate order for root components
-            draft.components
-                .filter(c => c.parentId === null)
-                .sort((a, b) => a.order - b.order)
-                .forEach((c, index) => { c.order = index; });
-
         });
-    });
-};
+    };
 
-  const renderComponentsRecursive = (parentId: string | null, column: number | null = 0): React.ReactNode[] => {
-    const componentsToRender = pageState.components
-        .filter(c => c.parentId === parentId && (column === null || c.column === column))
-        .sort((a, b) => a.order - b.order)
-        .filter(c => !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type));
+    const renderComponentsRecursive = (parentId: string | null, column: number | null = 0): React.ReactNode[] => {
+        const componentsToRender = pageState.components
+            .filter(c => c.parentId === parentId && (column === null || c.column === column))
+            .sort((a, b) => a.order - b.order)
+            .filter(c => !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type));
 
-    return componentsToRender.map(component => {
-        if (component.type === 'Columns') {
-            const columnCount = component.props.columnCount || 2;
+        return componentsToRender.map(component => {
+            const isContainer = ['Columns', 'Div'].includes(component.type);
+
+            if (isContainer) {
+                const columnCount = component.props.columnCount || 1;
+                const DropzoneComponent = component.type === 'Columns' ? Dropzone : Dropzone;
+                const idPrefix = component.id;
+
+                return (
+                    <SortableItem key={component.id} component={component}>
+                        <ComponentItem
+                            component={component}
+                            selectedComponentId={selectedComponentId}
+                            setSelectedComponentId={setSelectedComponentId}
+                            removeComponent={removeComponent}
+                            duplicateComponent={duplicateComponent}
+                        >
+                            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount > 0 ? columnCount : 1}, 1fr)` }}>
+                                {Array.from({ length: columnCount > 0 ? columnCount : 1 }).map((_, i) => (
+                                    <DropzoneComponent key={i} id={`${idPrefix}-${i}`}>
+                                        {renderComponentsRecursive(component.id, i)}
+                                    </DropzoneComponent>
+                                ))}
+                            </div>
+                        </ComponentItem>
+                    </SortableItem>
+                );
+            }
             return (
-                 <SortableItem key={component.id} component={component}>
+                <SortableItem key={component.id} component={component}>
                     <ComponentItem
                         component={component}
                         selectedComponentId={selectedComponentId}
                         setSelectedComponentId={setSelectedComponentId}
                         removeComponent={removeComponent}
                         duplicateComponent={duplicateComponent}
-                    >
-                        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
-                            {Array.from({ length: columnCount }).map((_, i) => (
-                                <Dropzone key={i} id={`${component.id}-${i}`}>
-                                    {renderComponentsRecursive(component.id, i)}
-                                </Dropzone>
-                            ))}
-                        </div>
-                    </ComponentItem>
+                    />
                 </SortableItem>
             );
-        }
-        return (
-            <SortableItem key={component.id} component={component}>
-                <ComponentItem
-                    component={component}
-                    selectedComponentId={selectedComponentId}
-                    setSelectedComponentId={setSelectedComponentId}
-                    removeComponent={removeComponent}
-                    duplicateComponent={duplicateComponent}
-                />
-            </SortableItem>
-        );
-    });
-};
+        });
+    };
   
   const stripeComponents = pageState.components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => c.order).sort((a,b) => a-b).map(order => pageState.components.find(c => c.order === order && c.type === 'Stripe' && c.parentId === null)).filter(Boolean) as PageComponent[];
   const footerComponent = pageState.components.find(c => c.type === 'Footer');

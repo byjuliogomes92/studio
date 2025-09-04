@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ImageInput } from "./image-input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Slider } from "@/components/ui/slider";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -14,7 +15,7 @@ interface ComponentSettingsProps {
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
 }
 
-export function DivSettings({ component, onSubPropChange }: ComponentSettingsProps) {
+export function DivSettings({ component, onSubPropChange, onPropChange }: ComponentSettingsProps) {
     const { props } = component;
     const styles = props.styles || {};
     const layout = props.layout || {};
@@ -76,8 +77,8 @@ export function DivSettings({ component, onSubPropChange }: ComponentSettingsPro
                                         <Input type="color" value={styles.overlayColor || '#000000'} onChange={e => handleStyleChange('overlayColor', e.target.value)} className="p-1 h-10 w-full"/>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Opacidade</Label>
-                                        <Input type="number" min="0" max="1" step="0.1" value={styles.overlayOpacity || 0.5} onChange={e => handleStyleChange('overlayOpacity', parseFloat(e.target.value))}/>
+                                        <Label>Opacidade ({Math.round((styles.overlayOpacity || 0.5) * 100)}%)</Label>
+                                        <Slider defaultValue={[styles.overlayOpacity || 0.5]} min={0} max={1} step={0.05} onValueChange={([val]) => handleStyleChange('overlayOpacity', val)} />
                                     </div>
                                 </div>
                             )}
@@ -158,11 +159,11 @@ export function DivSettings({ component, onSubPropChange }: ComponentSettingsPro
                     <AccordionContent className="space-y-4 pt-2">
                         <div className="space-y-2">
                             <Label>ID do Elemento</Label>
-                            <Input value={props.idOverride || ''} onChange={e => onSubPropChange('', 'idOverride', e.target.value)} placeholder="ID único para âncoras"/>
+                            <Input value={props.idOverride || ''} onChange={e => onPropChange('idOverride', e.target.value)} placeholder="ID único para âncoras"/>
                         </div>
                         <div className="space-y-2">
                             <Label>Classes CSS Customizadas</Label>
-                            <Input value={props.customClasses || ''} onChange={e => onSubPropChange('', 'customClasses', e.target.value)} placeholder="classe-1 classe-2"/>
+                            <Input value={props.customClasses || ''} onChange={e => onPropChange('customClasses', e.target.value)} placeholder="classe-1 classe-2"/>
                         </div>
                     </AccordionContent>
                  </AccordionItem>

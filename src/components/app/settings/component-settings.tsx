@@ -194,7 +194,7 @@ export function ComponentSettings({ component, onComponentChange, projectPages }
                 <Separator />
                 <div>
                     <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><LayoutGrid className="h-4 w-4" /> Layout</h3>
-                    <LayoutSettings props={component.props} onPropChange={handlePropChange} />
+                    <LayoutSettings props={component.props} onSubPropChange={handleSubPropChange} />
                 </div>
             </>
         )}

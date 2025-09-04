@@ -365,7 +365,7 @@ export function SettingsPanel({
         setPageState(prev => {
             if (!prev) return null;
             return produce(prev, draft => {
-                if (draft.meta.security && draft.meta.security.passwordConfig) {
+                if (draft.meta.security?.passwordConfig) {
                     (draft.meta.security.passwordConfig as any)[prop] = value;
                 }
             });
@@ -467,7 +467,17 @@ export function SettingsPanel({
           } else {
               // It's a single component type
               const type = typeOrBlock;
-              const parentId = null; // For simplicity, new components are added to the root.
+
+              if (type === 'Footer' && draft.components.some(c => c.type === 'Footer')) {
+                  toast({
+                      variant: 'destructive',
+                      title: 'Ação não permitida',
+                      description: 'Apenas um componente de Rodapé é permitido por página.'
+                  });
+                  return;
+              }
+
+              const parentId = null; 
               const column = 0;
               const siblings = draft.components.filter(c => c.parentId === parentId);
     
@@ -732,7 +742,7 @@ export function SettingsPanel({
             const findComponentIndex = (id: string) => draft.components.findIndex((c) => c.id === id);
 
             const activeComponent = findComponent(activeId);
-            if (!activeComponent) return;
+            if (!activeComponent || activeComponent.type === 'Footer') return; // Don't allow dragging the footer
             
             const overComponent = findComponent(overId);
             const overIsDropzone = over.data.current?.isDropzone;
@@ -758,7 +768,7 @@ export function SettingsPanel({
                 const siblingsInNewContainer = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex);
                 newOrder = siblingsInNewContainer.length;
                 
-            } else if (overComponent) {
+            } else if (overComponent && overComponent.type !== 'Footer') {
                 // Dropping over another component (reordering)
                 newParentId = overComponent.parentId;
                 newColumnIndex = overComponent.column || 0;
@@ -768,7 +778,7 @@ export function SettingsPanel({
                 const overIndexInSiblings = siblings.findIndex(c => c.id === overId);
                 newOrder = overIndexInSiblings;
             } else {
-                // Fallback, shouldn't happen often
+                // Fallback, dropping on footer or unknown area, do nothing
                 return;
             }
 
@@ -815,7 +825,7 @@ export function SettingsPanel({
 
   const renderComponentsRecursive = (parentId: string | null, column: number | null = null): React.ReactNode[] => {
     const componentsToRender = pageState.components
-        .filter(c => c.parentId === parentId && (column === null || c.column === column) && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type))
+        .filter(c => c.parentId === parentId && (column === null || c.column === column) && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type))
         .sort((a, b) => a.order - b.order);
 
     return componentsToRender.map(component => {
@@ -873,6 +883,7 @@ export function SettingsPanel({
 };
   
   const stripeComponents = pageState.components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => c.order).sort((a,b) => a-b).map(order => pageState.components.find(c => c.order === order && c.type === 'Stripe' && c.parentId === null)).filter(Boolean) as PageComponent[];
+  const footerComponent = pageState.components.find(c => c.type === 'Footer');
   
     const toDatetimeLocal = (date: any) => {
         if (!date) return '';
@@ -1046,30 +1057,43 @@ export function SettingsPanel({
                  </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2 px-4">
-                <DndContext 
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                    <div className="space-y-2">
-                        {stripeComponents.map(component => (
-                            <ComponentItem
-                                key={component.id}
-                                component={component}
-                                selectedComponentId={selectedComponentId}
-                                setSelectedComponentId={setSelectedComponentId}
-                                removeComponent={removeComponent}
-                                duplicateComponent={duplicateComponent}
-                                isDraggable={false}
-                            />
-                        ))}
-                        {stripeComponents.length > 0 && <Separator />}
-                    </div>
-                    <Dropzone id="root">
-                        {renderComponentsRecursive(null)}
-                    </Dropzone>
-                </DndContext>
-                <AddComponentDialog onAddComponent={addComponent} />
+                  <div className="space-y-2">
+                      {stripeComponents.map(component => (
+                          <ComponentItem
+                              key={component.id}
+                              component={component}
+                              selectedComponentId={selectedComponentId}
+                              setSelectedComponentId={setSelectedComponentId}
+                              removeComponent={removeComponent}
+                              duplicateComponent={duplicateComponent}
+                              isDraggable={false} // Stripe is not draggable
+                          />
+                      ))}
+                      {stripeComponents.length > 0 && <Separator />}
+                  </div>
+                  <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                      <Dropzone id="root">
+                          {renderComponentsRecursive(null)}
+                      </Dropzone>
+                  </DndContext>
+                  <AddComponentDialog onAddComponent={addComponent} />
+                   {footerComponent && (
+                      <div className="pt-2 mt-2 border-t">
+                          <ComponentItem
+                              key={footerComponent.id}
+                              component={footerComponent}
+                              selectedComponentId={selectedComponentId}
+                              setSelectedComponentId={setSelectedComponentId}
+                              removeComponent={removeComponent}
+                              duplicateComponent={duplicateComponent}
+                              isDraggable={false} // Footer is not draggable
+                          />
+                      </div>
+                  )}
               </AccordionContent>
             </AccordionItem>
 

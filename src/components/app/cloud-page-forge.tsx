@@ -104,7 +104,7 @@ console.log("Tentando encontrar o componente com ID:", selectedComponentId);
 console.log("...dentro deste array de componentes:", pageState?.components.map(c => ({id: c.id, type: c.type})));
 
   
-  const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId) ?? null;
+  const selectedComponent = pageState?.components.find(c => String(c.id).trim() === String(selectedComponentId).trim()) ?? null;
 
 
   useEffect(() => {

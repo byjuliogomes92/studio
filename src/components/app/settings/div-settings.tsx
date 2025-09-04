@@ -58,7 +58,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange }: Compon
                             <ImageInput 
                                 label="URL da Imagem de Fundo"
                                 value={styles.backgroundImageUrl || ''}
-                                onPropChange={(_: string, val: string) => handleStyleChange('backgroundImageUrl', val)}
+                                onPropChange={handleStyleChange}
                                 propName="backgroundImageUrl"
                                 tooltipText="URL para a imagem de fundo da seção."
                             />

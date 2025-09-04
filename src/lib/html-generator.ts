@@ -30,14 +30,15 @@ import { renderDataExtensionUpload } from './html-components/data-extension-uplo
 import { renderFloatingImage } from './html-components/floating-image';
 import { renderFloatingButton } from './html-components/floating-button';
 import { renderCalendly } from './html-components/calendly';
+import { renderDiv } from './html-components/div';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
     return components
       .map((component) => {
         const childrenHtml = (() => {
-            if (component.type === 'Columns') {
-                const columnCount = component.props.columnCount || 2;
+            if (component.type === 'Columns' || component.type === 'Div') {
+                const columnCount = component.props.columnCount || 1;
                 let columnsContent = '';
                 for (let i = 0; i < columnCount; i++) {
                     const columnComponents = allComponents
@@ -106,7 +107,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   }
 
   // full-width Columns provide their own outer structure
-  if ((component.type === 'Columns') && component.props.styles?.isFullWidth) {
+  if ((component.type === 'Columns' || component.type === 'Div') && component.props.styles?.isFullWidth) {
       return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
@@ -162,6 +163,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'Map': return renderMap(component);
     case 'SocialIcons': return renderSocialIcons(component);
     case 'Columns': return renderColumns(component, childrenHtml);
+    case 'Div': return renderDiv(component, childrenHtml);
     case 'WhatsApp': return renderWhatsApp(component);
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState);
@@ -1853,13 +1855,13 @@ ${trackingScripts.head}
         height: 24px;
     }
 
+    .div-container,
     .columns-container {
-        display: grid;
-        grid-template-columns: var(--grid-template-columns, repeat(var(--column-count, 2), 1fr));
-        gap: 20px;
+        display: flex;
         width: 100%;
         position: relative; /* For hero text overlay */
     }
+    .div-container .column,
     .columns-container .column {
         min-width: 0;
         position: relative;
@@ -1867,7 +1869,6 @@ ${trackingScripts.head}
         display: flex;
         flex-direction: column;
         gap: 10px;
-        justify-content: var(--justify-content, 'flex-start');
     }
 
     .section-overlay {
@@ -2022,8 +2023,8 @@ ${trackingScripts.head}
     @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @keyframes floating { 0% { transform: translate(0, 0px); } 50% { transform: translate(0, 8px); } 100% { transform: translate(0, -0px); } }
     @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
-    @keyframes wave { 0%, 40%, 100% { transform: translateY(0); } 20% { transform: translateY(-15px); } }
-    @keyframes swing { 20% { transform: rotate3d(0, 0, 1, 15deg); } 40% { transform: rotate3d(0, 0, 1, -10deg); } 60% { transform: rotate3d(0, 0, 1, 5deg); } 80% { transform: rotate3d(0, 0, 1, -5deg); } 100% { transform: rotate3d(0, 0, 1, 0deg); } }
+    @keyframes wave { 2.5s ease-in-out infinite; }
+    @keyframes swing { 2s ease-out infinite; transform-origin: top center; }
 
 
     .animation-loop--bounce { animation: bounce 2s infinite; }

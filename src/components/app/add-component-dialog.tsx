@@ -80,6 +80,7 @@ const componentList: {
   {
     category: "Estrutura",
     components: [
+      { name: "Div", icon: Layers3, enabled: true },
       { name: "Columns", icon: Columns, enabled: true },
       { name: "Banner", icon: Image, enabled: true },
       { name: "Stripe", icon: PanelTop, enabled: true },

@@ -12,6 +12,7 @@ import { Star, Scaling, Film, Layers, LayoutGrid } from "lucide-react";
 import { Input } from "../ui/input";
 
 // Importe os novos componentes de configuração
+import { DivSettings } from './div-settings';
 import { HeaderSettings } from './header-settings';
 import { ColumnsSettings } from './columns-settings';
 import { BannerSettings } from './banner-settings';
@@ -55,6 +56,7 @@ const renderComponentSettings = (
 ) => {
     const props = { component, onPropChange, onSubPropChange, projectPages };
     switch (component.type) {
+      case "Div": return <DivSettings {...props} />;
       case "Header": return <HeaderSettings {...props} />;
       case "Columns": return <ColumnsSettings {...props} />;
       case "Banner": return <BannerSettings {...props} />;

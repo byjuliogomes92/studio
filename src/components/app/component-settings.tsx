@@ -53,6 +53,12 @@ const renderComponentSettings = (
   projectPages: CloudPage[]
 ) => {
     const props = { component, onPropChange, onSubPropChange, projectPages };
+
+    console.log('--- DENTRO DE renderComponentSettings ---');
+    console.log('Tipo do componente recebido:', `"${component.type}"`); // Aspas para revelar espaços em branco
+    console.log('A comparação (component.type === "Div") resulta em:', component.type === "Div");
+
+
     switch (component.type) {
       case "Header": return <HeaderSettings {...props} />;
       case "Columns": return <ColumnsSettings {...props} />;

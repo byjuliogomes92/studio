@@ -138,23 +138,25 @@ function SortableItem({ component, children }: { component: PageComponent; child
   );
 }
 
-function Dropzone({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) {
-  const { setNodeRef, isOver } = useSortable({ id, data: { type: 'dropzone', isDropzone: true } });
-  
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "p-2 bg-muted/40 rounded-lg min-h-[80px] flex flex-col gap-2 transition-colors",
-        isOver ? 'bg-primary/20 ring-2 ring-primary' : '',
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
-}
 
+function Dropzone({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
+    const { setNodeRef, isOver } = useSortable({ id });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={cn(
+                "p-2 bg-muted/40 rounded-lg min-h-[80px] flex flex-col gap-2 transition-colors",
+                isOver ? 'bg-primary/20 ring-2 ring-primary' : '',
+                className
+            )}
+        >
+            <SortableContext items={React.Children.map(children, (child: any) => child.props.component.id) || []} strategy={verticalListSortingStrategy}>
+                {children}
+            </SortableContext>
+        </div>
+    );
+}
 
 function ComponentItem({
   component,
@@ -228,7 +230,7 @@ function ComponentItem({
             </Button>
           </div>
           {isContainer && children && (
-            <div className="w-full">
+            <div className="pl-4 pr-1 pb-1">
                 {children}
             </div>
           )}
@@ -650,7 +652,7 @@ export function SettingsPanel({
         return produce(prev, draft => {
             const idMap: { [key: string]: string } = {};
 
-            const duplicateRecursively = (originalCompId: string, newParentId: string | null = null): string => {
+            const duplicateRecursively = (originalCompId: string, newParentId: string | null = null, newColumnIndex?: number): string => {
                 const originalComp = draft.components.find(c => c.id === originalCompId);
                 if (!originalComp) return '';
 
@@ -665,6 +667,7 @@ export function SettingsPanel({
                     id: newId,
                     props: newProps,
                     parentId: newParentId,
+                    column: newColumnIndex !== undefined ? newColumnIndex : originalComp.column,
                     // Order will be recalculated later
                 };
                 draft.components.push(duplicatedComp);
@@ -672,7 +675,7 @@ export function SettingsPanel({
                 if (['Columns', 'Div'].includes(originalComp.type)) {
                     const children = draft.components.filter(c => c.parentId === originalCompId);
                     children.forEach(child => {
-                        duplicateRecursively(child.id, newId);
+                       duplicateRecursively(child.id, newId, child.column);
                     });
                 }
                 return newId;
@@ -681,7 +684,7 @@ export function SettingsPanel({
             const originalComponent = draft.components.find(c => c.id === componentId);
             if (!originalComponent) return;
 
-            const newMainComponentId = duplicateRecursively(componentId, originalComponent.parentId);
+            const newMainComponentId = duplicateRecursively(componentId, originalComponent.parentId, originalComponent.column);
             
             // Reorder components
             const allComponents = draft.components.filter(c => c.parentId === originalComponent.parentId);
@@ -710,7 +713,14 @@ export function SettingsPanel({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!active || !over || active.id === over.id) {
+    if (!active || !over) {
+        return;
+    }
+    
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    if (activeId === overId) {
         return;
     }
 
@@ -721,137 +731,138 @@ export function SettingsPanel({
             const findComponent = (id: string) => draft.components.find((c) => c.id === id);
             const findComponentIndex = (id: string) => draft.components.findIndex((c) => c.id === id);
 
-            const activeComponent = findComponent(active.id as string);
+            const activeComponent = findComponent(activeId);
             if (!activeComponent) return;
-
-            const overId = over.id as string;
-            const overIsDropzone = over.data.current?.isDropzone;
+            
+            const overComponent = findComponent(overId);
+            const overContainer = ['Columns', 'Div'].includes(over.data.current?.component?.type) ? over.data.current?.component : null;
+            const overIsDropzone = !!over.data.current?.isDropzone;
 
             let newParentId: string | null = null;
             let newColumnIndex: number = 0;
             let newOrder: number;
 
             if (overIsDropzone) {
-                // Dropping into a container (Div or Column)
-                newParentId = overId;
-                const siblings = draft.components.filter((c) => c.parentId === newParentId);
-                newOrder = siblings.length;
-            } else {
-                // Dropping over another component
-                const overComponent = findComponent(overId);
-                if (!overComponent) return;
+                // Dropping inside a container's dropzone
+                const dropzoneId = over.id as string;
+                if(dropzoneId.includes('-')) { // It's a column dropzone (e.g., 'columnsId-0')
+                    const [containerId, colIdx] = dropzoneId.split('-');
+                    newParentId = containerId;
+                    newColumnIndex = parseInt(colIdx, 10);
+                } else { // It's a Div dropzone
+                    newParentId = dropzoneId;
+                    newColumnIndex = 0;
+                }
+                 const siblingsInNewContainer = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex);
+                newOrder = siblingsInNewContainer.length;
                 
+            } else if (overComponent) {
+                // Dropping over another component (reordering)
                 newParentId = overComponent.parentId;
                 newColumnIndex = overComponent.column || 0;
-                
                 const siblings = draft.components
-                    .filter((c) => c.parentId === newParentId && c.column === newColumnIndex)
+                    .filter(c => c.parentId === newParentId && c.column === newColumnIndex)
                     .sort((a, b) => a.order - b.order);
                 const overIndexInSiblings = siblings.findIndex(c => c.id === overId);
                 newOrder = overIndexInSiblings;
+            } else {
+                // Fallback, shouldn't happen often
+                return;
             }
-            
-            // Reorder original list
+
             const oldParentId = activeComponent.parentId;
             const oldColumnIndex = activeComponent.column || 0;
             
-            activeComponent.parentId = newParentId;
-            activeComponent.column = newColumnIndex;
+            const activeComponentIndex = findComponentIndex(activeId);
+            const activeOriginalOrder = activeComponent.order;
 
-            const updateOrder = (parentId: string | null, columnIndex: number) => {
-                const items = draft.components
-                    .filter(c => c.parentId === parentId && (c.column || 0) === columnIndex)
-                    .sort((a,b) => a.order - b.order);
-                items.forEach((item, index) => {
-                    const componentToUpdate = findComponent(item.id);
-                    if (componentToUpdate) componentToUpdate.order = index;
-                });
-            }
+            // Update the dragged component
+            draft.components[activeComponentIndex].parentId = newParentId;
+            draft.components[activeComponentIndex].column = newColumnIndex;
+            draft.components[activeComponentIndex].order = newOrder;
 
-            // Update order in old location
-            if (oldParentId !== newParentId || oldColumnIndex !== newColumnIndex) {
-                 updateOrder(oldParentId, oldColumnIndex);
-            }
+            // Re-order siblings in the old container
+            const oldSiblings = draft.components.filter(c => c.parentId === oldParentId && c.column === oldColumnIndex && c.id !== activeId);
+            oldSiblings.forEach(sibling => {
+                const siblingIndex = findComponentIndex(sibling.id);
+                if (sibling.order > activeOriginalOrder) {
+                    draft.components[siblingIndex].order -= 1;
+                }
+            });
 
-            // Move item in array for correct sorting before reordering new location
-             const activeIndex = findComponentIndex(active.id as string);
-             const [movedItem] = draft.components.splice(activeIndex, 1);
-             const overIndex = findComponentIndex(overId);
-             draft.components.splice(overIsDropzone ? draft.components.length : overIndex, 0, movedItem);
+            // Re-order siblings in the new container
+            const newSiblings = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex && c.id !== activeId);
+            newSiblings.forEach(sibling => {
+                 const siblingIndex = findComponentIndex(sibling.id);
+                if (sibling.order >= newOrder) {
+                    draft.components[siblingIndex].order += 1;
+                }
+            });
 
-            // Re-assign order for the new list
-            updateOrder(newParentId, newColumnIndex);
         });
     });
   };
 
-  const renderComponentsRecursive = (parentId: string | null) => {
+  const renderComponentsRecursive = (parentId: string | null, column: number | null = null): React.ReactNode[] => {
     const componentsToRender = pageState.components
-      .filter(c => c.parentId === parentId && c.type !== 'Stripe')
-      .sort((a, b) => a.order - b.order);
-  
-    return componentsToRender.map(component => {
-      if (component.type === 'Columns') {
-        const columnCount = component.props.columnCount || 2;
-        return (
-          <SortableItem key={component.id} component={component}>
-            <ComponentItem
-              component={component}
-              selectedComponentId={selectedComponentId}
-              setSelectedComponentId={setSelectedComponentId}
-              removeComponent={removeComponent}
-              duplicateComponent={duplicateComponent}
-            >
-              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
-                  {Array.from({ length: columnCount }, (_, i) => (
-                    <Dropzone key={i} id={`${component.id}-${i}`}>
-                      {renderComponentsRecursive(`${component.id}-${i}`)}
-                    </Dropzone>
-                  ))}
-              </div>
-            </ComponentItem>
-          </SortableItem>
-        );
-      }
-       if (component.type === 'Div') {
-        return (
-          <SortableItem key={component.id} component={component}>
-            <ComponentItem
-              component={component}
-              selectedComponentId={selectedComponentId}
-              setSelectedComponentId={setSelectedComponentId}
-              removeComponent={removeComponent}
-              duplicateComponent={duplicateComponent}
-            >
-              <Dropzone id={component.id}>
-                 {renderComponentsRecursive(component.id)}
-              </Dropzone>
-            </ComponentItem>
-          </SortableItem>
-        );
-      }
-      return (
-        <SortableItem key={component.id} component={component}>
-          <ComponentItem
-            component={component}
-            selectedComponentId={selectedComponentId}
-            setSelectedComponentId={setSelectedComponentId}
-            removeComponent={removeComponent}
-            duplicateComponent={duplicateComponent}
-          />
-        </SortableItem>
-      );
-    });
-  };
+        .filter(c => c.parentId === parentId && (column === null || c.column === column) && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type))
+        .sort((a, b) => a.order - b.order);
 
+    return componentsToRender.map(component => {
+        if (component.type === 'Columns') {
+            const columnCount = component.props.columnCount || 2;
+            return (
+                 <SortableItem key={component.id} component={component}>
+                    <ComponentItem
+                        component={component}
+                        selectedComponentId={selectedComponentId}
+                        setSelectedComponentId={setSelectedComponentId}
+                        removeComponent={removeComponent}
+                        duplicateComponent={duplicateComponent}
+                    >
+                        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
+                            {Array.from({ length: columnCount }).map((_, i) => (
+                                <Dropzone key={i} id={`${component.id}-${i}`}>
+                                    {renderComponentsRecursive(component.id, i)}
+                                </Dropzone>
+                            ))}
+                        </div>
+                    </ComponentItem>
+                </SortableItem>
+            );
+        }
+        if (component.type === 'Div') {
+            return (
+                 <SortableItem key={component.id} component={component}>
+                    <ComponentItem
+                        component={component}
+                        selectedComponentId={selectedComponentId}
+                        setSelectedComponentId={setSelectedComponentId}
+                        removeComponent={removeComponent}
+                        duplicateComponent={duplicateComponent}
+                    >
+                       <Dropzone id={component.id}>
+                            {renderComponentsRecursive(component.id, 0)}
+                       </Dropzone>
+                    </ComponentItem>
+                </SortableItem>
+            );
+        }
+        return (
+            <SortableItem key={component.id} component={component}>
+                <ComponentItem
+                    component={component}
+                    selectedComponentId={selectedComponentId}
+                    setSelectedComponentId={setSelectedComponentId}
+                    removeComponent={removeComponent}
+                    duplicateComponent={duplicateComponent}
+                />
+            </SortableItem>
+        );
+    });
+};
   
   const stripeComponents = pageState.components.filter(c => c.type === 'Stripe');
-  const otherComponents = pageState.components;
-
-
-  const tracking = pageState.meta.tracking;
-  const cookieBanner = pageState.cookieBanner;
-  const security = pageState.meta.security || { type: 'none' };
   
     const toDatetimeLocal = (date: any) => {
         if (!date) return '';
@@ -1025,31 +1036,28 @@ export function SettingsPanel({
                  </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2 px-4">
-                <div className="space-y-2">
-                  {stripeComponents.map(component => (
-                    <ComponentItem
-                        key={component.id}
-                        component={component}
-                        selectedComponentId={selectedComponentId}
-                        setSelectedComponentId={setSelectedComponentId}
-                        removeComponent={removeComponent}
-                        duplicateComponent={duplicateComponent}
-                        isDraggable={false}
-                    />
-                  ))}
-                  {stripeComponents.length > 0 && <Separator />}
-                </div>
-
                 <DndContext 
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                    <SortableContext items={otherComponents.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-2">
-                          {renderComponentsRecursive(null)}
-                      </div>
-                    </SortableContext>
+                    <div className="space-y-2">
+                        {stripeComponents.map(component => (
+                            <ComponentItem
+                                key={component.id}
+                                component={component}
+                                selectedComponentId={selectedComponentId}
+                                setSelectedComponentId={setSelectedComponentId}
+                                removeComponent={removeComponent}
+                                duplicateComponent={duplicateComponent}
+                                isDraggable={false}
+                            />
+                        ))}
+                        {stripeComponents.length > 0 && <Separator />}
+                    </div>
+                    <Dropzone id="root">
+                        {renderComponentsRecursive(null)}
+                    </Dropzone>
                 </DndContext>
                 <AddComponentDialog onAddComponent={addComponent} />
               </AccordionContent>
@@ -1287,40 +1295,40 @@ SET @name = AttributeValue("FirstName")
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="gtm-enabled">Google Tag Manager</Label>
-                      <Switch id="gtm-enabled" checked={tracking?.gtm?.enabled} onCheckedChange={(checked) => handleTrackingChange('gtm', 'enabled', checked)} />
+                      <Switch id="gtm-enabled" checked={pageState.meta.tracking?.gtm?.enabled} onCheckedChange={(checked) => handleTrackingChange('gtm', 'enabled', checked)} />
                     </div>
-                    {tracking?.gtm?.enabled && (
-                      <Input placeholder="ID do Contêiner (GTM-XXXXXXX)" value={tracking?.gtm?.id || ''} onChange={(e) => handleTrackingChange('gtm', 'id', e.target.value)} />
+                    {pageState.meta.tracking?.gtm?.enabled && (
+                      <Input placeholder="ID do Contêiner (GTM-XXXXXXX)" value={pageState.meta.tracking?.gtm?.id || ''} onChange={(e) => handleTrackingChange('gtm', 'id', e.target.value)} />
                     )}
                   </div>
                   {/* GA4 */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="ga4-enabled">Google Analytics 4</Label>
-                      <Switch id="ga4-enabled" checked={tracking?.ga4?.enabled} onCheckedChange={(checked) => handleTrackingChange('ga4', 'enabled', checked)} />
+                      <Switch id="ga4-enabled" checked={pageState.meta.tracking?.ga4?.enabled} onCheckedChange={(checked) => handleTrackingChange('ga4', 'enabled', checked)} />
                     </div>
-                    {tracking?.ga4?.enabled && (
-                      <Input placeholder="ID de métricas (G-XXXXXXXXXX)" value={tracking?.ga4?.id || ''} onChange={(e) => handleTrackingChange('ga4', 'id', e.target.value)} />
+                    {pageState.meta.tracking?.ga4?.enabled && (
+                      <Input placeholder="ID de métricas (G-XXXXXXXXXX)" value={pageState.meta.tracking?.ga4?.id || ''} onChange={(e) => handleTrackingChange('ga4', 'id', e.target.value)} />
                     )}
                   </div>
                   {/* Meta Pixel */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="meta-enabled">Meta Pixel</Label>
-                      <Switch id="meta-enabled" checked={tracking?.meta?.enabled} onCheckedChange={(checked) => handleTrackingChange('meta', 'enabled', checked)} />
+                      <Switch id="meta-enabled" checked={pageState.meta.tracking?.meta?.enabled} onCheckedChange={(checked) => handleTrackingChange('meta', 'enabled', checked)} />
                     </div>
-                    {tracking?.meta?.enabled && (
-                      <Input placeholder="ID do Pixel" value={tracking?.meta?.id || ''} onChange={(e) => handleTrackingChange('meta', 'id', e.target.value)} />
+                    {pageState.meta.tracking?.meta?.enabled && (
+                      <Input placeholder="ID do Pixel" value={pageState.meta.tracking?.meta?.id || ''} onChange={(e) => handleTrackingChange('meta', 'id', e.target.value)} />
                     )}
                   </div>
                   {/* LinkedIn Pixel */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="linkedin-enabled">LinkedIn Insight Tag</Label>
-                      <Switch id="linkedin-enabled" checked={tracking?.linkedin?.enabled} onCheckedChange={(checked) => handleTrackingChange('linkedin', 'enabled', checked)} />
+                      <Switch id="linkedin-enabled" checked={pageState.meta.tracking?.linkedin?.enabled} onCheckedChange={(checked) => handleTrackingChange('linkedin', 'enabled', checked)} />
                     </div>
-                    {tracking?.linkedin?.enabled && (
-                      <Input placeholder="ID de parceiro" value={tracking?.linkedin?.id || ''} onChange={(e) => handleTrackingChange('linkedin', 'id', e.target.value)} />
+                    {pageState.meta.tracking?.linkedin?.enabled && (
+                      <Input placeholder="ID de parceiro" value={pageState.meta.tracking?.linkedin?.id || ''} onChange={(e) => handleTrackingChange('linkedin', 'id', e.target.value)} />
                     )}
                   </div>
                 </div>
@@ -1341,17 +1349,17 @@ SET @name = AttributeValue("FirstName")
                         </Label>
                         <Switch
                             id="cookie-enabled"
-                            checked={cookieBanner?.enabled || false}
+                            checked={pageState.cookieBanner?.enabled || false}
                             onCheckedChange={(checked) => handleCookieBannerChange('enabled', checked)}
                         />
                     </div>
-                    {cookieBanner?.enabled && (
+                    {pageState.cookieBanner?.enabled && (
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="cookie-text">Texto do Banner</Label>
                                 <Textarea
                                     id="cookie-text"
-                                    value={cookieBanner.text}
+                                    value={pageState.cookieBanner.text}
                                     onChange={(e) => handleCookieBannerChange('text', e.target.value)}
                                     rows={5}
                                 />
@@ -1360,7 +1368,7 @@ SET @name = AttributeValue("FirstName")
                                 <Label htmlFor="cookie-button-text">Texto do Botão</Label>
                                 <Input
                                     id="cookie-button-text"
-                                    value={cookieBanner.buttonText}
+                                    value={pageState.cookieBanner.buttonText}
                                     onChange={(e) => handleCookieBannerChange('buttonText', e.target.value)}
                                 />
                             </div>
@@ -1379,7 +1387,7 @@ SET @name = AttributeValue("FirstName")
                 <AccordionContent className="space-y-4 pt-2 px-4">
                      <div className="space-y-2">
                         <Label htmlFor="security-type">Tipo de Proteção</Label>
-                        <Select value={security.type} onValueChange={(value: SecurityType) => handleSecurityChange('type', value)}>
+                        <Select value={pageState.meta.security.type} onValueChange={(value: SecurityType) => handleSecurityChange('type', value)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione um tipo de proteção" />
                             </SelectTrigger>
@@ -1391,30 +1399,30 @@ SET @name = AttributeValue("FirstName")
                         </Select>
                     </div>
 
-                    {security.type === 'sso' && (
+                    {pageState.meta.security.type === 'sso' && (
                          <p className="text-sm text-muted-foreground">
                             Os usuários serão redirecionados para a tela de login do Salesforce Marketing Cloud se não estiverem autenticados.
                         </p>
                     )}
 
-                     {security.type === 'password' && security.passwordConfig && (
+                     {pageState.meta.security.type === 'password' && pageState.meta.security.passwordConfig && (
                         <div className="space-y-4 pt-4 border-t">
                             <h4 className="font-medium text-sm">Configuração da Senha</h4>
                             <div className="space-y-2">
                                 <Label htmlFor="pw-de-key">Chave da Data Extension de Senhas</Label>
-                                <Input id="pw-de-key" value={security.passwordConfig.dataExtensionKey} onChange={(e) => handlePasswordConfigChange('dataExtensionKey', e.target.value)} placeholder="Ex: DE_SENHAS_USUARIOS" />
+                                <Input id="pw-de-key" value={pageState.meta.security.passwordConfig.dataExtensionKey} onChange={(e) => handlePasswordConfigChange('dataExtensionKey', e.target.value)} placeholder="Ex: DE_SENHAS_USUARIOS" />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="pw-id-col">Coluna do Identificador do Usuário</Label>
-                                <Input id="pw-id-col" value={security.passwordConfig.identifierColumn} onChange={(e) => handlePasswordConfigChange('identifierColumn', e.target.value)} placeholder="Ex: SubscriberKey ou EmailAddress"/>
+                                <Input id="pw-id-col" value={pageState.meta.security.passwordConfig.identifierColumn} onChange={(e) => handlePasswordConfigChange('identifierColumn', e.target.value)} placeholder="Ex: SubscriberKey ou EmailAddress"/>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="pw-pass-col">Coluna da Senha</Label>
-                                <Input id="pw-pass-col" value={security.passwordConfig.passwordColumn} onChange={(e) => handlePasswordConfigChange('passwordColumn', e.target.value)} placeholder="Ex: Senha" />
+                                <Input id="pw-pass-col" value={pageState.meta.security.passwordConfig.passwordColumn} onChange={(e) => handlePasswordConfigChange('passwordColumn', e.target.value)} placeholder="Ex: Senha" />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="pw-url-param">Parâmetro de URL para Identificador</Label>
-                                <Input id="pw-url-param" value={security.passwordConfig.urlParameter} onChange={(e) => handlePasswordConfigChange('urlParameter', e.target.value)} placeholder="Ex: id" />
+                                <Input id="pw-url-param" value={pageState.meta.security.passwordConfig.urlParameter} onChange={(e) => handlePasswordConfigChange('urlParameter', e.target.value)} placeholder="Ex: id" />
                             </div>
                         </div>
                     )}

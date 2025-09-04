@@ -78,8 +78,6 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       animationDuration = 1,
       animationDelay = 0,
       loopAnimation = 'none',
-      loopAnimationDuration,
-      loopAnimationTimingFunction,
       ...otherStyles
   } = styles;
 
@@ -1029,7 +1027,7 @@ ${trackingScripts.head}
     }
     .animate-on-scroll.is-visible {
         opacity: 1;
-        animation-name: var(--animation-name, none);
+        animation-name: var(--animation-name);
         animation-duration: var(--animation-duration, 1s);
         animation-delay: var(--animation-delay, 0s);
     }
@@ -2057,7 +2055,7 @@ ${trackingScripts.head}
     }
     .animate-on-scroll.is-visible {
         animation-fill-mode: both;
-        animation-name: var(--animation-name, none);
+        animation-name: var(--animation-name);
         animation-duration: var(--animation-duration);
         animation-delay: var(--animation-delay);
     }

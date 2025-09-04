@@ -436,31 +436,31 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         </div>
                     )}
                     {(shortUrl || pageUrl) && !isPublishing && (
-                        <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
-                            <h4 className="font-medium text-sm">URL Final</h4>
-                             {shortUrl && (
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">URL Curta (Bitly)</Label>
-                                    <div className="flex items-center justify-between gap-2">
-                                        <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0">{shortUrl}</a>
-                                        <div className="flex items-center gap-1 flex-shrink-0">
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(shortUrl)}><Copy className="h-4 w-4"/></Button>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={()={() => window.open(shortUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
-                                        </div>
-                                    </div>
-                                </div>
-                             )}
-                             <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">URL Completa</Label>
-                                <div className="flex items-center justify-between gap-2">
-                                    <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0 break-all">{pageUrl}</a>
-                                    <div className="flex items-center gap-1 flex-shrink-0">
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(pageUrl)}><Copy className="h-4 w-4"/></Button>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={()={() => window.open(pageUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
-                                    </div>
-                                </div>
-                             </div>
+                      <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
+                        <h4 className="font-medium text-sm">URL Final</h4>
+                        {shortUrl && (
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">URL Curta (Bitly)</Label>
+                            <div className="flex items-center justify-between gap-2">
+                              <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0">{shortUrl}</a>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(shortUrl)}><Copy className="h-4 w-4"/></Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(shortUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">URL Completa</Label>
+                          <div className="flex items-center justify-between gap-2">
+                            <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0 break-all">{pageUrl}</a>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(pageUrl)}><Copy className="h-4 w-4"/></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(pageUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
+                            </div>
+                          </div>
                         </div>
+                      </div>
                     )}
                 </div>
                 <DialogFooter>

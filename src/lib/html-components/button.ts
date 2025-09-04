@@ -1,5 +1,5 @@
 
-import type { PageComponent } from '@/lib/types';
+import type { PageComponent, CloudPage } from '@/lib/types';
 
 export function renderButton(component: PageComponent, pageState?: CloudPage): string {
     const { text = 'Clique Aqui', align = 'center', variant = 'default', action } = component.props;

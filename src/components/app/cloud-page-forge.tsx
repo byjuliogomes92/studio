@@ -100,11 +100,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
   const hasBitlyConfig = !!(brand && brand.integrations?.bitly?.encryptedAccessToken);
 
-console.log("Tentando encontrar o componente com ID:", selectedComponentId);
-console.log("...dentro deste array de componentes:", pageState?.components.map(c => ({id: c.id, type: c.type})));
-
-  
-  const selectedComponent = pageState?.components.find(c => String(c.id).trim() === String(selectedComponentId).trim()) ?? null;
+  const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId) ?? null;
 
 
   useEffect(() => {
@@ -449,7 +445,7 @@ console.log("...dentro deste array de componentes:", pageState?.components.map(c
                                         <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0">{shortUrl}</a>
                                         <div className="flex items-center gap-1 flex-shrink-0">
                                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(shortUrl)}><Copy className="h-4 w-4"/></Button>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(shortUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={()={() => window.open(shortUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
                                         </div>
                                     </div>
                                 </div>
@@ -460,7 +456,7 @@ console.log("...dentro deste array de componentes:", pageState?.components.map(c
                                     <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-mono truncate hover:underline min-w-0 break-all">{pageUrl}</a>
                                     <div className="flex items-center gap-1 flex-shrink-0">
                                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyUrl(pageUrl)}><Copy className="h-4 w-4"/></Button>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(pageUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={()={() => window.open(pageUrl, '_blank')}><ExternalLink className="h-4 w-4"/></Button>
                                     </div>
                                 </div>
                              </div>
@@ -552,7 +548,7 @@ console.log("...dentro deste array de componentes:", pageState?.components.map(c
         </ResizablePanelGroup>
       </div>
 
-       <Sheet open={!!selectedComponentId} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
+       <Sheet open={!!selectedComponent} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
             <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col">
                 {selectedComponent && (
                     <>
@@ -583,3 +579,5 @@ console.log("...dentro deste array de componentes:", pageState?.components.map(c
     </>
   );
 }
+
+    

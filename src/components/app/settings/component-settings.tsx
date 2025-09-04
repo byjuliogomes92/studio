@@ -32,15 +32,15 @@ import { VotingSettings } from './voting-settings';
 import { StripeSettings } from './stripe-settings';
 import { NPSSettings } from './nps-settings';
 import { MapSettings } from './map-settings';
-import { SocialIconsSettings } from './social-icons-settings';
-import { WhatsAppSettings } from './whatsapp-settings';
-import { FTPUploadSettings } from './ftpupload-settings';
-import { DataExtensionUploadSettings } from './data-extension-upload-settings';
-import { CalendlySettings } from './calendly-settings';
-import { SpacingSettings } from "./spacing-settings";
-import { AnimationSettings } from "./animation-settings";
-import { LayoutSettings } from "./layout-settings";
-import { DivSettings } from './div-settings';
+import { SocialIconsSettings from './social-icons-settings';
+import { WhatsAppSettings from './whatsapp-settings';
+import { FTPUploadSettings from './ftpupload-settings';
+import { DataExtensionUploadSettings from './data-extension-upload-settings';
+import { CalendlySettings from './calendly-settings';
+import { SpacingSettings from "./spacing-settings";
+import { AnimationSettings from "./animation-settings";
+import { LayoutSettings from "./layout-settings";
+import { DivSettings from './div-settings';
 
 interface ComponentSettingsProps {
   component: PageComponent;

@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImageInput } from "./image-input";
+import { produce } from "immer";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -33,7 +34,9 @@ export function DivSettings({ component, onPropChange, onSubPropChange }: Compon
     const backgroundType = styles.backgroundType || 'solid';
 
     const handleStyleChange = (prop: string, value: any) => {
-        const newStyles = { ...(component.props.styles || {}), [prop]: value };
+        const newStyles = produce(styles, (draft: any) => {
+            draft[prop] = value;
+        });
         onPropChange('styles', newStyles);
     };
 
@@ -86,7 +89,7 @@ export function DivSettings({ component, onPropChange, onSubPropChange }: Compon
                         <ImageInput 
                             label="URL da Imagem de Fundo"
                             value={styles.backgroundImageUrl || ""}
-                            onPropChange={(prop, value) => handleStyleChange(prop, value)}
+                            onPropChange={(_prop, value) => handleStyleChange('backgroundImageUrl', value)}
                             propName="backgroundImageUrl"
                             tooltipText="URL para a imagem de fundo da seção."
                         />

@@ -49,6 +49,39 @@ interface ComponentSettingsProps {
   projectPages: CloudPage[];
 }
 
+const componentMap: { [key: string]: React.FC<any> } = {
+    Div: DivSettings,
+    Header: HeaderSettings,
+    Footer: FooterSettings,
+    Columns: ColumnsSettings,
+    Banner: BannerSettings,
+    Title: TextSettings,
+    Subtitle: TextSettings,
+    Paragraph: TextSettings,
+    Image: ImageSettings,
+    FloatingImage: FloatingImageSettings,
+    Video: VideoSettings,
+    Carousel: CarouselSettings,
+    Countdown: CountdownSettings,
+    Divider: DividerSettings,
+    Spacer: SpacerSettings,
+    Button: ButtonSettings,
+    DownloadButton: DownloadButtonSettings,
+    FloatingButton: FloatingButtonSettings,
+    Form: FormSettings,
+    Accordion: ListManagerSettings,
+    Tabs: ListManagerSettings,
+    Voting: VotingSettings,
+    Stripe: StripeSettings,
+    NPS: NPSSettings,
+    Map: MapSettings,
+    SocialIcons: SocialIconsSettings,
+    WhatsApp: WhatsAppSettings,
+    FTPUpload: FTPUploadSettings,
+    DataExtensionUpload: DataExtensionUploadSettings,
+    Calendly: CalendlySettings,
+};
+
 const renderComponentSettings = (
   component: PageComponent,
   onPropChange: (prop: string, value: any) => void,
@@ -57,40 +90,13 @@ const renderComponentSettings = (
 ) => {
     const props = { component, onPropChange, onSubPropChange, projectPages };
 
-    switch (component.type) {
-      case "Div": return <DivSettings {...props} />;
-      case "Header": return <HeaderSettings {...props} />;
-      case "Footer": return <FooterSettings {...props} />;
-      case "Columns": return <ColumnsSettings {...props} />;
-      case "Banner": return <BannerSettings {...props} />;
-      case "Title":
-      case "Subtitle":
-      case "Paragraph": return <TextSettings {...props} />;
-      case "Image": return <ImageSettings {...props} />;
-      case "FloatingImage": return <FloatingImageSettings {...props} />;
-      case "Video": return <VideoSettings {...props} />;
-      case "Carousel": return <CarouselSettings {...props} />;
-      case "Countdown": return <CountdownSettings {...props} />;
-      case "Divider": return <DividerSettings {...props} />;
-      case "Spacer": return <SpacerSettings {...props} />;
-      case "Button": return <ButtonSettings {...props} />;
-      case "DownloadButton": return <DownloadButtonSettings {...props} />;
-      case "FloatingButton": return <FloatingButtonSettings {...props} />;
-      case "Form": return <FormSettings {...props} />;
-      case 'Accordion':
-      case 'Tabs': return <ListManagerSettings {...props} />;
-      case 'Voting': return <VotingSettings {...props} />;
-      case 'Stripe': return <StripeSettings {...props} />;
-      case 'NPS': return <NPSSettings {...props} />;
-      case 'Map': return <MapSettings {...props} />;
-      case 'SocialIcons': return <SocialIconsSettings {...props} />;
-      case 'WhatsApp': return <WhatsAppSettings {...props} />;
-      case 'FTPUpload': return <FTPUploadSettings {...props} />;
-      case 'DataExtensionUpload': return <DataExtensionUploadSettings {...props} />;
-      case 'Calendly': return <CalendlySettings {...props} />;
-      default:
-        return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;
+    const SettingsComponent = componentMap[component.type];
+
+    if (SettingsComponent) {
+        return <SettingsComponent {...props} />;
     }
+
+    return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;
 }
 
 export function ComponentSettings({ component, onComponentChange, projectPages }: ComponentSettingsProps) {

@@ -14,6 +14,7 @@ import { Input } from "../ui/input";
 // Importe os novos componentes de configuração
 import { DivSettings } from './div-settings';
 import { HeaderSettings } from './header-settings';
+import { FooterSettings } from './footer-settings';
 import { ColumnsSettings } from './columns-settings';
 import { BannerSettings } from './banner-settings';
 import { TextSettings } from './text-settings';
@@ -59,6 +60,7 @@ const renderComponentSettings = (
     switch (component.type) {
       case "Div": return <DivSettings {...props} />;
       case "Header": return <HeaderSettings {...props} />;
+      case "Footer": return <FooterSettings {...props} />;
       case "Columns": return <ColumnsSettings {...props} />;
       case "Banner": return <BannerSettings {...props} />;
       case "Title":

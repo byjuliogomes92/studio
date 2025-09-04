@@ -15,6 +15,21 @@ interface ComponentSettingsProps {
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+    if (!hex || !/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+        return `rgba(0,0,0,${alpha})`; // fallback
+    }
+    let c = hex.substring(1).split('');
+    if (c.length === 3) {
+        c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+    }
+    const i = parseInt(c.join(''), 16);
+    const r = (i >> 16) & 255;
+    const g = (i >> 8) & 255;
+    const b = i & 255;
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export function DivSettings({ component, onSubPropChange, onPropChange }: ComponentSettingsProps) {
     const { props } = component;
     const styles = props.styles || {};
@@ -30,7 +45,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange }: Compon
 
     return (
         <div className="space-y-4">
-            <Accordion type="multiple" defaultValue={['width-bg', 'layout', 'style']}>
+            <Accordion type="multiple" defaultValue={['width-bg', 'layout', 'style']} className="w-full">
                 <AccordionItem value="width-bg">
                     <AccordionTrigger>Largura e Fundo</AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
@@ -58,7 +73,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange }: Compon
                             <ImageInput 
                                 label="URL da Imagem de Fundo"
                                 value={styles.backgroundImageUrl || ''}
-                                onPropChange={handleStyleChange}
+                                onPropChange={handleStyleChange} // Corrigido para passar a função correta
                                 propName="backgroundImageUrl"
                                 tooltipText="URL para a imagem de fundo da seção."
                             />

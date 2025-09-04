@@ -153,7 +153,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'Video': return renderVideo(component);
     case 'Countdown': return renderCountdown(component);
     case 'Spacer': return renderSpacer(component);
-    case 'Button': return renderButton(component);
+    case 'Button': return renderButton(component, pageState);
     case 'DownloadButton': return renderDownloadButton(component);
     case 'Accordion': return renderAccordion(component);
     case 'Tabs': return renderTabs(component);
@@ -1032,7 +1032,7 @@ ${trackingScripts.head}
     .animation-loop--rotate { animation: rotate 4s linear infinite; }
     .animation-loop--floating { animation: floating 3s ease-in-out infinite; }
     .animation-loop--shake { animation: shake 0.5s infinite; }
-    .animation-loop--wave { animation: wave 2s ease-in-out infinite; }
+    .animation-loop--wave { animation: wave 2.5s ease-in-out infinite; }
     .animation-loop--swing { animation: swing 2s ease-in-out infinite; }
 
 
@@ -1228,7 +1228,6 @@ ${trackingScripts.head}
       color: white !important;
       padding: 10px 20px;
       text-decoration: none;
-      border-radius: 5px;
       display: inline-block;
       transition: background-color 0.3s ease;
       border: none;

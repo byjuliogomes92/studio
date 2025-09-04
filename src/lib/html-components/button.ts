@@ -1,7 +1,7 @@
 
 import type { PageComponent } from '@/lib/types';
 
-export function renderButton(component: PageComponent): string {
+export function renderButton(component: PageComponent, pageState?: CloudPage): string {
     const { text = 'Clique Aqui', align = 'center', variant = 'default', action } = component.props;
     
     let href = '#';
@@ -15,12 +15,22 @@ export function renderButton(component: PageComponent): string {
       }
     }
     
-    const styles = component.props.styles || {};
-    const styleString = getStyleString(styles);
+    // Combine global brand styles with component-specific styles
+    const brandButtonRadius = pageState?.brand?.components?.button?.borderRadius || '0.5rem';
+    const componentStyles = component.props.styles || {};
+    const finalBorderRadius = componentStyles.borderRadius || brandButtonRadius;
+
+    // Remove borderRadius from componentStyles if it exists to avoid duplication
+    const { borderRadius, ...otherStyles } = componentStyles;
+    
+    const styleString = getStyleString(otherStyles);
     const className = `custom-button custom-button--${variant}`;
     
     // O wrapper agora controla o alinhamento do bloco do botão
-    return `<div class="button-wrapper" style="text-align: ${align}; ${styleString}"><a href="${href}" target="_blank" class="${className}">${text}</a></div>`;
+    const wrapperStyle = `text-align: ${align}; ${styleString}`;
+    const buttonStyle = `border-radius: ${finalBorderRadius};`;
+
+    return `<div class="button-wrapper" style="${wrapperStyle}"><a href="${href}" target="_blank" class="${className}" style="${buttonStyle}">${text}</a></div>`;
 }
 
 function getStyleString(styles: any = {}): string {
@@ -28,6 +38,8 @@ function getStyleString(styles: any = {}): string {
       .map(([key, value]) => {
         if (!value) return '';
         const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+        // Skip border-radius as it's handled separately
+        if (cssKey === 'border-radius') return '';
         return `${cssKey}: ${value};`;
       })
       .join(' ');

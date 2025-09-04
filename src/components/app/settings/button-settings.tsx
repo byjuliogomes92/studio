@@ -4,17 +4,25 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AiGenerateTextDialog } from "./ai-generate-text-dialog";
-import { Wand2 } from "lucide-react";
+import { Wand2, Square, Circle, Hand } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
+  onSubPropChange: (prop: string, subProp: string, value: any) => void;
   projectPages: CloudPage[];
 }
 
-export function ButtonSettings({ component, onPropChange, projectPages }: ComponentSettingsProps) {
+export function ButtonSettings({ component, onPropChange, onSubPropChange, projectPages }: ComponentSettingsProps) {
     const { props } = component;
+    const styles = props.styles || {};
+    
+    const handleStyleChange = (prop: string, value: any) => {
+        onSubPropChange('styles', prop, value);
+    };
+
     return (
         <div className="space-y-4">
             <div className="space-y-2">
@@ -104,30 +112,42 @@ export function ButtonSettings({ component, onPropChange, projectPages }: Compon
                 </Select>
             </div>
              <Separator />
-             <div className="space-y-2">
-                <Label>Alinhamento e Layout</Label>
-                <div className="grid grid-cols-2 gap-2">
-                    <Select value={props.align || 'center'} onValueChange={(value) => onPropChange('align', value)}>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Alinhar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        <SelectItem value="left">Esquerda</SelectItem>
-                        <SelectItem value="center">Centro</SelectItem>
-                        <SelectItem value="right">Direita</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Select value={props.layout || 'block'} onValueChange={(value) => onPropChange('layout', value)}>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Layout" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        <SelectItem value="block">Em Bloco</SelectItem>
-                        <SelectItem value="inline">Em Linha</SelectItem>
-                        </SelectContent>
-                    </Select>
-                 </div>
-            </div>
+             <div className="space-y-4">
+                <h4 className="font-medium text-sm">Layout e Estilo</h4>
+                <div className="space-y-2">
+                    <Label>Alinhamento e Layout</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Select value={props.align || 'center'} onValueChange={(value) => onPropChange('align', value)}>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Alinhar" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="left">Esquerda</SelectItem>
+                            <SelectItem value="center">Centro</SelectItem>
+                            <SelectItem value="right">Direita</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select value={props.layout || 'block'} onValueChange={(value) => onPropChange('layout', value)}>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Layout" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="block">Em Bloco</SelectItem>
+                            <SelectItem value="inline">Em Linha</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label>Cantos do Botão (Específico)</Label>
+                    <ToggleGroup type="single" value={styles.borderRadius} onValueChange={(value) => value && handleStyleChange('borderRadius', value)} className="w-full">
+                        <ToggleGroupItem value="0.25rem" aria-label="Reto"><Square className="h-5 w-5"/></ToggleGroupItem>
+                        <ToggleGroupItem value="0.5rem" aria-label="Curvado"><div className="w-5 h-5 border-2 border-current rounded-md"></div></ToggleGroupItem>
+                        <ToggleGroupItem value="9999px" aria-label="Redondo"><Circle className="h-5 w-5"/></ToggleGroupItem>
+                    </ToggleGroup>
+                    <p className="text-xs text-muted-foreground">Deixe em branco para usar o estilo global do Kit de Marca.</p>
+                </div>
+             </div>
         </div>
     );
 }

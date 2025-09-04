@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3 } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -35,9 +35,10 @@ import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Badge } from "../ui/badge";
 import { MediaLibraryDialog } from "./media-library-dialog";
-import { getBrandsForUser } from "@/lib/firestore";
+import { getBrandsForUser, updateBrand } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 
 interface SettingsPanelProps {
@@ -253,7 +254,7 @@ export function SettingsPanel({
   onPageNameChange,
 }: SettingsPanelProps) {
 
-  const { activeWorkspace } = useAuth();
+  const { user, activeWorkspace } = useAuth();
   const { toast } = useToast();
   const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
   const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState.publishDate || !!pageState.expiryDate);
@@ -302,6 +303,39 @@ export function SettingsPanel({
   const handleStyleChange = (prop: keyof CloudPage["styles"], value: string) => {
     setPageState((prev) => prev ? ({ ...prev, styles: { ...prev.styles, [prop]: value } }) : null);
   };
+
+  const handleBrandComponentStyleChange = async (componentType: 'button' | 'input', prop: string, value: any) => {
+      if (!pageState.brandId || !user) return;
+      try {
+          const brandToUpdate = userBrands.find(b => b.id === pageState.brandId);
+          if (!brandToUpdate) return;
+  
+          // Use produce for immutable update
+          const newBrand = produce(brandToUpdate, draft => {
+              if (!draft.components) {
+                  draft.components = { button: { borderRadius: ''}, input: {borderRadius: '', backgroundColor: '', borderColor: '', textColor: '' } };
+              }
+              if (!draft.components[componentType]) {
+                  (draft.components as any)[componentType] = {};
+              }
+              (draft.components[componentType] as any)[prop] = value;
+          });
+  
+          await updateBrand(pageState.brandId, { components: newBrand.components }, user.uid);
+          
+          setUserBrands(prevBrands => prevBrands.map(b => b.id === pageState.brandId ? newBrand : b));
+  
+          toast({ title: 'Estilo do Kit de Marca atualizado!' });
+  
+      } catch (error: any) {
+          console.error("Failed to update brand component style:", error);
+          toast({ variant: "destructive", title: "Erro ao atualizar Kit de Marca", description: error.message });
+      }
+  };
+  
+  const activeBrand = userBrands.find(b => b.id === pageState.brandId);
+  const buttonBorderRadius = activeBrand?.components?.button?.borderRadius || '0.5rem';
+
 
   const handleMetaChange = (prop: keyof CloudPage["meta"], value: any) => {
     setPageState((prev) => {
@@ -998,6 +1032,20 @@ export function SettingsPanel({
                         </SelectContent>
                     </Select>
                  </div>
+                 <Separator />
+                 <div className="space-y-3">
+                     <h4 className="font-medium text-sm">Estilo dos Botões</h4>
+                     <div className="space-y-2">
+                        <Label>Cantos do Botão</Label>
+                        <ToggleGroup type="single" value={buttonBorderRadius} onValueChange={(value) => value && handleBrandComponentStyleChange('button', 'borderRadius', value)} className="w-full" disabled={!pageState.brandId}>
+                            <ToggleGroupItem value="0.25rem" aria-label="Reto"><Square className="h-5 w-5"/></ToggleGroupItem>
+                            <ToggleGroupItem value="0.5rem" aria-label="Curvado"><div className="w-5 h-5 border-2 border-current rounded-md"></div></ToggleGroupItem>
+                            <ToggleGroupItem value="9999px" aria-label="Redondo"><Circle className="h-5 w-5"/></ToggleGroupItem>
+                        </ToggleGroup>
+                        {!pageState.brandId && <p className="text-xs text-muted-foreground">Selecione um Kit de Marca para editar.</p>}
+                     </div>
+                 </div>
+                 <Separator />
                  <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
                         <Label htmlFor="custom-css">CSS Personalizado</Label>

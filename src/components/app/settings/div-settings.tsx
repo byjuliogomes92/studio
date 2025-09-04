@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Slider } from "@/components/ui/slider";
 import { ImageInput } from "./image-input";
+import { produce } from "immer";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -110,7 +111,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange }: Compon
                                 </div>
                             </div>
                         )}
-                         {styles.backgroundType === 'solid' && (
+                         {(styles.backgroundType === 'solid' || !styles.backgroundType) && (
                             <div className="space-y-2">
                                 <Label>Cor de Fundo</Label>
                                 <Input type="color" value={styles.backgroundColor || '#ffffff'} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="p-1 h-10 w-full"/>

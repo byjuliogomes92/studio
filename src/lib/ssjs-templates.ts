@@ -81,7 +81,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
             deFields.push(`"${fieldName}": ${varName}`);
         });
         
-        const deFieldsString = deFields.join(',\n                        ');
+        const deFieldsString = deFields.join(',\\n                        ');
 
         script += `
             if (Request.GetFormField("__isFormSubmission") == "true") {
@@ -91,7 +91,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                 var showThanks = false;
 
                 ${fieldVarDeclarations.length > 0 ? `var ${[...new Set(fieldVarDeclarations)].join(', ')};` : ''}
-                ${fieldCaptureLines.join('\n                ')}
+                ${fieldCaptureLines.join('\\n                ')}
 
                 var optin_boolean = false;
                 if (typeof optin !== 'undefined' && optin == "on") {
@@ -110,7 +110,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                             ${deFieldsString}
                     });
                     
-                    ${setAmpscriptVarsLines.join('\n                    ')}
+                    ${setAmpscriptVarsLines.join('\\n                    ')}
                     showThanks = true;
                 } else {
                     if (debug) {
@@ -118,7 +118,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
                     }
                 }
 
-                if (showThanks && redirectUrl && !debug) {
+                if (showThanks && redirectUrl && !debug && redirectUrl.indexOf('http') == 0) {
                     Platform.Response.Redirect(redirectUrl);
                 } else if (showThanks) {
                     Variable.SetValue("@showThanks", "true");

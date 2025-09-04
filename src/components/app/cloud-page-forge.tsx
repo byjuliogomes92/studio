@@ -33,7 +33,7 @@ interface CloudPageForgeProps {
 }
 
 // Custom hook for state history
-const useHistoryState = <T>(initialState: T) => {
+const useHistoryState = <T,>(initialState: T) => {
     const [history, setHistory] = useState<T[]>([initialState]);
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -100,7 +100,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
   const hasBitlyConfig = !!(brand && brand.integrations?.bitly?.encryptedAccessToken);
   
-  const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId);
+  const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId) ?? null;
 
 
   useEffect(() => {
@@ -132,7 +132,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                   else if (c.order > maxOrder) maxOrder = c.order;
                 }
               });
-              const parents = draft.components.filter(c => c.type === 'Columns');
+              const parents = draft.components.filter(c => c.type === 'Columns' || c.type === 'Div');
               parents.forEach(p => {
                 let maxChildOrder = -1;
                 draft.components.forEach(c => {

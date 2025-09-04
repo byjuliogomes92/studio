@@ -182,7 +182,10 @@ function ComponentItem({
   const Icon = componentIcons[component.type] || Text;
   const isContainer = ['Columns', 'Div'].includes(component.type);
 
+   
+
   const handleSelect = () => {
+    console.log(`Clicou para selecionar o componente -> ID: ${component.id}, Tipo: ${component.type}`);
     if (selectedComponentId === component.id) {
         setSelectedComponentId(null);
     } else {

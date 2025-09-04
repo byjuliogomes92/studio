@@ -140,7 +140,7 @@ function SortableItem({ component, children }: { component: PageComponent; child
 
 
 function Dropzone({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
-    const { setNodeRef, isOver } = useSortable({ id, data: { isDropzone: true } });
+    const { setNodeRef, isOver } = useSortable({ id, data: { isDropzone: true, accepts: ['component'] } });
 
     return (
         <div
@@ -720,98 +720,86 @@ export function SettingsPanel({
     });
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
 
-    if (!active || !over) {
-        return;
-    }
-    
-    const activeId = active.id as string;
-    const overId = over.id as string;
+        if (!active || !over) {
+            return;
+        }
 
-    if (activeId === overId) {
-        return;
-    }
+        const activeId = active.id as string;
+        const overId = over.id as string;
 
-    setPageState((currentState) => {
-        if (!currentState) return null;
+        if (activeId === overId) {
+            return;
+        }
 
-        return produce(currentState, (draft) => {
-            const findComponent = (id: string) => draft.components.find((c) => c.id === id);
-            const findComponentIndex = (id: string) => draft.components.findIndex((c) => c.id === id);
+        setPageState((currentState) => {
+            if (!currentState) return null;
 
-            const activeComponent = findComponent(activeId);
-            if (!activeComponent || activeComponent.type === 'Footer') return; // Don't allow dragging the footer
+            const components = [...currentState.components];
+            const activeComponentIndex = components.findIndex((c) => c.id === activeId);
+            const activeComponent = components[activeComponentIndex];
             
+            if (!activeComponent || activeComponent.type === 'Footer') return currentState;
+
             const overData = over.data.current;
-            const overIsDropzone = overData?.isDropzone;
+            const overIsDropzone = overData?.accepts?.includes('component');
+            const overComponentIndex = components.findIndex((c) => c.id === overId);
+            const overComponent = components[overComponentIndex];
 
-            let newParentId: string | null = activeComponent.parentId;
-            let newColumnIndex: number = activeComponent.column || 0;
-            let newOrder: number;
-
+            // Scenario 1: Moving to a new container (Div or Column)
             if (overIsDropzone) {
-                const dropzoneId = over.id as string;
-                if(dropzoneId.includes('-')) { // It's a column dropzone (e.g., 'columnsId-0')
-                    const [containerId, colIdx] = dropzoneId.split('-');
-                    newParentId = containerId;
-                    newColumnIndex = parseInt(colIdx, 10);
-                } else if (dropzoneId === 'root') { // Dropping into the root dropzone
-                    newParentId = null;
-                    newColumnIndex = 0;
-                } else { // It's a Div dropzone
-                    newParentId = dropzoneId;
-                    newColumnIndex = 0;
-                }
-                const siblingsInNewContainer = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex);
-                newOrder = siblingsInNewContainer.length;
+                const newParentId = over.id === 'root' ? null : over.id.toString().split('-')[0];
+                const newColumnIndex = over.id.toString().includes('-') ? parseInt(over.id.toString().split('-')[1], 10) : 0;
                 
-            } else { // Dropping over another component (reordering)
-                const overComponent = findComponent(overId);
-                if (!overComponent || overComponent.type === 'Footer') return;
+                return produce(currentState, draft => {
+                    const movedComponent = draft.components.find(c => c.id === activeId);
+                    if (!movedComponent) return;
+                    
+                    const oldParentId = movedComponent.parentId;
+                    const oldColumn = movedComponent.column;
 
-                newParentId = overComponent.parentId;
-                newColumnIndex = overComponent.column || 0;
-                const siblings = draft.components
-                    .filter(c => c.parentId === newParentId && c.column === newColumnIndex)
-                    .sort((a, b) => a.order - b.order);
-                const overIndexInSiblings = siblings.findIndex(c => c.id === overId);
-                newOrder = overIndexInSiblings;
-            } 
+                    // Update parent and column
+                    movedComponent.parentId = newParentId;
+                    movedComponent.column = newColumnIndex;
 
-            const oldParentId = activeComponent.parentId;
-            const oldColumnIndex = activeComponent.column || 0;
-            
-            const activeComponentIndex = findComponentIndex(activeId);
-            
-            // Update the component that was moved
-            const movedComponent = draft.components[activeComponentIndex];
-            movedComponent.parentId = newParentId;
-            movedComponent.column = newColumnIndex;
-            
-            // Reorder siblings in the old container
-            const oldSiblings = draft.components.filter(c => c.parentId === oldParentId && c.column === oldColumnIndex && c.id !== activeId);
-            oldSiblings.sort((a, b) => a.order - b.order).forEach((sibling, index) => {
-                const comp = findComponent(sibling.id);
-                if(comp) comp.order = index;
-            });
+                    // Re-order old container
+                    draft.components
+                        .filter(c => c.parentId === oldParentId && c.column === oldColumn)
+                        .sort((a, b) => a.order - b.order)
+                        .forEach((c, i) => { c.order = i; });
+                        
+                    // Set order in new container
+                    const newSiblings = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex);
+                    movedComponent.order = newSiblings.length -1;
+                });
+            }
 
-            // Reorder siblings in the new container
-            const newSiblings = draft.components.filter(c => c.parentId === newParentId && c.column === newColumnIndex && c.id !== activeId);
-            newSiblings.sort((a,b) => a.order - b.order);
+            // Scenario 2: Reordering within the same container
+            if (overComponent && activeComponent.parentId === overComponent.parentId && activeComponent.column === overComponent.column) {
+                const siblings = components
+                    .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
+                    .sort((a,b) => a.order - b.order);
+                
+                const oldIndex = siblings.findIndex(s => s.id === activeId);
+                const newIndex = siblings.findIndex(s => s.id === overId);
+
+                const reorderedSiblings = arrayMove(siblings, oldIndex, newIndex);
+                
+                return produce(currentState, draft => {
+                    reorderedSiblings.forEach((sibling, index) => {
+                        const compToUpdate = draft.components.find(c => c.id === sibling.id);
+                        if (compToUpdate) {
+                            compToUpdate.order = index;
+                        }
+                    });
+                });
+            }
             
-            // Insert the moved component at the new order
-            newSiblings.splice(newOrder, 0, movedComponent);
-            
-            // Update the order property for all siblings in the new location
-            newSiblings.forEach((sibling, index) => {
-                const comp = findComponent(sibling.id);
-                if(comp) comp.order = index;
-            });
+            return currentState; // No change if drop logic doesn't match
         });
-    });
-  };
+    };
 
   const renderComponentsRecursive = (parentId: string | null, column: number | null = null): React.ReactNode[] => {
     const componentsToRender = pageState.components

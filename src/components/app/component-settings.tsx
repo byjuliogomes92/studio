@@ -15,6 +15,7 @@ import { Input } from "../ui/input";
 import { HeaderSettings } from './settings/header-settings';
 import { ColumnsSettings } from './settings/columns-settings';
 import { BannerSettings } from './settings/banner-settings';
+import { DivSettings } from './settings/div-settings';
 import { TextSettings } from './settings/text-settings';
 import { ImageSettings } from './settings/image-settings';
 import { FloatingImageSettings } from './settings/floating-image-settings';
@@ -63,6 +64,7 @@ const renderComponentSettings = (
       case "Header": return <HeaderSettings {...props} />;
       case "Columns": return <ColumnsSettings {...props} />;
       case "Banner": return <BannerSettings {...props} />;
+      case "Div": return <DivSettings {...props} />;
       case "Title":
       case "Subtitle":
       case "Paragraph": return <TextSettings {...props} />;

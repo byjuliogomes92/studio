@@ -272,6 +272,23 @@ export function SettingsPanel({
     }
   }, [activeWorkspace, toast]);
 
+  const activeBrand = userBrands.find(b => b.id === pageState.brandId);
+
+  // Sync page state with active brand changes
+  useEffect(() => {
+    if (activeBrand) {
+        setPageState(prev => {
+            if (!prev || prev.brandId !== activeBrand.id) return prev;
+            // Only update if there's a difference to prevent loops
+            if (JSON.stringify(prev.brand) !== JSON.stringify(activeBrand)) {
+               return { ...prev, brand: activeBrand };
+            }
+            return prev;
+        });
+    }
+  }, [activeBrand, setPageState]);
+
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -333,7 +350,6 @@ export function SettingsPanel({
       }
   };
   
-  const activeBrand = userBrands.find(b => b.id === pageState.brandId);
   const buttonBorderRadius = activeBrand?.components?.button?.borderRadius || '0.5rem';
 
 

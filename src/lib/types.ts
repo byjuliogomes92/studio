@@ -200,6 +200,7 @@ export interface CloudPage {
   platform?: string;
   tags?: string[];
   status?: 'published' | 'draft';
+  brand?: Brand; // Added to hold the synced brand object
   styles: {
     backgroundColor: string;
     backgroundImage: string;

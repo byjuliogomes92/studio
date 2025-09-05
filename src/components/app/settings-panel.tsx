@@ -277,14 +277,14 @@ export function SettingsPanel({
   // Sync page state with active brand changes
   useEffect(() => {
     if (activeBrand) {
-        setPageState(prev => {
-            if (!prev || prev.brandId !== activeBrand.id) return prev;
-            // Only update if there's a difference to prevent loops
-            if (JSON.stringify(prev.brand) !== JSON.stringify(activeBrand)) {
-               return { ...prev, brand: activeBrand };
-            }
-            return prev;
-        });
+      setPageState(prev => {
+        if (!prev) return null;
+        // Update the brand object in the page state if it's different
+        if (JSON.stringify(prev.brand) !== JSON.stringify(activeBrand)) {
+          return { ...prev, brand: activeBrand };
+        }
+        return prev;
+      });
     }
   }, [activeBrand, setPageState]);
 
@@ -473,6 +473,8 @@ export function SettingsPanel({
             if (selectedBrand) {
                 draft.brandId = selectedBrand.id;
                 draft.brandName = selectedBrand.name;
+                draft.brand = selectedBrand; // Keep the full brand object synced
+                
                 // Apply brand styles
                 draft.styles.themeColor = selectedBrand.colors.light.primary;
                 draft.styles.themeColorHover = selectedBrand.colors.light.primaryHover;
@@ -494,6 +496,7 @@ export function SettingsPanel({
             } else {
                 draft.brandId = '';
                 draft.brandName = 'Sem Marca';
+                delete draft.brand;
             }
         });
     });

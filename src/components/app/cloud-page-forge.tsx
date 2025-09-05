@@ -27,8 +27,8 @@ import { Switch } from "../ui/switch";
 import { shortenUrl } from "@/ai/flows/shorten-url-flow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EditCodeDialog } from "./edit-code-dialog";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import type { ImperativePanelGroupHandle, PanelHandle } from "react-resizable-panels";
 
 
 interface CloudPageForgeProps {
@@ -105,8 +105,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [componentToCodeEdit, setComponentToCodeEdit] = useState<PageComponent | null>(null);
   
   // State for resizable panels
-  const layoutRef = useRef<ImperativePanelGroupHandle>(null);
-  const sidebarPanelRef = useRef<PanelHandle>(null);
+  const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
 
@@ -197,10 +196,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   
   
   useEffect(() => {
-    if (pageState?.slug) {
-        setPageUrl(`${window.location.origin}/api/pages/${pageState.slug}`);
-    }
-  }, [pageState?.slug]);
+      // This effect now updates the displayed URL whenever the slug being edited changes.
+      if (typeof window !== 'undefined') {
+          setPageUrl(`${window.location.origin}/api/pages/${pageSlug}`);
+      }
+  }, [pageSlug]);
 
   
   // Keyboard shortcut for Undo
@@ -288,9 +288,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       setIsPublishing(true);
       
       const finalPageState = { ...pageState, slug: pageSlug };
+      
+      // Reset shortUrl before attempting to publish and generate a new one
+      setShortUrl(null);
 
       try {
-          if (hasUnsavedChanges) {
+          if (hasUnsavedChanges || pageState.slug !== pageSlug) {
               await updatePage(pageId, finalPageState);
               setSavedPageState(finalPageState);
               resetState(finalPageState);
@@ -298,13 +301,18 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           
           await publishPage(pageId, finalPageState, user.uid);
 
+          let finalShortUrl: string | null = null;
           if (useBitly && hasBitlyConfig) {
               const result = await shortenUrl({ brandId: pageState.brandId, longUrl: pageUrl });
-              setShortUrl(result.shortUrl);
-              toast({ title: "Página Publicada e Link Encurtado!", description: "Suas alterações estão no ar." });
-          } else {
-              toast({ title: "Página publicada!", description: `As alterações em "${finalPageState.name}" estão agora disponíveis publicamente.` });
+              finalShortUrl = result.shortUrl;
+              setShortUrl(finalShortUrl);
           }
+          
+          toast({ 
+              title: "✅ Página publicada com sucesso!",
+              description: `Sua página está no ar. URL: ${finalShortUrl || pageUrl}`,
+              duration: 10000,
+          });
 
       } catch (error: any) {
           toast({ variant: "destructive", title: "Erro ao publicar", description: error.message || "Não foi possível publicar a página." });
@@ -685,7 +693,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             </DropdownMenu>
         </div>
       </header>
-        <ResizablePanelGroup ref={layoutRef} direction="horizontal" className="flex-grow min-h-0">
+        <ResizablePanelGroup direction="horizontal" className="flex-grow min-h-0">
             <ResizablePanel ref={sidebarPanelRef} defaultSize={25} minSize={20} collapsible={true} collapsedSize={0} onCollapse={() => setIsSidebarCollapsed(true)} onExpand={() => setIsSidebarCollapsed(false)}>
                 <SettingsPanel
                     pageState={pageState}

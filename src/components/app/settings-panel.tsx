@@ -39,6 +39,7 @@ import { getBrandsForUser, updateBrand } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
+import { EditCodeDialog } from "./edit-code-dialog";
 
 
 interface SettingsPanelProps {
@@ -82,6 +83,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     FloatingImage: Image,
     FloatingButton: MousePointerClick,
     Calendly: CalendarClock,
+    CustomHTML: Code,
 };
 
 const googleFonts = [
@@ -163,6 +165,7 @@ function ComponentItem({
   component,
   selectedComponentId,
   setSelectedComponentId,
+  onCodeEdit,
   removeComponent,
   duplicateComponent,
   moveComponent,
@@ -176,6 +179,7 @@ function ComponentItem({
   component: PageComponent;
   selectedComponentId: string | null;
   setSelectedComponentId: (id: string | null) => void;
+  onCodeEdit: (component: PageComponent) => void;
   removeComponent: (id: string) => void;
   duplicateComponent: (id: string) => void;
   moveComponent: (id: string, direction: 'up' | 'down') => void;
@@ -220,6 +224,7 @@ function ComponentItem({
                 </div>
             </Button>
              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onCodeEdit(component)}><Code className="h-4 w-4"/></Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveComponent(component.id, 'up')} disabled={isFirst}><ArrowUp className="h-4 w-4"/></Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveComponent(component.id, 'down')} disabled={isLast}><ArrowDown className="h-4 w-4"/></Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => duplicateComponent(component.id)}><Copy className="h-4 w-4" /></Button>
@@ -254,6 +259,10 @@ export function SettingsPanel({
   const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState.publishDate || !!pageState.expiryDate);
   const [tagInput, setTagInput] = useState('');
   const [userBrands, setUserBrands] = useState<Brand[]>([]);
+
+  // State for Edit Code Dialog
+  const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false);
+  const [componentToCodeEdit, setComponentToCodeEdit] = useState<PageComponent | null>(null);
 
   useEffect(() => {
     if (activeWorkspace) {
@@ -883,6 +892,36 @@ export function SettingsPanel({
         });
     };
 
+    const handleCodeEdit = (component: PageComponent) => {
+        setComponentToCodeEdit(component);
+        setIsCodeEditorOpen(true);
+    };
+
+    const handleSaveCode = (componentId: string, newHtml: string) => {
+        setPageState(prev => {
+          if (!prev) return null;
+          return produce(prev, draft => {
+            const index = draft.components.findIndex(c => c.id === componentId);
+            if (index !== -1) {
+              const originalComponent = draft.components[index];
+              const customHtmlComponent: PageComponent = {
+                id: originalComponent.id, // Keep the same ID
+                type: 'CustomHTML',
+                props: { htmlContent: newHtml },
+                order: originalComponent.order,
+                parentId: originalComponent.parentId,
+                column: originalComponent.column,
+                layerName: originalComponent.layerName ? `${originalComponent.layerName} (HTML)` : `HTML Customizado`,
+              };
+              draft.components.splice(index, 1, customHtmlComponent);
+            }
+          });
+        });
+        setIsCodeEditorOpen(false);
+        setComponentToCodeEdit(null);
+        setSelectedComponentId(null);
+      };
+
     const renderComponentsRecursive = (parentId: string | null, column: number | null = 0): React.ReactNode[] => {
         const componentsToRender = pageState.components
             .filter(c => c.parentId === parentId && (column === null || c.column === column))
@@ -902,6 +941,7 @@ export function SettingsPanel({
                             component={component}
                             selectedComponentId={selectedComponentId}
                             setSelectedComponentId={setSelectedComponentId}
+                            onCodeEdit={handleCodeEdit}
                             removeComponent={removeComponent}
                             duplicateComponent={duplicateComponent}
                             moveComponent={moveComponent}
@@ -925,6 +965,7 @@ export function SettingsPanel({
                         component={component}
                         selectedComponentId={selectedComponentId}
                         setSelectedComponentId={setSelectedComponentId}
+                        onCodeEdit={handleCodeEdit}
                         removeComponent={removeComponent}
                         duplicateComponent={duplicateComponent}
                         moveComponent={moveComponent}
@@ -1132,6 +1173,7 @@ export function SettingsPanel({
                               component={component}
                               selectedComponentId={selectedComponentId}
                               setSelectedComponentId={setSelectedComponentId}
+                              onCodeEdit={handleCodeEdit}
                               removeComponent={removeComponent}
                               duplicateComponent={duplicateComponent}
                               moveComponent={moveComponent}
@@ -1159,6 +1201,7 @@ export function SettingsPanel({
                               component={footerComponent}
                               selectedComponentId={selectedComponentId}
                               setSelectedComponentId={setSelectedComponentId}
+                              onCodeEdit={handleCodeEdit}
                               removeComponent={removeComponent}
                               duplicateComponent={duplicateComponent}
                               moveComponent={moveComponent}
@@ -1581,6 +1624,16 @@ SET @name = AttributeValue("FirstName")
 
           </Accordion>
         </div>
+        {componentToCodeEdit && (
+            <EditCodeDialog
+            isOpen={isCodeEditorOpen}
+            onOpenChange={setIsCodeEditorOpen}
+            component={componentToCodeEdit}
+            allComponents={pageState.components}
+            onSave={handleSaveCode}
+            pageState={pageState}
+            />
+        )}
       </TooltipProvider>
     </ScrollArea>
   );

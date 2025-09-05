@@ -43,6 +43,7 @@ import { DataExtensionUploadSettings } from './data-extension-upload-settings';
 import { CalendlySettings } from './calendly-settings';
 import { SpacingSettings } from "./spacing-settings";
 import { AnimationSettings } from "./animation-settings";
+import { Textarea } from '@/components/ui/textarea';
 
 // --- INICIO: Lógica do LayoutSettings movida para cá ---
 function LayoutSettings({ props, onSubPropChange }: { props: any, onSubPropChange: (prop: string, subProp: string, value: any) => void }) {
@@ -148,6 +149,18 @@ const renderComponentSettings = (
       case 'FTPUpload': return <FTPUploadSettings {...props} />;
       case 'DataExtensionUpload': return <DataExtensionUploadSettings {...props} />;
       case 'Calendly': return <CalendlySettings {...props} />;
+      case 'CustomHTML': return (
+        <div className="space-y-2">
+            <Label htmlFor="custom-html-content">Código HTML</Label>
+            <Textarea
+                id="custom-html-content"
+                value={component.props.htmlContent || ''}
+                onChange={(e) => onPropChange('htmlContent', e.target.value)}
+                rows={15}
+                className="font-mono text-xs"
+            />
+        </div>
+      );
       default:
         return <p className="text-sm text-muted-foreground">Nenhuma configuração disponível para este componente.</p>;
     }
@@ -243,7 +256,7 @@ export function ComponentSettings({ component, onComponentChange, projectPages }
 
         <div>
             <h3 className="text-sm font-medium mb-4">Configurações Gerais</h3>
-            {renderComponentSettings(component.type, component, handlePropChange, handleSubPropChange, projectPages)}
+            {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages)}
         </div>
         
         <Separator />
@@ -287,7 +300,6 @@ export function ComponentSettings({ component, onComponentChange, projectPages }
                      <div>
                         <h3 className="text-sm font-medium mb-4">Configurações Gerais (Variante)</h3>
                          {renderComponentSettings(
-                            component.type,
                             {...component, props: variantProps}, 
                              (prop, value) => handleVariantPropChange(0, prop, value), 
                              (prop, subProp, value) => handleVariantSubPropChange(0, prop, subProp, value),

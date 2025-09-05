@@ -147,7 +147,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
           </div>`;
 };
 
-const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = '', hideAmpscript: boolean = false): string => {
+export const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = '', hideAmpscript: boolean = false): string => {
   switch (component.type) {
     case 'Header': return renderHeader(component);
     case 'Banner': return renderBanner(component);
@@ -179,6 +179,7 @@ const renderSingleComponent = (component: PageComponent, pageState: CloudPage, i
     case 'FloatingButton': return renderFloatingButton(component);
     case 'Calendly': return renderCalendly(component);
     case 'Footer': return renderFooter(component);
+    case 'CustomHTML': return component.props.htmlContent || '';
     default:
       const exhaustiveCheck: never = component.type;
       return `<!-- Unknown component type: ${exhaustiveCheck} -->`;

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
@@ -105,7 +105,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [componentToCodeEdit, setComponentToCodeEdit] = useState<PageComponent | null>(null);
   
   // State for resizable panels
-  const layoutRef = React.useRef<ImperativePanelGroupHandle>(null);
+  const layoutRef = useRef<ImperativePanelGroupHandle>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
 

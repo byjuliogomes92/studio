@@ -111,7 +111,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
   
   // Floating components and Stripe are handled specially as they don't sit inside the padded container
-  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp'].includes(component.type)) {
+  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header'].includes(component.type)) {
     return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
@@ -137,16 +137,11 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       // If it's the first component under an overlay header, remove the top padding
       containerStyle = 'padding-top: 0;';
   }
-
+  
   const parentComponent = pageState.components.find(c => c.id === component.parentId);
   // Do NOT wrap children of horizontal Divs in a block-level wrapper
   if (parentComponent?.type === 'Div' && parentComponent?.props?.layout?.flexDirection === 'row') {
       return renderedComponent;
-  }
-  
-  // Components inside another component (e.g., in a column) don't get the padded container
-  if (component.parentId !== null) {
-     return `<div class="${wrapperClass}" ${animationAttrs} ${selectableAttrs}>${renderedComponent}</div>`;
   }
   
   // Root-level components get the padded container

@@ -586,33 +586,29 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             </DropdownMenu>
         </div>
       </header>
-      <div className="flex flex-grow overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="flex-grow">
-            <ResizablePanel defaultSize={25} minSize={20}>
-                <aside className="h-full bg-card/20">
-                    <SettingsPanel
-                        pageState={pageState}
-                        setPageState={setPageState}
-                        selectedComponentId={selectedComponentId}
-                        setSelectedComponentId={setSelectedComponentId}
-                        pageName={pageState.name}
-                        onPageNameChange={handlePageNameChange}
-                        projectPages={projectPages}
-                        onCodeEdit={handleCodeEdit}
-                    />
-                </aside>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={75}>
-                <main className="flex-grow h-full">
-                    <MainPanel 
-                        pageState={pageState} 
-                        setPageState={setPageState}
-                        onDataExtensionKeyChange={handleDataExtensionKeyChange}
-                        onSelectComponent={setSelectedComponentId}
-                    />
-                </main>
-            </ResizablePanel>
+      <div className="flex-grow min-h-0">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          <ResizablePanel defaultSize={25} minSize={20}>
+              <SettingsPanel
+                pageState={pageState}
+                setPageState={setPageState}
+                selectedComponentId={selectedComponentId}
+                setSelectedComponentId={setSelectedComponentId}
+                pageName={pageState.name}
+                onPageNameChange={handlePageNameChange}
+                projectPages={projectPages}
+                onCodeEdit={handleCodeEdit}
+              />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={75}>
+            <MainPanel 
+              pageState={pageState} 
+              setPageState={setPageState}
+              onDataExtensionKeyChange={handleDataExtensionKeyChange}
+              onSelectComponent={setSelectedComponentId}
+            />
+          </ResizablePanel>
         </ResizablePanelGroup>
       </div>
 
@@ -637,6 +633,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 onComponentChange={handleComponentChange}
                                 onCodeEdit={handleCodeEdit}
                                 projectPages={projectPages}
+                                pageState={pageState}
                             />
                         </div>
                     </ScrollArea>

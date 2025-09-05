@@ -114,6 +114,10 @@ const renderComponentSettings = (
 }
 
 export function ComponentSettings({ component, onComponentChange, onCodeEdit, projectPages, pageState }: ComponentSettingsProps) {
+  if (!component) {
+    return null;
+  }
+  
   const abTestEnabled = component.abTestEnabled || false;
   const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
 

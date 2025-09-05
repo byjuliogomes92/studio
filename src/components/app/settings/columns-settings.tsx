@@ -4,12 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { ImageInput } from "./image-input";
 import { produce } from "immer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { SpacingSettings } from "./spacing-settings";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Copy, ClipboardPaste } from "lucide-react";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -21,6 +20,7 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange }: Co
     const { props } = component;
     const styles = props.styles || {};
     const columnStyles = props.columnStyles || [];
+    const [copiedStyle, setCopiedStyle] = useState<any | null>(null);
 
     const handleColumnStyleChange = (index: number, prop: string, value: any) => {
         const newColumnStyles = produce(columnStyles, (draft: any[]) => {
@@ -31,6 +31,14 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange }: Co
         });
         onPropChange('columnStyles', newColumnStyles);
     };
+
+    const handlePasteStyle = (index: number) => {
+        if (!copiedStyle) return;
+        const newColumnStyles = produce(columnStyles, (draft: any[]) => {
+            draft[index] = copiedStyle;
+        });
+        onPropChange('columnStyles', newColumnStyles);
+    }
 
     const columnCount = props.columnCount || 2;
 
@@ -49,6 +57,16 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange }: Co
                         <AccordionTrigger>Coluna {index + 1}</AccordionTrigger>
                         <AccordionContent>
                             <div className="space-y-4 p-2">
+                                <div className="flex justify-end gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setCopiedStyle(columnStyles[index] || {})}>
+                                        <Copy className="h-3 w-3 mr-1.5" />
+                                        Copiar Estilo
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={() => handlePasteStyle(index)} disabled={!copiedStyle}>
+                                        <ClipboardPaste className="h-3 w-3 mr-1.5" />
+                                        Colar Estilo
+                                    </Button>
+                                </div>
                                 <div className="space-y-2">
                                     <Label>Cor de Fundo</Label>
                                     <Input 

@@ -28,7 +28,7 @@ import { shortenUrl } from "@/ai/flows/shorten-url-flow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EditCodeDialog } from "./edit-code-dialog";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import type { ImperativePanelGroupHandle } from "react-resizable-panels";
+import type { ImperativePanelGroupHandle, PanelHandle } from "react-resizable-panels";
 
 
 interface CloudPageForgeProps {
@@ -106,6 +106,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   
   // State for resizable panels
   const layoutRef = useRef<ImperativePanelGroupHandle>(null);
+  const sidebarPanelRef = useRef<PanelHandle>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
 
@@ -530,14 +531,13 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   };
   
   const toggleSidebar = () => {
-    if (layoutRef.current) {
-        const layout = layoutRef.current.getLayout();
-        const isCollapsed = layout[0] < 5;
+    if (sidebarPanelRef.current) {
+        const isCollapsed = sidebarPanelRef.current.getCollapsed();
         if (isCollapsed) {
-            layoutRef.current.resize(0, 25);
+            sidebarPanelRef.current.expand();
             setIsSidebarCollapsed(false);
         } else {
-            layoutRef.current.resize(0, 0);
+            sidebarPanelRef.current.collapse();
             setIsSidebarCollapsed(true);
         }
     }
@@ -686,7 +686,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         </div>
       </header>
         <ResizablePanelGroup ref={layoutRef} direction="horizontal" className="flex-grow min-h-0">
-            <ResizablePanel defaultSize={25} minSize={20} collapsible={true} collapsedSize={0} onCollapse={() => setIsSidebarCollapsed(true)} onExpand={() => setIsSidebarCollapsed(false)}>
+            <ResizablePanel ref={sidebarPanelRef} defaultSize={25} minSize={20} collapsible={true} collapsedSize={0} onCollapse={() => setIsSidebarCollapsed(true)} onExpand={() => setIsSidebarCollapsed(false)}>
                 <SettingsPanel
                     pageState={pageState}
                     setPageState={setPageState}

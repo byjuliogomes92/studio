@@ -62,7 +62,6 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
     const mockPage = {
       id: template.id || 'preview',
       name: template.name,
-      brand: template.brand,
       components: template.components,
       styles: template.styles,
       meta: {
@@ -77,7 +76,8 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
       projectId: 'preview',
       workspaceId: 'preview',
       brandId: 'preview',
-      brandName: 'preview',
+      brandName: template.brand || 'preview',
+      slug: template.name.toLowerCase().replace(/ /g, '-'),
       tags: [],
       cookieBanner: template.cookieBanner,
       createdAt: new Date(),
@@ -455,5 +455,6 @@ export default function TemplatesPage() {
 }
 
     
+
 
 

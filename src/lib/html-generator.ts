@@ -1,4 +1,5 @@
 
+
 import type { CloudPage, PageComponent, ComponentType, Action } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
@@ -834,9 +835,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   
-  const { typography } = pageState.brand || { typography: {} };
-  const fontFamilyHeadings = typography.customFontNameHeadings || typography.fontFamilyHeadings || 'Poppins';
-  const fontFamilyBody = typography.customFontNameBody || typography.fontFamilyBody || 'Roboto';
+  const { typography } = pageState.brand || {};
+  const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
+  const fontFamilyBody = typography?.customFontNameBody || typography?.fontFamilyBody || 'Roboto';
 
   const fontFaceStyles = getFontFaceStyles(pageState);
   const scrollbarStyles = getScrollbarStyles(pageState.styles.scrollbar);

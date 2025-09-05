@@ -2,11 +2,10 @@
 import type { PageComponent, CloudPage, Action } from '@/lib/types';
 
 function getStyleString(styles: any = {}): string {
-    // This function now handles all styles for the button itself.
-    // The wrapper div will only handle alignment.
+    const forbiddenKeys = ['textAlign']; // The wrapper div handles alignment.
     return Object.entries(styles)
       .map(([key, value]) => {
-        if (value === undefined || value === null || value === '') return '';
+        if (value === undefined || value === null || value === '' || forbiddenKeys.includes(key)) return '';
         const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
         return `${cssKey}: ${value};`;
       })
@@ -27,27 +26,20 @@ export function renderButton(component: PageComponent, pageState?: CloudPage): s
 
     const brandStyles = pageState?.brand?.components?.button;
 
-    // Build the final styles for the button itself
-    const finalButtonStyles = {
-        borderRadius: brandStyles?.borderRadius,
-        ...styles,
-    };
-    const buttonStyleString = getStyleString(finalButtonStyles);
-    
-    // The wrapper div only controls horizontal alignment using text-align.
+    // The wrapper div only controls horizontal alignment.
     const wrapperStyle = `text-align: ${align};`;
     
+    // The button itself gets all other styles.
+    const buttonStyleString = getStyleString(styles);
     const className = `custom-button custom-button--${variant}`;
     
     let element: string;
     if (action?.type === 'CLOSE_POPUP') {
-        // Use a <button> for actions that don't navigate
         element = `<button type="button" class="${className}" style="${buttonStyleString}" onclick="window.closePopup && window.closePopup()">${text}</button>`;
     } else {
-        // Use an <a> tag for links
         element = `<a href="${href}" target="_blank" class="${className}" style="${buttonStyleString}">${text}</a>`;
     }
 
-    // The wrapper div's only job is alignment. The button itself has all other styles.
     return `<div class="button-wrapper" style="${wrapperStyle}">${element}</div>`;
 }
+

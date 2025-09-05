@@ -35,10 +35,10 @@ import { renderDiv } from './html-components/div';
 import { renderAddToCalendar } from './html-components/add-to-calendar';
 import { renderPopUp } from './html-components/popup';
 
-function getStyleString(styles: any = {}): string {
+function getStyleString(styles: any = {}, forbiddenKeys: string[] = []): string {
     return Object.entries(styles)
       .map(([key, value]) => {
-        if (!value) return '';
+        if (!value || forbiddenKeys.includes(key)) return '';
         const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
         return `${cssKey}: ${value};`;
       })
@@ -93,8 +93,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       animationDuration = 1,
       animationDelay = 0,
       loopAnimation = 'none',
-      // We will pass all styles to the wrapper for spacing and also to the component itself.
-      // This is simpler and more robust. The component renderer will use what it needs.
+      ...otherStyles
   } = styles;
 
   let wrapperClass = 'component-wrapper';
@@ -113,12 +112,17 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
   
-  // Apply all styles to the wrapper. The individual component renderers can decide what to use.
-  const wrapperStyleString = getStyleString(styles);
+  const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'];
+  const wrapperStyles: Record<string, any> = {};
+  spacingKeys.forEach(key => {
+    if (otherStyles[key]) {
+      wrapperStyles[key] = otherStyles[key];
+    }
+  });
+  const wrapperStyleString = getStyleString(wrapperStyles);
   
   const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   
-  // Components that manage their own full-width or special positioning should not be wrapped.
   if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header'].includes(component.type)) {
     return renderedComponent;
   }
@@ -129,7 +133,6 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   }
   
   const parentComponent = pageState.components.find(c => c.id === component.parentId);
-  // Do NOT wrap children of horizontal Divs in a block-level wrapper
   if (parentComponent?.type === 'Div' && parentComponent?.props?.layout?.flexDirection === 'row') {
       return renderedComponent;
   }
@@ -2103,5 +2106,3 @@ ${!isForPreview ? trackingScripts.body : ''}
 
   return finalHtml;
 }
-
-    

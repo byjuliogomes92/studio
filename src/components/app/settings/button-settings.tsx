@@ -7,6 +7,7 @@ import { AiGenerateTextDialog } from "./ai-generate-text-dialog";
 import { Wand2, Square, Circle, Hand } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -16,7 +17,7 @@ interface ComponentSettingsProps {
   pageState: CloudPage;
 }
 
-export function ButtonSettings({ component, onPropChange, onSubPropChange, projectPages }: ComponentSettingsProps) {
+export function ButtonSettings({ component, onPropChange, onSubPropChange, projectPages, pageState }: ComponentSettingsProps) {
     const { props } = component;
     const styles = props.styles || {};
     
@@ -60,6 +61,7 @@ export function ButtonSettings({ component, onPropChange, onSubPropChange, proje
                 <SelectContent>
                   <SelectItem value="URL">Ir para URL externa</SelectItem>
                   <SelectItem value="PAGE">Ir para outra página</SelectItem>
+                  <SelectItem value="CLOSE_POPUP">Fechar Pop-up</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -139,6 +141,20 @@ export function ButtonSettings({ component, onPropChange, onSubPropChange, proje
                         </Select>
                     </div>
                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <ColorInput 
+                        label="Cor de Fundo" 
+                        value={styles.backgroundColor || ''}
+                        onChange={value => handleStyleChange('backgroundColor', value)}
+                        brand={pageState.brand}
+                    />
+                     <ColorInput 
+                        label="Cor do Texto" 
+                        value={styles.color || ''}
+                        onChange={value => handleStyleChange('color', value)}
+                        brand={pageState.brand}
+                    />
+                 </div>
                 <div className="space-y-2">
                     <Label>Cantos do Botão (Específico)</Label>
                     <ToggleGroup type="single" value={styles.borderRadius} onValueChange={(value) => value && handleStyleChange('borderRadius', value)} className="w-full">

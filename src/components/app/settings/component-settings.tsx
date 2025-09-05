@@ -278,5 +278,3 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
     </TooltipProvider>
   )
 }
-
-    

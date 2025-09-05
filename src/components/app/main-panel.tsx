@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet, Code, Percent } from "lucide-react";
+import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet, Code, Percent, Hand } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -28,6 +28,7 @@ interface MainPanelProps {
   pageState: CloudPage;
   setPageState: Dispatch<SetStateAction<CloudPage | null>>;
   onDataExtensionKeyChange: (newKey: string) => void;
+  onSelectComponent: (id: string) => void;
 }
 
 interface Device {
@@ -129,7 +130,7 @@ function AmpscriptIcon(props: React.SVGProps<SVGSVGElement>) {
     );
 }
 
-export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }: MainPanelProps) {
+export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
@@ -137,6 +138,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [selectedDevice, setSelectedDevice] = useState<Device>(devices[0]);
   const [hideAmpscript, setHideAmpscript] = useState(true);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
 
   const [activeEditor, setActiveEditor] = useState<HTMLElement | null>(null);
@@ -173,6 +175,26 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     const iframe = iframeRef.current;
     if (!iframe) return;
 
+    const handleIframeClick = (e: MouseEvent) => {
+        if (!isSelectionMode) return;
+        
+        let target = e.target as HTMLElement | null;
+        let componentId = null;
+        
+        while(target && target !== iframe.contentDocument?.body) {
+            if (target.hasAttribute('data-component-id')) {
+                componentId = target.getAttribute('data-component-id');
+                break;
+            }
+            target = target.parentElement;
+        }
+
+        if (componentId) {
+            onSelectComponent(componentId);
+            setIsSelectionMode(false); // Turn off selection mode after selecting
+        }
+    };
+    
     const handleBlur = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
       if (target.hasAttribute('contenteditable')) {
@@ -194,6 +216,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
     const handleLoad = () => {
       const iframeDoc = iframe.contentWindow?.document;
       if (!iframeDoc) return;
+      
+      iframeDoc.body.addEventListener('click', handleIframeClick);
 
       const handleSelectionChange = () => {
         const selection = iframeDoc.getSelection();
@@ -217,6 +241,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
 
       // Return a cleanup function for when the iframe reloads or component unmounts
       return () => {
+        iframeDoc.body.removeEventListener('click', handleIframeClick);
         iframeDoc.removeEventListener('selectionchange', handleSelectionChange);
         iframeDoc.body.removeEventListener('blur', handleBlur, true);
       };
@@ -237,7 +262,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
         cleanupLoad();
       }
     };
-  }, [previewHtmlCode, handleInlineEdit]);
+  }, [previewHtmlCode, handleInlineEdit, isSelectionMode, onSelectComponent]);
 
 
   const handleOpenInNewTab = () => {
@@ -327,6 +352,9 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
             </TooltipProvider>
           </div>
           <div className="flex items-center gap-2">
+               <Button onClick={() => setIsSelectionMode(!isSelectionMode)} variant={isSelectionMode ? "secondary" : "ghost"} size="icon" aria-label="Modo de Seleção">
+                    <Hand className="h-5 w-5"/>
+               </Button>
               <Button onClick={() => setIsHowToUseOpen(true)} variant="secondary">
                 <Info className="mr-2 h-4 w-4" />
                 Como Publicar
@@ -370,14 +398,15 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange }:
         </div>
         <div className="flex-grow overflow-auto">
           <TabsContent value="preview" className="w-full h-full m-0">
-            <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
+            <div className={cn("h-full w-full flex items-start justify-center p-4 overflow-y-auto", isSelectionMode && "selection-mode")}>
               <iframe
                   ref={iframeRef}
                   srcDoc={previewHtmlCode}
                   title="Preview da Cloud Page"
                   className={cn(
                       "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
-                      selectedDevice.name === 'Desktop' ? 'w-full h-full' : ''
+                      selectedDevice.name === 'Desktop' ? 'w-full h-full' : '',
+                      isSelectionMode && "pointer-events-auto" // Enable pointer events only in selection mode
                   )}
                   style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : {}}
               />

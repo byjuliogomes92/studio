@@ -609,6 +609,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         pageState={pageState} 
                         setPageState={setPageState}
                         onDataExtensionKeyChange={handleDataExtensionKeyChange}
+                        onSelectComponent={setSelectedComponentId}
                     />
                 </main>
             </ResizablePanel>

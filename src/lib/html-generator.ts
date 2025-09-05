@@ -101,6 +101,9 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     ? `style="--animation-name: ${entranceAnimation}; --animation-duration: ${animationDuration}s; --animation-delay: ${animationDelay}s; ${wrapperStyle}"`
     : `style="${wrapperStyle}"`;
   
+  // Add component ID for selection mode in preview
+  const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
+  
   // Floating components and Stripe are handled specially as they don't sit inside the padded container
   if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer'].includes(component.type)) {
     return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
@@ -136,11 +139,11 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   
   // Components inside another component (e.g., in a column) don't get the padded container
   if (component.parentId !== null) {
-     return `<div class="${wrapperClass}" ${animationAttrs}>${renderedComponent}</div>`;
+     return `<div class="${wrapperClass}" ${animationAttrs} ${selectableAttrs}>${renderedComponent}</div>`;
   }
   
   // Root-level components get the padded container
-  return `<div class="${wrapperClass}" ${animationAttrs} style="${containerStyle}">
+  return `<div class="${wrapperClass}" ${animationAttrs} ${selectableAttrs} style="${containerStyle}">
              <div class="section-container-padded">
                ${renderedComponent}
              </div>

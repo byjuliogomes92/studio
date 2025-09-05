@@ -889,14 +889,20 @@ const getScrollbarStyles = (scrollbarConfig: CloudPage['styles']['scrollbar']): 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false): string {
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
+  const hasForm = components.some(c => c.type === 'Form');
+  const hasDataBinding = components.some(c => !!c.props.dataBinding);
+  const needsSecurity = meta.security?.type !== 'none';
+  const hasCustomAmpscript = !!meta.customAmpscript;
+  
+  const ampscriptIsNeeded = hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript;
+  
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
-  const ssjsScript = shouldHideAmpscript ? '' : getFormSubmissionScript(pageState);
-  
+  const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getFormSubmissionScript(pageState) : '';
   const prefillAmpscript = getPrefillAmpscript(pageState);
   const security = getSecurityScripts(pageState);
   
-  const initialAmpscript = `%%[ 
+  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ 
     VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN, @isAuthenticated, @LoginURL
     SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))
     IF EMPTY(RequestParameter("__isPost")) THEN
@@ -905,7 +911,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     ${security.amscript}
     ${meta.customAmpscript || ''}
     ${prefillAmpscript || ''}
-]%%`;
+]%%` : '';
 
 
   const clientSideScripts = getClientSideScripts(pageState);
@@ -961,8 +967,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${shouldHideAmpscript ? '' : initialAmpscript}
-${shouldHideAmpscript ? '' : ssjsScript}
+${initialAmpscript}
+${ssjsScript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}

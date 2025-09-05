@@ -1,30 +1,29 @@
 
 import type { CloudPage } from '../types';
 
-export const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
+export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
     // Base variables for auth state, always defined for consistency.
-    const baseVars = `VAR @isAuthenticated, @LoginURL\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))`;
+    const baseVars = `VAR @isAuthenticated, @LoginURL\\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))`;
     
     if (!security || security.type === 'none') {
-        return { ssjs: '', amscript: `${baseVars}\nSET @isAuthenticated = true`, body: '' };
+        return `${baseVars}\\nSET @isAuthenticated = true`;
     }
 
     if (security.type === 'sso') {
-        const amscript = `${baseVars}
+        return `${baseVars}
   TRY 
     SET @IsAuthenticated_Temp = Request.GetUserInfo()
     SET @isAuthenticated = true
   CATCH(e) 
     SET @isAuthenticated = false
   ENDTRY`;
-        return { ssjs: '', amscript, body: '' };
     }
     
     if (security.type === 'password' && security.passwordConfig) {
         const config = security.passwordConfig;
-        const amscript = `${baseVars}
+        return `${baseVars}
   VAR @submittedPassword, @identifier, @correctPassword
   SET @isAuthenticated = false
   SET @submittedPassword = RequestParameter("page_password")
@@ -37,8 +36,19 @@ export const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscri
       ENDIF
   ENDIF
 `;
+    }
 
-        const body = `
+    return `${baseVars}\\nSET @isAuthenticated = true`;
+}
+
+export const getSecurityScripts = (pageState: CloudPage): { ssjs: string, body: string } => {
+    const security = pageState.meta.security;
+    
+    if (!security || security.type !== 'password' || !security.passwordConfig) {
+        return { ssjs: '', body: '' };
+    }
+
+    const body = `
 <div class="password-protection-container">
     <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
         <h2>Acesso Restrito</h2>
@@ -52,8 +62,5 @@ export const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscri
 </div>
 `;
 
-        return { ssjs: '', amscript, body };
-    }
-
-    return { ssjs: '', amscript: `${baseVars}\nSET @isAuthenticated = true`, body: '' };
+        return { ssjs: '', body };
 }

@@ -1,7 +1,7 @@
 
 import type { CloudPage, PageComponent, ComponentType, Action } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
-import { getSecurityScripts } from './html-components/security';
+import { getAmpscriptSecurityBlock } from './html-components/security';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';
 import { renderTitle } from './html-components/title';
@@ -34,6 +34,17 @@ import { renderCalendly } from './html-components/calendly';
 import { renderDiv } from './html-components/div';
 import { renderAddToCalendar } from './html-components/add-to-calendar';
 import { renderPopUp } from './html-components/popup';
+
+
+function getStyleString(styles: any = {}): string {
+    return Object.entries(styles)
+      .map(([key, value]) => {
+        if (!value) return '';
+        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+        return `${cssKey}: ${value};`;
+      })
+      .join(' ');
+}
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
@@ -802,14 +813,14 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getFormSubmissionScript(pageState) : '';
   const prefillAmpscript = getPrefillAmpscript(pageState);
-  const security = getSecurityScripts(pageState);
+  const securityAmpscript = getAmpscriptSecurityBlock(pageState);
   
   const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ 
-    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
+    VAR @showThanks
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
     ENDIF
-    ${security.amscript}
+    ${securityAmpscript}
     ${meta.customAmpscript || ''}
     ${prefillAmpscript || ''}
 ]%%` : '';
@@ -864,8 +875,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${initialAmpscript}
 ${ssjsScript}
+${initialAmpscript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -2071,15 +2082,13 @@ ${!isForPreview ? trackingScripts.body : ''}
       ${mainContentHtml}
     </main>
   ` : `
-    ${security.ssjs}
-    ${initialAmpscript}
     %%[ IF @isAuthenticated == true THEN ]%%
     ${renderLoader(meta, styles.themeColor)}
     <main>
       ${mainContentHtml}
     </main>
     %%[ ELSE ]%%
-    ${security.body}
+    ${getSecurityScripts(pageState).body}
     %%[ ENDIF ]%%
     `}
 </body>

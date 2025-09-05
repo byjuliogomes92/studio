@@ -65,10 +65,10 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
       components: template.components,
       styles: template.styles,
       meta: {
-        ...template.meta,
+        ...(template.meta || {}),
         title: template.name,
         // Provide a valid placeholder if the loader image is not set on the template
-        loaderImageUrl: template.meta.loaderImageUrl || 'https://placehold.co/150x150.png',
+        loaderImageUrl: template.meta?.loaderImageUrl || 'https://placehold.co/150x150.png',
         redirectUrl: '',
         dataExtensionKey: 'PREVIEW',
       },
@@ -87,7 +87,7 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
   }, [template]);
 
   return (
-    <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+    <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
       <DialogHeader>
         <DialogTitle>Preview: {template.name}</DialogTitle>
         <DialogDescription>{template.description || 'Visualização do template.'}</DialogDescription>
@@ -455,6 +455,7 @@ export default function TemplatesPage() {
 }
 
     
+
 
 
 

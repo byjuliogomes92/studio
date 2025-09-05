@@ -801,32 +801,6 @@ const getClientSideScripts = (pageState: CloudPage): string => {
 };
 
 
-const getPrefillAmpscript = (pageState: CloudPage): string => {
-    const formComponent = pageState.components.find(c => c.type === 'Form');
-    if (!formComponent) return '';
-
-    const fieldsToPrefill: {name: string, param: string}[] = [];
-    const fields = formComponent.props.fields;
-
-    if (fields?.name?.prefillFromUrl) fieldsToPrefill.push({name: 'NOME', param: 'nome'});
-    if (fields?.email?.prefillFromUrl) fieldsToPrefill.push({name: 'EMAIL', param: 'email'});
-    if (fields?.phone?.prefillFromUrl) fieldsToPrefill.push({name: 'TELEFONE', param: 'telefone'});
-    if (fields?.cpf?.prefillFromUrl) fieldsToPrefill.push({name: 'CPF', param: 'cpf'});
-    if (fields?.birthdate?.prefillFromUrl) fieldsToPrefill.push({name: 'DATANASCIMENTO', param: 'datanascimento'});
-    if (fields?.city?.prefillFromUrl) fieldsToPrefill.push({name: 'CIDADE', param: 'cidade'});
-
-    if (fieldsToPrefill.length === 0) return '';
-
-    const varDeclarations = fieldsToPrefill.map(f => `@${f.name}`).join(', ');
-    const setStatements = fieldsToPrefill.map(f => `SET @${f.name} = RequestParameter("${f.param}")`).join('\n');
-
-    return `
-/* --- Prefill from URL Parameters --- */
-VAR ${varDeclarations}
-${setStatements}
-`;
-}
-
 const renderLoader = (meta: CloudPage['meta'], themeColor: string): string => {
     if (meta.loaderType === 'none') {
         return '';
@@ -2086,7 +2060,7 @@ ${trackingScripts.head}
     }
     .add-to-calendar-container {
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
       gap: 10px;
     }
     .add-to-calendar-button {
@@ -2096,6 +2070,7 @@ ${trackingScripts.head}
       gap: 8px;
       padding: 10px 15px;
       border-radius: 5px;
+      border: 1px solid transparent;
       text-decoration: none;
       font-weight: 500;
       color: #FFF;
@@ -2113,6 +2088,7 @@ ${trackingScripts.head}
     .add-to-calendar-button svg {
         width: 18px;
         height: 18px;
+        fill: currentColor;
     }
     
     @keyframes fadeInUp { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }

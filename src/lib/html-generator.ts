@@ -134,6 +134,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
 
   let containerStyle = '';
   if (isFirstAfterOverlay) {
+      // If it's the first component under an overlay header, remove the top padding
       containerStyle = 'padding-top: 0;';
   }
 

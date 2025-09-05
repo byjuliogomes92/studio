@@ -93,7 +93,6 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       animationDuration = 1,
       animationDelay = 0,
       loopAnimation = 'none',
-      // Exclude spacing properties from being applied to the component itself
       marginTop,
       marginBottom,
       marginLeft,
@@ -102,7 +101,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       paddingBottom,
       paddingLeft,
       paddingRight,
-      ...componentStyles
+      ...componentStyles // All other styles remain for the component itself
   } = styles;
 
   let wrapperClass = 'component-wrapper';
@@ -2123,5 +2122,3 @@ ${!isForPreview ? trackingScripts.body : ''}
 
   return finalHtml;
 }
-
-    

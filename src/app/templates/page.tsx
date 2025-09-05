@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { getTemplates, deleteTemplate, getDefaultTemplates } from "@/lib/firestore";
+import { defaultTemplates as hardcodedTemplates } from "@/lib/default-templates";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -134,7 +135,9 @@ export default function TemplatesPage() {
         
         const [defaultTpls, userTpls] = await Promise.all(fetchPromises);
         
-        setDefaultTemplates(defaultTpls);
+        // Use hardcoded templates as a fallback if Firestore is empty for default templates
+        setDefaultTemplates(defaultTpls.length > 0 ? defaultTpls : (hardcodedTemplates as Template[]));
+        
         if (activeWorkspace) {
             setUserTemplates(userTpls);
         }
@@ -464,11 +467,3 @@ export default function TemplatesPage() {
     </div>
   );
 }
-
-    
-
-
-
-
-
-

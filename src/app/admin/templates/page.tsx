@@ -12,6 +12,7 @@ import { Loader2, ArrowRight, Plus, Edit, Trash2, Rocket, Handshake, CalendarClo
 import { useAuth } from '@/hooks/use-auth';
 import type { Template } from '@/lib/types';
 import { getDefaultTemplates, deleteDefaultTemplate } from '@/lib/firestore';
+import { defaultTemplates as hardcodedTemplates } from '@/lib/default-templates';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -35,8 +36,12 @@ export default function AdminTemplatesPage() {
     const fetchTemplates = useCallback(async () => {
         setIsLoading(true);
         try {
-            const allTemplates = await getDefaultTemplates();
-            setTemplates(allTemplates);
+            let fetchedTemplates = await getDefaultTemplates();
+            // Fallback to hardcoded templates if Firestore is empty
+            if (fetchedTemplates.length === 0) {
+                fetchedTemplates = hardcodedTemplates as Template[];
+            }
+            setTemplates(fetchedTemplates);
         } catch (error) {
             console.error("Failed to fetch default templates:", error);
             toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os templates padrão.' });

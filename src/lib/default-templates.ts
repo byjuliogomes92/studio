@@ -1,464 +1,151 @@
-"use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import type { Template } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Eye, Rocket, Handshake, CalendarClock, Smile, CheckCheck, PartyPopper } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Logo } from "@/components/icons";
-import { useAuth } from "@/hooks/use-auth";
-import { getTemplates, deleteTemplate, getDefaultTemplates } from "@/lib/firestore";
-import { format } from 'date-fns';
-import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { CreatePageFromTemplateDialog } from "@/components/app/create-page-from-template-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { generateHtml } from "@/lib/html-generator";
+import type { Template } from './types';
 
-
-type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
-type ViewMode = "grid" | "list";
-
-const iconMap: { [key: string]: React.ElementType } = {
-  rocket: Rocket,
-  handshake: Handshake,
-  'calendar-clock': CalendarClock,
-  smile: Smile,
-  'check-check': CheckCheck,
-  'party-popper': PartyPopper,
-  default: Server,
-};
-
-
-function TemplatePreviewDialog({ template }: { template: Template }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const previewHtml = useMemo(() => {
-    // Create a mock CloudPage object from the template to use with generateHtml
-    const mockPage = {
-      id: template.id || 'preview',
-      name: template.name,
-      components: template.components,
-      styles: template.styles,
-      meta: {
-        ...(template.meta || {}),
-        title: template.name,
-        // Provide a valid placeholder if the loader image is not set on the template
-        loaderImageUrl: template.meta?.loaderImageUrl || 'https://placehold.co/150x150.png',
-        redirectUrl: '',
-        dataExtensionKey: 'PREVIEW',
-      },
-      // Add other required CloudPage fields with default values
-      projectId: 'preview',
-      workspaceId: 'preview',
-      brandId: '',
-      brandName: '',
-      slug: template.name.toLowerCase().replace(/ /g, '-'),
-      tags: [],
-      cookieBanner: template.cookieBanner,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    return generateHtml(mockPage, true, '', true);
-  }, [template]);
-
-  return (
-    <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
-      <DialogHeader>
-        <DialogTitle>Preview: {template.name}</DialogTitle>
-        <DialogDescription>{template.description || 'Visualização do template.'}</DialogDescription>
-      </DialogHeader>
-      <div className="flex-grow rounded-lg border bg-muted/40 overflow-hidden relative">
-        {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
-                <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-        )}
-        <iframe
-          srcDoc={previewHtml}
-          title={`Preview of ${template.name}`}
-          className="w-full h-full border-0"
-          onLoad={() => setIsLoading(false)}
-        />
-      </div>
-    </DialogContent>
-  );
-}
-
-export default function TemplatesPage() {
-  const router = useRouter();
-  const { user, loading: authLoading, activeWorkspace } = useAuth();
-  const { toast } = useToast();
-  const [userTemplates, setUserTemplates] = useState<Template[]>([]);
-  const [defaultTemplates, setDefaultTemplates] = useState<Template[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // State for modals and actions
-  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
-
-  // State for search, sort, and view
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortOption, setSortOption] = useState<SortOption>("updatedAt-desc");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      if (!user) return;
-      setIsLoading(true);
-      try {
-        const fetchPromises: [Promise<Template[]>, Promise<Template[]>] = [
-            getDefaultTemplates(),
-            activeWorkspace ? getTemplates(activeWorkspace.id) : Promise.resolve([])
-        ];
-        
-        const [defaultTpls, userTpls] = await Promise.all(fetchPromises);
-        
-        setDefaultTemplates(defaultTpls);
-        if (activeWorkspace) {
-            setUserTemplates(userTpls);
-        }
-
-      } catch (err) {
-        console.error(err);
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os templates.' });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (!authLoading) {
-      if (user) {
-        fetchTemplates();
-      } else {
-        router.push('/login');
-      }
-    }
-  }, [user, authLoading, toast, router, activeWorkspace]);
-
-
-  const handleDeleteTemplate = async () => {
-    if (!templateToDelete || templateToDelete.isDefault || !user) return;
-    try {
-      await deleteTemplate(templateToDelete.id, user.uid);
-      setUserTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
-      toast({ title: "Template excluído!" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir o template." });
-    } finally {
-      setTemplateToDelete(null);
-    }
-  };
-
-  const openDeleteModal = (template: Template) => {
-    setTemplateToDelete(template);
-  };
-  
-  const handleEditTemplate = (template: Template) => {
-    if (template.isDefault) {
-      toast({variant: "default", title: "Templates Padrão", description: "Templates padrão não podem ser editados aqui. Use o painel de administração."});
-      return;
-    }
-    // A template is edited using the same editor as a page.
-    router.push(`/editor/${template.id}?isTemplate=true`);
-  };
-
-  const filteredAndSortedTemplates = useMemo(() => {
-    const combined = [
-        ...defaultTemplates.map(t => ({ ...t, id: t.id, isDefault: true })),
-        ...userTemplates
-    ];
-    
-    return combined
-      .filter(template => template.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .sort((a, b) => {
-        switch (sortOption) {
-          case 'name-asc':
-            return a.name.localeCompare(b.name);
-          case 'name-desc':
-            return b.name.localeCompare(a.name);
-          case 'createdAt-asc':
-            return (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0)) > (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0)) ? 1 : -1;
-          case 'createdAt-desc':
-            return (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0)) < (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0)) ? 1 : -1;
-          case 'updatedAt-asc':
-            return (a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0)) > (b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0)) ? 1 : -1;
-          case 'updatedAt-desc':
-          default:
-            return (a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0)) < (b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0)) ? 1 : -1;
-        }
-      });
-  }, [userTemplates, defaultTemplates, searchTerm, sortOption]);
-
-
-  if (isLoading || authLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const getSortDirection = (column: 'name' | 'createdAt' | 'updatedAt') => {
-    if (sortOption.startsWith(column)) {
-      return sortOption.endsWith('-desc') ? 'desc' : 'asc';
-    }
-    return 'none';
-  };
-
-  const handleSort = (column: 'name' | 'createdAt' | 'updatedAt') => {
-    const currentDirection = getSortDirection(column);
-    if (currentDirection === 'desc') {
-      setSortOption(`${column}-asc`);
-    } else {
-      setSortOption(`${column}-desc`);
-    }
-  };
-
-  const templateActions = (template: Template) => (
-    <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 data-[state=open]:bg-muted"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <MoreVertical className="h-4 w-4" />
-                <span className="sr-only">Abrir menu</span>
-            </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
-           <CreatePageFromTemplateDialog
-                templateId={template.id}
-                isDefaultTemplate={!!template.isDefault}
-                trigger={
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Usar template
-                  </DropdownMenuItem>
+export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'workspaceId' | 'isDefault'>[] = [
+    {
+        name: "Lançamento de Produto",
+        description: "Template de uma coluna com imagem de fundo, título, parágrafo e formulário. Ideal para anunciar um novo produto ou serviço.",
+        brand: "Natura",
+        icon: 'rocket',
+        styles: {
+            backgroundColor: "#ffffff",
+            backgroundImage: "",
+            themeColor: "#FF6900",
+            themeColorHover: "#E65E00",
+            fontFamily: "Roboto, sans-serif",
+            customCss: "",
+        },
+        components: [
+            {
+                id: 'div-hero', type: 'Div', parentId: null, column: 0, order: 0, props: {
+                    styles: {
+                        isFullWidth: true,
+                        backgroundType: 'image',
+                        backgroundImageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=2726&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                        paddingTop: '6rem',
+                        paddingBottom: '6rem',
+                        overlayEnabled: true,
+                        overlayColor: '#000000',
+                        overlayOpacity: 0.4
+                    },
+                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
                 }
-            />
-            <DropdownMenuItem onClick={() => handleEditTemplate(template)} disabled={template.isDefault}>
-                Editar
-            </DropdownMenuItem>
-            {!template.isDefault && (
-                <>
-                    <DropdownMenuItem asChild>
-                        <AlertDialog onOpenChange={(open) => !open && setTemplateToDelete(null)}>
-                        <AlertDialogTrigger asChild>
-                            <button
-                            className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive"
-                            onClick={(e) => { e.preventDefault(); openDeleteModal(template); }}
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir
-                            </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o template "{template.name}".
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteTemplate() }}>Excluir</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                        </AlertDialog>
-                    </DropdownMenuItem>
-                </>
-            )}
-        </DropdownMenuContent>
-    </DropdownMenu>
-  );
-  
-  const renderTemplateCard = (template: Template) => {
-    const Icon = iconMap[template.icon || 'default'] || Server;
-    return (
-     <Dialog key={template.id}>
-        <div
-            className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
-        >
-          <DialogTrigger asChild>
-            <div className="cursor-pointer">
-              <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
-                  <Icon className="h-12 w-12 text-muted-foreground" />
-              </div>
-              <h3 className="font-semibold text-lg">{template.name}</h3>
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{template.description || 'Sem descrição'}</p>
-            </div>
-          </DialogTrigger>
-          <div className="flex justify-between items-end mt-4 pt-4 border-t">
-              <div>
-                   {template.isDefault ? (
-                      <Badge variant="secondary">Padrão</Badge>
-                   ) : (
-                      <Badge variant="outline" className="shrink-0 capitalize">
-                          Customizado
-                      </Badge>
-                   )}
-              </div>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  {templateActions(template)}
-              </div>
-          </div>
-        </div>
-        <TemplatePreviewDialog template={template} />
-     </Dialog>
-    )
-  }
-
-  return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 font-semibold text-lg">
-            <Logo className="h-6 w-6 text-primary" />
-            <h1>Templates</h1>
-          </div>
-           <Button variant="outline" size="sm" onClick={() => {
-                const input = document.querySelector('.cmdk-input') as HTMLInputElement;
-                input?.focus();
-                document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'k', 'metaKey': true}));
-            }}>
-                <Search className="mr-2 h-4 w-4"/>
-                Buscar...
-                <kbd className="pointer-events-none ml-4 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-             </Button>
-        </div>
-        <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => router.push('/')}>
-                <Home className="mr-2 h-4 w-4" />
-                Voltar aos Projetos
-            </Button>
-        </div>
-      </header>
-
-      <main className="p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Buscar templates..."
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={() => setSearchTerm("")}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 rounded-md border bg-background p-1">
-                <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} className="h-8 w-8">
-                  <LayoutGrid className="h-4 w-4"/>
-                </Button>
-                <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} className="h-8 w-8">
-                  <List className="h-4 w-4"/>
-                </Button>
-              </div>
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline">
-                          <ArrowUpDown className="mr-2 h-4 w-4"/>
-                          Ordenar por
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setSortOption('updatedAt-desc')}>Última Modificação</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSortOption('name-asc')}>Nome (A-Z)</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSortOption('name-desc')}>Nome (Z-A)</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSortOption('createdAt-desc')}>Mais Recentes</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSortOption('createdAt-asc')}>Mais Antigos</DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-        </div>
-
-        {filteredAndSortedTemplates.length === 0 ? (
-          <div className="text-center py-16">
-            <Library size={48} className="mx-auto text-muted-foreground" />
-            <h2 className="mt-4 text-xl font-semibold">Nenhum template encontrado</h2>
-            <p className="mt-2 text-muted-foreground">Crie templates a partir de suas páginas para reutilizá-los.</p>
-          </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredAndSortedTemplates.map(renderTemplateCard)}
-          </div>
-        ) : (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[40%]" onClick={() => handleSort('name')}>Nome do Template</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead onClick={() => handleSort('updatedAt')}>Última Modificação</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedTemplates.map((template) => (
-                  <Dialog key={template.id}>
-                    <TableRow>
-                      <TableCell className="font-medium">{template.name}</TableCell>
-                      <TableCell>
-                          {template.isDefault ? (
-                              <Badge variant="secondary">Padrão</Badge>
-                           ) : (
-                              <Badge variant="outline" className="capitalize">Customizado</Badge>
-                           )}
-                      </TableCell>
-                      <TableCell>{template.updatedAt?.toDate ? format(template.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
-                      <TableCell className="text-right">
-                         <div className="flex items-center justify-end gap-2">
-                            <DialogTrigger asChild>
-                               <Button variant="outline" size="sm">
-                                  <Eye className="mr-2 h-4 w-4"/>
-                                  Visualizar
-                               </Button>
-                            </DialogTrigger>
-                            {templateActions(template)}
-                         </div>
-                      </TableCell>
-                    </TableRow>
-                     <TemplatePreviewDialog template={template} />
-                  </Dialog>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
+            },
+            { id: 'title-1', type: 'Title', parentId: 'div-hero', column: 0, order: 0, props: { text: 'Produto Inovador Chegou', styles: { color: '#FFFFFF', fontSize: '3rem', textAlign: 'center' } } },
+            { id: 'para-1', type: 'Paragraph', parentId: 'div-hero', column: 0, order: 1, props: { text: 'Descubra a solução que vai revolucionar o seu dia a dia. Design moderno, funcionalidade incrível e um preço que você não vai acreditar.', styles: { color: '#FFFFFF', textAlign: 'center', maxWidth: '600px' } } },
+            {
+                id: 'cols-main', type: 'Columns', parentId: null, column: 0, order: 1, props: {
+                    columnCount: 2,
+                    styles: { paddingTop: '4rem', paddingBottom: '4rem', gap: '3rem', alignItems: 'center' }
+                }
+            },
+            { id: 'para-2', type: 'Paragraph', parentId: 'cols-main', column: 0, order: 0, props: { text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa.' } },
+            {
+                id: 'form-1', type: 'Form', parentId: 'cols-main', column: 1, order: 0, props: {
+                    fields: { name: { enabled: true }, email: { enabled: true } },
+                    buttonText: 'Quero Saber Mais!',
+                    submission: { message: `<h2>Tudo pronto!</h2><p>Você está na lista. Fique de olho no seu e-mail!</p>` }
+                }
+            },
+        ],
+        meta: {
+            title: "Lançamento de Produto",
+            faviconUrl: "https://i.postimg.cc/pVd0p0Zg/favicon-Natura.png",
+        },
+    },
+    {
+        name: "Boas-Vindas",
+        description: "Um template para agradecer o cadastro e guiar o usuário para os próximos passos.",
+        brand: "Natura",
+        icon: 'handshake',
+        styles: {
+            backgroundColor: "#f4f4f4",
+            backgroundImage: "",
+            themeColor: "#FF6900",
+            themeColorHover: "#E65E00",
+            fontFamily: "Roboto, sans-serif",
+            customCss: "",
+        },
+        components: [
+            {
+                id: 'div-welcome', type: 'Div', parentId: null, column: 0, order: 0, props: {
+                    styles: { paddingTop: '4rem', paddingBottom: '4rem' },
+                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '0.5rem' }
+                }
+            },
+            { id: 'title-welcome', type: 'Title', parentId: 'div-welcome', column: 0, order: 0, props: { text: 'Seja Bem-Vindo(a), %%FirstName%%!', dataBinding: 'FirstName', styles: { textAlign: 'center' } } },
+            { id: 'para-welcome', type: 'Paragraph', parentId: 'div-welcome', column: 0, order: 1, props: { text: 'Estamos muito felizes em ter você conosco. Explore os links abaixo para começar.', styles: { textAlign: 'center' } } },
+            {
+                id: 'cols-links', type: 'Columns', parentId: null, column: 0, order: 1, props: {
+                    columnCount: 3, styles: { paddingBottom: '4rem', gap: '1.5rem' }
+                }
+            },
+            { id: 'div-link-1', type: 'Div', parentId: 'cols-links', column: 0, order: 0, props: { styles: { border: '1px solid #ddd', borderRadius: '8px', padding: '1.5rem', backgroundColor: '#ffffff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }, layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' } } },
+            { id: 'title-link-1', type: 'Subtitle', parentId: 'div-link-1', column: 0, order: 0, props: { text: 'Explore o Catálogo', styles: { textAlign: 'center' } } },
+            { id: 'btn-link-1', type: 'Button', parentId: 'div-link-1', column: 0, order: 1, props: { text: 'Ver Produtos', href: '#' } },
+            { id: 'div-link-2', type: 'Div', parentId: 'cols-links', column: 1, order: 0, props: { styles: { border: '1px solid #ddd', borderRadius: '8px', padding: '1.5rem', backgroundColor: '#ffffff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }, layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' } } },
+            { id: 'title-link-2', type: 'Subtitle', parentId: 'div-link-2', column: 0, order: 0, props: { text: 'Fale Conosco', styles: { textAlign: 'center' } } },
+            { id: 'btn-link-2', type: 'Button', parentId: 'div-link-2', column: 0, order: 1, props: { text: 'Entrar em Contato', href: '#' } },
+            { id: 'div-link-3', type: 'Div', parentId: 'cols-links', column: 2, order: 0, props: { styles: { border: '1px solid #ddd', borderRadius: '8px', padding: '1.5rem', backgroundColor: '#ffffff', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }, layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' } } },
+            { id: 'title-link-3', type: 'Subtitle', parentId: 'div-link-3', column: 0, order: 0, props: { text: 'Siga nas Redes', styles: { textAlign: 'center' } } },
+            { id: 'social-1', type: 'SocialIcons', parentId: 'div-link-3', column: 0, order: 1, props: { links: { facebook: '#', instagram: '#' } } },
+        ],
+        meta: {
+            title: "Boas-Vindas",
+            faviconUrl: "https://i.postimg.cc/pVd0p0Zg/favicon-Natura.png",
+        },
+    },
+    {
+        name: "Divulgação de Evento",
+        description: "Template focado em conversão para eventos, com contador regressivo e agenda.",
+        brand: "Avon",
+        icon: 'calendar-clock',
+        styles: {
+            backgroundColor: "#1c1c1c",
+            backgroundImage: "",
+            themeColor: "#D80027",
+            themeColorHover: "#B30020",
+            fontFamily: "Poppins, sans-serif",
+            customCss: "",
+        },
+        components: [
+            {
+                id: 'div-hero-event', type: 'Div', parentId: null, column: 0, order: 0, props: {
+                    styles: { isFullWidth: true, backgroundColor: '#000000', paddingTop: '5rem', paddingBottom: '5rem' },
+                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1.5rem' }
+                }
+            },
+            { id: 'title-event', type: 'Title', parentId: 'div-hero-event', column: 0, order: 0, props: { text: 'Webinar Exclusivo', styles: { color: '#FFFFFF', fontSize: '3.5rem', textAlign: 'center' } } },
+            { id: 'para-event', type: 'Paragraph', parentId: 'div-hero-event', column: 0, order: 1, props: { text: 'Junte-se a nós para um evento online imperdível sobre as tendências do mercado de beleza para 2025.', styles: { color: '#e0e0e0', textAlign: 'center', maxWidth: '700px' } } },
+            { id: 'countdown-1', type: 'Countdown', parentId: 'div-hero-event', column: 0, order: 2, props: { targetDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), backgroundColor: '#333333', digitColor: '#FFFFFF' } },
+            { id: 'btn-event', type: 'Button', parentId: 'div-hero-event', column: 0, order: 3, props: { text: 'Garanta sua Vaga Agora', href: '#form-inscricao', styles: { padding: '1rem 2rem', fontSize: '1.2rem' } } },
+            {
+                id: 'cols-agenda', type: 'Columns', parentId: null, column: 0, order: 1, props: {
+                    columnCount: 2, styles: { paddingTop: '4rem', paddingBottom: '4rem', gap: '3rem', alignItems: 'center', backgroundColor: '#1c1c1c' }
+                }
+            },
+            {
+                id: 'div-agenda-text', type: 'Div', parentId: 'cols-agenda', column: 0, order: 0, props: {
+                    layout: { flexDirection: 'column', gap: '1rem' }
+                }
+            },
+            { id: 'title-agenda', type: 'Title', parentId: 'div-agenda-text', column: 0, order: 0, props: { text: 'O que você vai aprender', styles: { color: '#FFFFFF' } } },
+            { id: 'para-agenda-1', type: 'Paragraph', parentId: 'div-agenda-text', column: 0, order: 1, props: { text: '✔ As principais inovações em produtos.', styles: { color: '#cccccc' } } },
+            { id: 'para-agenda-2', type: 'Paragraph', parentId: 'div-agenda-text', column: 0, order: 2, props: { text: '✔ Estratégias de marketing digital para o setor.', styles: { color: '#cccccc' } } },
+            { id: 'para-agenda-3', type: 'Paragraph', parentId: 'div-agenda-text', column: 0, order: 3, props: { text: '✔ Como criar uma marca pessoal de sucesso.', styles: { color: '#cccccc' } } },
+            { id: 'div-form-inscricao', type: 'Div', parentId: 'cols-agenda', column: 1, order: 0, props: { idOverride: 'form-inscricao', styles: { backgroundColor: '#2d2d2d', padding: '2rem', borderRadius: '12px' } } },
+            { id: 'title-form', type: 'Title', parentId: 'div-form-inscricao', column: 0, order: 0, props: { text: 'Inscreva-se Gratuitamente', styles: { color: '#FFFFFF', textAlign: 'center' } } },
+            {
+                id: 'form-event', type: 'Form', parentId: 'div-form-inscricao', column: 0, order: 1, props: {
+                    fields: { name: { enabled: true }, email: { enabled: true } },
+                    buttonText: 'Inscrever',
+                    submission: { message: 'Inscrição confirmada! Enviamos os detalhes para o seu e-mail.' }
+                }
+            },
+        ],
+        meta: {
+            title: "Webinar Exclusivo",
+            faviconUrl: "https://i.postimg.cc/pXq9SjVz/favicon-Avon.png",
+        },
+    },
+];

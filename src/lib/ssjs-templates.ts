@@ -1,6 +1,39 @@
 
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
 
+export function getPrefillAmpscript(pageState: CloudPage): string {
+    const formComponent = pageState.components.find(c => c.type === 'Form');
+    if (!formComponent) return '';
+
+    const fieldsToPrefill = [];
+    const standardFieldsMap: Record<keyof FormFieldConfig, string> = {
+        name: 'NOME',
+        email: 'EMAIL',
+        phone: 'TELEFONE',
+        cpf: 'CPF',
+        city: 'CIDADE',
+        birthdate: 'DATANASCIMENTO',
+        optin: 'OPTIN'
+    };
+
+    const standardFieldsConfig = formComponent.props.fields || {};
+    for (const key in standardFieldsConfig) {
+        if (standardFieldsConfig[key as keyof FormFieldConfig]?.prefillFromUrl) {
+            fieldsToPrefill.push(standardFieldsMap[key as keyof FormFieldConfig]);
+        }
+    }
+    
+    if (fieldsToPrefill.length === 0) return '';
+
+    const prefillLines = fieldsToPrefill.map(fieldName => `SET @${fieldName} = QueryParameter("${fieldName.toLowerCase()}")`);
+    
+    return `
+/* --- Início: Pré-preenchimento de Campos --- */
+${prefillLines.join('\n')}
+/* --- Fim: Pré-preenchimento de Campos --- */
+`;
+}
+
 export function getFormSubmissionScript(pageState: CloudPage): string {
     const formComponent = pageState.components.find(c => c.type === 'Form');
     const deUploadComponent = pageState.components.find(c => c.type === 'DataExtensionUpload');

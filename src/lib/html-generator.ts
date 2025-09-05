@@ -1,6 +1,6 @@
 
 import type { CloudPage, PageComponent, ComponentType, Action } from './types';
-import { getFormSubmissionScript } from './ssjs-templates';
+import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';
 import { renderTitle } from './html-components/title';
@@ -2062,6 +2062,7 @@ ${trackingScripts.head}
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
+      justify-content: var(--align, center);
     }
     .add-to-calendar-button {
       display: inline-flex;

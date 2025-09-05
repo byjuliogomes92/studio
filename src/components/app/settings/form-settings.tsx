@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle, GripVertical, Plus, Trash2, Send, CheckCircle } from "lucide-react";
+import { HelpCircle, GripVertical, Plus, Trash2, Send, CheckCircle, Link } from "lucide-react";
 import { produce } from 'immer';
 import { Badge } from "@/components/ui/badge";
 import { DebouncedTextInput } from "./debounced-text-input";
@@ -197,6 +197,19 @@ export function FormSettings({ component, onPropChange, onSubPropChange }: Compo
                         onCheckedChange={(checked) => handleFieldChange(field.id, 'enabled', checked)}
                       />
                     </div>
+                     {props.fields?.[field.id]?.enabled && (
+                        <div className="flex items-center justify-between border-t pt-3">
+                            <Label htmlFor={`prefill-${field.id}`} className="text-xs flex items-center gap-1">
+                                <Link className="h-3 w-3" />
+                                Pré-preencher da URL
+                            </Label>
+                             <Switch
+                                id={`prefill-${field.id}`}
+                                checked={props.fields?.[field.id]?.prefillFromUrl || false}
+                                onCheckedChange={(checked) => handleFieldChange(field.id, 'prefillFromUrl', checked)}
+                            />
+                        </div>
+                     )}
                   </div>
                 ))}
               </div>

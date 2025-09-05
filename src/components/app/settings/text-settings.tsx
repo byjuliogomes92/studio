@@ -17,7 +17,7 @@ interface ComponentSettingsProps {
   pageState: CloudPage;
 }
 
-function TextStyleSettings({ props, onPropChange, brand }: { props: any, onPropChange: (prop: string, value: any) => void, brand: CloudPage['brand'] }) {
+function TextStyleSettings({ props, onPropChange, pageState }: { props: any, onPropChange: (prop: string, value: any) => void, pageState: CloudPage }) {
   const styles = props.styles || {};
   
   const handleStyleChange = (prop: string, value: any) => {
@@ -60,7 +60,7 @@ function TextStyleSettings({ props, onPropChange, brand }: { props: any, onPropC
                 label="Cor"
                 value={styles.color || '#000000'}
                 onChange={(value) => handleStyleChange('color', value)}
-                brand={brand}
+                brand={pageState.brand}
              />
           </div>
         </div>
@@ -137,7 +137,7 @@ export function TextSettings({ component, onPropChange, pageState }: ComponentSe
               </div>
           </div>
           <Separator />
-          <TextStyleSettings props={component.props} onPropChange={onPropChange} brand={pageState?.brand} />
+          <TextStyleSettings props={component.props} onPropChange={onPropChange} pageState={pageState} />
         </div>
       );
 }

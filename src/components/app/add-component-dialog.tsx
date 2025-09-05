@@ -160,7 +160,7 @@ const blockList: {
         category: 'Conteúdo',
         blocks: [
              { name: "Vitrine de Produto", description: "Estrutura para exibir 1, 2 ou 3 produtos com imagem e preços.", type: "product-showcase", icon: Building2 },
-             { name: "Galeria Simples", description: "Layout de 3 colunas com imagens e legendas.", type: "simple-gallery", icon: GalleryThumbnails },
+             { name: "Galeria Simples", description: "Layout em colunas com imagens e legendas.", type: "simple-gallery", icon: GalleryThumbnails },
              { name: "Notícias Recentes", description: "Grade para 3 artigos com imagem, título e resumo.", type: "news-section", icon: Newspaper },
              { name: "Carrossel de Logos", description: "Exiba os logos de clientes ou parceiros em um carrossel infinito.", type: "logo-carousel", icon: View },
              { name: "Seção de FAQ", description: "Um layout com título e um acordeão para perguntas e respostas.", type: "faq-section", icon: HelpCircle },
@@ -221,6 +221,63 @@ function ProductShowcaseConfigDialog({ onConfirm }: { onConfirm: (columnCount: n
                                 <RadioGroupItem value={String(count)} id={`products-${count}`} className="sr-only" />
                                 <span className="text-2xl font-bold">{count}</span>
                                 <span className="text-sm text-muted-foreground">Produto{count > 1 ? 's' : ''}</span>
+                            </Label>
+                        ))}
+                    </RadioGroup>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleConfirm}>Adicionar Bloco</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function GalleryConfigDialog({ onConfirm }: { onConfirm: (columnCount: number) => void }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [columnCount, setColumnCount] = useState<string>("3");
+
+    const handleConfirm = () => {
+        onConfirm(Number(columnCount));
+        setIsOpen(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <div className="border rounded-lg p-4 flex flex-col items-start gap-3 hover:bg-accent/50 hover:border-primary cursor-pointer">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-md bg-muted">
+                            <GalleryThumbnails className="h-6 w-6 text-primary" />
+                        </div>
+                        <h3 className="font-semibold text-base">Galeria Simples</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Layout em colunas com imagens e legendas.</p>
+                </div>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Configurar Galeria de Imagens</DialogTitle>
+                    <DialogDescription>
+                        Escolha quantas imagens você quer exibir na galeria.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label>Número de imagens</Label>
+                    <RadioGroup
+                        value={columnCount}
+                        onValueChange={setColumnCount}
+                        className="mt-2 grid grid-cols-5 gap-4"
+                    >
+                        {[2, 3, 4, 5, 6].map(count => (
+                             <Label
+                                key={count}
+                                htmlFor={`gallery-${count}`}
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                            >
+                                <RadioGroupItem value={String(count)} id={`gallery-${count}`} className="sr-only" />
+                                <span className="text-2xl font-bold">{count}</span>
                             </Label>
                         ))}
                     </RadioGroup>
@@ -334,9 +391,9 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'simple-gallery': {
              const parentId = `cols-${baseId}`;
              componentsToAdd = [
-                { id: parentId, type: 'Columns', props: { columnCount: 3, styles: { gap: '1rem' } }, order: 0, parentId: null, column: 0 },
+                { id: parentId, type: 'Columns', props: { columnCount, styles: { gap: '1rem' } }, order: 0, parentId: null, column: 0 },
              ];
-             for(let i=0; i<3; i++) {
+             for(let i=0; i<columnCount; i++) {
                  componentsToAdd.push(
                     { id: `img-${baseId}-${i}`, type: 'Image', props: { src: `https://picsum.photos/400/300` }, order: 0, parentId, column: i },
                     { id: `para-${baseId}-${i}`, type: 'Paragraph', props: { text: `Legenda da imagem ${i+1}`, styles: { textAlign: 'center', fontSize: '0.9rem', marginTop: '8px' } }, order: 1, parentId, column: i },
@@ -512,6 +569,9 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                                 {group.blocks.map(block => {
                                     if (block.type === 'product-showcase') {
                                         return <ProductShowcaseConfigDialog key={block.type} onConfirm={(count) => handleBlockClick(block.type, count)} />
+                                    }
+                                    if (block.type === 'simple-gallery') {
+                                        return <GalleryConfigDialog key={block.type} onConfirm={(count) => handleBlockClick(block.type, count)} />
                                     }
                                     const Icon = block.icon;
                                     return (

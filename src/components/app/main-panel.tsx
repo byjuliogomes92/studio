@@ -406,7 +406,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                   className={cn(
                       "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
                       selectedDevice.name === 'Desktop' ? 'w-full h-full' : '',
-                      isSelectionMode && "pointer-events-auto" // Enable pointer events only in selection mode
                   )}
                   style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : {}}
               />

@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/command";
 import { useAuth } from '@/hooks/use-auth';
 import { Folder, FileText, Library, User, Palette, Image as ImageIcon, Plus } from 'lucide-react';
-import { defaultTemplates } from '@/lib/default-templates';
 import { DialogTitle, DialogDescription } from '../ui/dialog';
+import { getDefaultTemplates } from '@/lib/firestore';
 
 // Componente customizado com filtro manual
 const ClickableItem = ({ children, onItemClick, searchTerm, searchableText, className = "" }: any) => {
@@ -62,17 +62,22 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [commandValue, setCommandValue] = useState('');
+  const [defaultTemplates, setDefaultTemplates] = useState<any[]>([]);
   const router = useRouter();
   const { projects, pages, templates } = useAuth();
 
+  useEffect(() => {
+    const fetchDefaultTemplates = async () => {
+        const dts = await getDefaultTemplates();
+        setDefaultTemplates(dts.map(t => ({...t, isDefault: true})));
+    }
+    fetchDefaultTemplates();
+  }, [])
+
+
   const allTemplates = React.useMemo(() => {
-    const defaults = defaultTemplates.map(t => ({
-      ...t,
-      id: t.id || t.name,
-      isDefault: true
-    }));
-    return [...defaults, ...templates];
-  }, [templates]);
+    return [...defaultTemplates, ...templates];
+  }, [templates, defaultTemplates]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {

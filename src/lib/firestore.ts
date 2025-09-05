@@ -501,13 +501,14 @@ export const movePageToProject = async (pageId: string, newProjectId: string): P
 };
 
 
-// Templates
+// Templates (User-specific)
 
 export const addTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'>, userId: string): Promise<string> => {
     const db = getDbInstance();
     const templateWithTimestamps = {
         ...templateData,
         createdBy: userId,
+        isDefault: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     };
@@ -543,6 +544,53 @@ export const deleteTemplate = async (templateId: string, userId: string): Promis
         await logActivity(templateData.workspaceId, userId, 'TEMPLATE_DELETED', { templateName: templateData.name });
     }
 };
+
+// Default Templates (Admin-managed)
+
+export const addDefaultTemplate = async (templateData: Omit<Template, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'workspaceId' | 'isDefault'>, userId: string): Promise<string> => {
+    const db = getDbInstance();
+    const data = {
+        ...templateData,
+        createdBy: userId,
+        isDefault: true,
+        workspaceId: 'default', // A common identifier for default templates
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    };
+    const docRef = await addDoc(collection(db, 'defaultTemplates'), data);
+    return docRef.id;
+};
+
+export const updateDefaultTemplate = async (templateId: string, data: Partial<Template>, userId: string): Promise<void> => {
+    const db = getDbInstance();
+    const templateRef = doc(db, 'defaultTemplates', templateId);
+    await updateDoc(templateRef, {
+        ...data,
+        updatedAt: serverTimestamp(),
+    });
+};
+
+export const deleteDefaultTemplate = async (templateId: string, userId: string): Promise<void> => {
+    const db = getDbInstance();
+    const templateRef = doc(db, 'defaultTemplates', templateId);
+    await deleteDoc(templateRef);
+    // Maybe a global log for admin actions? For now, we skip it.
+};
+
+export const getDefaultTemplates = async (): Promise<Template[]> => {
+    const db = getDbInstance();
+    const q = query(collection(db, 'defaultTemplates'), orderBy('name', 'asc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), isDefault: true } as Template));
+};
+
+export const getDefaultTemplate = async (templateId: string): Promise<Template | null> => {
+    const db = getDbInstance();
+    const docRef = doc(db, "defaultTemplates", templateId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Template : null;
+};
+
 
 // Brands
 export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>, userId: string): Promise<Brand> => {

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarGroupLabel, useSidebar } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion, MessageSquare, Menu } from 'lucide-react';
+import { BarChart, Bell, Home, Settings, Users, LogOut, Loader2, ShieldQuestion, MessageSquare, Menu, Library } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,7 @@ function AdminSidebar() {
       { path: '/admin/users', icon: Users, label: 'Usuários' },
       { path: '/admin/support', icon: MessageSquare, label: 'Suporte' },
       { path: '/admin/notifications', icon: Bell, label: 'Notificações' },
+      { path: '/admin/templates', icon: Library, label: 'Templates Padrão' },
       { path: '/admin/settings', icon: Settings, label: 'Configurações' },
       { type: 'label', label: 'Ferramentas' },
       { path: '/admin/set-admin', icon: ShieldQuestion, label: 'Tornar Admin' }

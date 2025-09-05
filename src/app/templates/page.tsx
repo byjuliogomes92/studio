@@ -13,8 +13,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -31,8 +29,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
-import { getTemplates, deleteTemplate } from "@/lib/firestore";
-import { defaultTemplates } from "@/lib/default-templates";
+import { getTemplates, deleteTemplate, getDefaultTemplates } from "@/lib/firestore";
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -75,8 +72,8 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
       // Add other required CloudPage fields with default values
       projectId: 'preview',
       workspaceId: 'preview',
-      brandId: 'preview',
-      brandName: 'preview',
+      brandId: '',
+      brandName: '',
       slug: template.name.toLowerCase().replace(/ /g, '-'),
       tags: [],
       cookieBanner: template.cookieBanner,
@@ -114,6 +111,7 @@ export default function TemplatesPage() {
   const { user, loading: authLoading, activeWorkspace } = useAuth();
   const { toast } = useToast();
   const [userTemplates, setUserTemplates] = useState<Template[]>([]);
+  const [defaultTemplates, setDefaultTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // State for modals and actions
@@ -126,11 +124,21 @@ export default function TemplatesPage() {
 
   useEffect(() => {
     const fetchTemplates = async () => {
-      if (!user || !activeWorkspace) return;
+      if (!user) return;
       setIsLoading(true);
       try {
-        const fetchedTemplates = await getTemplates(activeWorkspace.id);
-        setUserTemplates(fetchedTemplates);
+        const fetchPromises: [Promise<Template[]>, Promise<Template[]>] = [
+            getDefaultTemplates(),
+            activeWorkspace ? getTemplates(activeWorkspace.id) : Promise.resolve([])
+        ];
+        
+        const [defaultTpls, userTpls] = await Promise.all(fetchPromises);
+        
+        setDefaultTemplates(defaultTpls);
+        if (activeWorkspace) {
+            setUserTemplates(userTpls);
+        }
+
       } catch (err) {
         console.error(err);
         toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os templates.' });
@@ -140,18 +148,19 @@ export default function TemplatesPage() {
     };
 
     if (!authLoading) {
-      if (user && activeWorkspace) {
+      if (user) {
         fetchTemplates();
-      } else if (!user) {
+      } else {
         router.push('/login');
       }
     }
   }, [user, authLoading, toast, router, activeWorkspace]);
 
+
   const handleDeleteTemplate = async () => {
-    if (!templateToDelete || templateToDelete.isDefault) return;
+    if (!templateToDelete || templateToDelete.isDefault || !user) return;
     try {
-      await deleteTemplate(templateToDelete.id, user.id);
+      await deleteTemplate(templateToDelete.id, user.uid);
       setUserTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
       toast({ title: "Template excluído!" });
     } catch (error) {
@@ -167,7 +176,7 @@ export default function TemplatesPage() {
   
   const handleEditTemplate = (template: Template) => {
     if (template.isDefault) {
-      toast({variant: "default", title: "Templates Padrão", description: "Templates padrão não podem ser editados."});
+      toast({variant: "default", title: "Templates Padrão", description: "Templates padrão não podem ser editados aqui. Use o painel de administração."});
       return;
     }
     // A template is edited using the same editor as a page.
@@ -176,7 +185,7 @@ export default function TemplatesPage() {
 
   const filteredAndSortedTemplates = useMemo(() => {
     const combined = [
-        ...defaultTemplates.map(t => ({ ...t, id: t.name, isDefault: true, workspaceId: '', createdAt: new Date(), updatedAt: new Date() })),
+        ...defaultTemplates.map(t => ({ ...t, id: t.id, isDefault: true })),
         ...userTemplates
     ];
     
@@ -189,17 +198,18 @@ export default function TemplatesPage() {
           case 'name-desc':
             return b.name.localeCompare(a.name);
           case 'createdAt-asc':
-            return (a.createdAt?.toDate ? a.createdAt.toDate() : a.createdAt) > (b.createdAt?.toDate ? b.createdAt.toDate() : b.createdAt) ? 1 : -1;
+            return (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0)) > (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0)) ? 1 : -1;
           case 'createdAt-desc':
-            return (a.createdAt?.toDate ? a.createdAt.toDate() : a.createdAt) < (b.createdAt?.toDate ? b.createdAt.toDate() : b.createdAt) ? 1 : -1;
+            return (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0)) < (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0)) ? 1 : -1;
           case 'updatedAt-asc':
-            return (a.updatedAt?.toDate ? a.updatedAt.toDate() : a.updatedAt) > (b.updatedAt?.toDate ? b.updatedAt.toDate() : b.updatedAt) ? 1 : -1;
+            return (a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0)) > (b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0)) ? 1 : -1;
           case 'updatedAt-desc':
           default:
-            return (a.updatedAt?.toDate ? a.updatedAt.toDate() : a.updatedAt) < (b.updatedAt?.toDate ? b.updatedAt.toDate() : b.updatedAt) ? 1 : -1;
+            return (a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0)) < (b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0)) ? 1 : -1;
         }
       });
-  }, [userTemplates, searchTerm, sortOption]);
+  }, [userTemplates, defaultTemplates, searchTerm, sortOption]);
+
 
   if (isLoading || authLoading) {
     return (
@@ -254,30 +264,31 @@ export default function TemplatesPage() {
             </DropdownMenuItem>
             {!template.isDefault && (
                 <>
-                    <DropdownMenuSeparator />
-                    <AlertDialog onOpenChange={(open) => !open && setTemplateToDelete(null)}>
-                    <AlertDialogTrigger asChild>
-                        <DropdownMenuItem 
-                        className="text-destructive" 
-                        onSelect={(e) => { e.preventDefault(); openDeleteModal(template); }}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
-                        </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o template "{template.name}".
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteTemplate() }}>Excluir</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                    </AlertDialog>
+                    <DropdownMenuItem asChild>
+                        <AlertDialog onOpenChange={(open) => !open && setTemplateToDelete(null)}>
+                        <AlertDialogTrigger asChild>
+                            <button
+                            className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive"
+                            onClick={(e) => { e.preventDefault(); openDeleteModal(template); }}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                            </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o template "{template.name}".
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteTemplate() }}>Excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                        </AlertDialog>
+                    </DropdownMenuItem>
                 </>
             )}
         </DropdownMenuContent>
@@ -305,8 +316,8 @@ export default function TemplatesPage() {
                    {template.isDefault ? (
                       <Badge variant="secondary">Padrão</Badge>
                    ) : (
-                      <Badge variant={template.brand === 'Natura' ? 'default' : 'destructive'} className="shrink-0 capitalize">
-                          {template.brand}
+                      <Badge variant="outline" className="shrink-0 capitalize">
+                          Customizado
                       </Badge>
                    )}
               </div>
@@ -426,7 +437,7 @@ export default function TemplatesPage() {
                           {template.isDefault ? (
                               <Badge variant="secondary">Padrão</Badge>
                            ) : (
-                              <Badge variant={template.brand === 'Natura' ? 'default' : 'destructive'} className="capitalize">{template.brand}</Badge>
+                              <Badge variant="outline" className="capitalize">Customizado</Badge>
                            )}
                       </TableCell>
                       <TableCell>{template.updatedAt?.toDate ? format(template.updatedAt.toDate(), 'dd/MM/yyyy, HH:mm') : '-'}</TableCell>
@@ -455,6 +466,7 @@ export default function TemplatesPage() {
 }
 
     
+
 
 
 

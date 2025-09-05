@@ -22,8 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import type { Brand, Template, Project, CloudPage } from '@/lib/types';
-import { getTemplates, getTemplate, addPage, getProjectsForUser, updateUserProgress, getBrandsForUser } from '@/lib/firestore';
-import { defaultTemplates } from '@/lib/default-templates';
+import { getTemplates, getTemplate, addPage, getProjectsForUser, updateUserProgress, getBrandsForUser, getDefaultTemplates, getDefaultTemplate } from '@/lib/firestore';
 import { cn } from '@/lib/utils';
 import { FileText, Globe, Loader2, Server, Palette } from 'lucide-react';
 import { produce } from 'immer';
@@ -129,6 +128,7 @@ export function CreatePageFromTemplateDialog({
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(projectId);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [userTemplates, setUserTemplates] = useState<Template[]>([]);
+  const [defaultTemplates, setDefaultTemplates] = useState<Template[]>([]);
   const [userBrands, setUserBrands] = useState<Brand[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(templateId || null);
   const [selectedTemplateIsDefault, setSelectedTemplateIsDefault] = useState<boolean>(!!isDefaultTemplate);
@@ -152,6 +152,7 @@ export function CreatePageFromTemplateDialog({
     if (isOpen && user && activeWorkspace) {
         if (!templateId) {
             getTemplates(activeWorkspace.id).then(setUserTemplates);
+            getDefaultTemplates().then(setDefaultTemplates);
         }
         if (!projectId) {
             getProjectsForUser(activeWorkspace.id).then(({projects}) => setUserProjects(projects));
@@ -206,9 +207,9 @@ export function CreatePageFromTemplateDialog({
         if (selectedTemplate === 'blank') {
             newPageData = getInitialPage(newPageName, selectedProjectId, activeWorkspace.id, selectedBrand, selectedPlatform);
         } else {
-            let template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'> | null = null;
+            let template: Omit<Template, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'> | null = null;
             if (selectedTemplateIsDefault) {
-                template = defaultTemplates.find(t => t.name === selectedTemplate) || null;
+                template = await getDefaultTemplate(selectedTemplate!);
             } else {
                 template = await getTemplate(selectedTemplate!);
             }
@@ -294,9 +295,8 @@ export function CreatePageFromTemplateDialog({
   };
   
   const combinedTemplates = useMemo(() => {
-    const defaults = defaultTemplates.map(t => ({...t, id: t.name, isDefault: true}));
-    return [...defaults, ...userTemplates];
-  }, [userTemplates]);
+    return [...defaultTemplates, ...userTemplates];
+  }, [userTemplates, defaultTemplates]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetState(); }}>
@@ -460,3 +460,4 @@ export function CreatePageFromTemplateDialog({
     
 
     
+

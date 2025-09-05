@@ -41,14 +41,14 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
     return `${baseVars}\\nSET @isAuthenticated = true`;
 }
 
-export const getSecurityScripts = (pageState: CloudPage): { ssjs: string, body: string } => {
+export const getSecurityFormHtml = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
     if (!security || security.type !== 'password' || !security.passwordConfig) {
-        return { ssjs: '', body: '' };
+        return '';
     }
 
-    const body = `
+    return `
 <div class="password-protection-container">
     <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
         <h2>Acesso Restrito</h2>
@@ -61,6 +61,6 @@ export const getSecurityScripts = (pageState: CloudPage): { ssjs: string, body: 
     </form>
 </div>
 `;
-
-        return { ssjs: '', body };
 }
+
+    

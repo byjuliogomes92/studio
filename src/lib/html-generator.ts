@@ -1,7 +1,7 @@
 
 import type { CloudPage, PageComponent, ComponentType, Action } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
-import { getAmpscriptSecurityBlock } from './html-components/security';
+import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';
 import { renderTitle } from './html-components/title';
@@ -34,7 +34,6 @@ import { renderCalendly } from './html-components/calendly';
 import { renderDiv } from './html-components/div';
 import { renderAddToCalendar } from './html-components/add-to-calendar';
 import { renderPopUp } from './html-components/popup';
-
 
 function getStyleString(styles: any = {}): string {
     return Object.entries(styles)
@@ -94,7 +93,16 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       animationDuration = 1,
       animationDelay = 0,
       loopAnimation = 'none',
-      ...otherStyles
+      // Exclude spacing properties from being applied to the component itself
+      marginTop,
+      marginBottom,
+      marginLeft,
+      marginRight,
+      paddingTop,
+      paddingBottom,
+      paddingLeft,
+      paddingRight,
+      ...componentStyles
   } = styles;
 
   let wrapperClass = 'component-wrapper';
@@ -112,12 +120,29 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     : '';
   
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
-
-  // Apply padding and margin styles to the wrapper
-  const spacingStyles = getStyleString(otherStyles);
   
-  // Render the component's HTML without its own spacing styles.
-  const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+  // Apply padding and margin styles to the wrapper
+  const spacingStyles = getStyleString({
+      marginTop,
+      marginBottom,
+      marginLeft,
+      marginRight,
+      paddingTop,
+      paddingBottom,
+      paddingLeft,
+      paddingRight
+  });
+
+  // Re-create the component object with only its direct styles for rendering
+  const componentForRender = {
+      ...component,
+      props: {
+          ...component.props,
+          styles: componentStyles
+      }
+  };
+  
+  const renderedComponent = renderSingleComponent(componentForRender, pageState, isForPreview, childrenHtml, hideAmpscript);
   
   if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header'].includes(component.type)) {
     return renderedComponent;
@@ -2088,7 +2113,7 @@ ${!isForPreview ? trackingScripts.body : ''}
       ${mainContentHtml}
     </main>
     %%[ ELSE ]%%
-    ${getSecurityScripts(pageState).body}
+    ${getSecurityFormHtml(pageState)}
     %%[ ENDIF ]%%
     `}
 </body>
@@ -2098,3 +2123,5 @@ ${!isForPreview ? trackingScripts.body : ''}
 
   return finalHtml;
 }
+
+    

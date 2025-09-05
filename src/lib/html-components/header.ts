@@ -41,8 +41,12 @@ export function renderHeader(component: PageComponent): string {
     
     const menuItems = links.map((link: HeaderLink) => {
         const isButton = link.style === 'button';
+        let buttonStyle = '';
+        if (isButton) {
+            buttonStyle = `background-color: ${link.backgroundColor || 'var(--theme-color)'}; color: ${link.textColor || '#FFFFFF'};`;
+        }
         const buttonClass = isButton ? `header-button custom-button--${link.variant || 'default'}` : '';
-        return `<li><a href="${link.url}" class="${buttonClass}">${link.text}</a></li>`;
+        return `<li><a href="${link.url}" class="${buttonClass}" style="${buttonStyle}">${link.text}</a></li>`;
     }).join('');
     
     const showMenu = layout.includes('menu');

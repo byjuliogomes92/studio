@@ -9,13 +9,16 @@ import { produce } from 'immer';
 import { ImageInput } from "./image-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { ColorInput } from "./color-input";
+
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
+  pageState: CloudPage;
 }
 
-export function HeaderLinksManager({ links, onPropChange }: { links: HeaderLink[], onPropChange: (prop: string, value: any) => void }) {
+export function HeaderLinksManager({ links, onPropChange, pageState }: { links: HeaderLink[], onPropChange: (prop: string, value: any) => void, pageState: CloudPage }) {
     const handleLinkChange = (index: number, field: keyof HeaderLink, value: any) => {
         const newLinks = produce(links, draft => {
             (draft[index] as any)[field] = value;
@@ -65,18 +68,34 @@ export function HeaderLinksManager({ links, onPropChange }: { links: HeaderLink[
                         </Select>
                     </div>
                     {link.style === 'button' && (
-                        <div className="space-y-2">
-                            <Label className="text-xs">Variante do Botão</Label>
-                            <Select value={link.variant || 'default'} onValueChange={(value: ButtonVariant) => handleLinkChange(index, 'variant', value)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="default">Padrão</SelectItem>
-                                    <SelectItem value="destructive">Destrutivo</SelectItem>
-                                    <SelectItem value="outline">Contorno</SelectItem>
-                                    <SelectItem value="secondary">Secundário</SelectItem>
-                                    <SelectItem value="ghost">Fantasma</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="space-y-4 pt-2">
+                            <div className="space-y-2">
+                                <Label className="text-xs">Variante do Botão</Label>
+                                <Select value={link.variant || 'default'} onValueChange={(value: ButtonVariant) => handleLinkChange(index, 'variant', value)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="default">Padrão</SelectItem>
+                                        <SelectItem value="destructive">Destrutivo</SelectItem>
+                                        <SelectItem value="outline">Contorno</SelectItem>
+                                        <SelectItem value="secondary">Secundário</SelectItem>
+                                        <SelectItem value="ghost">Fantasma</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                             <div className="grid grid-cols-2 gap-2">
+                                <ColorInput
+                                    label="Cor de Fundo"
+                                    value={link.backgroundColor || ''}
+                                    onChange={value => handleLinkChange(index, 'backgroundColor', value)}
+                                    brand={pageState.brand}
+                                />
+                                <ColorInput
+                                    label="Cor do Texto"
+                                    value={link.textColor || ''}
+                                    onChange={value => handleLinkChange(index, 'textColor', value)}
+                                    brand={pageState.brand}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>

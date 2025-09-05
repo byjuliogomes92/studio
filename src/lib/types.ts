@@ -151,6 +151,8 @@ export interface HeaderLink {
     url: string;
     style?: 'link' | 'button';
     variant?: ButtonVariant;
+    backgroundColor?: string;
+    textColor?: string;
 }
 
 export type HeaderLayout = 

@@ -96,8 +96,7 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange, pageS
             </div>
             {showMenu && (
                 <div className="p-3 border rounded-md space-y-3 bg-muted/30">
-                    <h4 className="font-medium text-sm">Itens de Menu</h4>
-                    <HeaderLinksManager links={props.links || []} onPropChange={onPropChange} />
+                    <HeaderLinksManager links={props.links || []} onPropChange={onPropChange} pageState={pageState} />
                      <Separator/>
                      <div className="space-y-2 pt-2">
                         <Label htmlFor="header-link-font-size">Tamanho da Fonte do Menu</Label>

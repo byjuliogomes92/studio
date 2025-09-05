@@ -1,6 +1,6 @@
 
 
-import type { CloudPage, CustomFormField, PageComponent } from '@/lib/types';
+import type { CloudPage, CustomFormField, CustomFormFieldType, PageComponent } from '@/lib/types';
 
 const renderField = (
     id: string, 
@@ -84,7 +84,7 @@ const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, pr
     `;
 };
 
-export function renderForm(component: PageComponent, pageState: CloudPage): string {
+export function renderForm(component: PageComponent, pageState: CloudPage, isForPreview: boolean = false): string {
     const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, formAlign, thankYouAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
     const { meta } = pageState;
     const styleString = getStyleString(component.props.styles);
@@ -121,10 +121,7 @@ export function renderForm(component: PageComponent, pageState: CloudPage): stri
       }
     }
 
-
-    return `
-        %%[ Set @thankYouMessage = "${submission?.message || 'Obrigado!'}" ]%%
-        %%[ IF @showThanks != "true" THEN ]%%
+    const formHtml = `
         <div id="form-wrapper-${component.id}" class="form-container" style="text-align: ${formAlign || 'left'}; ${styleString}">
             <form id="smartcapture-form-${component.id}" method="post" action="%%=RequestParameter('PAGEURL')=%%">
                  <input type="hidden" name="__de" value="${meta.dataExtensionKey}">
@@ -174,6 +171,16 @@ export function renderForm(component: PageComponent, pageState: CloudPage): stri
                 </div>
             </form>
         </div>
+    `;
+
+    if (isForPreview) {
+        return formHtml;
+    }
+
+    return `
+        %%[ Set @thankYouMessage = "${submission?.message || 'Obrigado!'}" ]%%
+        %%[ IF @showThanks != "true" THEN ]%%
+        ${formHtml}
         %%[ ELSE ]%%
             <div class="thank-you-message" style="text-align: ${thankYouAlign || 'center'};">
                 ${animationUrl ? `<lottie-player id="lottie-animation-${component.id}" src="${animationUrl}" style="width: 250px; height: 250px; margin: 0 auto;"></lottie-player>` : ''}

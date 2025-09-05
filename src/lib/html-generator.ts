@@ -122,6 +122,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   });
   const wrapperStyleString = getStyleString(wrapperStyles);
   
+  // Render the component's HTML
   const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   
   // These components render their own wrappers or are positioned absolutely
@@ -166,7 +167,7 @@ export const renderSingleComponent = (component: PageComponent, pageState: Cloud
     case 'Div': return renderDiv(component, childrenHtml);
     case 'WhatsApp': return renderWhatsApp(component);
     case 'Carousel': return renderCarousel(component);
-    case 'Form': return renderForm(component, pageState);
+    case 'Form': return renderForm(component, pageState, isForPreview);
     case 'FTPUpload': return renderFTPUpload(component, pageState);
     case 'DataExtensionUpload': return renderDataExtensionUpload(component);
     case 'FloatingImage': return renderFloatingImage(component);
@@ -887,8 +888,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
   const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getFormSubmissionScript(pageState) : '';
-  const prefillAmpscript = getPrefillAmpscript(pageState);
-  const securityAmpscript = getAmpscriptSecurityBlock(pageState);
+  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState) : '';
+  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState) : '';
   
   const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ 
     VAR @showThanks

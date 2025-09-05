@@ -100,7 +100,7 @@ export default function AdminTemplatesPage() {
                     templates.map(template => {
                         const Icon = iconMap[template.icon || 'default'] || Server;
                         return (
-                            <Card key={template.id} className="flex flex-col">
+                            <Card key={template.id || `template-${Math.random()}`} className="flex flex-col">
                                 <CardHeader>
                                     <div className="w-full aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
                                         <Icon className="h-12 w-12 text-muted-foreground" />

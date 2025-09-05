@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll, Megaphone, Calendar, Library } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll, Megaphone, Calendar, Library, ArrowLeft } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -53,6 +53,8 @@ interface SettingsPanelProps {
   onPageNameChange: (newName: string) => void;
   projectPages: CloudPage[];
   onCodeEdit: (component: PageComponent) => void;
+  onDuplicateComponent: (id: string) => void;
+  onDeleteComponent: (id: string) => void;
 }
 
 const componentIcons: Record<ComponentType, React.ElementType> = {
@@ -243,6 +245,8 @@ export function SettingsPanel({
   onPageNameChange,
   projectPages,
   onCodeEdit,
+  onDuplicateComponent,
+  onDeleteComponent,
 }: SettingsPanelProps) {
 
   const { user, activeWorkspace } = useAuth();
@@ -884,6 +888,8 @@ export function SettingsPanel({
                     onCodeEdit={onCodeEdit}
                     projectPages={projectPages}
                     pageState={pageState}
+                    onDuplicate={onDuplicateComponent}
+                    onDelete={onDeleteComponent}
                 />
             </div>
         ) : (

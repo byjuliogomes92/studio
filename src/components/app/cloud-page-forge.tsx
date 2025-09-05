@@ -106,25 +106,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
   const hasBitlyConfig = !!(brand && brand.integrations?.bitly?.encryptedAccessToken);
-
-  // New robust way to find the selected component, including nested ones.
-  const findComponentById = (components: PageComponent[], id: string): PageComponent | null => {
-    for (const component of components) {
-      if (component.id === id) {
-        return component;
-      }
-      if (component.children) {
-        const foundInChildren = findComponentById(component.children, id);
-        if (foundInChildren) {
-          return foundInChildren;
-        }
-      }
-    }
-    // As a fallback, check the flat list (though the recursive search should be primary)
-    return pageState?.components.find(c => c.id === id) || null;
-  };
   
-  const selectedComponent = pageState ? findComponentById(pageState.components, selectedComponentId || '') : null;
+  const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId) || null;
 
 
   useEffect(() => {
@@ -162,7 +145,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 draft.components.forEach(c => {
                   if (c.parentId === p.id) {
                     if (typeof c.order !== 'number') c.order = ++maxChildOrder;
-                    else if (c.order > maxChildOrder) maxChildOrder = c.order;
+                    else if (c.order > maxChildOrder) maxOrder = c.order;
                   }
                 });
               });
@@ -691,6 +674,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     onPageNameChange={handlePageNameChange}
                     projectPages={projectPages}
                     onCodeEdit={handleCodeEdit}
+                    onDuplicateComponent={duplicateComponent}
+                    onDeleteComponent={removeComponent}
                 />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -698,13 +683,13 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 <MainPanel 
                     pageState={pageState} 
                     setPageState={setPageState}
-                    onDataExtensionKeyChange={handleDataExtensionKeyChange}
+                    onDataExtensionKeyChange={onDataExtensionKeyChange}
                     onSelectComponent={setSelectedComponentId}
                 />
             </ResizablePanel>
         </ResizablePanelGroup>
 
-       <Sheet open={!!selectedComponentId} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
+       <Sheet open={!!selectedComponent} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
             <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col">
                 {selectedComponent && (
                     <>
@@ -746,6 +731,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 onCodeEdit={handleCodeEdit}
                                 projectPages={projectPages}
                                 pageState={pageState}
+                                onDuplicate={duplicateComponent}
+                                onDelete={removeComponent}
                             />
                         </div>
                     </ScrollArea>

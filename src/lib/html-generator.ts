@@ -94,7 +94,6 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       animationDuration = 1,
       animationDelay = 0,
       loopAnimation = 'none',
-      ...otherStyles
   } = styles;
 
   let wrapperClass = 'component-wrapper';
@@ -113,26 +112,24 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
   
+  // Extract only spacing styles for the wrapper
   const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'];
   const wrapperStyles: Record<string, any> = {};
   spacingKeys.forEach(key => {
-    if (otherStyles[key]) {
-      wrapperStyles[key] = otherStyles[key];
+    if (styles[key]) {
+      wrapperStyles[key] = styles[key];
     }
   });
   const wrapperStyleString = getStyleString(wrapperStyles);
   
   const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   
-  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header'].includes(component.type)) {
+  // These components render their own wrappers or are positioned absolutely
+  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header', 'Columns', 'Div'].includes(component.type)) {
     return renderedComponent;
   }
   
-  const isFullWidthContainer = ['Columns', 'Div'].includes(component.type) && component.props.styles?.isFullWidth;
-  if (isFullWidthContainer) {
-      return renderedComponent;
-  }
-  
+  // Prevent nested component wrappers if parent is a horizontal flex Div
   const parentComponent = pageState.components.find(c => c.id === component.parentId);
   if (parentComponent?.type === 'Div' && parentComponent?.props?.layout?.flexDirection === 'row') {
       return renderedComponent;
@@ -682,6 +679,79 @@ const getClientSideScripts = (pageState: CloudPage): string => {
             checkPosition();
         });
     }
+    
+    function setupPopups() {
+        document.querySelectorAll('[id^="popup-container-"]').forEach(popup => {
+            const wrapperId = popup.id;
+            const overlayId = wrapperId.replace('popup-container-', 'popup-container-overlay-');
+            const closeBtnId = wrapperId.replace('popup-container-', 'popup-container-close-');
+
+            const overlay = document.getElementById(overlayId);
+            const closeBtn = document.getElementById(closeBtnId);
+            if (!overlay || !closeBtn) return;
+            
+            const storageKey = 'popup_shown_' + wrapperId;
+            let isOpened = false;
+
+            function openPopup() {
+                if (isOpened || sessionStorage.getItem(storageKey)) return;
+                popup.style.visibility = 'visible';
+                popup.style.opacity = '1';
+                popup.style.transform = 'translate(-50%, -50%) scale(1)';
+                overlay.style.visibility = 'visible';
+                overlay.style.opacity = '1';
+                if (popup.dataset.preventScroll === 'true') {
+                    document.body.style.overflow = 'hidden';
+                }
+                sessionStorage.setItem(storageKey, 'true');
+                isOpened = true;
+            }
+
+            function closePopup() {
+                popup.style.opacity = '0';
+                popup.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    popup.style.visibility = 'hidden';
+                    overlay.style.visibility = 'hidden';
+                    if (popup.dataset.preventScroll === 'true') {
+                        document.body.style.overflow = '';
+                    }
+                }, 300);
+            }
+            
+            window.closePopup = closePopup;
+
+            closeBtn.addEventListener('click', closePopup);
+            if (popup.dataset.closeOnOutsideClick !== 'false') {
+                overlay.addEventListener('click', closePopup);
+            }
+
+            const trigger = popup.dataset.trigger;
+            if (trigger === 'delay') {
+                const delay = parseInt(popup.dataset.delay, 10) || 3;
+                setTimeout(openPopup, delay * 1000);
+            } else if (trigger === 'entry') {
+                openPopup();
+            } else if (trigger === 'scroll') {
+                const scrollPercentage = parseInt(popup.dataset.scrollPercentage, 10) || 50;
+                const handleScroll = () => {
+                    const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+                    if (scrollPercent >= scrollPercentage) {
+                        openPopup();
+                        window.removeEventListener('scroll', handleScroll);
+                    }
+                };
+                window.addEventListener('scroll', handleScroll, { passive: true });
+            } else if (trigger === 'exit_intent') {
+                document.addEventListener('mouseleave', function(e) {
+                    if (e.clientY < 0) {
+                        openPopup();
+                    }
+                }, { once: true });
+            }
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', function () {
         const loader = document.getElementById('loader');
@@ -716,6 +786,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         setupStickyHeader();
         setupFloatingButtons();
         setupAnimations();
+        setupPopups();
     });
     </script>
     `;
@@ -860,6 +931,24 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     overflow-x: hidden; /* Prevent horizontal scroll */
     position: relative; /* Needed for absolute positioned children */
   `;
+  
+  const bodyContent = shouldHideAmpscript
+  ? `
+    ${renderLoader(meta, styles.themeColor)}
+    <main>
+      ${mainContentHtml}
+    </main>
+  `
+  : `
+    %%[ IF @isAuthenticated == true THEN ]%%
+    ${renderLoader(meta, styles.themeColor)}
+    <main>
+      ${mainContentHtml}
+    </main>
+    %%[ ELSE ]%%
+    ${getSecurityFormHtml(pageState)}
+    %%[ ENDIF ]%%
+    `;
 
 
   let finalHtml = `<!DOCTYPE html>
@@ -879,8 +968,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ssjsScript}
-${initialAmpscript}
+${shouldHideAmpscript ? '' : ssjsScript}
+${shouldHideAmpscript ? '' : initialAmpscript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -945,14 +1034,14 @@ ${trackingScripts.head}
     }
     
     .component-wrapper {
-      margin-top: var(--margin-top, 0);
-      margin-bottom: var(--margin-bottom, 0);
-      margin-left: var(--margin-left, auto);
-      margin-right: var(--margin-right, auto);
       padding-top: var(--padding-top, 20px);
       padding-bottom: var(--padding-bottom, 20px);
       padding-left: var(--padding-left, 0);
       padding-right: var(--padding-right, 0);
+      margin-top: var(--margin-top, 0);
+      margin-bottom: var(--margin-bottom, 0);
+      margin-left: var(--margin-left, auto);
+      margin-right: var(--margin-right, auto);
       width: 100%;
       max-width: 1200px;
     }
@@ -2085,21 +2174,7 @@ ${clientSideScripts}
 </head>
 <body>
 ${!isForPreview ? trackingScripts.body : ''}
-  ${shouldHideAmpscript ? `
-    ${renderLoader(meta, styles.themeColor)}
-    <main>
-      ${mainContentHtml}
-    </main>
-  ` : `
-    %%[ IF @isAuthenticated == true THEN ]%%
-    ${renderLoader(meta, styles.themeColor)}
-    <main>
-      ${mainContentHtml}
-    </main>
-    %%[ ELSE ]%%
-    ${getSecurityFormHtml(pageState)}
-    %%[ ENDIF ]%%
-    `}
+${bodyContent}
 </body>
 </html>`;
 

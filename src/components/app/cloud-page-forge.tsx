@@ -9,7 +9,7 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical, Code, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical, Code, Trash2, PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity, getPagesForProject } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
@@ -28,6 +28,7 @@ import { shortenUrl } from "@/ai/flows/shorten-url-flow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EditCodeDialog } from "./edit-code-dialog";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import type { ImperativePanelGroupHandle } from "react-resizable-panels";
 
 
 interface CloudPageForgeProps {
@@ -102,6 +103,10 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   // State for Edit Code Dialog
   const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false);
   const [componentToCodeEdit, setComponentToCodeEdit] = useState<PageComponent | null>(null);
+  
+  // State for resizable panels
+  const layoutRef = React.useRef<ImperativePanelGroupHandle>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
@@ -523,11 +528,24 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       setSelectedComponentId(null);
     }
   };
+  
+  const toggleSidebar = () => {
+    if (layoutRef.current) {
+        const isCollapsed = layoutRef.current.getSizes()[0] < 5;
+        if (isCollapsed) {
+            layoutRef.current.resize(0, 25);
+            setIsSidebarCollapsed(false);
+        } else {
+            layoutRef.current.resize(0, 0);
+            setIsSidebarCollapsed(true);
+        }
+    }
+  };
 
   if (isLoading || authLoading || !pageState) {
     return (
        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Logo className="h-10 w-10 animate-star-pulse" />
+            <Logo className="h-12 w-12 animate-star-pulse" />
        </div>
     );
   }
@@ -536,9 +554,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     <>
     <div className="flex flex-col h-screen bg-muted/40">
       <header className="flex items-center justify-between h-14 px-4 border-b flex-shrink-0 bg-card">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={handleBackNavigation}>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={handleBackNavigation} aria-label="Voltar">
             <ArrowLeft className="h-4 w-4" />
+          </Button>
+           <Button variant="outline" size="icon" onClick={toggleSidebar} aria-label={isSidebarCollapsed ? 'Expandir painel' : 'Recolher painel'}>
+            {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
           <div className="flex items-center gap-2 font-semibold">
             <Logo className="h-6 w-6" />
@@ -663,8 +684,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             </DropdownMenu>
         </div>
       </header>
-        <ResizablePanelGroup direction="horizontal" className="flex-grow min-h-0">
-            <ResizablePanel defaultSize={25} minSize={20}>
+        <ResizablePanelGroup ref={layoutRef} direction="horizontal" className="flex-grow min-h-0">
+            <ResizablePanel defaultSize={25} minSize={20} collapsible={true} collapsedSize={0} onCollapse={() => setIsSidebarCollapsed(true)} onExpand={() => setIsSidebarCollapsed(false)}>
                 <SettingsPanel
                     pageState={pageState}
                     setPageState={setPageState}

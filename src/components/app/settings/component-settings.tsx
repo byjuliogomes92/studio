@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { produce } from 'immer';
-import { Star, Scaling, Film, Layers, LayoutGrid, Code } from "lucide-react";
+import { Star, Scaling, Film, Layers, LayoutGrid, Code, Copy, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
 // Importe os novos componentes de configuração
@@ -54,8 +55,8 @@ interface ComponentSettingsProps {
   onCodeEdit: (component: PageComponent) => void;
   projectPages: CloudPage[];
   pageState: CloudPage;
-  onDuplicate: (componentId: string) => void;
-  onDelete: (componentId: string) => void;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 const renderComponentSettings = (
@@ -117,7 +118,7 @@ const renderComponentSettings = (
     }
 }
 
-export function ComponentSettings({ component, onComponentChange, onCodeEdit, projectPages, pageState }: ComponentSettingsProps) {
+export function ComponentSettings({ component, onComponentChange, onCodeEdit, projectPages, pageState, onDuplicate, onDelete }: ComponentSettingsProps) {
   if (!component) {
     return null;
   }

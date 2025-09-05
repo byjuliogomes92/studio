@@ -19,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { ComponentSettings } from "./settings/component-settings";
 import { ScrollArea } from "../ui/scroll-area";
 import { ToastAction } from "../ui/toast";
@@ -691,8 +691,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     onPageNameChange={handlePageNameChange}
                     projectPages={projectPages}
                     onCodeEdit={handleCodeEdit}
-                    removeComponent={removeComponent}
-                    duplicateComponent={duplicateComponent}
                 />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -708,28 +706,51 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
 
        <Sheet open={!!selectedComponentId} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
             <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col">
-                <SheetHeader className="p-6 pb-4">
-                    <SheetTitle>Configurações</SheetTitle>
-                    <SheetDescription>
-                        Ajuste as propriedades do componente selecionado.
-                    </SheetDescription>
-                </SheetHeader>
-                <ScrollArea className="flex-grow">
-                    <div className="px-6 pb-6">
-                        {selectedComponent && (
-                         <ComponentSettings
-                            key={selectedComponent.id}
-                            component={selectedComponent}
-                            onComponentChange={handleComponentChange}
-                            onCodeEdit={handleCodeEdit}
-                            projectPages={projectPages}
-                            pageState={pageState}
-                            onDuplicate={duplicateComponent}
-                            onDelete={removeComponent}
-                        />
-                        )}
-                    </div>
-                </ScrollArea>
+                {selectedComponent && (
+                    <>
+                    <SheetHeader className="p-4 border-b">
+                        <SheetTitle className="flex items-center justify-between">
+                            <span>Configurar: {selectedComponent.layerName || selectedComponent.type}</span>
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => duplicateComponent(selectedComponent.id)}>
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta ação não pode ser desfeita e excluirá o componente.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => removeComponent(selectedComponent.id)}>Excluir</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </SheetTitle>
+                    </SheetHeader>
+                    <ScrollArea className="flex-grow">
+                        <div className="p-4">
+                             <ComponentSettings
+                                key={selectedComponent.id}
+                                component={selectedComponent}
+                                onComponentChange={handleComponentChange}
+                                onCodeEdit={handleCodeEdit}
+                                projectPages={projectPages}
+                                pageState={pageState}
+                            />
+                        </div>
+                    </ScrollArea>
+                    </>
+                )}
             </SheetContent>
         </Sheet>
 

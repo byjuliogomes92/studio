@@ -39,8 +39,8 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
     return components
       .map((component) => {
         const childrenHtml = (() => {
-            if (component.type === 'Columns' || component.type === 'Div' || component.type === 'PopUp') {
-                const columnCount = component.props.columnCount || (component.type === 'Div' ? 1 : (component.type === 'PopUp' ? 1 : 0));
+            if (component.type === 'Columns' || component.type === 'Div') {
+                const columnCount = component.props.columnCount || (component.type === 'Div' ? 1 : 0);
                 let columnsContent = '';
                 for (let i = 0; i < columnCount; i++) {
                     const columnComponents = allComponents
@@ -49,6 +49,12 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                     columnsContent += `<div class="column" style="${getColumnStyle(component.props.columnStyles, i)}">${renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)}</div>`;
                 }
                 return columnsContent;
+            }
+             if (component.type === 'PopUp') {
+                const popupComponents = allComponents
+                    .filter(c => c.parentId === component.id)
+                    .sort((a, b) => a.order - b.order);
+                return renderComponents(popupComponents, allComponents, pageState, isForPreview, hideAmpscript);
             }
             return '';
         })();

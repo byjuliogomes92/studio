@@ -532,7 +532,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   
   const toggleSidebar = () => {
     if (sidebarPanelRef.current) {
-        const isCollapsed = sidebarPanelRef.current.getCollapsed();
+        const isCollapsed = sidebarPanelRef.current.isCollapsed();
         if (isCollapsed) {
             sidebarPanelRef.current.expand();
             setIsSidebarCollapsed(false);

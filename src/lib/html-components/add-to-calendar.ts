@@ -43,7 +43,7 @@ export function renderAddToCalendar(component: PageComponent): string {
         buttonTextOutlook = 'Adicionar ao Outlook',
         showGoogle = true,
         showOutlook = true,
-        align = 'left'
+        align = 'center'
     } = component.props;
 
     if (!title || !startTime || !endTime) {
@@ -73,7 +73,7 @@ export function renderAddToCalendar(component: PageComponent): string {
     const justifyContent = align === 'center' ? 'center' : (align === 'right' ? 'flex-end' : 'flex-start');
 
     return `
-        <div class="add-to-calendar-container" style="display: flex; justify-content: ${justifyContent};">
+        <div class="add-to-calendar-container" style="justify-content: ${justifyContent};">
             ${showGoogle ? `<a href="${googleUrl.toString()}" target="_blank" class="add-to-calendar-button google">${googleIcon} ${buttonTextGoogle}</a>` : ''}
             ${showOutlook ? `<a href="${outlookUrl.toString()}" target="_blank" class="add-to-calendar-button outlook">${outlookIcon} ${buttonTextOutlook}</a>` : ''}
         </div>

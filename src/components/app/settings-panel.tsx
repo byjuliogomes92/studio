@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowLeft, Trash2, PlusCircle } from "lucide-react";
+import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowLeft, Trash2, PlusCircle, Megaphone } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -982,7 +982,7 @@ export function SettingsPanel({
                       <AccordionItem value="scheduling" className="bg-card rounded-lg border">
                         <AccordionTrigger className="p-4 text-sm font-medium">
                             <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
+                            <CalendarClock className="h-4 w-4" />
                             <span>Agendamento</span>
                             </div>
                         </AccordionTrigger>

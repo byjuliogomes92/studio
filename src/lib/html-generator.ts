@@ -102,7 +102,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     : `style="${wrapperStyle}"`;
   
   // Floating components and Stripe are handled specially as they don't sit inside the padded container
-  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe'].includes(component.type)) {
+  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer'].includes(component.type)) {
     return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
@@ -870,13 +870,15 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
+  const footerComponent = components.find(c => c.type === 'Footer');
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   const googleFont = styles.fontFamily || 'Roboto';
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
   const floatingElementsHtml = components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
+  const footerHtml = footerComponent ? renderComponent(footerComponent, pageState, isForPreview, '', shouldHideAmpscript) : '';
 
 
   const headerComponent = components.find(c => c.type === 'Header');
@@ -2094,6 +2096,7 @@ ${!isForPreview ? trackingScripts.body : ''}
       ${mainContentHtml}
     </main>
     ${floatingElementsHtml}
+    ${footerHtml}
     ${cookieBannerHtml}
   ` : `
     %%[ IF @isAuthenticated == true THEN ]%%
@@ -2104,6 +2107,7 @@ ${!isForPreview ? trackingScripts.body : ''}
       ${mainContentHtml}
     </main>
     ${floatingElementsHtml}
+    ${footerHtml}
     ${cookieBannerHtml}
     %%[ ELSE ]%%
     ${security.body}

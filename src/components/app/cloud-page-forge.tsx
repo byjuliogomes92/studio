@@ -9,7 +9,7 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical, Code } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity, getPagesForProject } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
@@ -266,7 +266,14 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if (!pageState || !user) return;
     setIsSaving(true);
     try {
-      const finalPageState = { ...pageState };
+      const finalPageState = produce(pageState, draft => {
+          // Ensure footer is always last
+          const footer = draft.components.find(c => c.type === 'Footer');
+          if (footer) {
+              footer.order = 9999;
+          }
+      });
+      
       await updatePage(pageId, finalPageState);
       setSavedPageState(finalPageState);
       resetState(finalPageState);

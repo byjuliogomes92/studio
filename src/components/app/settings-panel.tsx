@@ -942,6 +942,7 @@ export function SettingsPanel({
     };
   
   const stripeComponents = pageState.components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => c.order).sort((a,b) => a-b).map(order => pageState.components.find(c => c.order === order && c.type === 'Stripe' && c.parentId === null)).filter(Boolean) as PageComponent[];
+  const floatingComponents = pageState.components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).sort((a, b) => a.order - b.order);
   const footerComponent = pageState.components.find(c => c.type === 'Footer');
   
     const toDatetimeLocal = (date: any) => {
@@ -1178,6 +1179,32 @@ export function SettingsPanel({
                         </Dropzone>
                     </DndContext>
                     <AddComponentDialog onAddComponent={addComponent} />
+
+                    {floatingComponents.length > 0 && (
+                        <div className="pt-2 mt-2 border-t">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                                <Hand className="h-4 w-4" />
+                                Elementos Flutuantes
+                            </h4>
+                            <div className="space-y-2">
+                                {floatingComponents.map((component, index) => (
+                                     <ComponentItem
+                                        key={component.id}
+                                        component={component}
+                                        selectedComponentId={selectedComponentId}
+                                        setSelectedComponentId={setSelectedComponentId}
+                                        removeComponent={removeComponent}
+                                        duplicateComponent={duplicateComponent}
+                                        moveComponent={moveComponent}
+                                        isFirst={index === 0}
+                                        isLast={index === floatingComponents.length - 1}
+                                        isDraggable={false}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                      {footerComponent && (
                         <div className="pt-2 mt-2 border-t">
                             <ComponentItem

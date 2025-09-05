@@ -237,7 +237,7 @@ function ComponentItem({
       </div>
   );
 
-  return isContainer ? <div className="bg-background/50 p-1.5 rounded-lg border-l-2 border-transparent">{content}</div> : content;
+  return isContainer ? <div className="bg-background/50 p-1.5 rounded-lg border-l-2 border-primary/20">{content}</div> : content;
 }
 
 
@@ -897,33 +897,6 @@ export function SettingsPanel({
         return componentsToRender.map((component, index) => {
             const isContainer = ['Columns', 'Div'].includes(component.type);
 
-            if (isContainer) {
-                const columnCount = component.props.columnCount || (component.type === 'Div' ? 1 : 0);
-                const idPrefix = component.id;
-
-                return (
-                    <SortableItem key={component.id} component={component}>
-                        <ComponentItem
-                            component={component}
-                            selectedComponentId={selectedComponentId}
-                            setSelectedComponentId={setSelectedComponentId}
-                            removeComponent={removeComponent}
-                            duplicateComponent={duplicateComponent}
-                            moveComponent={moveComponent}
-                            isFirst={index === 0}
-                            isLast={index === componentsToRender.length - 1}
-                        >
-                            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount > 0 ? columnCount : 1}, 1fr)` }}>
-                                {Array.from({ length: columnCount > 0 ? columnCount : 1 }).map((_, i) => (
-                                    <Dropzone key={`${idPrefix}-col-${i}`} id={`${idPrefix}-${i}`}>
-                                        {renderComponentsRecursive(component.id, i)}
-                                    </Dropzone>
-                                ))}
-                            </div>
-                        </ComponentItem>
-                    </SortableItem>
-                );
-            }
             return (
                 <SortableItem key={component.id} component={component}>
                     <ComponentItem
@@ -935,7 +908,21 @@ export function SettingsPanel({
                         moveComponent={moveComponent}
                         isFirst={index === 0}
                         isLast={index === componentsToRender.length - 1}
-                    />
+                    >
+                        {isContainer && (() => {
+                            const columnCount = component.props.columnCount || (component.type === 'Div' ? 1 : 0);
+                            const idPrefix = component.id;
+                            return (
+                                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount > 0 ? columnCount : 1}, 1fr)` }}>
+                                    {Array.from({ length: columnCount > 0 ? columnCount : 1 }).map((_, i) => (
+                                        <Dropzone key={`${idPrefix}-col-${i}`} id={`${idPrefix}-${i}`}>
+                                            {renderComponentsRecursive(component.id, i)}
+                                        </Dropzone>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+                    </ComponentItem>
                 </SortableItem>
             );
         });
@@ -1153,7 +1140,7 @@ export function SettingsPanel({
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2 px-4">
                     <div className="space-y-2">
-                        {stripeComponents.map(component => (
+                        {stripeComponents.map((component, index) => (
                             <ComponentItem
                                 key={component.id}
                                 component={component}
@@ -1162,8 +1149,8 @@ export function SettingsPanel({
                                 removeComponent={removeComponent}
                                 duplicateComponent={duplicateComponent}
                                 moveComponent={moveComponent}
-                                isFirst={true}
-                                isLast={true}
+                                isFirst={index === 0}
+                                isLast={index === stripeComponents.length - 1}
                                 isDraggable={false} // Stripe is not draggable
                             />
                         ))}

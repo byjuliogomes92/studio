@@ -38,6 +38,9 @@ import { renderPopUp } from './html-components/popup';
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
     return components
       .map((component) => {
+        // Pass the full pageState down to individual renderers
+        const componentWithState = { ...component, pageState };
+
         let childrenHtml = '';
         if (['Columns', 'Div', 'PopUp'].includes(component.type)) {
             const children = allComponents
@@ -56,7 +59,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                  childrenHtml = renderComponents(children, allComponents, pageState, isForPreview, hideAmpscript);
             }
         }
-        return renderComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+        return renderComponent(componentWithState, pageState, isForPreview, childrenHtml, hideAmpscript);
       }).join('\n');
 }
 
@@ -82,8 +85,6 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       ...otherStyles
   } = styles;
 
-  const layout = component.props.layout || {};
-
   let wrapperClass = 'component-wrapper';
 
   if (entranceAnimation !== 'none') {
@@ -93,49 +94,24 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   if (loopAnimation !== 'none') {
       wrapperClass += ` animation-loop--${loopAnimation}`;
   }
-  
-  if (layout.alignSelf) {
-      otherStyles['margin'] = 
-        layout.alignSelf === 'center' ? 'auto' :
-        layout.alignSelf === 'flex-start' ? '0 auto 0 0' :
-        layout.alignSelf === 'flex-end' ? '0 0 0 auto' : '0';
-  }
-
-  const wrapperStyle = getStyleString(otherStyles);
 
   const animationAttrs = entranceAnimation !== 'none'
-    ? `style="--animation-name: ${entranceAnimation}; --animation-duration: ${animationDuration}s; --animation-delay: ${animationDelay}s; ${wrapperStyle}"`
-    : `style="${wrapperStyle}"`;
+    ? `data-animation="${entranceAnimation}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
+    : '';
   
-  // Add component ID for selection mode in preview
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
+
+  // Render the component's HTML with its own styles, as the wrapper div is now gone for most components.
+  const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   
   // Floating components and Stripe are handled specially as they don't sit inside the padded container
   if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header'].includes(component.type)) {
-    return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+    return renderedComponent;
   }
 
-  // full-width Columns provide their own outer structure
-  if ((component.type === 'Columns' || component.type === 'Div') && component.props.styles?.isFullWidth) {
-      return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
-  }
-
-  // Render the component's HTML
-  const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
-  
-  const headerComponent = pageState.components.find(c => c.type === 'Header');
-  const isHeaderOverlay = headerComponent?.props.overlay || false;
-  
-  // Check if this component is the very first one after an overlay header
-  const isFirstAfterOverlay = isHeaderOverlay && 
-      component.parentId === null && 
-      pageState.components.filter(c => c.parentId === null && !['Header', 'Stripe'].includes(c.type))
-                        .sort((a,b) => a.order - b.order)[0]?.id === component.id;
-
-  let containerStyle = '';
-  if (isFirstAfterOverlay) {
-      // If it's the first component under an overlay header, remove the top padding
-      containerStyle = 'padding-top: 0;';
+  const isFullWidthComponent = ['Columns', 'Div'].includes(component.type) && component.props.styles?.isFullWidth;
+  if (isFullWidthComponent) {
+      return renderedComponent;
   }
   
   const parentComponent = pageState.components.find(c => c.id === component.parentId);
@@ -143,9 +119,8 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   if (parentComponent?.type === 'Div' && parentComponent?.props?.layout?.flexDirection === 'row') {
       return renderedComponent;
   }
-  
-  // Root-level components get the padded container
-  return `<div class="${wrapperClass}" ${animationAttrs} ${selectableAttrs} style="${containerStyle}">
+
+  return `<div class="${wrapperClass}" ${animationAttrs} ${selectableAttrs}>
              <div class="section-container-padded">
                ${renderedComponent}
              </div>
@@ -670,20 +645,6 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         }, { passive: true });
     }
 
-    function setupOverlayHeader() {
-        const header = document.querySelector('.page-header[data-overlay="true"]');
-        if (!header) return;
-
-        const firstSection = document.querySelector('.component-wrapper');
-        const columnsContainer = firstSection?.querySelector('.columns-container');
-
-        if (columnsContainer) {
-            const headerHeight = header.offsetHeight;
-            columnsContainer.style.paddingTop = headerHeight + 'px';
-        }
-    }
-
-
     function setupMobileMenu() {
         const body = document.body;
         const pageHeader = document.querySelector('.page-header');
@@ -794,7 +755,6 @@ const getClientSideScripts = (pageState: CloudPage): string => {
         setupStickyHeader();
         setupFloatingButtons();
         setupAnimations();
-        ${isHeaderOverlay ? 'setupOverlayHeader();' : ''}
     });
     </script>
     `;
@@ -912,8 +872,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const clientSideScripts = getClientSideScripts(pageState);
   
-  const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
-  
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
   
@@ -929,8 +887,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const rootComponents = components.filter(c => c.parentId === null);
   const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, shouldHideAmpscript);
 
-  const headerComponent = components.find(c => c.type === 'Header');
-  
   const bodyStyles = `
     background-color: ${styles.backgroundColor};
     background-image: url(${styles.backgroundImage});
@@ -972,8 +928,8 @@ ${trackingScripts.head}
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
       --theme-color-hover: ${styles.themeColorHover || '#333333'};
-      --header-link-color: ${headerComponent?.props.linkColor || '#333333'};
-      --header-link-hover-color: ${headerComponent?.props.linkHoverColor || '#000000'};
+      --header-link-color: ${pageState.components.find(c => c.type === 'Header')?.props.linkColor || '#333333'};
+      --header-link-hover-color: ${pageState.components.find(c => c.type === 'Header')?.props.linkHoverColor || '#000000'};
     }
     html {
       box-sizing: border-box;
@@ -2181,14 +2137,4 @@ ${!isForPreview ? trackingScripts.body : ''}
   finalHtml = finalHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
   return finalHtml;
-}
-
-function getStyleString(styles: any = {}): string {
-    return Object.entries(styles)
-      .map(([key, value]) => {
-        if (!value) return '';
-        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-        return `${cssKey}: ${value};`;
-      })
-      .join(' ');
 }

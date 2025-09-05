@@ -45,6 +45,7 @@ import { CalendlySettings } from './calendly-settings';
 import { SpacingSettings } from "./spacing-settings";
 import { AnimationSettings } from "./animation-settings";
 import { Textarea } from '@/components/ui/textarea';
+import { AddToCalendarSettings } from "./add-to-calendar-settings";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -94,6 +95,7 @@ const renderComponentSettings = (
       case 'FTPUpload': return <FTPUploadSettings {...props} />;
       case 'DataExtensionUpload': return <DataExtensionUploadSettings {...props} />;
       case 'Calendly': return <CalendlySettings {...props} />;
+      case 'AddToCalendar': return <AddToCalendarSettings {...props} />;
       case 'CustomHTML': return (
         <div className="space-y-2">
             <Label htmlFor="custom-html-content">Código HTML</Label>

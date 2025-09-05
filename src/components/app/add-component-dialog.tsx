@@ -48,6 +48,7 @@ import {
   PlusCircle,
   CalendarClock,
   Layers3,
+  Calendar,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -124,6 +125,7 @@ const componentList: {
       { name: "FTPUpload", icon: UploadCloud, enabled: true },
       { name: "DataExtensionUpload", icon: UploadCloud, enabled: true },
       { name: "Calendly", icon: CalendarClock, enabled: true },
+      { name: "AddToCalendar", icon: Calendar, enabled: true },
       { name: "Chart", icon: BarChart, enabled: false },
     ],
   },

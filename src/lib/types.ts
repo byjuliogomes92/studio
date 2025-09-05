@@ -32,6 +32,7 @@ export type ComponentType =
   | 'FloatingButton'
   | 'Calendly'
   | 'Div'
+  | 'AddToCalendar'
   | 'CustomHTML';
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';

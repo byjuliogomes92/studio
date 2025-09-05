@@ -31,6 +31,7 @@ import { renderFloatingImage } from './html-components/floating-image';
 import { renderFloatingButton } from './html-components/floating-button';
 import { renderCalendly } from './html-components/calendly';
 import { renderDiv } from './html-components/div';
+import { renderAddToCalendar } from './html-components/add-to-calendar';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
@@ -181,6 +182,7 @@ export const renderSingleComponent = (component: PageComponent, pageState: Cloud
     case 'FloatingImage': return renderFloatingImage(component);
     case 'FloatingButton': return renderFloatingButton(component);
     case 'Calendly': return renderCalendly(component);
+    case 'AddToCalendar': return renderAddToCalendar(component);
     case 'Footer': return renderFooter(component);
     case 'CustomHTML': return component.props.htmlContent || '';
     default:
@@ -2081,6 +2083,36 @@ ${trackingScripts.head}
      .password-form .error-message {
         display: block;
         margin-top: 10px;
+    }
+    .add-to-calendar-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .add-to-calendar-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 15px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: 500;
+      color: #FFF;
+      transition: opacity 0.2s;
+    }
+    .add-to-calendar-button:hover {
+        opacity: 0.9;
+    }
+    .add-to-calendar-button.google {
+        background-color: #4285F4;
+    }
+    .add-to-calendar-button.outlook {
+        background-color: #0072C6;
+    }
+    .add-to-calendar-button svg {
+        width: 18px;
+        height: 18px;
     }
     
     @keyframes fadeInUp { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }

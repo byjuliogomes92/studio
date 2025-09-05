@@ -81,7 +81,7 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
     
     // For horizontal layouts, children are rendered directly inside the flex container
     const finalChildrenHtml = flexDirection === 'row' 
-        ? childrenHtml.replace(/<div class="component-wrapper"[^>]*>(.*?)<\/div>/gs, '$1')
+        ? childrenHtml.replace(/<div class="component-wrapper"[^>]*>([\s\S]*?)<\/div>/gs, '$1')
         : childrenHtml;
 
     return `<div class="${wrapperClass}" style="${wrapperStyle}">

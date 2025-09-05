@@ -128,14 +128,12 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       containerStyle = 'padding-top: 0;';
   }
 
-  // If component is inside a Div with horizontal layout, don't wrap it in a block-level element.
   const parentComponent = pageState.components.find(c => c.id === component.parentId);
-  if (parentComponent && parentComponent.type === 'Div' && parentComponent.props.layout?.flexDirection === 'row') {
-      // For horizontal layouts, the renderedComponent itself should be a flex item.
-      // We assume the rendered component is already a block-level or inline-block element.
+  // Do NOT wrap children of horizontal Divs in a block-level wrapper
+  if (parentComponent?.type === 'Div' && parentComponent?.props?.layout?.flexDirection === 'row') {
       return renderedComponent;
   }
-
+  
   // Components inside another component (e.g., in a column) don't get the padded container
   if (component.parentId !== null) {
      return `<div class="${wrapperClass}" ${animationAttrs}>${renderedComponent}</div>`;
@@ -1041,7 +1039,7 @@ ${trackingScripts.head}
     .animation-loop--floating { animation: floating 3s ease-in-out infinite; }
     .animation-loop--shake { animation: shake 0.5s infinite; }
     .animation-loop--wave { animation: wave 2.5s ease-in-out infinite; }
-    .animation-loop--swing { animation: swing 2s ease-in-out infinite; }
+    .animation-loop--swing { animation: swing 2s ease-out infinite; }
 
 
     .section-wrapper[style*="background-color"] {

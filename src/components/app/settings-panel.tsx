@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
@@ -40,6 +39,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { ColorInput } from "./settings/color-input";
+import { ImageInput } from "./settings/image-input";
 
 
 interface SettingsPanelProps {

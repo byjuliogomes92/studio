@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon, GitFork } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon, GitFork, Undo2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons";
 import {
@@ -55,7 +55,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
-import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject, getPageViews, getFormSubmissions } from "@/lib/firestore";
+import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject, getPageViews, getFormSubmissions, unpublishPage } from "@/lib/firestore";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -657,6 +657,7 @@ export function PageList({ projectId }: PageListProps) {
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageToDelete, setPageToDelete] = useState<CloudPage | null>(null);
+  const [pageToUnpublish, setPageToUnpublish] = useState<CloudPage | null>(null);
   
   // Notifications state
   const [notifications, setNotifications] = useState([
@@ -728,6 +729,19 @@ export function PageList({ projectId }: PageListProps) {
       toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a página." });
     } finally {
       setPageToDelete(null);
+    }
+  }
+  
+  const handleUnpublishPage = async () => {
+     if (!pageToUnpublish || !user) return;
+    try {
+      await unpublishPage(pageToUnpublish.id);
+      setPages(prev => prev.map(p => p.id === pageToUnpublish.id ? { ...p, status: 'draft' } : p));
+      toast({ title: "Página des-publicada!" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível des-publicar a página." });
+    } finally {
+      setPageToUnpublish(null);
     }
   }
 
@@ -857,6 +871,28 @@ export function PageList({ projectId }: PageListProps) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
+                {page.status === 'published' && (
+                    <AlertDialog onOpenChange={(open) => !open && setPageToUnpublish(null)}>
+                        <AlertDialogTrigger asChild>
+                             <DropdownMenuItem className="text-orange-500" onSelect={(e) => { e.preventDefault(); setPageToUnpublish(page); }}>
+                                <Undo2 className="mr-2 h-4 w-4" />
+                                Des-publicar
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                         <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação tornará a página indisponível publicamente até que seja publicada novamente.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleUnpublishPage}>Sim, des-publicar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
                 <DropdownMenuItem onClick={() => handleDuplicatePage(page.id)}>
                     <Copy className="mr-2 h-4 w-4" />
                     Duplicar
@@ -1307,21 +1343,6 @@ export function PageList({ projectId }: PageListProps) {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPageToNavigate(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={proceedToEditor}>Continuar Mesmo Assim</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={!!pageToDelete} onOpenChange={(open) => !open && setPageToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente a página "{pageToDelete?.name}".
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPageToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeletePage}>Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

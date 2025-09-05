@@ -344,7 +344,7 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
 
     await Promise.all([
         setDoc(draftRef, pageWithTimestamps),
-        setDoc(publishedRef, pageWithTimestamps)
+        setDoc(publishedRef, { ...pageWithTimestamps, status: 'draft' }) // Ensure published version starts as draft
     ]);
     
     await logActivity(pageData.workspaceId, userId, 'PAGE_CREATED', { pageName: pageData.name });
@@ -374,6 +374,18 @@ export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, 
         await logActivity(pageData.workspaceId, userId, 'PAGE_PUBLISHED', { pageName: pageData.name });
     }
 };
+
+export const unpublishPage = async (pageId: string): Promise<void> => {
+    const db = getDbInstance();
+    const publishedRef = doc(db, 'pages_published', pageId);
+    // We update the status on the published doc to 'draft'.
+    // The public API route will check for status == 'published'.
+    await updateDoc(publishedRef, { status: 'draft' });
+    
+    // Also update the draft to reflect the status change, for UI consistency.
+    const draftRef = doc(db, 'pages_drafts', pageId);
+    await updateDoc(draftRef, { status: 'draft' });
+}
 
 
 export const getPage = async (pageId: string, version: 'drafts' | 'published' = 'drafts'): Promise<CloudPage | null> => {

@@ -24,8 +24,8 @@ export async function GET(
         pageData = await getPageBySlug(pageid, 'published');
     }
 
-    if (!pageData || !pageData.projectId || !pageData.workspaceId) {
-      // If the page doesn't exist or is missing crucial data, it's a 404
+    if (!pageData || !pageData.projectId || !pageData.workspaceId || pageData.status !== 'published') {
+      // If the page doesn't exist, is missing crucial data, or is not published, it's a 404
       return new NextResponse('Page not found', { status: 404 });
     }
 

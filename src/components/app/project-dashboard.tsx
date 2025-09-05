@@ -118,7 +118,7 @@ export function ProjectDashboard() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState(true);
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings | null>(null);
@@ -156,7 +156,7 @@ export function ProjectDashboard() {
 
     const fetchInitialData = async () => {
       if (!user || !activeWorkspace) return;
-      setIsLoading(true);
+      setIsLoadingData(true);
       try {
         const [progress, settings] = await Promise.all([
             getUserProgress(user.uid),
@@ -168,16 +168,14 @@ export function ProjectDashboard() {
         console.error(err);
         toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os dados.' });
       } finally {
-        setIsLoading(false);
+        setIsLoadingData(false);
       }
     };
 
     if (!authLoading && user && activeWorkspace) {
         fetchInitialData();
-    } else if (!authLoading && !user) {
-        router.push('/login');
     }
-  }, [user, authLoading, toast, router, activeWorkspace]);
+  }, [user, authLoading, toast, activeWorkspace]);
 
   const handleNavigateToProject = (projectId: string) => {
     router.push(`/project/${projectId}`);
@@ -352,11 +350,24 @@ export function ProjectDashboard() {
   }, [projects, pages, templates, brands]);
 
 
-  if (isLoading || authLoading || !activeWorkspace) {
+  if (authLoading || isLoadingData) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Logo className="h-12 w-12 animate-star-pulse" />
       </div>
+    );
+  }
+
+  if (!activeWorkspace) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center text-center">
+            <div>
+                <Logo className="h-12 w-12 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold">Nenhum workspace encontrado.</h2>
+                <p className="text-muted-foreground">Parece que algo deu errado. Tente recarregar a página.</p>
+                <Button className="mt-4" onClick={() => window.location.reload()}>Recarregar</Button>
+            </div>
+        </div>
     );
   }
 

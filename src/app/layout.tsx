@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
   description: 'Crie e gerencie Cloud Pages para Salesforce Marketing Cloud com uma interface visual intuitiva, componentes reutilizáveis e publicação instantânea.',
   icons: {
-    icon: `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 0L61.2 38.8L100 50L61.2 61.2L50 100L38.8 61.2L0 50L38.8 38.8L50 0Z" fill="%232563EB"/><path d="M25 10L30.6 29.4L50 35L30.6 40.6L25 60L19.4 40.6L0 35L19.4 29.4L25 10Z" fill="%2360A5FA"/></svg>')}`,
+    icon: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/favicon.png?alt=media&token=b69ade02-5206-439e-a48f-caff2cf1e0b2',
   },
 };
 

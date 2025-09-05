@@ -1091,7 +1091,7 @@ export function SettingsPanel({
                      </AccordionContent>
                   </AccordionItem>
                   
-                  <AccordionItem value="scheduling" className="bg-card rounded-lg border">
+                   <AccordionItem value="scheduling" className="bg-card rounded-lg border">
                     <AccordionTrigger className="p-4 text-sm font-medium">
                         <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />

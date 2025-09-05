@@ -13,6 +13,7 @@ interface ComponentSettingsProps {
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
   projectPages: CloudPage[];
+  pageState: CloudPage;
 }
 
 export function ButtonSettings({ component, onPropChange, onSubPropChange, projectPages }: ComponentSettingsProps) {

@@ -39,7 +39,7 @@ import { getBrandsForUser, updateBrand } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
-import { ComponentSettings } from "./settings/component-settings";
+import { ComponentSettings } from "./component-settings";
 
 
 interface SettingsPanelProps {
@@ -271,7 +271,7 @@ export function SettingsPanel({
     }
   }, [activeWorkspace, toast]);
 
-  const activeBrand = userBrands.find(b => b.id === pageState.brandId);
+  const activeBrand = pageState.brand;
 
   // Sync page state with active brand changes
   useEffect(() => {
@@ -963,6 +963,7 @@ export function SettingsPanel({
               }}
               projectPages={projectPages}
               onCodeEdit={onCodeEdit}
+              pageState={pageState}
             />
           ) : (
             <Accordion type="multiple" defaultValue={['page-settings', 'components']} className="w-full space-y-2">
@@ -1266,45 +1267,6 @@ export function SettingsPanel({
                   </AccordionContent>
               </AccordionItem>
               
-              <AccordionItem value="animation" className="bg-card rounded-lg border">
-                  <AccordionTrigger className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4" />
-                      <span>Animações</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2 px-4">
-                    <div className="space-y-2">
-                      <Label>Animação de Entrada</Label>
-                      <Select value={pageState.styles.animationType || 'none'} onValueChange={(value: AnimationType) => handleStyleChange('animationType', value)}>
-                          <SelectTrigger>
-                              <SelectValue placeholder="Sem animação" />
-                          </SelectTrigger>
-                          <SelectContent>
-                              <SelectItem value="none">Nenhuma</SelectItem>
-                              <SelectItem value="fadeIn">Surgir (Fade In)</SelectItem>
-                              <SelectItem value="fadeInUp">Surgir de Baixo</SelectItem>
-                              <SelectItem value="fadeInLeft">Surgir da Esquerda</SelectItem>
-                              <SelectItem value="fadeInRight">Surgir da Direita</SelectItem>
-                          </SelectContent>
-                      </Select>
-                    </div>
-                    {(pageState.styles.animationType && pageState.styles.animationType !== 'none') && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="animation-duration">Duração (s)</Label>
-                          <Input id="animation-duration" type="number" step="0.1" value={pageState.styles.animationDuration || 1} onChange={e => handleStyleChange('animationDuration', e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="animation-delay">Atraso (s)</Label>
-                          <Input id="animation-delay" type="number" step="0.1" value={pageState.styles.animationDelay || 0} onChange={e => handleStyleChange('animationDelay', e.target.value)} />
-                        </div>
-                      </div>
-                    )}
-                  </AccordionContent>
-              </AccordionItem>
-
-
               <AccordionItem value="meta" className="bg-card rounded-lg border">
                 <AccordionTrigger className="p-4">
                   <div className="flex items-center gap-2">

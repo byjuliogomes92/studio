@@ -1,15 +1,17 @@
 
-import type { PageComponent } from "@/lib/types";
+import type { PageComponent, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
+  pageState: CloudPage;
 }
 
-export function DividerSettings({ component, onPropChange }: ComponentSettingsProps) {
+export function DividerSettings({ component, onPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     return (
         <div className="space-y-4">
@@ -36,14 +38,12 @@ export function DividerSettings({ component, onPropChange }: ComponentSettingsPr
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="divider-color">Cor</Label>
-            <Input
-              id="divider-color"
-              type="color"
-              value={props.color || '#cccccc'}
-              onChange={(e) => onPropChange('color', e.target.value)}
-              className="p-1 h-10"
-            />
+             <ColorInput
+                label="Cor"
+                value={props.color || '#cccccc'}
+                onChange={(value) => onPropChange('color', value)}
+                brand={pageState.brand}
+             />
           </div>
            <div className="space-y-2">
             <Label htmlFor="divider-margin">Margem Vertical (px)</Label>

@@ -1,14 +1,16 @@
 
-import type { PageComponent } from "@/lib/types";
+import type { PageComponent, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
+  pageState: CloudPage;
 }
 
 const lucideIcons = [
@@ -22,7 +24,7 @@ const lucideIcons = [
     { value: 'zap', label: 'Raio' },
 ];
 
-export function FTPUploadSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
+export function FTPUploadSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     return (
         <div className="space-y-4">
@@ -55,12 +57,20 @@ export function FTPUploadSettings({ component, onPropChange, onSubPropChange }: 
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Cor de Fundo</Label>
-                        <Input type="color" value={props.buttonProps?.bgColor || '#000000'} onChange={(e) => onSubPropChange('buttonProps', 'bgColor', e.target.value)} className="p-1 h-10" />
+                         <ColorInput 
+                            label="Cor de Fundo"
+                            value={props.buttonProps?.bgColor || '#000000'}
+                            onChange={value => onSubPropChange('buttonProps', 'bgColor', value)}
+                            brand={pageState.brand}
+                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>Cor do Texto</Label>
-                        <Input type="color" value={props.buttonProps?.textColor || '#FFFFFF'} onChange={(e) => onSubPropChange('buttonProps', 'textColor', e.target.value)} className="p-1 h-10" />
+                        <ColorInput 
+                            label="Cor do Texto"
+                            value={props.buttonProps?.textColor || '#FFFFFF'}
+                            onChange={value => onSubPropChange('buttonProps', 'textColor', value)}
+                            brand={pageState.brand}
+                        />
                     </div>
                 </div>
                 <div className="space-y-2">

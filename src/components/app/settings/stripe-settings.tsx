@@ -1,5 +1,5 @@
 
-import type { PageComponent } from "@/lib/types";
+import type { PageComponent, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { DebouncedTextInput } from "./debounced-text-input";
 import { ImageInput } from "./image-input";
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
+  pageState: CloudPage;
 }
 
 const stripeIcons = [
@@ -20,7 +22,7 @@ const stripeIcons = [
     { value: 'zap', label: 'Raio (Promoção)' },
 ];
 
-export function StripeSettings({ component, onPropChange }: ComponentSettingsProps) {
+export function StripeSettings({ component, onPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     const backgroundType = props.backgroundType || 'solid';
     return (
@@ -52,20 +54,17 @@ export function StripeSettings({ component, onPropChange }: ComponentSettingsPro
             {backgroundType === 'solid' && (
                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="stripe-bg-color">Cor de Fundo</Label>
-                        <Input id="stripe-bg-color" type="color" value={props.backgroundColor || '#000000'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10" />
+                        <ColorInput label="Cor de Fundo" value={props.backgroundColor || '#000000'} onChange={(value) => onPropChange('backgroundColor', value)} brand={pageState.brand} />
                     </div>
                 </div>
             )}
              {backgroundType === 'gradient' && (
                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Cor Inicial</Label>
-                        <Input type="color" value={props.gradientFrom || '#000000'} onChange={(e) => onPropChange('gradientFrom', e.target.value)} className="p-1 h-10" />
+                        <ColorInput label="Cor Inicial" value={props.gradientFrom || '#000000'} onChange={(value) => onPropChange('gradientFrom', value)} brand={pageState.brand} />
                     </div>
                     <div className="space-y-2">
-                        <Label>Cor Final</Label>
-                        <Input type="color" value={props.gradientTo || '#434343'} onChange={(e) => onPropChange('gradientTo', e.target.value)} className="p-1 h-10" />
+                        <ColorInput label="Cor Final" value={props.gradientTo || '#434343'} onChange={(value) => onPropChange('gradientTo', value)} brand={pageState.brand} />
                     </div>
                 </div>
             )}
@@ -80,8 +79,7 @@ export function StripeSettings({ component, onPropChange }: ComponentSettingsPro
             )}
 
             <div className="space-y-2">
-                <Label htmlFor="stripe-text-color">Cor do Texto</Label>
-                <Input id="stripe-text-color" type="color" value={props.textColor || '#FFFFFF'} onChange={(e) => onPropChange('textColor', e.target.value)} className="p-1 h-10" />
+                <ColorInput label="Cor do Texto" value={props.textColor || '#FFFFFF'} onChange={(value) => onPropChange('textColor', value)} brand={pageState.brand} />
             </div>
 
             <Separator />

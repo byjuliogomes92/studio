@@ -1,16 +1,18 @@
 
-import type { PageComponent } from "@/lib/types";
+import type { PageComponent, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
+  pageState: CloudPage;
 }
 
-export function CountdownSettings({ component, onPropChange }: ComponentSettingsProps) {
+export function CountdownSettings({ component, onPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     return (
         <div className="space-y-4">
@@ -36,18 +38,24 @@ export function CountdownSettings({ component, onPropChange }: ComponentSettings
             </Select>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-2">
-              <Label>Cor do Fundo</Label>
-              <Input type="color" value={props.backgroundColor || '#000000'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
-            </div>
-            <div className="space-y-2">
-              <Label>Cor dos Dígitos</Label>
-              <Input type="color" value={props.digitColor || '#FFFFFF'} onChange={(e) => onPropChange('digitColor', e.target.value)} className="p-1 h-10"/>
-            </div>
-            <div className="space-y-2">
-              <Label>Cor dos Rótulos</Label>
-              <Input type="color" value={props.labelColor || '#374151'} onChange={(e) => onPropChange('labelColor', e.target.value)} className="p-1 h-10"/>
-            </div>
+             <ColorInput 
+                label="Fundo"
+                value={props.backgroundColor || '#000000'}
+                onChange={value => onPropChange('backgroundColor', value)}
+                brand={pageState.brand}
+             />
+             <ColorInput 
+                label="Dígitos"
+                value={props.digitColor || '#FFFFFF'}
+                onChange={value => onPropChange('digitColor', value)}
+                brand={pageState.brand}
+             />
+              <ColorInput 
+                label="Rótulos"
+                value={props.labelColor || '#374151'}
+                onChange={value => onPropChange('labelColor', value)}
+                brand={pageState.brand}
+             />
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-2">

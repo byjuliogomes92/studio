@@ -10,12 +10,14 @@ import { cn } from "@/lib/utils";
 import { produce } from 'immer';
 import { ImageInput } from "./image-input";
 import { HeaderLinksManager } from './list-managers';
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
   projectPages: CloudPage[];
+  pageState: CloudPage;
 }
 
 const headerLayouts: { value: HeaderLayout; label: string; viz: React.ReactNode }[] = [
@@ -40,7 +42,7 @@ const lucideIcons = [
 ];
 
 
-export function HeaderSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
+export function HeaderSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     const layout = props.layout || 'logo-left-menu-right';
     const showMenu = layout.includes('menu');
@@ -103,12 +105,10 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange }: Com
                     </div>
                      <div className="grid grid-cols-2 gap-2">
                          <div className="space-y-1">
-                            <Label htmlFor="header-link-color">Cor do Texto</Label>
-                            <Input id="header-link-color" type="color" value={props.linkColor || '#333333'} onChange={(e) => onPropChange('linkColor', e.target.value)} className="p-1 h-10"/>
+                            <ColorInput label="Cor do Texto" value={props.linkColor || '#333333'} onChange={value => onPropChange('linkColor', value)} brand={pageState.brand} />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="header-link-hover-color">Cor (Hover)</Label>
-                            <Input id="header-link-hover-color" type="color" value={props.linkHoverColor || '#000000'} onChange={(e) => onPropChange('linkHoverColor', e.target.value)} className="p-1 h-10"/>
+                            <ColorInput label="Cor (Hover)" value={props.linkHoverColor || '#000000'} onChange={value => onPropChange('linkHoverColor', value)} brand={pageState.brand} />
                         </div>
                     </div>
                 </div>
@@ -127,12 +127,10 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange }: Com
                      <Separator />
                      <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                            <Label htmlFor="header-btn-bg-color">Cor do Fundo</Label>
-                            <Input id="header-btn-bg-color" type="color" value={buttonProps.bgColor || '#3b82f6'} onChange={(e) => onSubPropChange('buttonProps', 'bgColor', e.target.value)} className="p-1 h-10"/>
+                           <ColorInput label="Cor do Fundo" value={buttonProps.bgColor || '#3b82f6'} onChange={value => onSubPropChange('buttonProps', 'bgColor', value)} brand={pageState.brand} />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="header-btn-text-color">Cor do Texto</Label>
-                            <Input id="header-btn-text-color" type="color" value={buttonProps.textColor || '#FFFFFF'} onChange={(e) => onSubPropChange('buttonProps', 'textColor', e.target.value)} className="p-1 h-10"/>
+                           <ColorInput label="Cor do Texto" value={buttonProps.textColor || '#FFFFFF'} onChange={value => onSubPropChange('buttonProps', 'textColor', value)} brand={pageState.brand} />
                         </div>
                      </div>
                      <div className="space-y-2">
@@ -212,24 +210,20 @@ export function HeaderSettings({ component, onPropChange, onSubPropChange }: Com
                 {backgroundType === 'solid' && (
                     <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-2">
-                            <Label htmlFor="header-bg-color">Cor de Fundo Inicial</Label>
-                            <Input id="header-bg-color" type="color" value={props.backgroundColor || '#ffffff'} onChange={(e) => onPropChange('backgroundColor', e.target.value)} className="p-1 h-10"/>
+                            <ColorInput label="Cor de Fundo Inicial" value={props.backgroundColor || '#ffffff'} onChange={value => onPropChange('backgroundColor', value)} brand={pageState.brand} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="header-bg-scroll-color">Cor de Fundo (na Rolagem)</Label>
-                            <Input id="header-bg-scroll-color" type="color" value={props.backgroundColorOnScroll || '#ffffff'} onChange={(e) => onPropChange('backgroundColorOnScroll', e.target.value)} className="p-1 h-10"/>
+                            <ColorInput label="Cor de Fundo (Rolagem)" value={props.backgroundColorOnScroll || '#ffffff'} onChange={value => onPropChange('backgroundColorOnScroll', value)} brand={pageState.brand} />
                         </div>
                     </div>
                 )}
                  {backgroundType === 'gradient' && (
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Cor Inicial</Label>
-                            <Input type="color" value={props.gradientFrom || '#000000'} onChange={(e) => onPropChange('gradientFrom', e.target.value)} className="p-1 h-10" />
+                            <ColorInput label="Cor Inicial" value={props.gradientFrom || '#000000'} onChange={value => onPropChange('gradientFrom', value)} brand={pageState.brand} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Cor Final</Label>
-                            <Input type="color" value={props.gradientTo || '#434343'} onChange={(e) => onPropChange('gradientTo', e.target.value)} className="p-1 h-10" />
+                             <ColorInput label="Cor Final" value={props.gradientTo || '#434343'} onChange={value => onPropChange('gradientTo', value)} brand={pageState.brand} />
                         </div>
                     </div>
                 )}

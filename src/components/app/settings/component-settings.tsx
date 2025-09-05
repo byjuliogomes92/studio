@@ -51,15 +51,17 @@ interface ComponentSettingsProps {
   onComponentChange: (id: string, newProps: Partial<PageComponent>) => void;
   onCodeEdit: (component: PageComponent) => void;
   projectPages: CloudPage[];
+  pageState: CloudPage;
 }
 
 const renderComponentSettings = (
   component: PageComponent,
   onPropChange: (prop: string, value: any) => void,
   onSubPropChange: (prop: string, subProp: string, value: any) => void,
-  projectPages: CloudPage[]
+  projectPages: CloudPage[],
+  pageState: CloudPage,
 ) => {
-    const props = { component, onPropChange, onSubPropChange, projectPages };
+    const props = { component, onPropChange, onSubPropChange, projectPages, pageState };
 
     switch (component.type) {
       case "Div": return <DivSettings {...props} />;
@@ -109,7 +111,7 @@ const renderComponentSettings = (
     }
 }
 
-export function ComponentSettings({ component, onComponentChange, onCodeEdit, projectPages }: ComponentSettingsProps) {
+export function ComponentSettings({ component, onComponentChange, onCodeEdit, projectPages, pageState }: ComponentSettingsProps) {
   const abTestEnabled = component.abTestEnabled || false;
   const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
 
@@ -201,7 +203,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
             <AccordionItem value="general" className="border-b-0">
                 <AccordionTrigger className="text-sm font-medium py-0">Configurações Gerais</AccordionTrigger>
                 <AccordionContent className="pt-4">
-                    {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages)}
+                    {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages, pageState)}
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="spacing" className="border-b-0">
@@ -239,7 +241,8 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
                                     {...component, props: variantProps}, 
                                      (prop, value) => handleVariantPropChange(0, prop, value), 
                                      (prop, subProp, value) => handleVariantSubPropChange(0, prop, subProp, value),
-                                     projectPages
+                                     projectPages,
+                                     pageState
                                   )}
                              </div>
                              <Separator/>

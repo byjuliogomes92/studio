@@ -2,21 +2,22 @@
 import type { PageComponent, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Wand2, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DebouncedTextInput } from "./debounced-text-input";
 import { AiGenerateTextDialog } from "./ai-generate-text-dialog";
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
+  pageState: CloudPage;
 }
 
-function TextStyleSettings({ props, onPropChange }: { props: any, onPropChange: (prop: string, value: any) => void }) {
+function TextStyleSettings({ props, onPropChange, brand }: { props: any, onPropChange: (prop: string, value: any) => void, brand: CloudPage['brand'] }) {
   const styles = props.styles || {};
   
   const handleStyleChange = (prop: string, value: any) => {
@@ -55,13 +56,12 @@ function TextStyleSettings({ props, onPropChange }: { props: any, onPropChange: 
             />
           </div>
            <div className="space-y-2">
-            <Label>Cor</Label>
-            <Input 
-              type="color"
-              value={styles.color || '#000000'} 
-              onChange={(e) => handleStyleChange('color', e.target.value)}
-              className="p-1 h-10"
-            />
+             <ColorInput
+                label="Cor"
+                value={styles.color || '#000000'}
+                onChange={(value) => handleStyleChange('color', value)}
+                brand={brand}
+             />
           </div>
         </div>
          <div className="space-y-2">
@@ -81,7 +81,7 @@ function TextStyleSettings({ props, onPropChange }: { props: any, onPropChange: 
   );
 }
 
-export function TextSettings({ component, onPropChange }: ComponentSettingsProps) {
+export function TextSettings({ component, onPropChange, pageState }: ComponentSettingsProps) {
     const isParagraph = component.type === 'Paragraph';
     return (
         <div className="space-y-4">
@@ -137,7 +137,7 @@ export function TextSettings({ component, onPropChange }: ComponentSettingsProps
               </div>
           </div>
           <Separator />
-          <TextStyleSettings props={component.props} onPropChange={onPropChange} />
+          <TextStyleSettings props={component.props} onPropChange={onPropChange} brand={pageState.brand} />
         </div>
       );
 }

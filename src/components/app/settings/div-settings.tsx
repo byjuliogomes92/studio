@@ -1,5 +1,5 @@
 
-import type { PageComponent } from "@/lib/types";
+import type { PageComponent, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,11 +8,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Slider } from "@/components/ui/slider";
 import { ImageInput } from "./image-input";
 import { produce } from "immer";
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
+  pageState: CloudPage;
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -30,7 +32,7 @@ function hexToRgba(hex: string, alpha: number): string {
     return `rgba(${r},${g},${b},${alpha})`;
 }
 
-export function DivSettings({ component, onSubPropChange, onPropChange }: ComponentSettingsProps) {
+export function DivSettings({ component, onSubPropChange, onPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     const styles = props.styles || {};
     const layout = props.layout || {};
@@ -88,8 +90,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange }: Compon
                             {styles.overlayEnabled && (
                                 <div className="grid grid-cols-2 gap-4">
                                      <div className="space-y-2">
-                                        <Label>Cor da Sobreposição</Label>
-                                        <Input type="color" value={styles.overlayColor || '#000000'} onChange={e => handleStyleChange('overlayColor', e.target.value)} className="p-1 h-10 w-full"/>
+                                        <ColorInput label="Cor da Sobreposição" value={styles.overlayColor || '#000000'} onChange={value => handleStyleChange('overlayColor', value)} brand={pageState.brand} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Opacidade ({Math.round((styles.overlayOpacity || 0.5) * 100)}%)</Label>
@@ -102,19 +103,16 @@ export function DivSettings({ component, onSubPropChange, onPropChange }: Compon
                         {styles.backgroundType === 'gradient' && (
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Cor Inicial</Label>
-                                    <Input type="color" value={styles.gradientFrom || '#000000'} onChange={e => handleStyleChange('gradientFrom', e.target.value)} className="p-1 h-10 w-full" />
+                                    <ColorInput label="Cor Inicial" value={styles.gradientFrom || '#000000'} onChange={value => handleStyleChange('gradientFrom', value)} brand={pageState.brand} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Cor Final</Label>
-                                    <Input type="color" value={styles.gradientTo || '#434343'} onChange={e => handleStyleChange('gradientTo', e.target.value)} className="p-1 h-10 w-full" />
+                                    <ColorInput label="Cor Final" value={styles.gradientTo || '#434343'} onChange={value => handleStyleChange('gradientTo', value)} brand={pageState.brand} />
                                 </div>
                             </div>
                         )}
                          {(styles.backgroundType === 'solid' || !styles.backgroundType) && (
                             <div className="space-y-2">
-                                <Label>Cor de Fundo</Label>
-                                <Input type="color" value={styles.backgroundColor || '#ffffff'} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="p-1 h-10 w-full"/>
+                                <ColorInput label="Cor de Fundo" value={styles.backgroundColor || '#ffffff'} onChange={value => handleStyleChange('backgroundColor', value)} brand={pageState.brand} />
                             </div>
                         )}
                     </AccordionContent>

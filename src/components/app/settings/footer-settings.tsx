@@ -1,5 +1,5 @@
 
-import type { PageComponent, HeaderLink } from "@/lib/types";
+import type { PageComponent, HeaderLink, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { produce } from "immer";
+import { ColorInput } from "./color-input";
 
 const socials = [
     { key: 'facebook', label: 'Facebook' },
@@ -63,7 +64,7 @@ function LinkManager({ title, links = [], onLinksChange }: { title: string, link
     );
 }
 
-export function FooterSettings({ component, onPropChange }: { component: PageComponent, onPropChange: (prop: string, value: any) => void }) {
+export function FooterSettings({ component, onPropChange, pageState }: { component: PageComponent, onPropChange: (prop: string, value: any) => void, pageState: CloudPage }) {
     const { props } = component;
     const styles = props.styles || {};
     const socialLinks = props.socialLinks || {};
@@ -96,8 +97,7 @@ export function FooterSettings({ component, onPropChange }: { component: PageCom
             
             <h4 className="font-medium text-sm">Estilo do Rodapé</h4>
             <div className="space-y-2">
-                <Label htmlFor="footer-bg-color">Cor de Fundo</Label>
-                <Input id="footer-bg-color" type="color" value={styles.backgroundColor || '#FAFAFA'} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="p-1 h-10 w-full"/>
+                <ColorInput label="Cor de Fundo" value={styles.backgroundColor || '#FAFAFA'} onChange={(value) => handleStyleChange('backgroundColor', value)} brand={pageState.brand} />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="footer-border-radius">Cantos Arredondados</Label>

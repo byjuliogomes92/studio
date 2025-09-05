@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -165,6 +165,9 @@ function ComponentItem({
   setSelectedComponentId,
   removeComponent,
   duplicateComponent,
+  moveComponent,
+  isFirst,
+  isLast,
   dndAttributes,
   dndListeners,
   children,
@@ -175,6 +178,9 @@ function ComponentItem({
   setSelectedComponentId: (id: string | null) => void;
   removeComponent: (id: string) => void;
   duplicateComponent: (id: string) => void;
+  moveComponent: (id: string, direction: 'up' | 'down') => void;
+  isFirst: boolean;
+  isLast: boolean;
   dndAttributes?: any;
   dndListeners?: any;
   children?: React.ReactNode;
@@ -213,24 +219,12 @@ function ComponentItem({
                   {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />}
                 </div>
             </Button>
-             <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 flex-shrink-0"
-                onClick={() => duplicateComponent(component.id)}
-                aria-label={`Duplicar componente ${component.type}`}
-            >
-                <Copy className="h-4 w-4" />
-            </Button>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive/80 hover:text-destructive opacity-0 group-hover:opacity-100 flex-shrink-0"
-                onClick={() => removeComponent(component.id)}
-                aria-label={`Remover componente ${component.type}`}
-            >
-                <Trash2 className="h-4 w-4" />
-            </Button>
+             <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveComponent(component.id, 'up')} disabled={isFirst}><ArrowUp className="h-4 w-4"/></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveComponent(component.id, 'down')} disabled={isLast}><ArrowDown className="h-4 w-4"/></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => duplicateComponent(component.id)}><Copy className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeComponent(component.id)}><Trash2 className="h-4 w-4" /></Button>
+            </div>
           </div>
           {isContainer && children && (
             <div className="pl-4 pr-1 pb-1">
@@ -775,6 +769,38 @@ export function SettingsPanel({
     });
   };
 
+    const moveComponent = (componentId: string, direction: 'up' | 'down') => {
+        setPageState(prev => {
+            if (!prev) return null;
+
+            return produce(prev, draft => {
+                const componentToMove = draft.components.find(c => c.id === componentId);
+                if (!componentToMove) return;
+
+                const siblings = draft.components
+                    .filter(c => c.parentId === componentToMove.parentId && c.column === componentToMove.column)
+                    .sort((a, b) => a.order - b.order);
+                
+                const currentIndex = siblings.findIndex(c => c.id === componentId);
+                if (currentIndex === -1) return;
+
+                const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+                if (newIndex >= 0 && newIndex < siblings.length) {
+                    const [movedItem] = siblings.splice(currentIndex, 1);
+                    siblings.splice(newIndex, 0, movedItem);
+
+                    siblings.forEach((sibling, index) => {
+                        const componentInDraft = draft.components.find(c => c.id === sibling.id);
+                        if (componentInDraft) {
+                            componentInDraft.order = index;
+                        }
+                    });
+                }
+            });
+        });
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over) return;
@@ -844,7 +870,7 @@ export function SettingsPanel({
                         const sortedChildren = arrayMove(children, 0, 0); // Just to get a stable sort
                         
                         sortedChildren.forEach((child, index) => {
-                            if (child) { // Check if child is not undefined
+                            if (child) {
                                 const componentToUpdate = draft.components.find(c => c.id === child.id);
                                 if (componentToUpdate) {
                                     componentToUpdate.order = index;
@@ -863,7 +889,7 @@ export function SettingsPanel({
             .sort((a, b) => a.order - b.order)
             .filter(c => !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type));
 
-        return componentsToRender.map(component => {
+        return componentsToRender.map((component, index) => {
             const isContainer = ['Columns', 'Div'].includes(component.type);
 
             if (isContainer) {
@@ -878,6 +904,9 @@ export function SettingsPanel({
                             setSelectedComponentId={setSelectedComponentId}
                             removeComponent={removeComponent}
                             duplicateComponent={duplicateComponent}
+                            moveComponent={moveComponent}
+                            isFirst={index === 0}
+                            isLast={index === componentsToRender.length - 1}
                         >
                             <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount > 0 ? columnCount : 1}, 1fr)` }}>
                                 {Array.from({ length: columnCount > 0 ? columnCount : 1 }).map((_, i) => (
@@ -898,6 +927,9 @@ export function SettingsPanel({
                         setSelectedComponentId={setSelectedComponentId}
                         removeComponent={removeComponent}
                         duplicateComponent={duplicateComponent}
+                        moveComponent={moveComponent}
+                        isFirst={index === 0}
+                        isLast={index === componentsToRender.length - 1}
                     />
                 </SortableItem>
             );
@@ -1102,6 +1134,9 @@ export function SettingsPanel({
                               setSelectedComponentId={setSelectedComponentId}
                               removeComponent={removeComponent}
                               duplicateComponent={duplicateComponent}
+                              moveComponent={moveComponent}
+                              isFirst={true}
+                              isLast={true}
                               isDraggable={false} // Stripe is not draggable
                           />
                       ))}
@@ -1126,6 +1161,9 @@ export function SettingsPanel({
                               setSelectedComponentId={setSelectedComponentId}
                               removeComponent={removeComponent}
                               duplicateComponent={duplicateComponent}
+                              moveComponent={moveComponent}
+                              isFirst={true}
+                              isLast={true}
                               isDraggable={false} // Footer is not draggable
                           />
                       </div>

@@ -398,7 +398,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
         </div>
         <div className="flex-grow overflow-auto">
           <TabsContent value="preview" className="w-full h-full m-0">
-            <div className={cn("h-full w-full flex items-start justify-center p-4 overflow-y-auto", isSelectionMode && "selection-mode")}>
+            <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
               <iframe
                   ref={iframeRef}
                   srcDoc={previewHtmlCode}
@@ -406,6 +406,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                   className={cn(
                       "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
                       selectedDevice.name === 'Desktop' ? 'w-full h-full' : '',
+                      isSelectionMode && 'selection-mode' // This class changes the cursor
                   )}
                   style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : {}}
               />

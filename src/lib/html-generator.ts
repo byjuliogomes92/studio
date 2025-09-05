@@ -945,6 +945,13 @@ ${trackingScripts.head}
       width: 100%;
       overflow-x: hidden;
     }
+    
+    .selection-mode {
+        cursor: pointer !important;
+    }
+    .selection-mode * {
+        pointer-events: none;
+    }
 
     #loader {
         position: fixed;

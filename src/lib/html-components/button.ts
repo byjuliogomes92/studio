@@ -1,44 +1,21 @@
 
 import type { PageComponent, CloudPage, Action } from '@/lib/types';
 
-function getWrapperStyleString(styles: any = {}): string {
-    const forbiddenKeys = ['borderRadius', 'backgroundColor', 'color', 'background'];
-    const wrapperStyles: { [key: string]: any } = {};
-
-    // Only allow non-color related styles on the wrapper
-    Object.entries(styles).forEach(([key, value]) => {
-        if (!value || forbiddenKeys.some(fk => key.toLowerCase().includes(fk))) {
-            return;
-        }
+function getStyleString(styles: any = {}): string {
+    return Object.entries(styles)
+      .map(([key, value]) => {
+        if (!value && value !== 0) return '';
+        // Convert camelCase to kebab-case
         const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-        wrapperStyles[cssKey] = value;
-    });
-
-    return Object.entries(wrapperStyles)
-      .map(([key, value]) => `${key}: ${value};`)
-      .join(' ');
-}
-
-
-function getButtonStyleString(styles: any = {}): string {
-    const buttonStyles: { [key: string]: any } = {};
-
-    const allowedKeys = ['borderRadius', 'backgroundColor', 'color', 'background'];
-     Object.entries(styles).forEach(([key, value]) => {
-        if (value && allowedKeys.some(ak => key.toLowerCase().includes(ak))) {
-            const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-            buttonStyles[cssKey] = value;
-        }
-    });
-
-    return Object.entries(buttonStyles)
-      .map(([key, value]) => `${key}: ${value} !important;`)
+        return `${cssKey}: ${value};`;
+      })
       .join(' ');
 }
 
 
 export function renderButton(component: PageComponent, pageState?: CloudPage): string {
     const { text = 'Clique Aqui', align = 'center', variant = 'default', action } = component.props;
+    const styles = component.props.styles || {};
     
     let href = '#';
     if (action?.type === 'URL') {
@@ -47,28 +24,30 @@ export function renderButton(component: PageComponent, pageState?: CloudPage): s
         href = `%%=CloudPagesURL(${action.pageId})=%%`;
     }
 
-    const componentStyles = component.props.styles || {};
-    
-    // Default styles from brand if available
     const brandStyles = pageState?.brand?.components?.button;
-    const brandButtonRadius = brandStyles?.borderRadius || '0.5rem';
 
-    // Component-specific styles override brand styles
-    const finalBorderRadius = componentStyles.borderRadius || brandButtonRadius;
+    // Build the final styles for the button itself
+    const buttonStyles = {
+        // Start with brand defaults
+        borderRadius: brandStyles?.borderRadius,
+        // Override with component-specific styles
+        ...styles,
+    };
+    const buttonStyleString = getStyleString(buttonStyles);
     
-    const wrapperStyleString = getWrapperStyleString(componentStyles);
-    const buttonInlineStyleString = getButtonStyleString(componentStyles);
-
-    const wrapperStyle = `text-align: ${align}; ${wrapperStyleString}`;
-    
-    // Add border-radius to the final button styles
-    const finalButtonStyle = `border-radius: ${finalBorderRadius}; ${buttonInlineStyleString}`;
+    // The wrapper div only controls alignment
+    const wrapperStyle = `text-align: ${align};`;
     
     const className = `custom-button custom-button--${variant}`;
     
+    // Handle the button element type
+    let element: string;
     if (action?.type === 'CLOSE_POPUP') {
-        return `<div class="button-wrapper" style="${wrapperStyle}"><button class="${className}" style="${finalButtonStyle}" onclick="window.closePopup && window.closePopup()">${text}</button></div>`;
+        element = `<button class="${className}" style="${buttonStyleString}" onclick="window.closePopup && window.closePopup()">${text}</button>`;
+    } else {
+        element = `<a href="${href}" target="_blank" class="${className}" style="${buttonStyleString}">${text}</a>`;
     }
 
-    return `<div class="button-wrapper" style="${wrapperStyle}"><a href="${href}" target="_blank" class="${className}" style="${finalButtonStyle}">${text}</a></div>`;
+    return `<div class="button-wrapper" style="${wrapperStyle}">${element}</div>`;
 }
+

@@ -8,6 +8,7 @@ import type { Template } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Eye, Rocket, Handshake, CalendarClock, Smile, CheckCheck, PartyPopper } from "lucide-react";
+import React from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -184,7 +185,7 @@ export default function TemplatesPage() {
 
   const filteredAndSortedTemplates = useMemo(() => {
     const combined = [
-        ...defaultTemplates.map(t => ({ ...t, id: t.id, isDefault: true })),
+        ...defaultTemplates.map(t => ({ ...t, id: t.id || `default-${Math.random()}`, isDefault: true })),
         ...userTemplates
     ];
     
@@ -294,10 +295,10 @@ export default function TemplatesPage() {
     </DropdownMenu>
   );
   
-  const renderTemplateCard = (template: Template, key: string | number) => {
+  const renderTemplateCard = (template: Template) => {
     const Icon = iconMap[template.icon || 'default'] || Server;
     return (
-     <Dialog key={key}>
+     <Dialog>
         <div
             className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
         >
@@ -414,7 +415,9 @@ export default function TemplatesPage() {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredAndSortedTemplates.map((template) => renderTemplateCard(template, template.id))}
+            {filteredAndSortedTemplates.map((template) => (
+                <React.Fragment key={template.id}>{renderTemplateCard(template)}</React.Fragment>
+            ))}
           </div>
         ) : (
           <div className="border rounded-lg">

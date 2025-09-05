@@ -59,6 +59,15 @@ export function DivSettings({ component, onSubPropChange, onPropChange, pageStat
                                 onCheckedChange={(checked) => handleStyleChange('isFullWidth', checked)}
                             />
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="div-height">Altura da Seção (Height)</Label>
+                            <Input
+                                id="div-height"
+                                value={styles.height || ''}
+                                onChange={(e) => handleStyleChange('height', e.target.value)}
+                                placeholder="Ex: 500px, 100vh, auto"
+                            />
+                        </div>
                          <div className="space-y-2">
                             <Label>Tipo de Fundo</Label>
                             <Select value={styles.backgroundType || 'solid'} onValueChange={(value) => handleStyleChange('backgroundType', value)}>

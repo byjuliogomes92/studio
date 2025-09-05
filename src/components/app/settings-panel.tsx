@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll, Megaphone, Calendar, Library, ArrowLeft } from "lucide-react";
+import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll, Megaphone, Calendar, Library, ArrowLeft, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -172,24 +172,18 @@ function ComponentItem({
   component,
   selectedComponentId,
   setSelectedComponentId,
-  moveComponent,
-  isFirst,
-  isLast,
+  isDraggable = true,
   dndAttributes,
   dndListeners,
   children,
-  isDraggable = true,
 }: {
   component: PageComponent;
   selectedComponentId: string | null;
   setSelectedComponentId: (id: string | null) => void;
-  moveComponent: (id: string, direction: 'up' | 'down') => void;
-  isFirst: boolean;
-  isLast: boolean;
+  isDraggable?: boolean;
   dndAttributes?: any;
   dndListeners?: any;
   children?: React.ReactNode;
-  isDraggable?: boolean;
 }) {
   const Icon = componentIcons[component.type] || Text;
   const isContainer = ['Columns', 'Div', 'PopUp'].includes(component.type);
@@ -233,7 +227,6 @@ function ComponentItem({
 
   return isContainer ? <div className="bg-background/50 p-1.5 rounded-lg border-l-2 border-primary/20">{content}</div> : content;
 }
-
 
 
 export function SettingsPanel({
@@ -694,38 +687,6 @@ export function SettingsPanel({
     });
   };
 
-    const moveComponent = (componentId: string, direction: 'up' | 'down') => {
-        setPageState(prev => {
-            if (!prev) return null;
-
-            return produce(prev, draft => {
-                const componentToMove = draft.components.find(c => c.id === componentId);
-                if (!componentToMove) return;
-
-                const siblings = draft.components
-                    .filter(c => c.parentId === componentToMove.parentId && c.column === componentToMove.column)
-                    .sort((a, b) => a.order - b.order);
-                
-                const currentIndex = siblings.findIndex(c => c.id === componentId);
-                if (currentIndex === -1) return;
-
-                const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-
-                if (newIndex >= 0 && newIndex < siblings.length) {
-                    const [movedItem] = siblings.splice(currentIndex, 1);
-                    siblings.splice(newIndex, 0, movedItem);
-
-                    siblings.forEach((sibling, index) => {
-                        const componentInDraft = draft.components.find(c => c.id === sibling.id);
-                        if (componentInDraft) {
-                            componentInDraft.order = index;
-                        }
-                    });
-                }
-            });
-        });
-    };
-
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over) return;
@@ -745,14 +706,12 @@ export function SettingsPanel({
                 if (!activeComponent) return;
 
                 if (overIsDropzone) {
-                    // Reparenting: Moving a component into a dropzone (root, column, or div)
                     const newParentId = overId.startsWith('root-dropzone') ? null : overId.split('-')[0];
                     const newColumnIndex = overId.includes('-') ? parseInt(overId.split('-')[1], 10) : 0;
                     
                     activeComponent.parentId = newParentId;
                     activeComponent.column = newColumnIndex;
                 } else if (overComponent) {
-                    // Reordering: Dropping a component onto another component
                     const sameContainer = activeComponent.parentId === overComponent.parentId;
                     
                     if (sameContainer) {
@@ -768,7 +727,6 @@ export function SettingsPanel({
                             const [movedItem] = siblings.splice(oldIndex, 1);
                             siblings.splice(newIndex, 0, movedItem);
 
-                            // Update order property based on new array order
                             siblings.forEach((sibling, index) => {
                                 const componentInDraft = draft.components.find(c => c.id === sibling.id);
                                 if (componentInDraft) {
@@ -811,51 +769,35 @@ export function SettingsPanel({
     const renderComponentsRecursive = (parentId: string | null, column: number | null = 0): React.ReactNode[] => {
         const componentsToRender = pageState.components
             .filter(c => c.parentId === parentId && (column === null || c.column === column))
-            .sort((a, b) => a.order - b.order)
-            .filter(c => !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type));
-    
-        // Special case for root level to filter out PopUps from the main flow
-        if (parentId === null) {
-            return componentsToRender
-                .filter(c => c.type !== 'PopUp')
-                .map((component, index, array) => renderSortableComponent(component, index, array));
-        }
-    
-        return componentsToRender.map((component, index, array) => renderSortableComponent(component, index, array));
-    };
-    
-    const renderSortableComponent = (component: PageComponent, index: number, array: PageComponent[]) => {
-        const isContainer = ['Columns', 'Div', 'PopUp'].includes(component.type);
-    
-        return (
+            .sort((a, b) => a.order - b.order);
+        
+        return componentsToRender.map((component) => (
             <SortableItem key={component.id} component={component}>
                 <ComponentItem
                     component={component}
                     selectedComponentId={selectedComponentId}
                     setSelectedComponentId={setSelectedComponentId}
-                    moveComponent={moveComponent}
-                    isFirst={index === 0}
-                    isLast={index === array.length - 1}
                 >
-                    {isContainer && (() => {
-                        const columnCount = component.props.columnCount || 1;
-                        const idPrefix = component.id;
-                        return (
-                            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }}>
-                                {Array.from({ length: columnCount }).map((_, i) => (
-                                    <Dropzone key={`${idPrefix}-col-${i}`} id={`${idPrefix}-${i}`}>
-                                        {renderComponentsRecursive(component.id, i)}
-                                    </Dropzone>
-                                ))}
-                            </div>
-                        );
-                    })()}
+                    {['Columns', 'Div', 'PopUp'].includes(component.type) && (
+                        <div 
+                            className="grid gap-2" 
+                            style={{ gridTemplateColumns: `repeat(${component.props.columnCount || 1}, 1fr)` }}
+                        >
+                            {Array.from({ length: component.props.columnCount || 1 }).map((_, i) => (
+                                <Dropzone key={`${component.id}-col-${i}`} id={`${component.id}-${i}`}>
+                                    {renderComponentsRecursive(component.id, i)}
+                                </Dropzone>
+                            ))}
+                        </div>
+                    )}
                 </ComponentItem>
             </SortableItem>
-        );
+        ));
     };
+    
   
-  const stripeComponents = pageState.components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => c.order).sort((a,b) => a-b).map(order => pageState.components.find(c => c.order === order && c.type === 'Stripe' && c.parentId === null)).filter(Boolean) as PageComponent[];
+  const rootComponents = pageState.components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type));
+  const stripeComponents = pageState.components.filter(c => c.type === 'Stripe' && c.parentId === null).sort((a,b) => a.order - b.order);
   const floatingComponents = pageState.components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).sort((a, b) => a.order - b.order);
   const footerComponent = pageState.components.find(c => c.type === 'Footer');
   const popupComponents = pageState.components.filter(c => c.type === 'PopUp' && c.parentId === null).sort((a, b) => a.order - b.order);
@@ -981,23 +923,20 @@ export function SettingsPanel({
                                       component={component}
                                       selectedComponentId={selectedComponentId}
                                       setSelectedComponentId={setSelectedComponentId}
-                                      moveComponent={moveComponent}
-                                      isFirst={index === 0}
-                                      isLast={index === stripeComponents.length - 1}
                                       isDraggable={false} // Stripe is not draggable
                                   />
                               ))}
                               {stripeComponents.length > 0 && <Separator />}
                           </div>
-                          <DndContext 
+                           <DndContext 
                             sensors={sensors}
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
                           >
-                              <Dropzone id="root-dropzone-0">
-                                  {renderComponentsRecursive(null, 0)}
-                              </Dropzone>
-                          </DndContext>
+                            <Dropzone id="root-dropzone-0">
+                                {renderComponentsRecursive(null)}
+                            </Dropzone>
+                           </DndContext>
                           <AddComponentDialog onAddComponent={addComponent} />
       
                           {floatingComponents.length > 0 && (
@@ -1013,9 +952,6 @@ export function SettingsPanel({
                                               component={component}
                                               selectedComponentId={selectedComponentId}
                                               setSelectedComponentId={setSelectedComponentId}
-                                              moveComponent={moveComponent}
-                                              isFirst={index === 0}
-                                              isLast={index === floatingComponents.length - 1}
                                               isDraggable={false}
                                           />
                                       ))}
@@ -1029,30 +965,9 @@ export function SettingsPanel({
                                       <Megaphone className="h-4 w-4" />
                                       Pop-ups da Página
                                   </h4>
-                                   <DndContext 
-                                      sensors={sensors}
-                                      collisionDetection={closestCenter}
-                                      onDragEnd={handleDragEnd}
-                                  >
-                                      <Dropzone id="root-popup-dropzone-0">
-                                          {popupComponents.map((component, index) => (
-                                              <SortableItem key={component.id} component={component}>
-                                                  <ComponentItem
-                                                      component={component}
-                                                      selectedComponentId={selectedComponentId}
-                                                      setSelectedComponentId={setSelectedComponentId}
-                                                      moveComponent={moveComponent}
-                                                      isFirst={index === 0}
-                                                      isLast={index === popupComponents.length - 1}
-                                                  >
-                                                      <Dropzone id={`${component.id}-0`}>
-                                                          {renderComponentsRecursive(component.id, 0)}
-                                                      </Dropzone>
-                                                  </ComponentItem>
-                                              </SortableItem>
-                                          ))}
-                                      </Dropzone>
-                                  </DndContext>
+                                  <Dropzone id="root-popup-dropzone-0">
+                                    {renderComponentsRecursive(null, 1)}
+                                  </Dropzone>
                               </div>
                           )}
       
@@ -1063,9 +978,6 @@ export function SettingsPanel({
                                       component={footerComponent}
                                       selectedComponentId={selectedComponentId}
                                       setSelectedComponentId={setSelectedComponentId}
-                                      moveComponent={moveComponent}
-                                      isFirst={true}
-                                      isLast={true}
                                       isDraggable={false} // Footer is not draggable
                                   />
                               </div>

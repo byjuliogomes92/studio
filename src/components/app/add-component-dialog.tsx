@@ -341,9 +341,8 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             componentsToAdd = [
                 {
                     id: `div-hero-bg-${baseId}`,
-                    type: 'Columns',
+                    type: 'Div',
                     props: {
-                        columnCount: 1,
                         styles: {
                             isFullWidth: true,
                             backgroundType: 'image',
@@ -352,12 +351,16 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                             paddingBottom: '8rem',
                             paddingLeft: '2rem',
                             paddingRight: '2rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '1rem',
                         }
                     },
                     order: 0, parentId: null, column: 0
                 },
                 { id: `title-${baseId}`, type: 'Title', props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } }, order: 0, parentId: `div-hero-bg-${baseId}`, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '1rem auto', color: '#FFFFFF', textAlign: 'center' } }, order: 1, parentId: `div-hero-bg-${baseId}`, column: 0 },
+                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center' } }, order: 1, parentId: `div-hero-bg-${baseId}`, column: 0 },
                 { id: `btn-${baseId}`, type: 'Button', props: { text: 'Chamada para Ação', href: '#' }, order: 2, parentId: `div-hero-bg-${baseId}`, column: 0 },
             ];
             break;
@@ -475,12 +478,12 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             componentsToAdd = [
                 {
                     id: `cols-footer-${baseId}`,
-                    type: 'Columns',
-                    props: { columnCount: 1, styles: { paddingTop: '2rem', paddingBottom: '2rem', textAlign: 'center' } },
+                    type: 'Div',
+                    props: { styles: { paddingTop: '2rem', paddingBottom: '2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' } },
                     order: 0, parentId: null, column: 0
                 },
                 { id: `img-footer-${baseId}`, type: 'Image', props: { src: 'https://placehold.co/150x50.png', alt: 'Logo da Empresa' }, order: 0, parentId: `cols-footer-${baseId}`, column: 0 },
-                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa. Todos os direitos reservados.`, styles: { fontSize: '0.9rem', marginTop: '1rem' } }, order: 1, parentId: `cols-footer-${baseId}`, column: 0 },
+                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa. Todos os direitos reservados.`, styles: { fontSize: '0.9rem' } }, order: 1, parentId: `cols-footer-${baseId}`, column: 0 },
                 { id: `social-footer-${baseId}`, type: 'SocialIcons', props: { links: { facebook: '#', instagram: '#', twitter: '#' } }, order: 2, parentId: `cols-footer-${baseId}`, column: 0 },
             ];
             break;
@@ -511,15 +514,15 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'footer-newsletter': {
              componentsToAdd = [
                 {
-                    id: `cols-footer-${baseId}`,
-                    type: 'Columns',
-                    props: { columnCount: 1, styles: { paddingTop: '3rem', paddingBottom: '3rem', textAlign: 'center', backgroundColor: '#f9fafb' } },
+                    id: `div-footer-${baseId}`,
+                    type: 'Div',
+                    props: { styles: { paddingTop: '3rem', paddingBottom: '3rem', textAlign: 'center', backgroundColor: '#f9fafb', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' } },
                     order: 0, parentId: null, column: 0
                 },
-                { id: `title-footer-${baseId}`, type: 'Title', props: { text: 'Inscreva-se na nossa Newsletter' }, order: 0, parentId: `cols-footer-${baseId}`, column: 0 },
-                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: 'Fique por dentro das últimas novidades e ofertas especiais.' }, order: 1, parentId: `cols-footer-${baseId}`, column: 0 },
-                { id: `form-footer-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true } }, buttonText: 'Inscrever', formAlign: 'center', buttonAlign: 'center' }, order: 2, parentId: `cols-footer-${baseId}`, column: 0 },
-                { id: `copy-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa.`, styles: { textAlign: 'center', fontSize: '0.8rem', marginTop: '2rem' } }, order: 3, parentId: `cols-footer-${baseId}`, column: 0 },
+                { id: `title-footer-${baseId}`, type: 'Title', props: { text: 'Inscreva-se na nossa Newsletter' }, order: 0, parentId: `div-footer-${baseId}`, column: 0 },
+                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: 'Fique por dentro das últimas novidades e ofertas especiais.' }, order: 1, parentId: `div-footer-${baseId}`, column: 0 },
+                { id: `form-footer-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true } }, buttonText: 'Inscrever', buttonAlign: 'center' }, order: 2, parentId: `div-footer-${baseId}`, column: 0 },
+                { id: `copy-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa.`, styles: { fontSize: '0.8rem', marginTop: '2rem' } }, order: 3, parentId: `div-footer-${baseId}`, column: 0 },
              ];
              break;
         }
@@ -564,9 +567,9 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                     order: 0, parentId: popupId, column: 0 
                 },
                 { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/300/400' }, order: 0, parentId: `cols-${baseId}`, column: 0 },
-                { id: `div-${baseId}`, type: 'Div', props: { styles: { padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' } }, order: 0, parentId: `cols-${baseId}`, column: 1 },
+                { id: `div-${baseId}`, type: 'Div', props: { styles: { padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem', alignItems: 'center' } }, order: 0, parentId: `cols-${baseId}`, column: 1 },
                 { id: `title-${baseId}`, type: 'Title', props: { text: '20% OFF na sua Primeira Compra!', styles: { textAlign: 'center', fontSize: '2rem', lineHeight: '1.2' } }, order: 0, parentId: `div-${baseId}`, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Use o cupom BEMVINDO20 no checkout.', styles: { textAlign: 'center', marginTop: '1rem' } }, order: 1, parentId: `div-${baseId}`, column: 0 },
+                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Use o cupom BEMVINDO20 no checkout.', styles: { textAlign: 'center' } }, order: 1, parentId: `div-${baseId}`, column: 0 },
                 { id: `btn-${baseId}`, type: 'Button', props: { text: 'Ir para a Loja', href: '#' }, order: 2, parentId: `div-${baseId}`, column: 0 },
             ];
             break;
@@ -587,7 +590,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                 },
                 { id: `title-${baseId}`, type: 'Title', props: { text: 'Você tem mais de 18 anos?', styles: { textAlign: 'center' } }, order: 0, parentId: popupId, column: 0 },
                 { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Você deve ter 18 anos ou mais para acessar este conteúdo.', styles: { textAlign: 'center' } }, order: 1, parentId: popupId, column: 0 },
-                { id: `div-${baseId}`, type: 'Div', props: { layout: { flexDirection: 'row', gap: '10px', justifyContent: 'center' } }, order: 2, parentId: popupId, column: 0 },
+                { id: `div-${baseId}`, type: 'Div', props: { styles: { display: 'flex', flexDirection: 'row', gap: '10px', justifyContent: 'center', paddingTop: '1rem' } }, order: 2, parentId: popupId, column: 0 },
                 { id: `btn-no-${baseId}`, type: 'Button', props: { text: 'Não', variant: 'outline', action: { type: 'URL', url: 'https://www.google.com' } }, order: 0, parentId: `div-${baseId}`, column: 0 },
                 { id: `btn-yes-${baseId}`, type: 'Button', props: { text: 'Sim', action: { type: 'CLOSE_POPUP' } }, order: 1, parentId: `div-${baseId}`, column: 0 },
             ];

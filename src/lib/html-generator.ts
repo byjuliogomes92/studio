@@ -38,26 +38,24 @@ import { renderPopUp } from './html-components/popup';
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
     return components
       .map((component) => {
-        const childrenHtml = (() => {
-            if (component.type === 'Columns' || component.type === 'Div') {
-                const columnCount = component.props.columnCount || (component.type === 'Div' ? 1 : 0);
+        let childrenHtml = '';
+        if (['Columns', 'Div', 'PopUp'].includes(component.type)) {
+            const children = allComponents
+                .filter(c => c.parentId === component.id)
+                .sort((a, b) => (a.column || 0) - (b.column || 0) || a.order - b.order);
+            
+            if (component.type === 'Columns') {
+                const columnCount = component.props.columnCount || 2;
                 let columnsContent = '';
                 for (let i = 0; i < columnCount; i++) {
-                    const columnComponents = allComponents
-                      .filter(c => c.parentId === component.id && c.column === i)
-                      .sort((a,b) => a.order - b.order);
+                    const columnComponents = children.filter(c => c.column === i);
                     columnsContent += `<div class="column" style="${getColumnStyle(component.props.columnStyles, i)}">${renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)}</div>`;
                 }
-                return columnsContent;
+                childrenHtml = columnsContent;
+            } else {
+                 childrenHtml = renderComponents(children, allComponents, pageState, isForPreview, hideAmpscript);
             }
-             if (component.type === 'PopUp') {
-                const popupComponents = allComponents
-                    .filter(c => c.parentId === component.id)
-                    .sort((a, b) => a.order - b.order);
-                return renderComponents(popupComponents, allComponents, pageState, isForPreview, hideAmpscript);
-            }
-            return '';
-        })();
+        }
         return renderComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
       }).join('\n');
 }
@@ -914,7 +912,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const clientSideScripts = getClientSideScripts(pageState);
   
   const stripeComponents = components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
-  const footerComponent = components.find(c => c.type === 'Footer');
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
@@ -928,11 +925,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
 
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
-  const floatingElementsHtml = components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
-  const footerHtml = footerComponent ? renderComponent(footerComponent, pageState, isForPreview, '', shouldHideAmpscript) : '';
-  const popupsHtml = components.filter(c => c.type === 'PopUp' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
-
+  const rootComponents = components.filter(c => c.parentId === null);
+  const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, shouldHideAmpscript);
 
   const headerComponent = components.find(c => c.type === 'Header');
   
@@ -2185,27 +2179,15 @@ ${clientSideScripts}
 ${!isForPreview ? trackingScripts.body : ''}
   ${shouldHideAmpscript ? `
     ${renderLoader(meta, styles.themeColor)}
-    ${stripeComponents}
-    <div id="mobile-menu-overlay"></div>
     <main>
       ${mainContentHtml}
     </main>
-    ${floatingElementsHtml}
-    ${footerHtml}
-    ${cookieBannerHtml}
-    ${popupsHtml}
   ` : `
     %%[ IF @isAuthenticated == true THEN ]%%
     ${renderLoader(meta, styles.themeColor)}
-    ${stripeComponents}
-    <div id="mobile-menu-overlay"></div>
     <main>
       ${mainContentHtml}
     </main>
-    ${floatingElementsHtml}
-    ${footerHtml}
-    ${cookieBannerHtml}
-    ${popupsHtml}
     %%[ ELSE ]%%
     ${security.body}
     %%[ ENDIF ]%%

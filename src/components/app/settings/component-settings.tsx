@@ -45,7 +45,6 @@ import { CalendlySettings } from './calendly-settings';
 import { SpacingSettings } from "./spacing-settings";
 import { AnimationSettings } from "./animation-settings";
 import { Textarea } from '@/components/ui/textarea';
-import { LayoutSettings } from './layout-settings';
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -205,12 +204,6 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
                     {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages)}
                 </AccordionContent>
             </AccordionItem>
-             <AccordionItem value="layout" className="border-b-0">
-                <AccordionTrigger className="text-sm font-medium py-0">Layout</AccordionTrigger>
-                 <AccordionContent className="pt-4">
-                     <LayoutSettings props={component.props} onSubPropChange={handleSubPropChange} />
-                </AccordionContent>
-            </AccordionItem>
             <AccordionItem value="spacing" className="border-b-0">
                 <AccordionTrigger className="text-sm font-medium py-0">Espaçamento</AccordionTrigger>
                  <AccordionContent className="pt-4">
@@ -277,3 +270,5 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
     </TooltipProvider>
   )
 }
+
+    

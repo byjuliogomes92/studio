@@ -218,6 +218,14 @@ export interface CloudPage {
     animationDuration?: number;
     animationDelay?: number;
     loopAnimation?: LoopAnimationType;
+    scrollbar?: {
+      enabled: boolean;
+      width: string;
+      trackColor: string;
+      thumbColor: string;
+      thumbHoverColor: string;
+      thumbBorderRadius: string;
+    }
   };
   components: PageComponent[];
   meta: {

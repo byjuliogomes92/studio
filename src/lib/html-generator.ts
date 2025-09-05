@@ -106,7 +106,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
   
   // Floating components and Stripe are handled specially as they don't sit inside the padded container
-  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer'].includes(component.type)) {
+  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'AddToCalendar'].includes(component.type)) {
     return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
@@ -856,6 +856,30 @@ const getFontFaceStyles = (pageState: CloudPage): string => {
     return fontFaceCss;
 };
 
+const getScrollbarStyles = (scrollbarConfig: CloudPage['styles']['scrollbar']): string => {
+  if (!scrollbarConfig || !scrollbarConfig.enabled) {
+    return '';
+  }
+
+  const { width, trackColor, thumbColor, thumbHoverColor, thumbBorderRadius } = scrollbarConfig;
+
+  return `
+    ::-webkit-scrollbar {
+      width: ${width || '10px'};
+    }
+    ::-webkit-scrollbar-track {
+      background: ${trackColor || '#f1f1f1'};
+    }
+    ::-webkit-scrollbar-thumb {
+      background: ${thumbColor || '#888'};
+      border-radius: ${thumbBorderRadius || '5px'};
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: ${thumbHoverColor || '#555'};
+    }
+  `;
+};
+
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false): string {
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
@@ -892,6 +916,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const fontFamilyBody = typography.customFontNameBody || typography.fontFamilyBody || 'Roboto';
 
   const fontFaceStyles = getFontFaceStyles(pageState);
+  const scrollbarStyles = getScrollbarStyles(pageState.styles.scrollbar);
   const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
 
   
@@ -939,6 +964,7 @@ ${shouldHideAmpscript ? '' : ssjsScript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
+    ${scrollbarStyles}
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
       --theme-color-hover: ${styles.themeColorHover || '#333333'};

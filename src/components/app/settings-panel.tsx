@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -40,6 +40,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { ComponentSettings } from "./component-settings";
+import { ColorInput } from "./settings/color-input";
 
 
 interface SettingsPanelProps {
@@ -84,6 +85,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     FloatingImage: Image,
     FloatingButton: MousePointerClick,
     Calendly: CalendarClock,
+    AddToCalendar: CalendarClock,
     CustomHTML: Code,
 };
 
@@ -316,8 +318,23 @@ export function SettingsPanel({
     handleTagChange((pageState.tags || []).filter(tag => tag !== tagToRemove));
   };
 
-  const handleStyleChange = (prop: keyof CloudPage["styles"], value: string) => {
+  const handleStyleChange = (prop: keyof CloudPage["styles"], value: any) => {
     setPageState((prev) => prev ? ({ ...prev, styles: { ...prev.styles, [prop]: value } }) : null);
+  };
+
+  const handleScrollbarStyleChange = (prop: keyof NonNullable<CloudPage['styles']['scrollbar']>, value: any) => {
+    setPageState(prev => {
+        if (!prev) return null;
+        return produce(prev, draft => {
+            if (!draft.styles.scrollbar) {
+                draft.styles.scrollbar = {
+                    enabled: false, width: '10px', trackColor: '#f1f1f1',
+                    thumbColor: '#888888', thumbHoverColor: '#555555', thumbBorderRadius: '5px'
+                };
+            }
+            (draft.styles.scrollbar as any)[prop] = value;
+        });
+    });
   };
 
   const handleBrandComponentStyleChange = async (componentType: 'button' | 'input', prop: string, value: any) => {
@@ -674,6 +691,12 @@ export function SettingsPanel({
                         label: "Upload para Data Extension",
                         dataExtensionKey: "",
                       };
+                      break;
+                  case 'AddToCalendar':
+                      newComponent.props = {
+                          title: 'Meu Evento',
+                          startTime: new Date().toISOString().slice(0, 16),
+                      }
                       break;
               }
               draft.components.push(newComponent);
@@ -1111,6 +1134,45 @@ export function SettingsPanel({
                           {!pageState.brandId && <p className="text-xs text-muted-foreground">Selecione um Kit de Marca para editar.</p>}
                        </div>
                    </div>
+                   <Separator />
+                    <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="scrollbar-settings" className="border-none">
+                            <AccordionTrigger className="text-sm font-medium py-2">
+                                <div className="flex items-center gap-2">
+                                    <Scroll className="h-4 w-4" />
+                                    <span>Barra de Rolagem</span>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4 pt-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="scrollbar-enabled" className="font-normal">Personalizar Barra de Rolagem</Label>
+                                    <Switch
+                                        id="scrollbar-enabled"
+                                        checked={pageState.styles.scrollbar?.enabled || false}
+                                        onCheckedChange={(checked) => handleScrollbarStyleChange('enabled', checked)}
+                                    />
+                                </div>
+                                {pageState.styles.scrollbar?.enabled && (
+                                    <div className="space-y-3 p-3 border rounded-md bg-muted/40">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="scrollbar-width">Largura</Label>
+                                                <Input id="scrollbar-width" value={pageState.styles.scrollbar.width || '12px'} onChange={e => handleScrollbarStyleChange('width', e.target.value)} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="scrollbar-radius">Arredondamento</Label>
+                                                <Input id="scrollbar-radius" value={pageState.styles.scrollbar.thumbBorderRadius || '6px'} onChange={e => handleScrollbarStyleChange('thumbBorderRadius', e.target.value)} />
+                                            </div>
+                                        </div>
+                                         <div className="grid grid-cols-2 gap-4">
+                                            <ColorInput label="Cor do Rastro" value={pageState.styles.scrollbar.trackColor || '#f1f1f1'} onChange={v => handleScrollbarStyleChange('trackColor', v)} />
+                                            <ColorInput label="Cor do Polegar" value={pageState.styles.scrollbar.thumbColor || '#888888'} onChange={v => handleScrollbarStyleChange('thumbColor', v)} />
+                                        </div>
+                                    </div>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
                    <Separator />
                    <div className="space-y-2">
                       <div className="flex items-center gap-1.5">

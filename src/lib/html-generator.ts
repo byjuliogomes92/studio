@@ -847,6 +847,39 @@ const renderLoader = (meta: CloudPage['meta'], themeColor: string): string => {
     `;
 };
 
+const getFontFaceStyles = (pageState: CloudPage): string => {
+    if (!pageState.brand || !pageState.brand.typography) return '';
+
+    const { typography } = pageState.brand;
+    let fontFaceCss = '';
+
+    if (typography.customFontUrlHeadings && typography.customFontNameHeadings) {
+        fontFaceCss += `
+        @font-face {
+            font-family: '${typography.customFontNameHeadings}';
+            src: url('${typography.customFontUrlHeadings}') format('woff2'),
+                 url('${typography.customFontUrlHeadings}') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        `;
+    }
+    if (typography.customFontUrlBody && typography.customFontNameBody) {
+        fontFaceCss += `
+        @font-face {
+            font-family: '${typography.customFontNameBody}';
+            src: url('${typography.customFontUrlBody}') format('woff2'),
+                 url('${typography.customFontUrlBody}') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        `;
+    }
+    return fontFaceCss;
+};
+
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false): string {
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
@@ -877,7 +910,14 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
-  const googleFont = styles.fontFamily || 'Roboto';
+  
+  const { typography } = pageState.brand || { typography: {} };
+  const fontFamilyHeadings = typography.customFontNameHeadings || typography.fontFamilyHeadings || 'Poppins';
+  const fontFamilyBody = typography.customFontNameBody || typography.fontFamilyBody || 'Roboto';
+
+  const fontFaceStyles = getFontFaceStyles(pageState);
+  const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
+
   
   const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
   const floatingElementsHtml = components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
@@ -892,7 +932,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    font-family: "${googleFont}", sans-serif;
+    font-family: "${fontFamilyBody}", sans-serif;
     font-weight: 400;
     margin: 0;
     width: 100%;
@@ -917,11 +957,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <meta name="theme-color" content="${styles.themeColor}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=${googleFont.replace(/ /g, '+')}:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+<link href="${googleFontUrl}" rel="stylesheet">
 ${shouldHideAmpscript ? '' : initialAmpscript}
 ${shouldHideAmpscript ? '' : ssjsScript}
 ${trackingScripts.head}
 <style>
+    ${fontFaceStyles}
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
       --theme-color-hover: ${styles.themeColorHover || '#333333'};
@@ -1215,6 +1256,7 @@ ${trackingScripts.head}
     }
     
     h1, h2 {
+        font-family: "${fontFamilyHeadings}", sans-serif;
         font-weight: bold;
     }
 
@@ -1330,7 +1372,7 @@ ${trackingScripts.head}
         margin: 0;
         border: 1px solid #ccc;
         border-radius: 5px;
-        font-family: "${googleFont}", sans-serif;
+        font-family: "${fontFamilyBody}", sans-serif;
         font-weight: 700;
         font-style: normal;
     }
@@ -1407,7 +1449,7 @@ ${trackingScripts.head}
         color: rgb(196, 11, 11);
         display: none;
         margin-bottom: 10px;
-        font-family: "${googleFont}", sans-serif;
+        font-family: "${fontFamilyBody}", sans-serif;
         font-weight: 700;
         font-style: normal;
         font-size: small;
@@ -1559,7 +1601,7 @@ ${trackingScripts.head}
         -webkit-font-smoothing: antialiased;
         color: rgba(0, 0, 0, 0.87);
         font-size: 0.875rem;
-        font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+        font-family: "${fontFamilyBody}", "Helvetica", "Arial", sans-serif;
         font-weight: 400;
         line-height: 1.43;
         letter-spacing: 0.01071em;

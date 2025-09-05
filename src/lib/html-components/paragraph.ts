@@ -1,12 +1,26 @@
 
 import type { PageComponent } from '@/lib/types';
+import { CloudPage } from '../types';
 
 export function renderParagraph(component: PageComponent, isForPreview: boolean, hideAmpscript: boolean = false): string {
-    const styles = component.props.styles || {};
-    const styleString = getStyleString(styles);
+    const { props, pageState } = component as any; // Allow access to pageState if attached
+    const styles = props.styles || {};
+    const brand = pageState?.brand;
+
+    let finalStyles: any = { ...styles };
+
+    // Apply brand typography if available and not overridden
+    if (brand?.typography) {
+        const { customFontNameBody, fontFamilyBody } = brand.typography;
+        if (!styles.fontFamily) { // Only apply if no specific font is set on the component
+            finalStyles.fontFamily = customFontNameBody || fontFamilyBody;
+        }
+    }
+    
+    const styleString = getStyleString(finalStyles);
     const editableAttrs = isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="text"` : '';
-    const dataBinding = component.props.dataBinding;
-    let text = component.props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.';
+    const dataBinding = props.dataBinding;
+    let text = props.text || 'Este é um parágrafo. Edite o texto no painel de configurações.';
 
     if (dataBinding && !hideAmpscript) {
         text = `%%=v(@${dataBinding})=%%`;
@@ -24,5 +38,3 @@ function getStyleString(styles: any = {}): string {
       })
       .join(' ');
 }
-
-    

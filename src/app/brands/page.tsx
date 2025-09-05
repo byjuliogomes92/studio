@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2, Sun, Moon, Type, Square, Circle, Hand, Image as ImageIcon, Text, Search, HelpCircle, Library } from "lucide-react";
+import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2, Sun, Moon, Type, Square, Circle, Hand, Image as ImageIcon, Text, Search, HelpCircle, Library, Upload } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -90,6 +90,29 @@ const initialBrandState: Omit<Brand, "id" | "createdAt"> = {
     bitly: { encryptedAccessToken: "" },
   },
 };
+
+function FontUploadInput({ label, fontName, fontUrl, onNameChange, onUrlSelect }: { label: string; fontName?: string; fontUrl?: string; onNameChange: (name: string) => void; onUrlSelect: (url: string) => void; }) {
+    return (
+        <div className="space-y-4 p-4 border rounded-md bg-muted/40">
+            <h5 className="font-medium">{label}</h5>
+            <div className="space-y-2">
+                <Label>Nome da Fonte (CSS)</Label>
+                <Input value={fontName || ''} onChange={(e) => onNameChange(e.target.value)} placeholder="Ex: MinhaFonteRegular" />
+            </div>
+             <div className="space-y-2">
+                <Label>URL do Arquivo (.woff, .woff2)</Label>
+                <div className="flex items-center gap-2">
+                    <Input value={fontUrl || ''} onChange={(e) => onUrlSelect(e.target.value)} />
+                    <MediaLibraryDialog onSelectImage={onUrlSelect}>
+                        <Button variant="outline" size="icon">
+                            <Upload className="h-4 w-4" />
+                        </Button>
+                    </MediaLibraryDialog>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function ImageUrlInput({ label, value, onSelect, tooltip }: { label: string; value: string; onSelect: (url: string) => void, tooltip: string }) {
     return (
@@ -467,23 +490,49 @@ export default function BrandsPage() {
                 </div>
               </TabsContent>
               <TabsContent value="typography" className="py-4 space-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor="font-headings">Fonte para Títulos</Label>
-                    <Select value={currentBrand.typography?.fontFamilyHeadings} onValueChange={(value) => handleBrandFieldChange('typography.fontFamilyHeadings', value)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            {googleFonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                <div>
+                  <h4 className="font-semibold text-lg mb-4">Fontes do Google</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="font-headings">Fonte para Títulos</Label>
+                        <Select value={currentBrand.typography?.fontFamilyHeadings} onValueChange={(value) => handleBrandFieldChange('typography.fontFamilyHeadings', value)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {googleFonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="font-body">Fonte para Corpo do Texto</Label>
+                        <Select value={currentBrand.typography?.fontFamilyBody} onValueChange={(value) => handleBrandFieldChange('typography.fontFamilyBody', value)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {googleFonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="font-body">Fonte para Corpo do Texto</Label>
-                    <Select value={currentBrand.typography?.fontFamilyBody} onValueChange={(value) => handleBrandFieldChange('typography.fontFamilyBody', value)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            {googleFonts.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+
+                <div>
+                   <h4 className="font-semibold text-lg mt-6 mb-4">Fontes Customizadas</h4>
+                   <p className="text-sm text-muted-foreground mb-4">Faça o upload dos seus próprios arquivos de fonte (.woff ou .woff2). Isso substituirá a seleção de Fontes do Google.</p>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FontUploadInput
+                          label="Fonte para Títulos"
+                          fontName={currentBrand.typography?.customFontNameHeadings}
+                          fontUrl={currentBrand.typography?.customFontUrlHeadings}
+                          onNameChange={(name) => handleBrandFieldChange('typography.customFontNameHeadings', name)}
+                          onUrlSelect={(url) => handleBrandFieldChange('typography.customFontUrlHeadings', url)}
+                      />
+                       <FontUploadInput
+                          label="Fonte para Corpo do Texto"
+                          fontName={currentBrand.typography?.customFontNameBody}
+                          fontUrl={currentBrand.typography?.customFontUrlBody}
+                          onNameChange={(name) => handleBrandFieldChange('typography.customFontNameBody', name)}
+                          onUrlSelect={(url) => handleBrandFieldChange('typography.customFontUrlBody', url)}
+                      />
+                   </div>
                 </div>
               </TabsContent>
                <TabsContent value="components" className="py-4 space-y-6">

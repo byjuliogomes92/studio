@@ -65,10 +65,6 @@ export function MediaLibraryDialog({ children, onSelectImage }: MediaLibraryDial
       toast({ variant: 'destructive', title: 'Arquivo muito grande', description: 'O tamanho máximo do arquivo é 5MB.' });
       return;
     }
-     if (!file.type.startsWith('image/')) {
-        toast({ variant: 'destructive', title: 'Tipo de arquivo inválido', description: 'Apenas imagens são permitidas.' });
-        return;
-    }
     
     setIsUploading(true);
     try {
@@ -95,7 +91,7 @@ export function MediaLibraryDialog({ children, onSelectImage }: MediaLibraryDial
         <DialogHeader>
           <DialogTitle>Selecionar da Biblioteca de Mídia</DialogTitle>
           <DialogDescription>
-            Escolha uma imagem existente ou faça um novo upload.
+            Escolha um arquivo existente ou faça um novo upload.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-grow overflow-hidden grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
@@ -104,7 +100,7 @@ export function MediaLibraryDialog({ children, onSelectImage }: MediaLibraryDial
                      <label htmlFor="modal-file-upload" className="cursor-pointer w-full">
                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4" />}
                         Fazer Upload
-                        <input id="modal-file-upload" type="file" className="sr-only" onChange={handleFileChange} disabled={isUploading || !activeWorkspace} accept="image/*" />
+                        <input id="modal-file-upload" type="file" className="sr-only" onChange={handleFileChange} disabled={isUploading || !activeWorkspace} />
                     </label>
                 </Button>
                  {isUploading && <p className="text-sm text-center text-muted-foreground">Enviando...</p>}

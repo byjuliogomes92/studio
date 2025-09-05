@@ -91,6 +91,10 @@ export interface Brand {
   typography: {
     fontFamilyHeadings: string;
     fontFamilyBody: string;
+    customFontNameHeadings?: string;
+    customFontUrlHeadings?: string;
+    customFontNameBody?: string;
+    customFontUrlBody?: string;
   };
   colors: {
     theme: 'light' | 'dark' | 'both';

@@ -41,6 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { ColorInput } from "./settings/color-input";
 import { ImageInput } from "./settings/image-input";
+import { ComponentSettings } from './settings/component-settings';
 
 
 interface SettingsPanelProps {
@@ -260,6 +261,8 @@ export function SettingsPanel({
   const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState.publishDate || !!pageState.expiryDate);
   const [tagInput, setTagInput] = useState('');
   const [userBrands, setUserBrands] = useState<Brand[]>([]);
+
+  const selectedComponent = pageState.components.find(c => c.id === selectedComponentId);
 
   useEffect(() => {
     if (activeWorkspace) {
@@ -879,494 +882,517 @@ export function SettingsPanel({
     };
 
     return (
-    <div className="flex flex-col h-full bg-card border-r w-[400px]">
+    <div className="flex flex-col h-full bg-card border-r w-full">
         <ScrollArea className="flex-grow">
-          <TooltipProvider>
-            <div className="p-4 space-y-2">
-                <Accordion type="multiple" defaultValue={['components']} className="w-full space-y-2">
-                  
-                  <AccordionItem value="page-settings" className="bg-card rounded-lg border">
-                    <AccordionTrigger className="p-4 text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
-                        <span>Configurações da Página</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-2 px-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="page-name">Nome da Página</Label>
-                        <Input
-                          id="page-name"
-                          value={pageName}
-                          onChange={(e) => onPageNameChange(e.target.value)}
-                          placeholder="Ex: Campanha Dia das Mães"
-                        />
-                      </div>
-                       <div className="space-y-2">
-                          <Label htmlFor="brand-id">Kit de Marca</Label>
-                          <Select onValueChange={handleBrandChange} value={pageState.brandId || 'none'}>
-                              <SelectTrigger>
-                                  <SelectValue placeholder="Selecione uma marca..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                   <SelectItem value="none">Nenhuma</SelectItem>
-                                  {userBrands.map(brand => (
-                                      <SelectItem key={brand.id} value={brand.id}>
-                                           <div className="flex items-center gap-2">
-                                              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.colors.light.primary }}></div>
-                                              {brand.name}
-                                          </div>
-                                      </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
-                       <div className="space-y-2">
-                          <div className="flex items-center gap-1.5">
-                              <Label htmlFor="page-tags">Tags</Label>
-                              <Tooltip>
-                                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                                  <TooltipContent><p>Use vírgula ou Enter para adicionar tags.</p></TooltipContent>
-                              </Tooltip>
-                          </div>
-                        <div className="flex flex-wrap items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
-                            {(pageState.tags || []).map(tag => (
-                              <div key={tag} className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold", getTagColor(tag))}>
-                                {tag}
-                                <button
-                                  onClick={() => removeTag(tag)}
-                                  className="ml-1 rounded-full p-0.5 hover:bg-black/10"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ))}
-                            <Input
-                              id="page-tags-input"
-                              value={tagInput}
-                              onChange={(e) => setTagInput(e.target.value)}
-                              onKeyDown={handleTagInputKeyDown}
-                              placeholder={pageState.tags?.length ? '' : "Ex: Brasil, Latam"}
-                              className="h-auto flex-1 border-none bg-transparent p-0 shadow-none focus-visible:ring-0"
-                            />
+          {selectedComponent ? (
+              <div className="p-4">
+                  <ComponentSettings
+                      key={selectedComponent.id}
+                      component={selectedComponent}
+                      onComponentChange={(id, props) => {
+                          const newPageState = produce(pageState, draft => {
+                              const comp = draft.components.find(c => c.id === id);
+                              if (comp) {
+                                  Object.assign(comp, props);
+                              }
+                          });
+                          setPageState(newPageState);
+                      }}
+                      onCodeEdit={onCodeEdit}
+                      projectPages={projectPages}
+                      pageState={pageState}
+                      onDuplicate={duplicateComponent}
+                      onDelete={removeComponent}
+                  />
+              </div>
+          ) : (
+            <TooltipProvider>
+              <div className="p-4 space-y-2">
+                  <Accordion type="multiple" defaultValue={['components']} className="w-full space-y-2">
+                    
+                    <AccordionItem value="page-settings" className="bg-card rounded-lg border">
+                      <AccordionTrigger className="p-4 text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          <span>Configurações da Página</span>
                         </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-    
-                  <AccordionItem value="styles" className="bg-card rounded-lg border">
-                    <AccordionTrigger className="p-4 text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <Palette className="h-4 w-4" />
-                        <span>Estilos Globais</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-2 px-4">
-                      <div className="space-y-2">
-                         <ColorInput label="Cor de Fundo" value={pageState.styles.backgroundColor} onChange={(value) => handleStyleChange('backgroundColor', value)} brand={activeBrand}/>
-                      </div>
-                      <div className="space-y-2">
-                        <ImageInput label="URL da Imagem de Fundo" value={pageState.styles.backgroundImage} onPropChange={(prop, value) => handleStyleChange(prop as any, value)} propName="backgroundImage" tooltipText="URL para a imagem de fundo da página."/>
-                      </div>
-                      <div className="space-y-2">
-                         <ColorInput label="Cor do Tema" value={pageState.styles.themeColor} onChange={(value) => handleStyleChange('themeColor', value)} brand={activeBrand} tooltip="Define a cor principal para botões e outros elementos."/>
-                      </div>
-                      <div className="space-y-2">
-                         <ColorInput label="Cor do Tema (Hover)" value={pageState.styles.themeColorHover} onChange={(value) => handleStyleChange('themeColorHover', value)} brand={activeBrand} tooltip="A cor dos botões quando o usuário passa o mouse sobre eles."/>
-                      </div>
-                       <div className="space-y-2">
-                          <Label>Fonte Principal</Label>
-                          <Select value={pageState.styles.fontFamily} onValueChange={(value) => handleStyleChange('fontFamily', value)}>
-                              <SelectTrigger>
-                                  <SelectValue placeholder="Selecione uma fonte" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {googleFonts.map(font => (
-                                      <SelectItem key={font} value={font}>{font}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                       </div>
-                       <Separator />
-                       <div className="space-y-3">
-                           <h4 className="font-medium text-sm">Estilo dos Botões</h4>
-                           <div className="space-y-2">
-                              <Label>Cantos do Botão</Label>
-                              <ToggleGroup type="single" value={buttonBorderRadius} onValueChange={(value) => value && handleBrandComponentStyleChange('button', 'borderRadius', value)} className="w-full" disabled={!pageState.brandId}>
-                                  <ToggleGroupItem value="0.25rem" aria-label="Reto"><Square className="h-5 w-5"/></ToggleGroupItem>
-                                  <ToggleGroupItem value="0.5rem" aria-label="Curvado"><div className="w-5 h-5 border-2 border-current rounded-md"></div></ToggleGroupItem>
-                                  <ToggleGroupItem value="9999px" aria-label="Redondo"><Circle className="h-5 w-5"/></ToggleGroupItem>
-                              </ToggleGroup>
-                              {!pageState.brandId && <p className="text-xs text-muted-foreground">Selecione um Kit de Marca para editar.</p>}
-                           </div>
-                       </div>
-                       <Separator />
-                        <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="scrollbar-settings" className="border-none">
-                                <AccordionTrigger className="text-sm font-medium py-2">
-                                    <div className="flex items-center gap-2">
-                                        <Scroll className="h-4 w-4" />
-                                        <span>Barra de Rolagem</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="space-y-4 pt-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="scrollbar-enabled" className="font-normal">Personalizar Barra de Rolagem</Label>
-                                        <Switch
-                                            id="scrollbar-enabled"
-                                            checked={pageState.styles.scrollbar?.enabled || false}
-                                            onCheckedChange={(checked) => handleScrollbarStyleChange('enabled', checked)}
-                                        />
-                                    </div>
-                                    {pageState.styles.scrollbar?.enabled && (
-                                        <div className="space-y-3 p-3 border rounded-md bg-muted/40">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="scrollbar-width">Largura</Label>
-                                                    <Input id="scrollbar-width" value={pageState.styles.scrollbar.width || '12px'} onChange={e => handleScrollbarStyleChange('width', e.target.value)} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="scrollbar-radius">Arredondamento</Label>
-                                                    <Input id="scrollbar-radius" value={pageState.styles.scrollbar.thumbBorderRadius || '6px'} onChange={e => handleScrollbarStyleChange('thumbBorderRadius', e.target.value)} />
-                                                </div>
-                                            </div>
-                                             <div className="grid grid-cols-2 gap-4">
-                                                <ColorInput label="Cor do Rastro" value={pageState.styles.scrollbar.trackColor || '#f1f1f1'} onChange={v => handleScrollbarStyleChange('trackColor', v)} />
-                                                <ColorInput label="Cor do Polegar" value={pageState.styles.scrollbar.thumbColor || '#888888'} onChange={v => handleScrollbarStyleChange('thumbColor', v)} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                       <Separator />
-                       <div className="space-y-2">
-                          <div className="flex items-center gap-1.5">
-                              <Label htmlFor="custom-css">CSS Personalizado</Label>
-                              <Tooltip>
-                                  <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
-                                  <TooltipContent><p>Adicione seu próprio CSS aqui. Use com cuidado.</p></TooltipContent>
-                              </Tooltip>
-                          </div>
-                          <Textarea 
-                              id="custom-css"
-                              value={pageState.styles.customCss}
-                              onChange={(e) => handleStyleChange('customCss', e.target.value)}
-                              placeholder="Ex: .meu-componente { color: red; }"
-                              rows={8}
-                              className="font-mono text-xs"
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2 px-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="page-name">Nome da Página</Label>
+                          <Input
+                            id="page-name"
+                            value={pageName}
+                            onChange={(e) => onPageNameChange(e.target.value)}
+                            placeholder="Ex: Campanha Dia das Mães"
                           />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-    
-                  <AccordionItem value="meta" className="bg-card rounded-lg border">
-                    <AccordionTrigger className="p-4 text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4" />
-                        <span>SEO & Metadados</span>
-                      </div>
-                    </AccordionTrigger>
-                     <AccordionContent className="space-y-4 pt-2 px-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="meta-title">Título da Página (tag `title`)</Label>
-                            <Input id="meta-title" value={pageState.meta.title} onChange={e => handleMetaChange('title', e.target.value)} />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="meta-desc">Descrição (meta description)</Label>
-                            <Textarea id="meta-desc" value={pageState.meta.metaDescription} onChange={e => handleMetaChange('metaDescription', e.target.value)} rows={3}/>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="meta-keys">Palavras-chave (meta keywords)</Label>
-                            <Input id="meta-keys" value={pageState.meta.metaKeywords} onChange={e => handleMetaChange('metaKeywords', e.target.value)} />
-                        </div>
-                        <Separator/>
-                        <ImageInput
-                            label="URL do Favicon"
-                            value={pageState.meta.faviconUrl}
-                            onPropChange={(prop, value) => handleMetaChange(prop as any, value)}
-                            propName="faviconUrl"
-                            tooltipText="URL para o ícone da aba do navegador (.ico, .png)"
-                        />
-                     </AccordionContent>
-                  </AccordionItem>
-                  
-                   <AccordionItem value="scheduling" className="bg-card rounded-lg border">
-                    <AccordionTrigger className="p-4 text-sm font-medium">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>Agendamento</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-2 px-4">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="scheduling-enabled" className="font-normal">Ativar agendamento</Label>
-                            <Switch id="scheduling-enabled" checked={isSchedulingEnabled} onCheckedChange={toggleScheduling} />
-                        </div>
-                        {isSchedulingEnabled && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="publish-date">Data de Publicação</Label>
-                                    <Input id="publish-date" type="datetime-local" value={toDatetimeLocal(pageState.publishDate)} onChange={(e) => handleScheduleChange('publishDate', e.target.value)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="expiry-date">Data de Expiração</Label>
-                                    <Input id="expiry-date" type="datetime-local" value={toDatetimeLocal(pageState.expiryDate)} onChange={(e) => handleScheduleChange('expiryDate', e.target.value)} />
-                                </div>
-                            </div>
-                        )}
-                    </AccordionContent>
-                  </AccordionItem>
-    
-                  <AccordionItem value="security" className="bg-card rounded-lg border">
-                     <AccordionTrigger className="p-4 text-sm font-medium">
-                        <div className="flex items-center gap-2">
-                            <Lock className="h-4 w-4" />
-                            <span>Segurança</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-2 px-4">
-                        <div className="space-y-2">
-                            <Label>Tipo de Acesso</Label>
-                            <Select value={pageState.meta.security?.type || 'none'} onValueChange={(value) => handleSecurityChange('type', value)}>
-                                <SelectTrigger><SelectValue/></SelectTrigger>
+                         <div className="space-y-2">
+                            <Label htmlFor="brand-id">Kit de Marca</Label>
+                            <Select onValueChange={handleBrandChange} value={pageState.brandId || 'none'}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione uma marca..." />
+                                </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">Público (Nenhuma)</SelectItem>
-                                    <SelectItem value="sso">Login (SSO Marketing Cloud)</SelectItem>
-                                    <SelectItem value="password">Senha (via Data Extension)</SelectItem>
+                                     <SelectItem value="none">Nenhuma</SelectItem>
+                                    {userBrands.map(brand => (
+                                        <SelectItem key={brand.id} value={brand.id}>
+                                             <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: brand.colors.light.primary }}></div>
+                                                {brand.name}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
-                        {pageState.meta.security?.type === 'password' && (
-                            <div className="p-3 border rounded-md space-y-3 bg-muted/40">
-                                 <div className="space-y-2">
-                                    <Label htmlFor="pw-de-key">Chave da DE de Senhas</Label>
-                                    <Input id="pw-de-key" value={pageState.meta.security.passwordConfig?.dataExtensionKey || ''} onChange={e => handlePasswordConfigChange('dataExtensionKey', e.target.value)} />
+                         <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor="page-tags">Tags</Label>
+                                <Tooltip>
+                                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                                    <TooltipContent><p>Use vírgula ou Enter para adicionar tags.</p></TooltipContent>
+                                </Tooltip>
+                            </div>
+                          <div className="flex flex-wrap items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
+                              {(pageState.tags || []).map(tag => (
+                                <div key={tag} className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold", getTagColor(tag))}>
+                                  {tag}
+                                  <button
+                                    onClick={() => removeTag(tag)}
+                                    className="ml-1 rounded-full p-0.5 hover:bg-black/10"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="pw-id-col">Coluna do Identificador</Label>
-                                        <Input id="pw-id-col" value={pageState.meta.security.passwordConfig?.identifierColumn || 'SubscriberKey'} onChange={e => handlePasswordConfigChange('identifierColumn', e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="pw-pass-col">Coluna da Senha</Label>
-                                        <Input id="pw-pass-col" value={pageState.meta.security.passwordConfig?.passwordColumn || 'Password'} onChange={e => handlePasswordConfigChange('passwordColumn', e.target.value)} />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="pw-url-param">Parâmetro na URL</Label>
-                                    <Input id="pw-url-param" value={pageState.meta.security.passwordConfig?.urlParameter || 'id'} onChange={e => handlePasswordConfigChange('urlParameter', e.target.value)} />
-                                </div>
-                            </div>
-                        )}
-                    </AccordionContent>
-                  </AccordionItem>
-    
-                  <AccordionItem value="tracking" className="bg-card rounded-lg border">
-                    <AccordionTrigger className="p-4 text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        <span>Scripts de Tracking</span>
-                      </div>
-                    </AccordionTrigger>
-                     <AccordionContent className="space-y-4 pt-2 px-4">
-                        <div className="p-3 border rounded-md space-y-3">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="ga4-enabled" className="font-medium">Google Analytics 4</Label>
-                                <Switch id="ga4-enabled" checked={pageState.meta.tracking?.ga4?.enabled || false} onCheckedChange={(c) => handleTrackingChange('ga4', 'enabled', c)} />
-                            </div>
-                            {pageState.meta.tracking?.ga4?.enabled && (
-                                <Input placeholder="ID de Aferição (G-...)" value={pageState.meta.tracking?.ga4?.id || ''} onChange={(e) => handleTrackingChange('ga4', 'id', e.target.value)} />
-                            )}
+                              ))}
+                              <Input
+                                id="page-tags-input"
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                onKeyDown={handleTagInputKeyDown}
+                                placeholder={pageState.tags?.length ? '' : "Ex: Brasil, Latam"}
+                                className="h-auto flex-1 border-none bg-transparent p-0 shadow-none focus-visible:ring-0"
+                              />
+                          </div>
                         </div>
-                         <div className="p-3 border rounded-md space-y-3">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="meta-enabled" className="font-medium">Pixel da Meta (Facebook)</Label>
-                                <Switch id="meta-enabled" checked={pageState.meta.tracking?.meta?.enabled || false} onCheckedChange={(c) => handleTrackingChange('meta', 'enabled', c)} />
-                            </div>
-                            {pageState.meta.tracking?.meta?.enabled && (
-                                <Input placeholder="ID do Pixel" value={pageState.meta.tracking?.meta?.id || ''} onChange={(e) => handleTrackingChange('meta', 'id', e.target.value)} />
-                            )}
+                      </AccordionContent>
+                    </AccordionItem>
+      
+                    <AccordionItem value="styles" className="bg-card rounded-lg border">
+                      <AccordionTrigger className="p-4 text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <Palette className="h-4 w-4" />
+                          <span>Estilos Globais</span>
                         </div>
-                         <div className="p-3 border rounded-md space-y-3">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="linkedin-enabled" className="font-medium">Tag do LinkedIn</Label>
-                                <Switch id="linkedin-enabled" checked={pageState.meta.tracking?.linkedin?.enabled || false} onCheckedChange={(c) => handleTrackingChange('linkedin', 'enabled', c)} />
-                            </div>
-                            {pageState.meta.tracking?.linkedin?.enabled && (
-                                <Input placeholder="Partner ID" value={pageState.meta.tracking?.linkedin?.id || ''} onChange={(e) => handleTrackingChange('linkedin', 'id', e.target.value)} />
-                            )}
-                        </div>
-                     </AccordionContent>
-                  </AccordionItem>
-    
-                  <AccordionItem value="cookie" className="bg-card rounded-lg border">
-                    <AccordionTrigger className="p-4 text-sm font-medium">
-                       <div className="flex items-center gap-2">
-                        <Cookie className="h-4 w-4" />
-                        <span>Banner de Cookies</span>
-                       </div>
-                    </AccordionTrigger>
-                     <AccordionContent className="space-y-4 pt-2 px-4">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="cookie-enabled">Habilitar Banner de Cookies</Label>
-                            <Switch id="cookie-enabled" checked={pageState.cookieBanner?.enabled || false} onCheckedChange={(c) => handleCookieBannerChange('enabled', c)} />
-                        </div>
-                        {pageState.cookieBanner?.enabled && (
-                            <>
-                              <div className="space-y-2">
-                                  <Label htmlFor="cookie-text">Texto do Banner</Label>
-                                  <Textarea id="cookie-text" value={pageState.cookieBanner?.text || ''} onChange={(e) => handleCookieBannerChange('text', e.target.value)} rows={3} />
-                              </div>
-                               <div className="space-y-2">
-                                  <Label htmlFor="cookie-button">Texto do Botão</Label>
-                                  <Input id="cookie-button" value={pageState.cookieBanner?.buttonText || ''} onChange={(e) => handleCookieBannerChange('buttonText', e.target.value)} />
-                              </div>
-                            </>
-                        )}
-                     </AccordionContent>
-                  </AccordionItem>
-                  
-                   <AccordionItem value="ampscript" className="bg-card rounded-lg border">
-                     <AccordionTrigger className="p-4 text-sm font-medium">
-                       <div className="flex items-center gap-2">
-                        <Code className="h-4 w-4" />
-                        <span>AMPScript Customizado</span>
-                       </div>
-                    </AccordionTrigger>
-                     <AccordionContent className="space-y-4 pt-2 px-4">
-                       <Dialog open={isAmpscriptDialogOpen} onOpenChange={setIsAmpscriptDialogOpen}>
-                          <DialogTrigger asChild>
-                             <Button variant="outline" className="w-full">
-                                <Bot className="mr-2 h-4 w-4"/>
-                                Usar Biblioteca de Automações
-                             </Button>
-                          </DialogTrigger>
-                           <AmpscriptSnippetDialog 
-                               currentCode={pageState.meta.customAmpscript || ''}
-                               onCodeChange={handleAmpscriptChange}
-                               onClose={() => setIsAmpscriptDialogOpen(false)}
-                           />
-                       </Dialog>
-                        <Textarea 
-                          value={pageState.meta.customAmpscript || ''}
-                          onChange={(e) => handleMetaChange('customAmpscript', e.target.value)}
-                          placeholder="%%[ /* Seu AMPScript aqui */ ]%%"
-                          rows={10}
-                          className="font-mono text-xs"
-                        />
-                     </AccordionContent>
-                  </AccordionItem>
-    
-                  <AccordionItem value="components" className="bg-card rounded-lg border">
-                    <AccordionTrigger className="p-4 text-sm font-medium">
-                       <div className="flex items-center gap-2">
-                        <LayoutGrid className="h-4 w-4" />
-                        <span>Componentes</span>
-                       </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pt-2 px-4">
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2 px-4">
                         <div className="space-y-2">
-                            {stripeComponents.map((component, index) => (
-                                <ComponentItem
-                                    key={component.id}
-                                    component={component}
-                                    selectedComponentId={selectedComponentId}
-                                    setSelectedComponentId={setSelectedComponentId}
-                                    moveComponent={moveComponent}
-                                    isFirst={index === 0}
-                                    isLast={index === stripeComponents.length - 1}
-                                    isDraggable={false} // Stripe is not draggable
-                                />
-                            ))}
-                            {stripeComponents.length > 0 && <Separator />}
+                           <ColorInput label="Cor de Fundo" value={pageState.styles.backgroundColor} onChange={(value) => handleStyleChange('backgroundColor', value)} brand={activeBrand}/>
                         </div>
-                        <DndContext 
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={handleDragEnd}
-                        >
-                            <Dropzone id="root-dropzone-0">
-                                {renderComponentsRecursive(null, 0)}
-                            </Dropzone>
-                        </DndContext>
-                        <AddComponentDialog onAddComponent={addComponent} />
-    
-                        {floatingComponents.length > 0 && (
-                            <div className="pt-2 mt-2 border-t">
-                                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                                    <Hand className="h-4 w-4" />
-                                    Elementos Flutuantes
-                                </h4>
-                                <div className="space-y-2">
-                                    {floatingComponents.map((component, index) => (
-                                         <ComponentItem
-                                            key={component.id}
-                                            component={component}
-                                            selectedComponentId={selectedComponentId}
-                                            setSelectedComponentId={setSelectedComponentId}
-                                            moveComponent={moveComponent}
-                                            isFirst={index === 0}
-                                            isLast={index === floatingComponents.length - 1}
-                                            isDraggable={false}
-                                        />
+                        <div className="space-y-2">
+                          <ImageInput label="URL da Imagem de Fundo" value={pageState.styles.backgroundImage} onPropChange={(prop, value) => handleStyleChange(prop as any, value)} propName="backgroundImage" tooltipText="URL para a imagem de fundo da página."/>
+                        </div>
+                        <div className="space-y-2">
+                           <ColorInput label="Cor do Tema" value={pageState.styles.themeColor} onChange={(value) => handleStyleChange('themeColor', value)} brand={activeBrand} tooltip="Define a cor principal para botões e outros elementos."/>
+                        </div>
+                        <div className="space-y-2">
+                           <ColorInput label="Cor do Tema (Hover)" value={pageState.styles.themeColorHover} onChange={(value) => handleStyleChange('themeColorHover', value)} brand={activeBrand} tooltip="A cor dos botões quando o usuário passa o mouse sobre eles."/>
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Fonte Principal</Label>
+                            <Select value={pageState.styles.fontFamily} onValueChange={(value) => handleStyleChange('fontFamily', value)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione uma fonte" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {googleFonts.map(font => (
+                                        <SelectItem key={font} value={font}>{font}</SelectItem>
                                     ))}
+                                </SelectContent>
+                            </Select>
+                         </div>
+                         <Separator />
+                         <div className="space-y-3">
+                             <h4 className="font-medium text-sm">Estilo dos Botões</h4>
+                             <div className="space-y-2">
+                                <Label>Cantos do Botão</Label>
+                                <ToggleGroup type="single" value={buttonBorderRadius} onValueChange={(value) => value && handleBrandComponentStyleChange('button', 'borderRadius', value)} className="w-full" disabled={!pageState.brandId}>
+                                    <ToggleGroupItem value="0.25rem" aria-label="Reto"><Square className="h-5 w-5"/></ToggleGroupItem>
+                                    <ToggleGroupItem value="0.5rem" aria-label="Curvado"><div className="w-5 h-5 border-2 border-current rounded-md"></div></ToggleGroupItem>
+                                    <ToggleGroupItem value="9999px" aria-label="Redondo"><Circle className="h-5 w-5"/></ToggleGroupItem>
+                                </ToggleGroup>
+                                {!pageState.brandId && <p className="text-xs text-muted-foreground">Selecione um Kit de Marca para editar.</p>}
+                             </div>
+                         </div>
+                         <Separator />
+                          <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem value="scrollbar-settings" className="border-none">
+                                  <AccordionTrigger className="text-sm font-medium py-2">
+                                      <div className="flex items-center gap-2">
+                                          <Scroll className="h-4 w-4" />
+                                          <span>Barra de Rolagem</span>
+                                      </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="space-y-4 pt-2">
+                                      <div className="flex items-center justify-between">
+                                          <Label htmlFor="scrollbar-enabled" className="font-normal">Personalizar Barra de Rolagem</Label>
+                                          <Switch
+                                              id="scrollbar-enabled"
+                                              checked={pageState.styles.scrollbar?.enabled || false}
+                                              onCheckedChange={(checked) => handleScrollbarStyleChange('enabled', checked)}
+                                          />
+                                      </div>
+                                      {pageState.styles.scrollbar?.enabled && (
+                                          <div className="space-y-3 p-3 border rounded-md bg-muted/40">
+                                              <div className="grid grid-cols-2 gap-4">
+                                                  <div className="space-y-2">
+                                                      <Label htmlFor="scrollbar-width">Largura</Label>
+                                                      <Input id="scrollbar-width" value={pageState.styles.scrollbar.width || '12px'} onChange={e => handleScrollbarStyleChange('width', e.target.value)} />
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                      <Label htmlFor="scrollbar-radius">Arredondamento</Label>
+                                                      <Input id="scrollbar-radius" value={pageState.styles.scrollbar.thumbBorderRadius || '6px'} onChange={e => handleScrollbarStyleChange('thumbBorderRadius', e.target.value)} />
+                                                  </div>
+                                              </div>
+                                               <div className="grid grid-cols-2 gap-4">
+                                                  <ColorInput label="Cor do Rastro" value={pageState.styles.scrollbar.trackColor || '#f1f1f1'} onChange={v => handleScrollbarStyleChange('trackColor', v)} />
+                                                  <ColorInput label="Cor do Polegar" value={pageState.styles.scrollbar.thumbColor || '#888888'} onChange={v => handleScrollbarStyleChange('thumbColor', v)} />
+                                              </div>
+                                          </div>
+                                      )}
+                                  </AccordionContent>
+                              </AccordionItem>
+                          </Accordion>
+                         <Separator />
+                         <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor="custom-css">CSS Personalizado</Label>
+                                <Tooltip>
+                                    <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
+                                    <TooltipContent><p>Adicione seu próprio CSS aqui. Use com cuidado.</p></TooltipContent>
+                                </Tooltip>
+                            </div>
+                            <Textarea 
+                                id="custom-css"
+                                value={pageState.styles.customCss}
+                                onChange={(e) => handleStyleChange('customCss', e.target.value)}
+                                placeholder="Ex: .meu-componente { color: red; }"
+                                rows={8}
+                                className="font-mono text-xs"
+                            />
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+      
+                    <AccordionItem value="meta" className="bg-card rounded-lg border">
+                      <AccordionTrigger className="p-4 text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          <span>SEO & Metadados</span>
+                        </div>
+                      </AccordionTrigger>
+                       <AccordionContent className="space-y-4 pt-2 px-4">
+                          <div className="space-y-2">
+                              <Label htmlFor="meta-title">Título da Página (tag `title`)</Label>
+                              <Input id="meta-title" value={pageState.meta.title} onChange={e => handleMetaChange('title', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="meta-desc">Descrição (meta description)</Label>
+                              <Textarea id="meta-desc" value={pageState.meta.metaDescription} onChange={e => handleMetaChange('metaDescription', e.target.value)} rows={3}/>
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="meta-keys">Palavras-chave (meta keywords)</Label>
+                              <Input id="meta-keys" value={pageState.meta.metaKeywords} onChange={e => handleMetaChange('metaKeywords', e.target.value)} />
+                          </div>
+                          <Separator/>
+                          <ImageInput
+                              label="URL do Favicon"
+                              value={pageState.meta.faviconUrl}
+                              onPropChange={(prop, value) => handleMetaChange(prop as any, value)}
+                              propName="faviconUrl"
+                              tooltipText="URL para o ícone da aba do navegador (.ico, .png)"
+                          />
+                       </AccordionContent>
+                    </AccordionItem>
+                    
+                     <AccordionItem value="scheduling" className="bg-card rounded-lg border">
+                      <AccordionTrigger className="p-4 text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              <span>Agendamento</span>
+                          </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2 px-4">
+                          <div className="flex items-center justify-between">
+                              <Label htmlFor="scheduling-enabled" className="font-normal">Ativar agendamento</Label>
+                              <Switch id="scheduling-enabled" checked={isSchedulingEnabled} onCheckedChange={toggleScheduling} />
+                          </div>
+                          {isSchedulingEnabled && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                      <Label htmlFor="publish-date">Data de Publicação</Label>
+                                      <Input id="publish-date" type="datetime-local" value={toDatetimeLocal(pageState.publishDate)} onChange={(e) => handleScheduleChange('publishDate', e.target.value)} />
+                                  </div>
+                                  <div className="space-y-2">
+                                      <Label htmlFor="expiry-date">Data de Expiração</Label>
+                                      <Input id="expiry-date" type="datetime-local" value={toDatetimeLocal(pageState.expiryDate)} onChange={(e) => handleScheduleChange('expiryDate', e.target.value)} />
+                                  </div>
+                              </div>
+                          )}
+                      </AccordionContent>
+                    </AccordionItem>
+      
+                    <AccordionItem value="security" className="bg-card rounded-lg border">
+                       <AccordionTrigger className="p-4 text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                              <Lock className="h-4 w-4" />
+                              <span>Segurança</span>
+                          </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2 px-4">
+                          <div className="space-y-2">
+                              <Label>Tipo de Acesso</Label>
+                              <Select value={pageState.meta.security?.type || 'none'} onValueChange={(value) => handleSecurityChange('type', value)}>
+                                  <SelectTrigger><SelectValue/></SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="none">Público (Nenhuma)</SelectItem>
+                                      <SelectItem value="sso">Login (SSO Marketing Cloud)</SelectItem>
+                                      <SelectItem value="password">Senha (via Data Extension)</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                          </div>
+                          {pageState.meta.security?.type === 'password' && (
+                              <div className="p-3 border rounded-md space-y-3 bg-muted/40">
+                                   <div className="space-y-2">
+                                      <Label htmlFor="pw-de-key">Chave da DE de Senhas</Label>
+                                      <Input id="pw-de-key" value={pageState.meta.security.passwordConfig?.dataExtensionKey || ''} onChange={e => handlePasswordConfigChange('dataExtensionKey', e.target.value)} />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                          <Label htmlFor="pw-id-col">Coluna do Identificador</Label>
+                                          <Input id="pw-id-col" value={pageState.meta.security.passwordConfig?.identifierColumn || 'SubscriberKey'} onChange={e => handlePasswordConfigChange('identifierColumn', e.target.value)} />
+                                      </div>
+                                      <div className="space-y-2">
+                                          <Label htmlFor="pw-pass-col">Coluna da Senha</Label>
+                                          <Input id="pw-pass-col" value={pageState.meta.security.passwordConfig?.passwordColumn || 'Password'} onChange={e => handlePasswordConfigChange('passwordColumn', e.target.value)} />
+                                      </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                      <Label htmlFor="pw-url-param">Parâmetro na URL</Label>
+                                      <Input id="pw-url-param" value={pageState.meta.security.passwordConfig?.urlParameter || 'id'} onChange={e => handlePasswordConfigChange('urlParameter', e.target.value)} />
+                                  </div>
+                              </div>
+                          )}
+                      </AccordionContent>
+                    </AccordionItem>
+      
+                    <AccordionItem value="tracking" className="bg-card rounded-lg border">
+                      <AccordionTrigger className="p-4 text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4" />
+                          <span>Scripts de Tracking</span>
+                        </div>
+                      </AccordionTrigger>
+                       <AccordionContent className="space-y-4 pt-2 px-4">
+                          <div className="p-3 border rounded-md space-y-3">
+                              <div className="flex items-center justify-between">
+                                  <Label htmlFor="ga4-enabled" className="font-medium">Google Analytics 4</Label>
+                                  <Switch id="ga4-enabled" checked={pageState.meta.tracking?.ga4?.enabled || false} onCheckedChange={(c) => handleTrackingChange('ga4', 'enabled', c)} />
+                              </div>
+                              {pageState.meta.tracking?.ga4?.enabled && (
+                                  <Input placeholder="ID de Aferição (G-...)" value={pageState.meta.tracking?.ga4?.id || ''} onChange={(e) => handleTrackingChange('ga4', 'id', e.target.value)} />
+                              )}
+                          </div>
+                           <div className="p-3 border rounded-md space-y-3">
+                              <div className="flex items-center justify-between">
+                                  <Label htmlFor="meta-enabled" className="font-medium">Pixel da Meta (Facebook)</Label>
+                                  <Switch id="meta-enabled" checked={pageState.meta.tracking?.meta?.enabled || false} onCheckedChange={(c) => handleTrackingChange('meta', 'enabled', c)} />
+                              </div>
+                              {pageState.meta.tracking?.meta?.enabled && (
+                                  <Input placeholder="ID do Pixel" value={pageState.meta.tracking?.meta?.id || ''} onChange={(e) => handleTrackingChange('meta', 'id', e.target.value)} />
+                              )}
+                          </div>
+                           <div className="p-3 border rounded-md space-y-3">
+                              <div className="flex items-center justify-between">
+                                  <Label htmlFor="linkedin-enabled" className="font-medium">Tag do LinkedIn</Label>
+                                  <Switch id="linkedin-enabled" checked={pageState.meta.tracking?.linkedin?.enabled || false} onCheckedChange={(c) => handleTrackingChange('linkedin', 'enabled', c)} />
+                              </div>
+                              {pageState.meta.tracking?.linkedin?.enabled && (
+                                  <Input placeholder="Partner ID" value={pageState.meta.tracking?.linkedin?.id || ''} onChange={(e) => handleTrackingChange('linkedin', 'id', e.target.value)} />
+                              )}
+                          </div>
+                       </AccordionContent>
+                    </AccordionItem>
+      
+                    <AccordionItem value="cookie" className="bg-card rounded-lg border">
+                      <AccordionTrigger className="p-4 text-sm font-medium">
+                         <div className="flex items-center gap-2">
+                          <Cookie className="h-4 w-4" />
+                          <span>Banner de Cookies</span>
+                         </div>
+                      </AccordionTrigger>
+                       <AccordionContent className="space-y-4 pt-2 px-4">
+                          <div className="flex items-center justify-between">
+                              <Label htmlFor="cookie-enabled">Habilitar Banner de Cookies</Label>
+                              <Switch id="cookie-enabled" checked={pageState.cookieBanner?.enabled || false} onCheckedChange={(c) => handleCookieBannerChange('enabled', c)} />
+                          </div>
+                          {pageState.cookieBanner?.enabled && (
+                              <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="cookie-text">Texto do Banner</Label>
+                                    <Textarea id="cookie-text" value={pageState.cookieBanner?.text || ''} onChange={(e) => handleCookieBannerChange('text', e.target.value)} rows={3} />
                                 </div>
-                            </div>
-                        )}
-                        
-                         {popupComponents.length > 0 && (
-                            <div className="pt-2 mt-2 border-t">
-                                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                                    <Megaphone className="h-4 w-4" />
-                                    Pop-ups da Página
-                                </h4>
-                                 <DndContext 
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEnd}
-                                >
-                                    <Dropzone id="root-popup-dropzone-0">
-                                        {popupComponents.map((component, index) => (
-                                            <SortableItem key={component.id} component={component}>
-                                                <ComponentItem
-                                                    component={component}
-                                                    selectedComponentId={selectedComponentId}
-                                                    setSelectedComponentId={setSelectedComponentId}
-                                                    moveComponent={moveComponent}
-                                                    isFirst={index === 0}
-                                                    isLast={index === popupComponents.length - 1}
-                                                >
-                                                    <Dropzone id={`${component.id}-0`}>
-                                                        {renderComponentsRecursive(component.id, 0)}
-                                                    </Dropzone>
-                                                </ComponentItem>
-                                            </SortableItem>
-                                        ))}
-                                    </Dropzone>
-                                </DndContext>
-                            </div>
-                        )}
-    
-                         {footerComponent && (
-                            <div className="pt-2 mt-2 border-t">
-                                <ComponentItem
-                                    key={footerComponent.id}
-                                    component={footerComponent}
-                                    selectedComponentId={selectedComponentId}
-                                    setSelectedComponentId={setSelectedComponentId}
-                                    moveComponent={moveComponent}
-                                    isFirst={true}
-                                    isLast={true}
-                                    isDraggable={false} // Footer is not draggable
-                                />
-                            </div>
-                        )}
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-            </div>
-          </TooltipProvider>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="cookie-button">Texto do Botão</Label>
+                                    <Input id="cookie-button" value={pageState.cookieBanner?.buttonText || ''} onChange={(e) => handleCookieBannerChange('buttonText', e.target.value)} />
+                                </div>
+                              </>
+                          )}
+                       </AccordionContent>
+                    </AccordionItem>
+                    
+                     <AccordionItem value="ampscript" className="bg-card rounded-lg border">
+                       <AccordionTrigger className="p-4 text-sm font-medium">
+                         <div className="flex items-center gap-2">
+                          <Code className="h-4 w-4" />
+                          <span>AMPScript Customizado</span>
+                         </div>
+                      </AccordionTrigger>
+                       <AccordionContent className="space-y-4 pt-2 px-4">
+                         <Dialog open={isAmpscriptDialogOpen} onOpenChange={setIsAmpscriptDialogOpen}>
+                            <DialogTrigger asChild>
+                               <Button variant="outline" className="w-full">
+                                  <Bot className="mr-2 h-4 w-4"/>
+                                  Usar Biblioteca de Automações
+                               </Button>
+                            </DialogTrigger>
+                             <AmpscriptSnippetDialog 
+                                 currentCode={pageState.meta.customAmpscript || ''}
+                                 onCodeChange={handleAmpscriptChange}
+                                 onClose={() => setIsAmpscriptDialogOpen(false)}
+                             />
+                         </Dialog>
+                          <Textarea 
+                            value={pageState.meta.customAmpscript || ''}
+                            onChange={(e) => handleMetaChange('customAmpscript', e.target.value)}
+                            placeholder="%%[ /* Seu AMPScript aqui */ ]%%"
+                            rows={10}
+                            className="font-mono text-xs"
+                          />
+                       </AccordionContent>
+                    </AccordionItem>
+      
+                    <AccordionItem value="components" className="bg-card rounded-lg border">
+                      <AccordionTrigger className="p-4 text-sm font-medium">
+                         <div className="flex items-center gap-2">
+                          <LayoutGrid className="h-4 w-4" />
+                          <span>Componentes</span>
+                         </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2 px-4">
+                          <div className="space-y-2">
+                              {stripeComponents.map((component, index) => (
+                                  <ComponentItem
+                                      key={component.id}
+                                      component={component}
+                                      selectedComponentId={selectedComponentId}
+                                      setSelectedComponentId={setSelectedComponentId}
+                                      moveComponent={moveComponent}
+                                      isFirst={index === 0}
+                                      isLast={index === stripeComponents.length - 1}
+                                      isDraggable={false} // Stripe is not draggable
+                                  />
+                              ))}
+                              {stripeComponents.length > 0 && <Separator />}
+                          </div>
+                          <DndContext 
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                          >
+                              <Dropzone id="root-dropzone-0">
+                                  {renderComponentsRecursive(null, 0)}
+                              </Dropzone>
+                          </DndContext>
+                          <AddComponentDialog onAddComponent={addComponent} />
+      
+                          {floatingComponents.length > 0 && (
+                              <div className="pt-2 mt-2 border-t">
+                                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                                      <Hand className="h-4 w-4" />
+                                      Elementos Flutuantes
+                                  </h4>
+                                  <div className="space-y-2">
+                                      {floatingComponents.map((component, index) => (
+                                           <ComponentItem
+                                              key={component.id}
+                                              component={component}
+                                              selectedComponentId={selectedComponentId}
+                                              setSelectedComponentId={setSelectedComponentId}
+                                              moveComponent={moveComponent}
+                                              isFirst={index === 0}
+                                              isLast={index === floatingComponents.length - 1}
+                                              isDraggable={false}
+                                          />
+                                      ))}
+                                  </div>
+                              </div>
+                          )}
+                          
+                           {popupComponents.length > 0 && (
+                              <div className="pt-2 mt-2 border-t">
+                                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                                      <Megaphone className="h-4 w-4" />
+                                      Pop-ups da Página
+                                  </h4>
+                                   <DndContext 
+                                      sensors={sensors}
+                                      collisionDetection={closestCenter}
+                                      onDragEnd={handleDragEnd}
+                                  >
+                                      <Dropzone id="root-popup-dropzone-0">
+                                          {popupComponents.map((component, index) => (
+                                              <SortableItem key={component.id} component={component}>
+                                                  <ComponentItem
+                                                      component={component}
+                                                      selectedComponentId={selectedComponentId}
+                                                      setSelectedComponentId={setSelectedComponentId}
+                                                      moveComponent={moveComponent}
+                                                      isFirst={index === 0}
+                                                      isLast={index === popupComponents.length - 1}
+                                                  >
+                                                      <Dropzone id={`${component.id}-0`}>
+                                                          {renderComponentsRecursive(component.id, 0)}
+                                                      </Dropzone>
+                                                  </ComponentItem>
+                                              </SortableItem>
+                                          ))}
+                                      </Dropzone>
+                                  </DndContext>
+                              </div>
+                          )}
+      
+                           {footerComponent && (
+                              <div className="pt-2 mt-2 border-t">
+                                  <ComponentItem
+                                      key={footerComponent.id}
+                                      component={footerComponent}
+                                      selectedComponentId={selectedComponentId}
+                                      setSelectedComponentId={setSelectedComponentId}
+                                      moveComponent={moveComponent}
+                                      isFirst={true}
+                                      isLast={true}
+                                      isDraggable={false} // Footer is not draggable
+                                  />
+                              </div>
+                          )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+              </div>
+            </TooltipProvider>
+          )}
         </ScrollArea>
     </div>
     );

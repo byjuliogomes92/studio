@@ -27,6 +27,7 @@ import { Switch } from "../ui/switch";
 import { shortenUrl } from "@/ai/flows/shorten-url-flow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EditCodeDialog } from "./edit-code-dialog";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 
 interface CloudPageForgeProps {
@@ -679,70 +680,43 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             </DropdownMenu>
         </div>
       </header>
-      <div className="flex-grow min-h-0 flex">
-        <SettingsPanel
-            pageState={pageState}
-            setPageState={setPageState}
-            selectedComponentId={selectedComponentId}
-            setSelectedComponentId={setSelectedComponentId}
-            pageName={pageState.name}
-            onPageNameChange={handlePageNameChange}
-            projectPages={projectPages}
-            onCodeEdit={handleCodeEdit}
-            removeComponent={removeComponent}
-            duplicateComponent={duplicateComponent}
-        />
-        <div className="flex-grow">
-          <MainPanel 
-            pageState={pageState} 
-            setPageState={setPageState}
-            onDataExtensionKeyChange={handleDataExtensionKeyChange}
-            onSelectComponent={setSelectedComponentId}
-          />
-        </div>
-      </div>
+        <ResizablePanelGroup direction="horizontal" className="flex-grow min-h-0">
+            <ResizablePanel defaultSize={25} minSize={20}>
+                <SettingsPanel
+                    pageState={pageState}
+                    setPageState={setPageState}
+                    selectedComponentId={selectedComponentId}
+                    setSelectedComponentId={setSelectedComponentId}
+                    pageName={pageState.name}
+                    onPageNameChange={handlePageNameChange}
+                    projectPages={projectPages}
+                    onCodeEdit={handleCodeEdit}
+                    removeComponent={removeComponent}
+                    duplicateComponent={duplicateComponent}
+                />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={75}>
+                <MainPanel 
+                    pageState={pageState} 
+                    setPageState={setPageState}
+                    onDataExtensionKeyChange={handleDataExtensionKeyChange}
+                    onSelectComponent={setSelectedComponentId}
+                />
+            </ResizablePanel>
+        </ResizablePanelGroup>
 
-       <Sheet open={!!selectedComponent} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
+       <Sheet open={!!selectedComponentId} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
             <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col">
-                {selectedComponent && (
-                    <>
-                    <SheetHeader className="p-6 pb-4 flex flex-row items-center justify-between">
-                       <div className="space-y-1.5">
-                         <SheetTitle className="flex items-center gap-2">
-                            <Settings className="h-5 w-5" />
-                            Configurações de {selectedComponent.layerName || selectedComponent.type}
-                        </SheetTitle>
-                        <SheetDescription>
-                            Ajuste as propriedades do componente selecionado.
-                        </SheetDescription>
-                       </div>
-                       <div className="flex items-center gap-1">
-                           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => duplicateComponent(selectedComponent.id)}>
-                               <Copy className="h-4 w-4" />
-                           </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="icon" className="h-8 w-8">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Excluir Componente?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Tem certeza que deseja excluir este componente e todo o seu conteúdo? Esta ação não pode ser desfeita.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => removeComponent(selectedComponent.id)}>Excluir</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                       </div>
-                    </SheetHeader>
-                    <ScrollArea className="flex-grow">
-                        <div className="px-6 pb-6">
+                <SheetHeader className="p-6 pb-4">
+                    <SheetTitle>Configurações</SheetTitle>
+                    <SheetDescription>
+                        Ajuste as propriedades do componente selecionado.
+                    </SheetDescription>
+                </SheetHeader>
+                <ScrollArea className="flex-grow">
+                    <div className="px-6 pb-6">
+                        {selectedComponent && (
                          <ComponentSettings
                             key={selectedComponent.id}
                             component={selectedComponent}
@@ -753,10 +727,9 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                             onDuplicate={duplicateComponent}
                             onDelete={removeComponent}
                         />
-                        </div>
-                    </ScrollArea>
-                    </>
-                )}
+                        )}
+                    </div>
+                </ScrollArea>
             </SheetContent>
         </Sheet>
 

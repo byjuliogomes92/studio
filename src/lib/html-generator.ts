@@ -128,6 +128,14 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       containerStyle = 'padding-top: 0;';
   }
 
+  // If component is inside a Div with horizontal layout, don't wrap it in a block-level element.
+  const parentComponent = pageState.components.find(c => c.id === component.parentId);
+  if (parentComponent && parentComponent.type === 'Div' && parentComponent.props.layout?.flexDirection === 'row') {
+      // For horizontal layouts, the renderedComponent itself should be a flex item.
+      // We assume the rendered component is already a block-level or inline-block element.
+      return renderedComponent;
+  }
+
   // Components inside another component (e.g., in a column) don't get the padded container
   if (component.parentId !== null) {
      return `<div class="${wrapperClass}" ${animationAttrs}>${renderedComponent}</div>`;
@@ -1856,11 +1864,11 @@ ${trackingScripts.head}
 
     .div-container,
     .columns-container {
-        display: flex;
         width: 100%;
         position: relative; /* For hero text overlay */
     }
     .div-container {
+        display: flex;
         flex-direction: column; /* Default for Div */
     }
     .columns-container {

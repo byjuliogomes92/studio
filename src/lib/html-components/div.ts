@@ -79,9 +79,14 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
     const wrapperStyle = isFullWidth ? backgroundStyle : '';
     const innerStyle = isFullWidth ? containerStyle : `${backgroundStyle} ${containerStyle}`;
     
+    // For horizontal layouts, children are rendered directly inside the flex container
+    const finalChildrenHtml = flexDirection === 'row' 
+        ? childrenHtml.replace(/<div class="component-wrapper"[^>]*>(.*?)<\/div>/gs, '$1')
+        : childrenHtml;
+
     return `<div class="${wrapperClass}" style="${wrapperStyle}">
                 ${overlayHtml}
-                <div id="${idOverride}" class="${className}" style="${innerStyle}">${childrenHtml}</div>
+                <div id="${idOverride}" class="${className}" style="${innerStyle}">${finalChildrenHtml}</div>
             </div>`;
 }
 

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet, Code, Percent, Hand } from "lucide-react";
+import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet, Code, Percent, Hand, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -20,7 +20,7 @@ import {
 import { HowToUseDialog } from "./how-to-use-dialog";
 import type { CloudPage } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "../ui/dropdown-menu";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 
@@ -355,45 +355,48 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                <Button onClick={() => setIsSelectionMode(!isSelectionMode)} variant={isSelectionMode ? "secondary" : "ghost"} size="icon" aria-label="Modo de Seleção">
                     <Hand className="h-5 w-5"/>
                </Button>
-              <Button onClick={() => setIsHowToUseOpen(true)} variant="secondary">
+               <Button onClick={() => setIsHowToUseOpen(true)} variant="outline">
                 <Info className="mr-2 h-4 w-4" />
                 Como Publicar
               </Button>
-               <div className="flex items-center space-x-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button><Percent className="h-4 w-4 text-muted-foreground"/></button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{hideAmpscript ? 'Mostrar' : 'Ocultar'} código AMPScript</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <Switch
-                  id="ampscript-toggle"
-                  checked={!hideAmpscript}
-                  onCheckedChange={(checked) => setHideAmpscript(!checked)}
-                />
-              </div>
-              <Button variant="ghost" size="icon" onClick={handleOpenInNewTab} aria-label="Abrir em nova aba">
-                  <ExternalLink className="h-5 w-5"/>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+               
+               <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
                         <selectedDevice.icon className="h-5 w-5" />
                     </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    {devices.map(device => (
-                        <DropdownMenuItem key={device.name} onClick={() => setSelectedDevice(device)}>
-                            <device.icon className="mr-2 h-4 w-4" />
-                            <span>{device.name}</span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                      {devices.map(device => (
+                          <DropdownMenuItem key={device.name} onClick={() => setSelectedDevice(device)}>
+                              <device.icon className="mr-2 h-4 w-4" />
+                              <span>{device.name}</span>
+                          </DropdownMenuItem>
+                      ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="Mais opções">
+                            <MoreVertical className="h-5 w-5" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleOpenInNewTab}>
+                            <ExternalLink className="mr-2 h-4 w-4"/>
+                            Abrir em Nova Aba
                         </DropdownMenuItem>
-                    ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuCheckboxItem
+                            checked={!hideAmpscript}
+                            onCheckedChange={(checked) => setHideAmpscript(!checked)}
+                        >
+                             <Percent className="mr-2 h-4 w-4" />
+                            Mostrar AMPScript
+                        </DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
           </div>
         </div>
         <div className="flex-grow overflow-auto">

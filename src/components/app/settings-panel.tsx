@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll, Megaphone } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -86,6 +86,7 @@ const componentIcons: Record<ComponentType, React.ElementType> = {
     FloatingButton: MousePointerClick,
     Calendly: CalendarClock,
     AddToCalendar: CalendarClock,
+    PopUp: Megaphone,
     CustomHTML: Code,
 };
 
@@ -192,7 +193,7 @@ function ComponentItem({
   isDraggable?: boolean;
 }) {
   const Icon = componentIcons[component.type] || Text;
-  const isContainer = ['Columns', 'Div'].includes(component.type);
+  const isContainer = ['Columns', 'Div', 'PopUp'].includes(component.type);
 
    
 
@@ -568,6 +569,15 @@ export function SettingsPanel({
                   case 'Div':
                       newComponent.props = { styles: {} };
                       break;
+                  case 'PopUp':
+                      newComponent.props = {
+                          trigger: 'delay',
+                          delay: 3,
+                          closeOnOutsideClick: true,
+                          styles: { width: '500px', padding: '1.5rem', borderRadius: '0.75rem', backgroundColor: '#FFFFFF' },
+                          overlayStyles: { backgroundColor: 'rgba(0, 0, 0, 0.6)' }
+                      };
+                      break;
                   case 'Columns':
                       newComponent.props = { columnCount: 2 };
                       break;
@@ -759,7 +769,7 @@ export function SettingsPanel({
                 };
                 draft.components.push(duplicatedComp);
 
-                if (['Columns', 'Div'].includes(originalComp.type)) {
+                if (['Columns', 'Div', 'PopUp'].includes(originalComp.type)) {
                     const children = draft.components.filter(c => c.parentId === originalCompId);
                     children.forEach(child => {
                        duplicateRecursively(child.id, newId, child.column);
@@ -915,10 +925,10 @@ export function SettingsPanel({
         const componentsToRender = pageState.components
             .filter(c => c.parentId === parentId && (column === null || c.column === column))
             .sort((a, b) => a.order - b.order)
-            .filter(c => !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type));
+            .filter(c => !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type));
 
         return componentsToRender.map((component, index) => {
-            const isContainer = ['Columns', 'Div'].includes(component.type);
+            const isContainer = ['Columns', 'Div', 'PopUp'].includes(component.type);
 
             return (
                 <SortableItem key={component.id} component={component}>
@@ -954,6 +964,7 @@ export function SettingsPanel({
   const stripeComponents = pageState.components.filter(c => c.type === 'Stripe' && c.parentId === null).map(c => c.order).sort((a,b) => a-b).map(order => pageState.components.find(c => c.order === order && c.type === 'Stripe' && c.parentId === null)).filter(Boolean) as PageComponent[];
   const floatingComponents = pageState.components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).sort((a, b) => a.order - b.order);
   const footerComponent = pageState.components.find(c => c.type === 'Footer');
+  const popupComponents = pageState.components.filter(c => c.type === 'PopUp' && c.parentId === null).sort((a, b) => a.order - b.order);
   
     const toDatetimeLocal = (date: any) => {
         if (!date) return '';
@@ -1243,6 +1254,41 @@ export function SettingsPanel({
                             </div>
                         </div>
                     )}
+                    
+                     {popupComponents.length > 0 && (
+                        <div className="pt-2 mt-2 border-t">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                                <Megaphone className="h-4 w-4" />
+                                Pop-ups da Página
+                            </h4>
+                             <DndContext 
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
+                            >
+                                <Dropzone id="root-popup-dropzone-0">
+                                    {popupComponents.map((component, index) => (
+                                        <SortableItem key={component.id} component={component}>
+                                            <ComponentItem
+                                                component={component}
+                                                selectedComponentId={selectedComponentId}
+                                                setSelectedComponentId={setSelectedComponentId}
+                                                removeComponent={removeComponent}
+                                                duplicateComponent={duplicateComponent}
+                                                moveComponent={moveComponent}
+                                                isFirst={index === 0}
+                                                isLast={index === popupComponents.length - 1}
+                                            >
+                                                <Dropzone id={`${component.id}-0`}>
+                                                    {renderComponentsRecursive(component.id, 0)}
+                                                </Dropzone>
+                                            </ComponentItem>
+                                        </SortableItem>
+                                    ))}
+                                </Dropzone>
+                            </DndContext>
+                        </div>
+                    )}
 
                      {footerComponent && (
                         <div className="pt-2 mt-2 border-t">
@@ -1268,8 +1314,7 @@ export function SettingsPanel({
                  {selectedComponent && (
                      <div className="mt-4">
                          <Button variant="ghost" onClick={() => setSelectedComponentId(null)} className="mb-2 w-full justify-start">
-                             <ArrowLeft className="mr-2 h-4 w-4" />
-                             Voltar
+                              Voltar
                          </Button>
                          <ComponentSettings
                              key={selectedComponent.id}

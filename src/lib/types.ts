@@ -33,6 +33,7 @@ export type ComponentType =
   | 'Calendly'
   | 'Div'
   | 'AddToCalendar'
+  | 'PopUp'
   | 'CustomHTML';
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';

@@ -37,6 +37,7 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
     } = styles;
 
     const {
+        flexDirection,
         verticalAlign,
         horizontalAlign,
         gap
@@ -64,7 +65,7 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
 
     const containerStyle = `
         display: flex;
-        flex-direction: column;
+        flex-direction: ${flexDirection || 'column'};
         justify-content: ${verticalAlign || 'flex-start'};
         align-items: ${horizontalAlign || 'stretch'};
         gap: ${gap || '10px'};

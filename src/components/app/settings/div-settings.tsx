@@ -122,14 +122,24 @@ export function DivSettings({ component, onSubPropChange, onPropChange }: Compon
                 <AccordionItem value="layout">
                     <AccordionTrigger>Layout Interno</AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
+                         <div className="space-y-2">
+                            <Label>Direção do Layout (Flex Direction)</Label>
+                             <Select value={layout.flexDirection || 'column'} onValueChange={(value) => handleLayoutChange('flexDirection', value)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="column">Vertical</SelectItem>
+                                    <SelectItem value="row">Horizontal</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="space-y-2">
                             <Label>Alinhamento Vertical (Justify)</Label>
                              <Select value={layout.verticalAlign || 'flex-start'} onValueChange={(value) => handleLayoutChange('verticalAlign', value)}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="flex-start">Topo</SelectItem>
-                                    <SelectItem value="center">Meio</SelectItem>
-                                    <SelectItem value="flex-end">Base</SelectItem>
+                                    <SelectItem value="flex-start">Início</SelectItem>
+                                    <SelectItem value="center">Centro</SelectItem>
+                                    <SelectItem value="flex-end">Fim</SelectItem>
                                     <SelectItem value="space-between">Distribuído</SelectItem>
                                 </SelectContent>
                             </Select>

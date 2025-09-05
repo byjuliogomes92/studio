@@ -137,7 +137,7 @@ export function TextSettings({ component, onPropChange, pageState }: ComponentSe
               </div>
           </div>
           <Separator />
-          <TextStyleSettings props={component.props} onPropChange={onPropChange} brand={pageState.brand} />
+          <TextStyleSettings props={component.props} onPropChange={onPropChange} brand={pageState?.brand} />
         </div>
       );
 }

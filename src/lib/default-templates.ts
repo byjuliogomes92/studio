@@ -43,7 +43,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
         {
             id: 'header-launch',
             type: 'Header',
-            props: { logoUrl: '' },
+            props: { logoUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeu_logo_light.svg?alt=media&token=565bfcc8-4fa4-4621-b79a-82261607fba4' },
             order: 0,
             parentId: null,
             column: 0,
@@ -155,7 +155,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
       buttonText: 'Aceitar',
     },
     components: [
-      { id: 'h-welcome', type: 'Header', props: { logoUrl: '' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
+      { id: 'h-welcome', type: 'Header', props: { logoUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeu_logo_light.svg?alt=media&token=565bfcc8-4fa4-4621-b79a-82261607fba4' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'b-welcome', type: 'Banner', props: { imageUrl: 'https://placehold.co/800x250.png', alt: 'Pessoas felizes usando produtos' }, order: 1, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 't-welcome', type: 'Title', props: { text: 'Que bom ter você aqui, [Nome]!', styles: { textAlign: 'center', marginTop: '20px' } }, order: 2, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'p-welcome', type: 'Paragraph', props: { text: 'Estamos muito felizes por você ter se juntado à nossa comunidade. Explore nossos produtos, descubra nossas histórias e aproveite todos os benefícios que preparamos para você. Para começar, que tal nos seguir nas redes sociais?', styles: { textAlign: 'center', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' } }, order: 3, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
@@ -187,7 +187,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     },
     cookieBanner: { enabled: true, text: 'Usamos cookies para melhorar sua experiência.', buttonText: 'Ok' },
     components: [
-      { id: 'h-event', type: 'Header', props: { logoUrl: '' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
+      { id: 'h-event', type: 'Header', props: { logoUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeu_logo_dark.svg?alt=media&token=300e7d5e-9864-4d98-a72b-ad35e4b37623' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 't-event', type: 'Title', props: { text: 'Webinar Exclusivo: O Futuro da Beleza', styles: { textAlign: 'center' } }, order: 1, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'cd-event', type: 'Countdown', props: { targetDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), styles: { color: 'white', fontSize: '2.5rem' } }, order: 2, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'p-event', type: 'Paragraph', props: { text: 'Junte-se a nós para uma discussão aprofundada sobre as tendências que estão moldando o futuro da indústria da beleza. Vagas limitadas!' }, order: 3, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
@@ -219,7 +219,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     },
     cookieBanner: { enabled: false, text: '', buttonText: '' },
     components: [
-      { id: 'h-nps', type: 'Header', props: { logoUrl: '' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
+      { id: 'h-nps', type: 'Header', props: { logoUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeu_logo_light.svg?alt=media&token=565bfcc8-4fa4-4621-b79a-82261607fba4' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 't-nps', type: 'Title', props: { text: 'Sua opinião é muito importante para nós', styles: { textAlign: 'center' } }, order: 1, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'nps-comp', type: 'NPS', props: { question: 'Em uma escala de 0 a 10, o quão provável você é de nos recomendar a um amigo?', lowLabel: 'Pouco Provável', highLabel: 'Muito Provável', thankYouMessage: 'Obrigado pelo seu feedback!' }, order: 2, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'form-nps', type: 'Form', props: { fields: { email: true }, placeholders: { email: 'Confirme seu e-mail para registrar a pesquisa' }, buttonText: 'Enviar Feedback' }, order: 3, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
@@ -249,7 +249,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     },
     cookieBanner: { enabled: true, text: 'Usamos cookies.', buttonText: 'Ok' },
     components: [
-      { id: 'h-thanks', type: 'Header', props: { logoUrl: '' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
+      { id: 'h-thanks', type: 'Header', props: { logoUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeu_logo_light.svg?alt=media&token=565bfcc8-4fa4-4621-b79a-82261607fba4' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 't-thanks', type: 'Title', props: { text: 'Cadastro Realizado com Sucesso!', styles: { textAlign: 'center', color: '#6D28D9' } }, order: 1, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'p-thanks', type: 'Paragraph', props: { text: 'Enviamos um e-mail de confirmação para você. Enquanto isso, que tal conferir nosso conteúdo exclusivo abaixo?', styles: { textAlign: 'center' } }, order: 2, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'cols-thanks', type: 'Columns', props: { columnCount: 3 }, order: 3, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
@@ -290,7 +290,7 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     },
     cookieBanner: { enabled: false, text: '', buttonText: '' },
     components: [
-      { id: 'h-soon', type: 'Header', props: { logoUrl: '' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
+      { id: 'h-soon', type: 'Header', props: { logoUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeu_logo_dark.svg?alt=media&token=300e7d5e-9864-4d98-a72b-ad35e4b37623' }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 't-soon', type: 'Title', props: { text: 'Estamos preparando algo incrível para você.', styles: { textAlign: 'center', fontSize: '2.5rem' } }, order: 1, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'p-soon', type: 'Paragraph', props: { text: 'Nossa nova coleção está quase pronta para ser revelada. Deixe seu e-mail abaixo para ser o primeiro a saber quando lançarmos e receba um desconto especial.', styles: { textAlign: 'center' } }, order: 2, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
       { id: 'form-soon', type: 'Form', props: { fields: { email: true, optin: true }, consentText: 'Aceito receber notícias sobre o lançamento.', buttonText: 'Avise-me!', thankYouMessage: '<h4>Confirmado!</h4><p>Você será notificado assim que lançarmos.</p>' }, order: 3, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
@@ -299,5 +299,3 @@ export const defaultTemplates: Omit<Template, 'id' | 'createdAt' | 'updatedAt' |
     ],
   },
 ];
-
-    

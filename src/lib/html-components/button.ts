@@ -57,3 +57,5 @@ function getStyleString(styles: any = {}): string {
       })
       .join(' ');
 }
+
+    

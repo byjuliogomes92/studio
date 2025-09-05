@@ -56,7 +56,6 @@ const iconMap: { [key: string]: React.ElementType } = {
 function TemplatePreviewDialog({ template }: { template: Template }) {
   const [isLoading, setIsLoading] = useState(true);
   const previewHtml = useMemo(() => {
-    // Create a mock CloudPage object from the template to use with generateHtml
     const mockPage = {
       id: template.id || 'preview',
       name: template.name,
@@ -65,12 +64,10 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
       meta: {
         ...(template.meta || {}),
         title: template.name,
-        // Provide a valid placeholder if the loader image is not set on the template
         loaderImageUrl: template.meta?.loaderImageUrl || 'https://placehold.co/150x150.png',
         redirectUrl: '',
         dataExtensionKey: 'PREVIEW',
       },
-      // Add other required CloudPage fields with default values
       projectId: 'preview',
       workspaceId: 'preview',
       brandId: '',
@@ -135,7 +132,6 @@ export default function TemplatesPage() {
         
         const [defaultTpls, userTpls] = await Promise.all(fetchPromises);
         
-        // Use hardcoded templates as a fallback if Firestore is empty for default templates
         setDefaultTemplates(defaultTpls.length > 0 ? defaultTpls : (hardcodedTemplates as Template[]));
         
         if (activeWorkspace) {
@@ -298,10 +294,10 @@ export default function TemplatesPage() {
     </DropdownMenu>
   );
   
-  const renderTemplateCard = (template: Template) => {
+  const renderTemplateCard = (template: Template, key: string | number) => {
     const Icon = iconMap[template.icon || 'default'] || Server;
     return (
-     <Dialog key={template.id}>
+     <Dialog key={key}>
         <div
             className="group relative flex flex-col justify-between bg-card p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow"
         >
@@ -418,7 +414,7 @@ export default function TemplatesPage() {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredAndSortedTemplates.map(renderTemplateCard)}
+            {filteredAndSortedTemplates.map((template) => renderTemplateCard(template, template.id))}
           </div>
         ) : (
           <div className="border rounded-lg">

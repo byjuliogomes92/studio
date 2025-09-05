@@ -37,10 +37,25 @@ export function renderFloatingButton(component: PageComponent): string {
     };
     
     let content = '';
+    let linkStyle = '';
+
     if (type === 'image' && imageUrl) {
-        content = `<img src="${imageUrl}" alt="Floating Button" style="width: 100%; height: 100%; border-radius: 50%;">`;
+        content = `<img src="${imageUrl}" alt="Floating Button" style="width: 100%; height: auto; display: block;">`;
+        linkStyle = `
+            width: ${size}px; 
+            height: auto; 
+            background-color: transparent; 
+            box-shadow: none;
+        `;
     } else {
         content = lucideIconSvgs[icon] || lucideIconSvgs.plus;
+        linkStyle = `
+            width: ${size}px; 
+            height: ${size}px; 
+            background-color: ${backgroundColor}; 
+            color: ${iconColor};
+            border-radius: 50%;
+        `;
     }
 
     const wrapperId = `floating-button-wrapper-${component.id}`;
@@ -58,12 +73,10 @@ export function renderFloatingButton(component: PageComponent): string {
                 class="floating-button-link"
                 target="_blank"
                 rel="noopener noreferrer"
-                style="width: ${size}px; height: ${size}px; background-color: ${backgroundColor}; color: ${iconColor};"
+                style="${linkStyle}"
             >
                 ${content}
             </a>
         </div>
     `;
 }
-
-    

@@ -39,8 +39,6 @@ import { getBrandsForUser, updateBrand } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
-import { EditCodeDialog } from "./edit-code-dialog";
-
 
 interface SettingsPanelProps {
   pageState: CloudPage;

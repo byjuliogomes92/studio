@@ -69,8 +69,11 @@ export function renderAddToCalendar(component: PageComponent): string {
     const googleIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.94 11.13c.06.45.09.91.09 1.38 0 4.42-3.27 8-7.5 8s-7.5-3.58-7.5-8c0-4.42 3.27-8 7.5-8 1.99 0 3.79.77 5.12 2.02l-2.29 2.29C15.03 8.38 13.88 8 12.53 8c-2.48 0-4.5 2.02-4.5 4.5s2.02 4.5 4.5 4.5c2.91 0 4.14-2.23 4.31-3.37h-4.31v-2.5h7.43z"/></svg>`;
     const outlookIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.4 2h-6.8a2.6 2.6 0 0 0-2.6 2.6V12h12V4.6a2.6 2.6 0 0 0-2.6-2.6m-3.4 8.2a1.2 1.2 0 1 1-1.2-1.2 1.2 1.2 0 0 1 1.2 1.2m-5.6 1.6V22l4.4-2.2 2.2-1.1 2.2 1.1L17 22V11.8z"/></svg>`;
 
+    // Use justify-content for alignment as we're using flexbox.
+    const justifyContent = align === 'center' ? 'center' : (align === 'right' ? 'flex-end' : 'flex-start');
+
     return `
-        <div class="add-to-calendar-container" style="align-items: ${align};">
+        <div class="add-to-calendar-container" style="display: flex; justify-content: ${justifyContent};">
             ${showGoogle ? `<a href="${googleUrl.toString()}" target="_blank" class="add-to-calendar-button google">${googleIcon} ${buttonTextGoogle}</a>` : ''}
             ${showOutlook ? `<a href="${outlookUrl.toString()}" target="_blank" class="add-to-calendar-button outlook">${outlookIcon} ${buttonTextOutlook}</a>` : ''}
         </div>

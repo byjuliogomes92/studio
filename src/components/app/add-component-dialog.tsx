@@ -49,6 +49,9 @@ import {
   CalendarClock,
   Layers3,
   Calendar,
+  Gift,
+  Megaphone,
+  AlertTriangle,
 } from "lucide-react";
 import type { ComponentType, PageComponent } from "@/lib/types";
 import { useState } from "react";
@@ -72,7 +75,10 @@ type BlockType =
     | 'footer-simple'
     | 'footer-columns'
     | 'footer-newsletter'
-    | 'faq-section';
+    | 'faq-section'
+    | 'popup-newsletter'
+    | 'popup-coupon'
+    | 'popup-age-gate';
 
 const componentList: {
   category: string;
@@ -84,6 +90,7 @@ const componentList: {
       { name: "Div", icon: Layers3, enabled: true },
       { name: "Columns", icon: Columns, enabled: true },
       { name: "Banner", icon: Image, enabled: true },
+      { name: "PopUp", icon: Megaphone, enabled: true },
       { name: "Stripe", icon: PanelTop, enabled: true },
       { name: "Footer", icon: AlignEndVertical, enabled: true },
     ],
@@ -156,6 +163,14 @@ const blockList: {
             { name: "Hero Dividido (Img Direita)", description: "Texto e CTA à esquerda, imagem à direita.", type: 'hero-split-right', icon: LayoutTemplate },
             { name: "Hero Dividido (Img Esquerda)", description: "Imagem à esquerda, texto e CTA à direita.", type: 'hero-split-left', icon: LayoutTemplate },
             { name: "Hero com Captura de Lead", description: "Layout dividido com campo de formulário para conversão rápida.", type: 'hero-lead-capture', icon: LayoutTemplate },
+        ]
+    },
+    {
+        category: 'Pop-ups',
+        blocks: [
+            { name: "Captura de Newsletter", description: "Um pop-up simples com título, texto e um formulário para capturar e-mails.", type: "popup-newsletter", icon: Mail },
+            { name: "Anúncio de Cupom", description: "Um pop-up visual para anunciar promoções, com imagem e botão.", type: "popup-coupon", icon: Gift },
+            { name: "Confirmação de Idade", description: "Um pop-up para verificação de idade antes de acessar o conteúdo.", type: "popup-age-gate", icon: AlertTriangle },
         ]
     },
     {
@@ -530,6 +545,55 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             ];
             break;
         }
+        case 'popup-newsletter': {
+            const popupId = `popup-nl-${baseId}`;
+            componentsToAdd = [
+                { id: popupId, type: 'PopUp', props: { trigger: 'delay', delay: 5, styles: { width: '450px' } }, order: 0, parentId: null, column: 0 },
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Junte-se à Nossa Newsletter', styles: { textAlign: 'center', fontSize: '1.8rem', marginBottom: '0.5rem' } }, order: 0, parentId: popupId, column: 0 },
+                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Receba promoções, novidades e dicas exclusivas diretamente no seu e-mail.', styles: { textAlign: 'center', marginBottom: '1.5rem', color: '#666' } }, order: 1, parentId: popupId, column: 0 },
+                { id: `form-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true } }, buttonText: 'Inscrever-se', buttonAlign: 'center' }, order: 2, parentId: popupId, column: 0 },
+            ];
+            break;
+        }
+        case 'popup-coupon': {
+            const popupId = `popup-cp-${baseId}`;
+            componentsToAdd = [
+                { id: popupId, type: 'PopUp', props: { trigger: 'exit_intent', styles: { width: '600px', padding: '0', borderRadius: '1rem' } }, order: 0, parentId: null, column: 0 },
+                { 
+                    id: `cols-${baseId}`, type: 'Columns', props: { columnCount: 2, styles: { gap: '0' } }, 
+                    order: 0, parentId: popupId, column: 0 
+                },
+                { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/300/400' }, order: 0, parentId: `cols-${baseId}`, column: 0 },
+                { id: `div-${baseId}`, type: 'Div', props: { styles: { padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' } }, order: 0, parentId: `cols-${baseId}`, column: 1 },
+                { id: `title-${baseId}`, type: 'Title', props: { text: '20% OFF na sua Primeira Compra!', styles: { textAlign: 'center', fontSize: '2rem', lineHeight: '1.2' } }, order: 0, parentId: `div-${baseId}`, column: 0 },
+                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Use o cupom BEMVINDO20 no checkout.', styles: { textAlign: 'center', marginTop: '1rem' } }, order: 1, parentId: `div-${baseId}`, column: 0 },
+                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Ir para a Loja', href: '#' }, order: 2, parentId: `div-${baseId}`, column: 0 },
+            ];
+            break;
+        }
+        case 'popup-age-gate': {
+            const popupId = `popup-ag-${baseId}`;
+            componentsToAdd = [
+                { 
+                    id: popupId, 
+                    type: 'PopUp', 
+                    props: { 
+                        trigger: 'entry', 
+                        styles: { width: '400px' },
+                        closeOnOutsideClick: false,
+                        preventBodyScroll: true
+                    },
+                    order: 0, parentId: null, column: 0 
+                },
+                { id: `title-${baseId}`, type: 'Title', props: { text: 'Você tem mais de 18 anos?', styles: { textAlign: 'center' } }, order: 0, parentId: popupId, column: 0 },
+                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Você deve ter 18 anos ou mais para acessar este conteúdo.', styles: { textAlign: 'center' } }, order: 1, parentId: popupId, column: 0 },
+                { id: `div-${baseId}`, type: 'Div', props: { layout: { flexDirection: 'row', gap: '10px', justifyContent: 'center' } }, order: 2, parentId: popupId, column: 0 },
+                { id: `btn-no-${baseId}`, type: 'Button', props: { text: 'Não', variant: 'outline', action: { type: 'URL', url: 'https://www.google.com' } }, order: 0, parentId: `div-${baseId}`, column: 0 },
+                { id: `btn-yes-${baseId}`, type: 'Button', props: { text: 'Sim', action: { type: 'CLOSE_POPUP' } }, order: 1, parentId: `div-${baseId}`, column: 0 },
+            ];
+            break;
+        }
+
 
     }
 
@@ -560,7 +624,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             </TabsList>
             <TabsContent value="blocos">
                 <Tabs defaultValue={blockList[0].category} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-5">
                         {blockList.map((group) => (
                             <TabsTrigger key={group.category} value={group.category}>{group.category}</TabsTrigger>
                         ))}

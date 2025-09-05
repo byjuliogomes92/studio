@@ -29,7 +29,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
         overlayEnabled,
         overlayColor,
         overlayOpacity,
-        justifyContent,
+        alignItems,
         ...otherStyles 
     } = styles;
     
@@ -75,8 +75,9 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
     const totalWidth = validWidths ? columnWidths.reduce((a: number, b: number) => a + (b || 0), 0) : 0;
     
     let gridTemplateColumns;
-    if (validWidths && totalWidth > 0 && totalWidth <= 100) { // Check if total is valid
-        gridTemplateColumns = columnWidths.map((w: number) => w ? `${w}%` : '1fr').join(' ');
+    if (validWidths && totalWidth > 0) {
+        // Use fractional units (fr) to handle distribution even if sum is not 100
+        gridTemplateColumns = columnWidths.map((w: number) => w ? `${w}fr` : '1fr').join(' ');
     } else {
         gridTemplateColumns = `repeat(${columnCount}, 1fr)`;
     }
@@ -84,7 +85,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
     const finalContainerStyle = `
         --column-count: ${columnCount};
         --grid-template-columns: ${gridTemplateColumns};
-        --justify-content: ${justifyContent || 'flex-start'};
+        --align-items: ${alignItems || 'flex-start'};
         ${styleString}
     `;
 
@@ -106,7 +107,7 @@ function getStyleString(styles: any = {}): string {
         'isFullWidth', 'backgroundType', 'backgroundImageUrl', 
         'backgroundColor', 'gradientFrom', 'gradientTo', 
         'overlayEnabled', 'overlayColor', 'overlayOpacity',
-        'justifyContent'
+        'alignItems'
     ];
     return Object.entries(styles)
       .map(([key, value]) => {

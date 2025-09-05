@@ -1,6 +1,7 @@
 
 import type { CloudPage, PageComponent, ComponentType, Action } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
+import { getSecurityScripts } from './html-components/security';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';
 import { renderTitle } from './html-components/title';
@@ -101,14 +102,16 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
 
-  // Render the component's HTML with its own styles, as the wrapper div is now gone for most components.
+  // Apply padding and margin styles to the wrapper
+  const spacingStyles = getStyleString(otherStyles);
+  
+  // Render the component's HTML without its own spacing styles.
   const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   
-  // Floating components and Stripe are handled specially as they don't sit inside the padded container
   if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header'].includes(component.type)) {
     return renderedComponent;
   }
-
+  
   const isFullWidthComponent = ['Columns', 'Div'].includes(component.type) && component.props.styles?.isFullWidth;
   if (isFullWidthComponent) {
       return renderedComponent;
@@ -120,12 +123,11 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       return renderedComponent;
   }
 
-  return `<div class="${wrapperClass}" ${animationAttrs} ${selectableAttrs}>
-             <div class="section-container-padded">
-               ${renderedComponent}
-             </div>
+  return `<div class="${wrapperClass}" style="${spacingStyles}" ${animationAttrs} ${selectableAttrs}>
+             ${renderedComponent}
           </div>`;
 };
+
 
 export const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = '', hideAmpscript: boolean = false): string => {
   switch (component.type) {
@@ -328,62 +330,6 @@ const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeCol
     `;
 };
 
-
-const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
-    const security = pageState.meta.security;
-    const baseVars = `VAR @isAuthenticated, @LoginURL\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))\n`;
-
-    if (!security || security.type === 'none') {
-        return { ssjs: '', amscript: 'SET @isAuthenticated = true', body: '' };
-    }
-
-    if (security.type === 'sso') {
-        const amscript = `
-  TRY 
-    SET @IsAuthenticated_Temp = Request.GetUserInfo()
-    SET @isAuthenticated = true
-  CATCH(e) 
-    SET @isAuthenticated = false
-  ENDTRY`;
-        return { ssjs: '', amscript, body: '' };
-    }
-    
-    if (security.type === 'password' && security.passwordConfig) {
-        const config = security.passwordConfig;
-        const amscript = `
-  VAR @submittedPassword, @identifier, @correctPassword
-  SET @isAuthenticated = false
-  SET @submittedPassword = RequestParameter("page_password")
-  SET @identifier = RequestParameter("${config.urlParameter}")
-
-  IF NOT EMPTY(@submittedPassword) && NOT EMPTY(@identifier) THEN
-      SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
-      IF @submittedPassword == @correctPassword THEN
-          SET @isAuthenticated = true
-      ENDIF
-  ENDIF
-`;
-
-        const body = `
-%%[ IF @isAuthenticated != true THEN ]%%
-<div class="password-protection-container">
-    <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
-        <h2>Acesso Restrito</h2>
-        <p>Por favor, insira a senha para continuar.</p>
-        <input type="password" name="page_password" placeholder="Sua senha" required>
-        <button type="submit">Acessar</button>
-        %%[ IF RequestParameter("page_password") != "" THEN ]%%
-            <p class="error-message">Senha incorreta. Tente novamente.</p>
-        %%[ ENDIF ]%%
-    </form>
-</div>
-%%[ ENDIF ]%%`;
-
-        return { ssjs: '', amscript, body: '' };
-    }
-
-    return { ssjs: '', amscript: 'SET @isAuthenticated = true', body: '' };
-}
 
 const getClientSideScripts = (pageState: CloudPage): string => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
@@ -859,8 +805,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const security = getSecurityScripts(pageState);
   
   const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ 
-    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN, @isAuthenticated, @LoginURL
-    SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))
+    VAR @showThanks, @status, @thankYouMessage, @NOME, @EMAIL, @TELEFONE, @CPF, @CIDADE, @DATANASCIMENTO, @OPTIN
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
     ENDIF
@@ -985,7 +930,10 @@ ${trackingScripts.head}
     }
     
     .component-wrapper {
-      padding-top: 20px;
+      padding-top: var(--spacing-top, 20px);
+      padding-bottom: var(--spacing-bottom, 20px);
+      margin-top: var(--margin-top, 0);
+      margin-bottom: var(--margin-bottom, 0);
       width: 100%;
     }
     
@@ -1259,9 +1207,10 @@ ${trackingScripts.head}
         text-decoration: underline !important;
     }
     
-    .custom-button:hover, .thank-you-message a.custom-button:hover, .button-wrapper a:hover {
-      background-color: var(--theme-color-hover);
+    .button-wrapper a:hover {
+      background-color: var(--theme-color-hover) !important;
     }
+
 
     .progress-container {
         width: 100%;
@@ -2122,6 +2071,8 @@ ${!isForPreview ? trackingScripts.body : ''}
       ${mainContentHtml}
     </main>
   ` : `
+    ${security.ssjs}
+    ${initialAmpscript}
     %%[ IF @isAuthenticated == true THEN ]%%
     ${renderLoader(meta, styles.themeColor)}
     <main>

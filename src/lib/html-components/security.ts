@@ -1,0 +1,59 @@
+
+import type { CloudPage } from '../types';
+
+export const getSecurityScripts = (pageState: CloudPage): { ssjs: string, amscript: string, body: string } => {
+    const security = pageState.meta.security;
+    
+    // Base variables for auth state, always defined for consistency.
+    const baseVars = `VAR @isAuthenticated, @LoginURL\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))`;
+    
+    if (!security || security.type === 'none') {
+        return { ssjs: '', amscript: `${baseVars}\nSET @isAuthenticated = true`, body: '' };
+    }
+
+    if (security.type === 'sso') {
+        const amscript = `${baseVars}
+  TRY 
+    SET @IsAuthenticated_Temp = Request.GetUserInfo()
+    SET @isAuthenticated = true
+  CATCH(e) 
+    SET @isAuthenticated = false
+  ENDTRY`;
+        return { ssjs: '', amscript, body: '' };
+    }
+    
+    if (security.type === 'password' && security.passwordConfig) {
+        const config = security.passwordConfig;
+        const amscript = `${baseVars}
+  VAR @submittedPassword, @identifier, @correctPassword
+  SET @isAuthenticated = false
+  SET @submittedPassword = RequestParameter("page_password")
+  SET @identifier = RequestParameter("${config.urlParameter}")
+
+  IF NOT EMPTY(@submittedPassword) && NOT EMPTY(@identifier) THEN
+      SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
+      IF @submittedPassword == @correctPassword THEN
+          SET @isAuthenticated = true
+      ENDIF
+  ENDIF
+`;
+
+        const body = `
+<div class="password-protection-container">
+    <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
+        <h2>Acesso Restrito</h2>
+        <p>Por favor, insira a senha para continuar.</p>
+        <input type="password" name="page_password" placeholder="Sua senha" required>
+        <button type="submit">Acessar</button>
+        %%[ IF RequestParameter("page_password") != "" THEN ]%%
+            <p class="error-message">Senha incorreta. Tente novamente.</p>
+        %%[ ENDIF ]%%
+    </form>
+</div>
+`;
+
+        return { ssjs: '', amscript, body };
+    }
+
+    return { ssjs: '', amscript: `${baseVars}\nSET @isAuthenticated = true`, body: '' };
+}

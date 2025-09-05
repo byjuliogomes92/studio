@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { produce } from 'immer';
-import { Star, Scaling, Film, Layers, LayoutGrid } from "lucide-react";
+import { Star, Scaling, Film, Layers, LayoutGrid, Code } from "lucide-react";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "../ui/button";
 
 
 // Importe os novos componentes de configuração
@@ -44,69 +46,12 @@ import { CalendlySettings } from './calendly-settings';
 import { SpacingSettings } from "./spacing-settings";
 import { AnimationSettings } from "./animation-settings";
 import { Textarea } from '@/components/ui/textarea';
-
-// --- INICIO: Lógica do LayoutSettings movida para cá ---
-function LayoutSettings({ props, onSubPropChange }: { props: any, onSubPropChange: (prop: string, subProp: string, value: any) => void }) {
-    const styles = props.styles || {};
-
-    const handleStyleChange = (prop: string, value: any) => {
-        onSubPropChange('styles', prop, value);
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="space-y-2">
-                <Label>Posicionamento</Label>
-                <Select value={styles.position || 'static'} onValueChange={(value) => handleStyleChange('position', value)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="static">Padrão (Static)</SelectItem>
-                        <SelectItem value="relative">Relativo</SelectItem>
-                        <SelectItem value="absolute">Absoluto</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            
-            {styles.position === 'absolute' && (
-                <div className="p-4 border rounded-md space-y-4 bg-muted/40">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="layout-top">Top</Label>
-                            <Input id="layout-top" value={styles.top || ''} onChange={e => handleStyleChange('top', e.target.value)} placeholder="Ex: -20px"/>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="layout-bottom">Bottom</Label>
-                            <Input id="layout-bottom" value={styles.bottom || ''} onChange={e => handleStyleChange('bottom', e.target.value)} placeholder="Ex: 1rem"/>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="layout-left">Left</Label>
-                            <Input id="layout-left" value={styles.left || ''} onChange={e => handleStyleChange('left', e.target.value)} placeholder="Ex: 50%"/>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="layout-right">Right</Label>
-                            <Input id="layout-right" value={styles.right || ''} onChange={e => handleStyleChange('right', e.target.value)} placeholder="Ex: 0"/>
-                        </div>
-                    </div>
-                    <Separator />
-                    <div className="space-y-2">
-                        <Label htmlFor="layout-z-index">Z-Index</Label>
-                        <Input id="layout-z-index" type="number" value={styles.zIndex || ''} onChange={e => handleStyleChange('zIndex', e.target.value)} placeholder="Ex: 10"/>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="layout-transform">Transform</Label>
-                        <Input id="layout-transform" value={styles.transform || ''} onChange={e => handleStyleChange('transform', e.target.value)} placeholder="Ex: translateX(-50%)"/>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
-// --- FIM: Lógica do LayoutSettings ---
-
+import { LayoutSettings } from './layout-settings';
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onComponentChange: (id: string, newProps: Partial<PageComponent>) => void;
+  onCodeEdit: (component: PageComponent) => void;
   projectPages: CloudPage[];
 }
 
@@ -166,7 +111,7 @@ const renderComponentSettings = (
     }
 }
 
-export function ComponentSettings({ component, onComponentChange, projectPages }: ComponentSettingsProps) {
+export function ComponentSettings({ component, onComponentChange, onCodeEdit, projectPages }: ComponentSettingsProps) {
   const abTestEnabled = component.abTestEnabled || false;
   const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
 
@@ -254,71 +199,81 @@ export function ComponentSettings({ component, onComponentChange, projectPages }
         
         <Separator />
 
-        <div>
-            <h3 className="text-sm font-medium mb-4">Configurações Gerais</h3>
-            {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages)}
-        </div>
-        
-        <Separator />
-
-        <div>
-            <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><LayoutGrid className="h-4 w-4" /> Layout</h3>
-            <LayoutSettings props={component.props} onSubPropChange={handleSubPropChange} />
-        </div>
-        
-        <Separator />
-        
-        <div>
-            <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Scaling className="h-4 w-4" /> Espaçamento</h3>
-            <SpacingSettings props={component.props} onPropChange={handlePropChange} />
-        </div>
-
-        <Separator />
-        
-        <div>
-            <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Film className="h-4 w-4" /> Animações</h3>
-            <AnimationSettings props={component.props} onPropChange={handlePropChange} />
-        </div>
-
-        <Separator />
-        
-        <div className="space-y-4">
-             <div className="flex items-center justify-between">
-                <Label htmlFor="ab-test-enabled" className="flex items-center gap-2 font-semibold">
+        <Accordion type="multiple" defaultValue={['general']} className="w-full space-y-4">
+            <AccordionItem value="general" className="border-b-0">
+                <AccordionTrigger className="text-sm font-medium py-0">Configurações Gerais</AccordionTrigger>
+                <AccordionContent className="pt-4">
+                    {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages)}
+                </AccordionContent>
+            </AccordionItem>
+             <AccordionItem value="layout" className="border-b-0">
+                <AccordionTrigger className="text-sm font-medium py-0">Layout</AccordionTrigger>
+                 <AccordionContent className="pt-4">
+                     <LayoutSettings props={component.props} onSubPropChange={handleSubPropChange} />
+                </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="spacing" className="border-b-0">
+                <AccordionTrigger className="text-sm font-medium py-0">Espaçamento</AccordionTrigger>
+                 <AccordionContent className="pt-4">
+                    <SpacingSettings props={component.props} onPropChange={handlePropChange} />
+                </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="animation" className="border-b-0">
+                <AccordionTrigger className="text-sm font-medium py-0">Animações</AccordionTrigger>
+                 <AccordionContent className="pt-4">
+                    <AnimationSettings props={component.props} onPropChange={handlePropChange} />
+                </AccordionContent>
+            </AccordionItem>
+             <AccordionItem value="ab-test" className="border-b-0">
+                <AccordionTrigger className="text-sm font-medium py-0 flex items-center gap-2">
                     <Star className="h-4 w-4 text-yellow-500"/>
                     Teste A/B
-                </Label>
-                <Switch
-                    id="ab-test-enabled"
-                    checked={abTestEnabled}
-                    onCheckedChange={handleAbTestToggle}
-                />
-            </div>
-            {abTestEnabled && (
-                <div className="p-4 border rounded-md space-y-6 bg-muted/30">
-                     <h4 className="font-medium text-sm text-muted-foreground">Configurações da Variante B</h4>
-                     <div>
-                        <h3 className="text-sm font-medium mb-4">Configurações Gerais (Variante)</h3>
-                         {renderComponentSettings(
-                            {...component, props: variantProps}, 
-                             (prop, value) => handleVariantPropChange(0, prop, value), 
-                             (prop, subProp, value) => handleVariantSubPropChange(0, prop, subProp, value),
-                             projectPages
-                          )}
-                     </div>
-                     <Separator/>
-                     <div>
-                        <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Scaling className="h-4 w-4" /> Espaçamento (Variante)</h3>
-                        <SpacingSettings props={variantProps} onPropChange={(prop, value) => handleVariantPropChange(0, prop, value)} />
-                     </div>
-                     <Separator/>
-                     <div>
-                        <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Film className="h-4 w-4" /> Animações (Variante)</h3>
-                        <AnimationSettings props={variantProps} onPropChange={(prop, value) => handleVariantPropChange(0, prop, value)} />
-                     </div>
-                </div>
-            )}
-        </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="ab-test-enabled">Ativar Teste A/B</Label>
+                        <Switch
+                            id="ab-test-enabled"
+                            checked={abTestEnabled}
+                            onCheckedChange={handleAbTestToggle}
+                        />
+                    </div>
+                     {abTestEnabled && (
+                        <div className="p-4 border rounded-md space-y-6 bg-muted/30">
+                             <h4 className="font-medium text-sm text-muted-foreground">Configurações da Variante B</h4>
+                             <div>
+                                <h3 className="text-sm font-medium mb-4">Configurações Gerais (Variante)</h3>
+                                 {renderComponentSettings(
+                                    {...component, props: variantProps}, 
+                                     (prop, value) => handleVariantPropChange(0, prop, value), 
+                                     (prop, subProp, value) => handleVariantSubPropChange(0, prop, subProp, value),
+                                     projectPages
+                                  )}
+                             </div>
+                             <Separator/>
+                             <div>
+                                <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Scaling className="h-4 w-4" /> Espaçamento (Variante)</h3>
+                                <SpacingSettings props={variantProps} onPropChange={(prop, value) => handleVariantPropChange(0, prop, value)} />
+                             </div>
+                             <Separator/>
+                             <div>
+                                <h3 className="text-sm font-medium mb-4 flex items-center gap-2"><Film className="h-4 w-4" /> Animações (Variante)</h3>
+                                <AnimationSettings props={variantProps} onPropChange={(prop, value) => handleVariantPropChange(0, prop, value)} />
+                             </div>
+                        </div>
+                    )}
+                </AccordionContent>
+            </AccordionItem>
+             <AccordionItem value="advanced" className="border-b-0">
+                <AccordionTrigger className="text-sm font-medium py-0">Avançado</AccordionTrigger>
+                <AccordionContent className="pt-4">
+                   <Button variant="outline" className="w-full" onClick={() => onCodeEdit(component)}>
+                       <Code className="mr-2 h-4 w-4"/>
+                       Editar Código do Componente
+                   </Button>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
       </div>
     </TooltipProvider>
   )

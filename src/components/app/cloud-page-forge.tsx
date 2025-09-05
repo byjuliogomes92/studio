@@ -26,6 +26,7 @@ import { ToastAction } from "../ui/toast";
 import { Switch } from "../ui/switch";
 import { shortenUrl } from "@/ai/flows/shorten-url-flow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { EditCodeDialog } from "./edit-code-dialog";
 
 
 interface CloudPageForgeProps {
@@ -96,6 +97,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [useBitly, setUseBitly] = useState(false);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [brand, setBrand] = useState<Brand | null>(null);
+
+  // State for Edit Code Dialog
+  const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false);
+  const [componentToCodeEdit, setComponentToCodeEdit] = useState<PageComponent | null>(null);
+
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
   const hasBitlyConfig = !!(brand && brand.integrations?.bitly?.encryptedAccessToken);
@@ -397,6 +403,36 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     navigator.clipboard.writeText(url);
     toast({ title: "URL copiada!" });
   };
+  
+  const handleCodeEdit = (component: PageComponent) => {
+    setComponentToCodeEdit(component);
+    setIsCodeEditorOpen(true);
+  };
+  
+  const handleSaveCode = (componentId: string, newHtml: string) => {
+    setPageState(prev => {
+      if (!prev) return null;
+      return produce(prev, draft => {
+        const index = draft.components.findIndex(c => c.id === componentId);
+        if (index !== -1) {
+          const originalComponent = draft.components[index];
+          const customHtmlComponent: PageComponent = {
+            id: originalComponent.id, // Keep the same ID
+            type: 'CustomHTML',
+            props: { htmlContent: newHtml },
+            order: originalComponent.order,
+            parentId: originalComponent.parentId,
+            column: originalComponent.column,
+            layerName: originalComponent.layerName ? `${originalComponent.layerName} (HTML)` : `HTML Customizado`,
+          };
+          draft.components.splice(index, 1, customHtmlComponent);
+        }
+      });
+    });
+    setIsCodeEditorOpen(false);
+    setComponentToCodeEdit(null);
+    setSelectedComponentId(null);
+  };
 
   if (isLoading || authLoading || !pageState) {
     return (
@@ -549,6 +585,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         pageName={pageState.name}
                         onPageNameChange={handlePageNameChange}
                         projectPages={projectPages}
+                        onCodeEdit={handleCodeEdit}
                     />
                 </aside>
             </ResizablePanel>
@@ -584,6 +621,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 key={selectedComponent.id}
                                 component={selectedComponent}
                                 onComponentChange={handleComponentChange}
+                                onCodeEdit={handleCodeEdit}
                                 projectPages={projectPages}
                             />
                         </div>
@@ -592,6 +630,17 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 )}
             </SheetContent>
         </Sheet>
+
+        {componentToCodeEdit && (
+            <EditCodeDialog
+                isOpen={isCodeEditorOpen}
+                onOpenChange={setIsCodeEditorOpen}
+                component={componentToCodeEdit}
+                allComponents={pageState.components}
+                onSave={handleSaveCode}
+                pageState={pageState}
+            />
+        )}
     </div>
     </>
   );

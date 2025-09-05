@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll, Megaphone, Calendar } from "lucide-react";
+import { GripVertical, Trash2, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll, Megaphone, Calendar, Library } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -865,7 +865,28 @@ export function SettingsPanel({
 
     return (
     <div className="flex flex-col h-full bg-card border-r w-full">
-        <ScrollArea className="flex-grow">
+      <ScrollArea className="flex-grow">
+        {selectedComponentId && pageState.components.find(c => c.id === selectedComponentId) ? (
+            <div className="p-4">
+                 <Button variant="ghost" onClick={() => setSelectedComponentId(null)} className="mb-4">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar para Camadas
+                </Button>
+                <ComponentSettings 
+                    key={selectedComponentId}
+                    component={pageState.components.find(c => c.id === selectedComponentId)!}
+                    onComponentChange={(id, newProps) => setPageState(prev => prev ? produce(prev, draft => {
+                        const index = draft.components.findIndex(c => c.id === id);
+                        if (index !== -1) {
+                            draft.components[index] = { ...draft.components[index], ...newProps };
+                        }
+                    }) : null)}
+                    onCodeEdit={onCodeEdit}
+                    projectPages={projectPages}
+                    pageState={pageState}
+                />
+            </div>
+        ) : (
             <TooltipProvider>
               <div className="p-4 space-y-2">
                   <Accordion type="multiple" defaultValue={['components']} className="w-full space-y-2">

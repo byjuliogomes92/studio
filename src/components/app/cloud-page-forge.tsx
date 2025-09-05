@@ -527,7 +527,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   if (isLoading || authLoading || !pageState) {
     return (
        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Logo className="h-10 w-10 animate-spin text-primary" />
+            <Logo className="h-10 w-10 animate-star-pulse" />
        </div>
     );
   }
@@ -541,8 +541,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2 font-semibold">
-            <Logo className="h-6 w-6 text-primary" />
-            <h1>CloudPage Studio</h1>
+            <Logo className="h-6 w-6" />
+            <h1>Morfeu</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">

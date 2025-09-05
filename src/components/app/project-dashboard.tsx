@@ -128,7 +128,7 @@ export function ProjectDashboard() {
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Nova funcionalidade: Kits de Marca!', slug: 'kits-de-marca-consistencia-visual', read: false },
     { id: 2, title: 'Melhoria no alinhamento de formulários.', slug: 'melhoria-alinhamento-formularios', read: true },
-    { id: 3, title: 'Bem-vindo ao CloudPage Studio!', slug: 'bem-vindo-cloudpage-studio', read: true },
+    { id: 3, title: 'Bem-vindo ao Morfeu!', slug: 'bem-vindo-cloudpage-studio', read: true },
   ]);
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
@@ -355,7 +355,7 @@ export function ProjectDashboard() {
   if (isLoading || authLoading || !activeWorkspace) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Logo className="h-10 w-10 animate-spin text-primary" />
+        <Logo className="h-12 w-12 animate-star-pulse" />
       </div>
     );
   }
@@ -580,7 +580,7 @@ export function ProjectDashboard() {
       <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b bg-card">
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex items-center gap-2 font-semibold text-lg">
-            <Logo className="h-6 w-6 text-primary" />
+            <Logo className="h-6 w-6" />
             <h1 className="hidden md:block">Projetos</h1>
           </div>
           <Separator orientation="vertical" className="h-6 mx-2 hidden md:block" />

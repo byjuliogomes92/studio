@@ -106,7 +106,7 @@ export default function WelcomePage() {
     <div className="min-h-screen w-full flex items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-            <Logo className="mx-auto h-12 w-12 text-primary mb-4" />
+            <Logo className="mx-auto h-12 w-12 mb-4" />
             <h1 className="text-3xl font-bold">Quase lá! Complete seu cadastro.</h1>
             <p className="text-balance text-muted-foreground mt-2">
                 Precisamos de mais algumas informações para personalizar sua experiência.

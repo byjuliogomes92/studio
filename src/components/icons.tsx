@@ -3,8 +3,8 @@ import Image from "next/image";
 
 export const Logo = (props: ImgHTMLAttributes<HTMLImageElement>) => (
   <Image
-    src="https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/cloudpagestudio_logo_icon.svg?alt=media&token=2302b259-e195-45a2-9af0-0a64593dfde6"
-    alt="Cloud Page Studio Logo"
+    src="https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeu_logo.svg?alt=media&token=02a2a856-ec22-4be3-8446-2fed5b6bad81"
+    alt="Morfeu Logo"
     width={40}
     height={40}
     {...props}

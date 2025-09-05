@@ -47,7 +47,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, loginWithGoogle, isGoogleAuthEnabled } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -87,7 +87,7 @@ export default function LoginPage() {
   }
 
   const googleButton = (
-    <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || !isGoogleAuthEnabled}>
+    <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
         {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
@@ -104,7 +104,7 @@ export default function LoginPage() {
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
-            <Logo className="mx-auto h-10 w-10 text-primary mb-4" />
+            <Logo className="mx-auto h-10 w-10 mb-4" />
             <h1 className="text-3xl font-bold">Login</h1>
             <p className="text-balance text-muted-foreground">
               Entre com seu email e senha para acessar seus projetos
@@ -159,18 +159,7 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {isGoogleAuthEnabled ? googleButton : (
-              <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="w-full">{googleButton}</div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Disponível no ambiente de produção.</p>
-                    </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            {googleButton}
           </div>
 
           <div className="mt-4 text-center text-sm">

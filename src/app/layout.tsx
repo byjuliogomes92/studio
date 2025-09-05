@@ -8,12 +8,12 @@ import { CommandPalette } from '@/components/app/command-palette';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Cloud Page Forge',
-    template: '%s | Cloud Page Forge',
+    default: 'Morfeu',
+    template: '%s | Morfeu',
   },
   description: 'Crie e gerencie Cloud Pages para Salesforce Marketing Cloud com uma interface visual intuitiva, componentes reutilizáveis e publicação instantânea.',
   icons: {
-    icon: `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="24" height="24" x="0" y="0" fill="#2563EB" rx="6"></rect><path stroke="#fff" d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /><path stroke="#fff" d="m14 12-4 4 4 4" /><path stroke="#fff" d="m10 12 4 4" /></svg>')}`,
+    icon: `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 0L61.2 38.8L100 50L61.2 61.2L50 100L38.8 61.2L0 50L38.8 38.8L50 0Z" fill="%232563EB"/><path d="M25 10L30.6 29.4L50 35L30.6 40.6L25 60L19.4 40.6L0 35L19.4 29.4L25 10Z" fill="%2360A5FA"/></svg>')}`,
   },
 };
 

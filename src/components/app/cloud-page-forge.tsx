@@ -272,6 +272,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           if (footer) {
               footer.order = 9999;
           }
+          // Sanitize components before saving to avoid undefined values
+          draft.components.forEach(c => {
+              if (c.parentId === undefined) {
+                  c.parentId = null;
+              }
+          });
       });
       
       await updatePage(pageId, finalPageState);

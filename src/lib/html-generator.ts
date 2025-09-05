@@ -93,15 +93,8 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       animationDuration = 1,
       animationDelay = 0,
       loopAnimation = 'none',
-      marginTop,
-      marginBottom,
-      marginLeft,
-      marginRight,
-      paddingTop,
-      paddingBottom,
-      paddingLeft,
-      paddingRight,
-      ...componentStyles // All other styles remain for the component itself
+      // We will pass all styles to the wrapper for spacing and also to the component itself.
+      // This is simpler and more robust. The component renderer will use what it needs.
   } = styles;
 
   let wrapperClass = 'component-wrapper';
@@ -120,35 +113,18 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
   
-  // Apply padding and margin styles to the wrapper
-  const spacingStyles = getStyleString({
-      marginTop,
-      marginBottom,
-      marginLeft,
-      marginRight,
-      paddingTop,
-      paddingBottom,
-      paddingLeft,
-      paddingRight
-  });
-
-  // Re-create the component object with only its direct styles for rendering
-  const componentForRender = {
-      ...component,
-      props: {
-          ...component.props,
-          styles: componentStyles
-      }
-  };
+  // Apply all styles to the wrapper. The individual component renderers can decide what to use.
+  const wrapperStyleString = getStyleString(styles);
   
-  const renderedComponent = renderSingleComponent(componentForRender, pageState, isForPreview, childrenHtml, hideAmpscript);
+  const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   
+  // Components that manage their own full-width or special positioning should not be wrapped.
   if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header'].includes(component.type)) {
     return renderedComponent;
   }
   
-  const isFullWidthComponent = ['Columns', 'Div'].includes(component.type) && component.props.styles?.isFullWidth;
-  if (isFullWidthComponent) {
+  const isFullWidthContainer = ['Columns', 'Div'].includes(component.type) && component.props.styles?.isFullWidth;
+  if (isFullWidthContainer) {
       return renderedComponent;
   }
   
@@ -158,7 +134,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       return renderedComponent;
   }
 
-  return `<div class="${wrapperClass}" style="${spacingStyles}" ${animationAttrs} ${selectableAttrs}>
+  return `<div class="${wrapperClass}" style="${wrapperStyleString}" ${animationAttrs} ${selectableAttrs}>
              ${renderedComponent}
           </div>`;
 };
@@ -965,11 +941,16 @@ ${trackingScripts.head}
     }
     
     .component-wrapper {
-      padding-top: var(--spacing-top, 20px);
-      padding-bottom: var(--spacing-bottom, 20px);
       margin-top: var(--margin-top, 0);
       margin-bottom: var(--margin-bottom, 0);
+      margin-left: var(--margin-left, auto);
+      margin-right: var(--margin-right, auto);
+      padding-top: var(--padding-top, 20px);
+      padding-bottom: var(--padding-bottom, 20px);
+      padding-left: var(--padding-left, 0);
+      padding-right: var(--padding-right, 0);
       width: 100%;
+      max-width: 1200px;
     }
     
     .component-layout-inline {
@@ -2122,3 +2103,5 @@ ${!isForPreview ? trackingScripts.body : ''}
 
   return finalHtml;
 }
+
+    

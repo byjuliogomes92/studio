@@ -9,16 +9,16 @@ import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical, Code } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical, Code, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity, getPagesForProject } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { produce } from "immer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ComponentSettings } from "./settings/component-settings";
 import { ScrollArea } from "../ui/scroll-area";
@@ -447,6 +447,99 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     setSelectedComponentId(null);
   };
 
+  const duplicateComponent = (componentId: string) => {
+    setPageState(prev => {
+        if (!prev) return null;
+
+        return produce(prev, draft => {
+            const idMap: { [key: string]: string } = {};
+
+            const duplicateRecursively = (originalCompId: string, newParentId: string | null = null, newColumnIndex?: number): string => {
+                const originalComp = draft.components.find(c => c.id === originalCompId);
+                if (!originalComp) return '';
+
+                const newId = `${originalComp.type}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                idMap[originalCompId] = newId;
+
+                // Deep copy of props to avoid reference issues
+                const newProps = JSON.parse(JSON.stringify(originalComp.props));
+                
+                const duplicatedComp: PageComponent = {
+                    ...originalComp,
+                    id: newId,
+                    props: newProps,
+                    parentId: newParentId,
+                    column: newColumnIndex !== undefined ? newColumnIndex : originalComp.column,
+                    // Order will be recalculated later
+                };
+                draft.components.push(duplicatedComp);
+
+                if (['Columns', 'Div', 'PopUp'].includes(originalComp.type)) {
+                    const children = draft.components.filter(c => c.parentId === originalCompId);
+                    children.forEach(child => {
+                       duplicateRecursively(child.id, newId, child.column);
+                    });
+                }
+                return newId;
+            };
+            
+            const originalComponent = draft.components.find(c => c.id === componentId);
+            if (!originalComponent) return;
+
+            const newMainComponentId = duplicateRecursively(componentId, originalComponent.parentId, originalComponent.column);
+            
+            // Reorder components
+            const allComponents = draft.components.filter(c => c.parentId === originalComponent.parentId);
+            const originalIndex = allComponents.findIndex(c => c.id === componentId);
+            
+            const newComponent = draft.components.find(c => c.id === newMainComponentId);
+            if (!newComponent) return;
+
+            // Move the new component to be right after the original
+            const componentToInsert = draft.components.splice(draft.components.findIndex(c => c.id === newComponent.id), 1)[0];
+            const finalOriginalIndex = draft.components.findIndex(c => c.id === componentId);
+            draft.components.splice(finalOriginalIndex + 1, 0, componentToInsert);
+
+            // Update order for all siblings
+            const siblings = draft.components.filter(c => c.parentId === originalComponent.parentId && c.column === originalComponent.column);
+            siblings.forEach((sibling, index) => {
+                const componentInDraft = draft.components.find(c => c.id === sibling.id);
+                if (componentInDraft) {
+                    componentInDraft.order = index;
+                }
+            });
+        });
+    });
+    // Don't select the new component, let the user do it.
+    // toast({ title: "Componente duplicado!"});
+  };
+
+  const removeComponent = (id: string) => {
+    setPageState(prev => {
+      if (!prev) return null;
+      // Also remove children of the component being removed
+      const idsToRemove = new Set([id]);
+      let children = prev.components.filter(c => c.parentId === id);
+      while(children.length > 0) {
+        const nextGenChildren: PageComponent[] = [];
+        children.forEach(child => {
+          idsToRemove.add(child.id);
+          const grandChildren = prev.components.filter(c => c.parentId === child.id);
+          nextGenChildren.push(...grandChildren);
+        });
+        children = nextGenChildren;
+      }
+      
+      return {
+        ...prev,
+        components: prev.components.filter(c => !idsToRemove.has(c.id)),
+      };
+    });
+    if (selectedComponentId === id) {
+      setSelectedComponentId(null);
+    }
+  };
+
   if (isLoading || authLoading || !pageState) {
     return (
        <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -586,55 +679,80 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             </DropdownMenu>
         </div>
       </header>
-      <div className="flex-grow min-h-0">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={25} minSize={20}>
-              <SettingsPanel
-                pageState={pageState}
-                setPageState={setPageState}
-                selectedComponentId={selectedComponentId}
-                setSelectedComponentId={setSelectedComponentId}
-                pageName={pageState.name}
-                onPageNameChange={handlePageNameChange}
-                projectPages={projectPages}
-                onCodeEdit={handleCodeEdit}
-              />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={75}>
-            <MainPanel 
-              pageState={pageState} 
-              setPageState={setPageState}
-              onDataExtensionKeyChange={handleDataExtensionKeyChange}
-              onSelectComponent={setSelectedComponentId}
-            />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+      <div className="flex-grow min-h-0 flex">
+        <SettingsPanel
+            pageState={pageState}
+            setPageState={setPageState}
+            selectedComponentId={selectedComponentId}
+            setSelectedComponentId={setSelectedComponentId}
+            pageName={pageState.name}
+            onPageNameChange={handlePageNameChange}
+            projectPages={projectPages}
+            onCodeEdit={handleCodeEdit}
+            removeComponent={removeComponent}
+            duplicateComponent={duplicateComponent}
+        />
+        <div className="flex-grow">
+          <MainPanel 
+            pageState={pageState} 
+            setPageState={setPageState}
+            onDataExtensionKeyChange={handleDataExtensionKeyChange}
+            onSelectComponent={setSelectedComponentId}
+          />
+        </div>
       </div>
 
        <Sheet open={!!selectedComponent} onOpenChange={(open) => !open && setSelectedComponentId(null)}>
             <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col">
                 {selectedComponent && (
                     <>
-                    <SheetHeader className="p-6">
-                        <SheetTitle className="flex items-center gap-2">
+                    <SheetHeader className="p-6 pb-4 flex flex-row items-center justify-between">
+                       <div className="space-y-1.5">
+                         <SheetTitle className="flex items-center gap-2">
                             <Settings className="h-5 w-5" />
-                            Configurações de {selectedComponent.type}
+                            Configurações de {selectedComponent.layerName || selectedComponent.type}
                         </SheetTitle>
                         <SheetDescription>
                             Ajuste as propriedades do componente selecionado.
                         </SheetDescription>
+                       </div>
+                       <div className="flex items-center gap-1">
+                           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => duplicateComponent(selectedComponent.id)}>
+                               <Copy className="h-4 w-4" />
+                           </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="icon" className="h-8 w-8">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Excluir Componente?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Tem certeza que deseja excluir este componente e todo o seu conteúdo? Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => removeComponent(selectedComponent.id)}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                       </div>
                     </SheetHeader>
                     <ScrollArea className="flex-grow">
                         <div className="px-6 pb-6">
-                             <ComponentSettings
-                                key={selectedComponent.id}
-                                component={selectedComponent}
-                                onComponentChange={handleComponentChange}
-                                onCodeEdit={handleCodeEdit}
-                                projectPages={projectPages}
-                                pageState={pageState}
-                            />
+                         <ComponentSettings
+                            key={selectedComponent.id}
+                            component={selectedComponent}
+                            onComponentChange={handleComponentChange}
+                            onCodeEdit={handleCodeEdit}
+                            projectPages={projectPages}
+                            pageState={pageState}
+                            onDuplicate={duplicateComponent}
+                            onDelete={removeComponent}
+                        />
                         </div>
                     </ScrollArea>
                     </>

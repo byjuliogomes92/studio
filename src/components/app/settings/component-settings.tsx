@@ -54,6 +54,8 @@ interface ComponentSettingsProps {
   onCodeEdit: (component: PageComponent) => void;
   projectPages: CloudPage[];
   pageState: CloudPage;
+  onDuplicate: (componentId: string) => void;
+  onDelete: (componentId: string) => void;
 }
 
 const renderComponentSettings = (

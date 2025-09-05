@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { ComponentSettings } from "./component-settings";
+import { ComponentSettings } from "./settings/component-settings";
 import { ScrollArea } from "../ui/scroll-area";
 import { ToastAction } from "../ui/toast";
 import { Switch } from "../ui/switch";

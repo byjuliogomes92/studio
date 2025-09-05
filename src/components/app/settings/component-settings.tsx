@@ -110,7 +110,6 @@ interface ComponentSettingsProps {
 }
 
 const renderComponentSettings = (
-  type: string,
   component: PageComponent,
   onPropChange: (prop: string, value: any) => void,
   onSubPropChange: (prop: string, subProp: string, value: any) => void,
@@ -118,7 +117,7 @@ const renderComponentSettings = (
 ) => {
     const props = { component, onPropChange, onSubPropChange, projectPages };
 
-    switch (type) {
+    switch (component.type) {
       case "Div": return <DivSettings {...props} />;
       case "Footer": return <FooterSettings {...props} />;
       case "Header": return <HeaderSettings {...props} />;

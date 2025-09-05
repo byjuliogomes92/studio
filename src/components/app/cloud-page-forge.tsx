@@ -145,7 +145,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 draft.components.forEach(c => {
                   if (c.parentId === p.id) {
                     if (typeof c.order !== 'number') c.order = ++maxChildOrder;
-                    else if (c.order > maxChildOrder) maxOrder = c.order;
+                    else if (c.order > maxOrder) maxOrder = c.order;
                   }
                 });
               });
@@ -683,7 +683,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 <MainPanel 
                     pageState={pageState} 
                     setPageState={setPageState}
-                    onDataExtensionKeyChange={onDataExtensionKeyChange}
+                    onDataExtensionKeyChange={handleDataExtensionKeyChange}
                     onSelectComponent={setSelectedComponentId}
                 />
             </ResizablePanel>

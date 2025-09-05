@@ -9,9 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { produce } from 'immer';
 import { Star, Scaling, Film, Layers, LayoutGrid, Code } from "lucide-react";
-import { Input } from "../ui/input";
+import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 
 // Importe os novos componentes de configuração
@@ -270,5 +270,3 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
     </TooltipProvider>
   )
 }
-
-    

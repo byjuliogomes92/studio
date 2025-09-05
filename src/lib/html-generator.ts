@@ -32,14 +32,15 @@ import { renderFloatingButton } from './html-components/floating-button';
 import { renderCalendly } from './html-components/calendly';
 import { renderDiv } from './html-components/div';
 import { renderAddToCalendar } from './html-components/add-to-calendar';
+import { renderPopUp } from './html-components/popup';
 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
     return components
       .map((component) => {
         const childrenHtml = (() => {
-            if (component.type === 'Columns' || component.type === 'Div') {
-                const columnCount = component.props.columnCount || (component.type === 'Div' ? 1 : 0);
+            if (component.type === 'Columns' || component.type === 'Div' || component.type === 'PopUp') {
+                const columnCount = component.props.columnCount || (component.type === 'Div' ? 1 : (component.type === 'PopUp' ? 1 : 0));
                 let columnsContent = '';
                 for (let i = 0; i < columnCount; i++) {
                     const columnComponents = allComponents
@@ -106,7 +107,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
   
   // Floating components and Stripe are handled specially as they don't sit inside the padded container
-  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'AddToCalendar'].includes(component.type)) {
+  if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp'].includes(component.type)) {
     return renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
   }
 
@@ -184,6 +185,7 @@ export const renderSingleComponent = (component: PageComponent, pageState: Cloud
     case 'Calendly': return renderCalendly(component);
     case 'AddToCalendar': return renderAddToCalendar(component);
     case 'Footer': return renderFooter(component);
+    case 'PopUp': return renderPopUp(component, childrenHtml);
     case 'CustomHTML': return component.props.htmlContent || '';
     default:
       const exhaustiveCheck: never = component.type;
@@ -920,9 +922,10 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
 
   
-  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
+  const mainContentHtml = renderComponents(components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type)), components, pageState, isForPreview, shouldHideAmpscript);
   const floatingElementsHtml = components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
   const footerHtml = footerComponent ? renderComponent(footerComponent, pageState, isForPreview, '', shouldHideAmpscript) : '';
+  const popupsHtml = components.filter(c => c.type === 'PopUp' && c.parentId === null).map(c => renderComponent(c, pageState, isForPreview, '', shouldHideAmpscript)).join('\n');
 
 
   const headerComponent = components.find(c => c.type === 'Header');
@@ -2184,6 +2187,7 @@ ${!isForPreview ? trackingScripts.body : ''}
     ${floatingElementsHtml}
     ${footerHtml}
     ${cookieBannerHtml}
+    ${popupsHtml}
   ` : `
     %%[ IF @isAuthenticated == true THEN ]%%
     ${renderLoader(meta, styles.themeColor)}
@@ -2195,6 +2199,7 @@ ${!isForPreview ? trackingScripts.body : ''}
     ${floatingElementsHtml}
     ${footerHtml}
     ${cookieBannerHtml}
+    ${popupsHtml}
     %%[ ELSE ]%%
     ${security.body}
     %%[ ENDIF ]%%

@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowUp, ArrowDown, Scroll, Megaphone, Calendar, Library, ArrowLeft, Trash2 } from "lucide-react";
+import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowLeft, Trash2, PlusCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -149,7 +149,7 @@ function SortableItem({ component, children }: { component: PageComponent; child
 }
 
 
-function Dropzone({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
+function Dropzone({ id, children, className, onAddComponent }: { id: string; children: React.ReactNode; className?: string, onAddComponent: (typeOrBlock: ComponentType | PageComponent[]) => void }) {
     const { setNodeRef, isOver } = useSortable({ id, data: { type: 'dropzone', isDropzone: true, accepts: ['component'] } });
 
     return (
@@ -164,6 +164,12 @@ function Dropzone({ id, children, className }: { id: string; children: React.Rea
             <SortableContext items={React.Children.map(children, (child: any) => child.props.component.id) || []} strategy={verticalListSortingStrategy}>
                 {children}
             </SortableContext>
+             <AddComponentDialog onAddComponent={onAddComponent}>
+                <Button variant="outline" size="sm" className="w-full h-8 mt-1 border-dashed">
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Adicionar
+                </Button>
+            </AddComponentDialog>
         </div>
     );
 }
@@ -489,203 +495,46 @@ export function SettingsPanel({
         });
     });
   };
-
-  const addComponent = (typeOrBlock: ComponentType | PageComponent[]) => {
-    setPageState(prev => {
-      if (!prev) return null;
   
-      return produce(prev, draft => {
-          if (Array.isArray(typeOrBlock)) {
-              // It's a block (an array of components)
-              const newComponents = typeOrBlock.map(comp => {
-                  const siblings = draft.components.filter(c => c.parentId === comp.parentId);
-                  return {...comp, order: siblings.length + (comp.order || 0) };
-              });
-              draft.components.push(...newComponents);
-              // Select the main parent component of the block if it exists
-              const mainParent = newComponents.find(c => c.parentId === null);
-              if (mainParent) {
-                  setSelectedComponentId(mainParent.id);
-              }
-          } else {
-              // It's a single component type
-              const type = typeOrBlock;
+    const handleAddComponentToContainer = (parentId: string | null, column: number, typeOrBlock: ComponentType | PageComponent[]) => {
+        setPageState(prev => {
+            if (!prev) return null;
 
-              if (type === 'Footer' && draft.components.some(c => c.type === 'Footer')) {
-                  toast({
-                      variant: 'destructive',
-                      title: 'Ação não permitida',
-                      description: 'Apenas um componente de Rodapé é permitido por página.'
-                  });
-                  return;
-              }
+            return produce(prev, draft => {
+                const addSingleComponent = (type: ComponentType) => {
+                    const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
+                    const newId = `${type}-${Date.now()}`;
+                    const newComponent: PageComponent = {
+                        id: newId,
+                        type,
+                        props: {}, // Add default props here if needed
+                        parentId,
+                        column,
+                        order: siblings.length,
+                        abTestEnabled: false,
+                        abTestVariants: []
+                    };
+                    // Simplified default props
+                    if (type === 'Columns') newComponent.props.columnCount = 2;
+                    if (type === 'Spacer') newComponent.props.height = 20;
+                    if (type === 'Button') newComponent.props.text = 'Botão';
+                    
+                    draft.components.push(newComponent);
+                    setSelectedComponentId(newId);
+                };
 
-              const parentId = null; 
-              const column = 0;
-              const siblings = draft.components.filter(c => c.parentId === parentId);
-    
-              const newComponent: PageComponent = {
-                id: Date.now().toString(),
-                type,
-                props: {},
-                parentId,
-                order: siblings.length,
-                column,
-                abTestEnabled: false,
-                abTestVariants: [],
-              };
-        
-              // Default props for new components
-              switch(type) {
-                  case 'Div':
-                      newComponent.props = { styles: {} };
-                      break;
-                  case 'PopUp':
-                      newComponent.props = {
-                          trigger: 'delay',
-                          delay: 3,
-                          closeOnOutsideClick: true,
-                          styles: { width: '500px', padding: '1.5rem', borderRadius: '0.75rem', backgroundColor: '#FFFFFF' },
-                          overlayStyles: { backgroundColor: 'rgba(0, 0, 0, 0.6)' }
-                      };
-                      break;
-                  case 'Columns':
-                      newComponent.props = { columnCount: 2 };
-                      break;
-                  case 'Carousel':
-                      newComponent.props = {
-                          images: [
-                              { id: '1', url: 'https://placehold.co/800x400.png?text=Slide+1', alt: 'Slide 1' },
-                              { id: '2', url: 'https://placehold.co/800x400.png?text=Slide+2', alt: 'Slide 2' },
-                              { id: '3', url: 'https://placehold.co/800x400.png?text=Slide+3', alt: 'Slide 3' },
-                          ],
-                          options: { loop: true, slidesPerView: 1 },
-                          showArrows: true,
-                          showDots: true,
-                      };
-                      break;
-                  case 'Form':
-                      newComponent.props = {
-                          fields: { name: {enabled: true, conditional: null}, email: {enabled: true, conditional: null}, phone: {enabled: true, conditional: null}, cpf: {enabled: true, conditional: null}, city: {enabled: false, conditional: null}, birthdate: {enabled: false, conditional: null}, optin: {enabled: true, conditional: null} },
-                          placeholders: { name: 'Nome', email: 'Email', phone: 'Telefone - Ex:(11) 9 9999-9999', cpf: 'CPF', city: 'Cidade', birthdate: 'Data de Nascimento' },
-                          consentText: `Quero receber novidades e promoções da Natura e de outras empresas do Grupo Natura &Co...`,
-                          buttonText: 'Finalizar',
-                          buttonAlign: 'center',
-                          submission: {
-                            type: 'message',
-                            message: '<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>',
-                            url: '',
-                          }
-                      };
-                      break;
-                  case 'Countdown':
-                      newComponent.props = { targetDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16) };
-                      break;
-                  case 'Spacer':
-                      newComponent.props = { height: 20 };
-                      break;
-                  case 'Divider':
-                      newComponent.props = { thickness: 1, style: 'solid', color: '#cccccc', margin: 20 };
-                      break;
-                  case 'Button':
-                      newComponent.props = { text: 'Clique Aqui', action: { type: 'URL', url: '#'}, align: 'center' };
-                      break;
-                  case 'DownloadButton':
-                      newComponent.props = { text: 'Download', fileUrl: '', fileName: 'arquivo', align: 'center' };
-                      break;
-                  case 'Accordion':
-                  case 'Tabs':
-                      newComponent.props = {
-                          items: [
-                              { id: 'item-1', title: 'Item 1', content: 'Conteúdo do item 1.' },
-                              { id: 'item-2', title: 'Item 2', content: 'Conteúdo do item 2.' },
-                          ]
-                      };
-                      break;
-                  case 'Voting':
-                      newComponent.props = {
-                          question: 'Qual sua cor favorita?',
-                          options: [
-                              { id: 'opt1', text: 'Azul' },
-                              { id: 'opt2', text: 'Verde' },
-                          ]
-                      };
-                      break;
-                  case 'Stripe':
-                      newComponent.props = {
-                          text: 'Anúncio ou aviso importante aqui!',
-                          isClosable: true,
-                          backgroundColor: '#000000',
-                          textColor: '#FFFFFF',
-                          linkUrl: ''
-                      };
-                      break;
-                  case 'NPS':
-                      newComponent.props = {
-                          question: 'Em uma escala de 0 a 10, o quão provável você é de nos recomendar a um amigo ou colega?',
-                          type: 'numeric',
-                          lowLabel: 'Pouco Provável',
-                          highLabel: 'Muito Provável',
-                          thankYouMessage: 'Obrigado pelo seu feedback!'
-                      };
-                      break;
-                  case 'Map':
-                      newComponent.props = {
-                          embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.098048256196!2d-46.65684698502213!3d-23.56424408468112!2m3!1f0!2f0!3f2!3i1024!4i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0x4a3ec19a97a8d4d7!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1620994773418!5m2!1spt-BR!2sbr'
-                      };
-                      break;
-                  case 'SocialIcons':
-                      newComponent.props = {
-                          links: {
-                              facebook: '',
-                              instagram: '',
-                              twitter: '',
-                              linkedin: '',
-                              youtube: '',
-                              tiktok: '',
-                              pinterest: '',
-                              snapchat: '',
-                          },
-                          styles: {
-                              align: 'center',
-                              iconSize: '24px',
-                          }
-                      };
-                      break;
-                  case 'WhatsApp':
-                      newComponent.props = {
-                          phoneNumber: '5511999999999',
-                          defaultMessage: 'Olá! Gostaria de mais informações.',
-                          position: 'bottom-right'
-                      };
-                      break;
-                   case 'FTPUpload':
-                      newComponent.props = {
-                        label: "Enviar Arquivo CSV",
-                        destinationPath: "/Import",
-                        destinationFilename: "arquivo_%%Date%%.csv",
-                        dataExtensionName: "",
-                      };
-                      break;
-                  case 'DataExtensionUpload':
-                      newComponent.props = {
-                        label: "Upload para Data Extension",
-                        dataExtensionKey: "",
-                      };
-                      break;
-                  case 'AddToCalendar':
-                      newComponent.props = {
-                          title: 'Meu Evento',
-                          startTime: new Date().toISOString().slice(0, 16),
-                      }
-                      break;
-              }
-              draft.components.push(newComponent);
-              setSelectedComponentId(newComponent.id);
-          }
-      });
-    });
-  };
+                if (Array.isArray(typeOrBlock)) {
+                     const newComponents = typeOrBlock.map(comp => {
+                        const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
+                        return {...comp, parentId, column, order: siblings.length + (comp.order || 0) };
+                    });
+                    draft.components.push(...newComponents);
+                } else {
+                    addSingleComponent(typeOrBlock);
+                }
+            });
+        });
+    };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -784,7 +633,11 @@ export function SettingsPanel({
                             style={{ gridTemplateColumns: `repeat(${component.props.columnCount || 1}, 1fr)` }}
                         >
                             {Array.from({ length: component.props.columnCount || 1 }).map((_, i) => (
-                                <Dropzone key={`${component.id}-col-${i}`} id={`${component.id}-${i}`}>
+                                <Dropzone 
+                                    key={`${component.id}-col-${i}`} 
+                                    id={`${component.id}-${i}`}
+                                    onAddComponent={(typeOrBlock) => handleAddComponentToContainer(component.id, i, typeOrBlock)}
+                                >
                                     {renderComponentsRecursive(component.id, i)}
                                 </Dropzone>
                             ))}
@@ -933,11 +786,10 @@ export function SettingsPanel({
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
                           >
-                            <Dropzone id="root-dropzone-0">
+                            <Dropzone id="root-dropzone-0" onAddComponent={(typeOrBlock) => handleAddComponentToContainer(null, 0, typeOrBlock)}>
                                 {renderComponentsRecursive(null)}
                             </Dropzone>
                            </DndContext>
-                          <AddComponentDialog onAddComponent={addComponent} />
       
                           {floatingComponents.length > 0 && (
                               <div className="pt-2 mt-2 border-t">
@@ -965,9 +817,9 @@ export function SettingsPanel({
                                       <Megaphone className="h-4 w-4" />
                                       Pop-ups da Página
                                   </h4>
-                                  <Dropzone id="root-popup-dropzone-0">
-                                    {renderComponentsRecursive(null, 1)}
-                                  </Dropzone>
+                                  <div className="space-y-2">
+                                     {renderComponentsRecursive(null, 1)}
+                                  </div>
                               </div>
                           )}
       
@@ -1085,7 +937,7 @@ export function SettingsPanel({
                               <div className="flex items-center gap-2">
                                  <Input value={pageState.meta.faviconUrl} onChange={e => handleMetaChange('faviconUrl', e.target.value)} />
                                   <MediaLibraryDialog onSelectImage={(url) => handleMetaChange('faviconUrl', url)}>
-                                      <Button variant="outline" size="icon"><Library className="h-4 w-4"/></Button>
+                                       <Button variant="outline" size="icon"><Library className="h-4 w-4"/></Button>
                                   </MediaLibraryDialog>
                               </div>
                            </div>

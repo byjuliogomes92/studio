@@ -531,7 +531,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   
   const toggleSidebar = () => {
     if (layoutRef.current) {
-        const isCollapsed = layoutRef.current.getSizes()[0] < 5;
+        const layout = layoutRef.current.getLayout();
+        const isCollapsed = layout[0] < 5;
         if (isCollapsed) {
             layoutRef.current.resize(0, 25);
             setIsSidebarCollapsed(false);

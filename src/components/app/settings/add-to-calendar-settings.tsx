@@ -14,6 +14,7 @@ interface ComponentSettingsProps {
 
 export function AddToCalendarSettings({ component, onPropChange }: ComponentSettingsProps) {
     const { props } = component;
+    const isAllDay = props.isAllDay || false;
     
     return (
         <div className="space-y-4">
@@ -25,19 +26,46 @@ export function AddToCalendarSettings({ component, onPropChange }: ComponentSett
                 <Label htmlFor="event-description">Descrição</Label>
                 <Textarea id="event-description" value={props.description || ''} onChange={e => onPropChange('description', e.target.value)} placeholder="Descreva o evento..." />
             </div>
+            
+            <Separator />
+            
+            <div className="flex items-center justify-between">
+                <Label htmlFor="event-all-day">Dia Inteiro</Label>
+                <Switch id="event-all-day" checked={isAllDay} onCheckedChange={checked => onPropChange('isAllDay', checked)} />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="event-start-time">Início do Evento</Label>
-                    <Input id="event-start-time" type="datetime-local" value={props.startTime || ''} onChange={e => onPropChange('startTime', e.target.value)} />
+                    <Input id="event-start-time" type={isAllDay ? "date" : "datetime-local"} value={props.startTime || ''} onChange={e => onPropChange('startTime', e.target.value)} />
                 </div>
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <Label htmlFor="event-end-time">Fim do Evento</Label>
-                    <Input id="event-end-time" type="datetime-local" value={props.endTime || ''} onChange={e => onPropChange('endTime', e.target.value)} />
+                    <Input id="event-end-time" type={isAllDay ? "date" : "datetime-local"} value={props.endTime || ''} onChange={e => onPropChange('endTime', e.target.value)} />
                 </div>
             </div>
+
+            <Separator />
+
+             <div className="space-y-2">
+                <Label htmlFor="event-location-type">Tipo de Localização</Label>
+                 <Select value={props.locationType || 'online'} onValueChange={(value) => onPropChange('locationType', value)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="online">Online (URL)</SelectItem>
+                        <SelectItem value="physical">Presencial (Endereço)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
             <div className="space-y-2">
                 <Label htmlFor="event-location">Localização</Label>
-                <Input id="event-location" value={props.location || ''} onChange={e => onPropChange('location', e.target.value)} placeholder="Ex: Online ou Endereço Físico" />
+                <Input 
+                    id="event-location" 
+                    value={props.location || ''} 
+                    onChange={e => onPropChange('location', e.target.value)} 
+                    placeholder={props.locationType === 'physical' ? 'Endereço do evento' : 'Link da reunião'} 
+                />
             </div>
             <Separator />
             <div className="space-y-4">

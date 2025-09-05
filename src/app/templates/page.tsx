@@ -76,14 +76,14 @@ function TemplatePreviewDialog({ template }: { template: Template }) {
       projectId: 'preview',
       workspaceId: 'preview',
       brandId: 'preview',
-      brandName: template.brand || 'preview',
+      brandName: 'preview',
       slug: template.name.toLowerCase().replace(/ /g, '-'),
       tags: [],
       cookieBanner: template.cookieBanner,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    return generateHtml(mockPage, true);
+    return generateHtml(mockPage, true, '', true);
   }, [template]);
 
   return (
@@ -151,7 +151,7 @@ export default function TemplatesPage() {
   const handleDeleteTemplate = async () => {
     if (!templateToDelete || templateToDelete.isDefault) return;
     try {
-      await deleteTemplate(templateToDelete.id);
+      await deleteTemplate(templateToDelete.id, user.id);
       setUserTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
       toast({ title: "Template excluído!" });
     } catch (error) {
@@ -455,6 +455,7 @@ export default function TemplatesPage() {
 }
 
     
+
 
 
 

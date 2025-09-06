@@ -605,7 +605,7 @@ export const getDefaultTemplate = async (templateId: string): Promise<Template |
 
 
 // Brands
-export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>, userId: string): Promise<Brand> => {
+export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>, user: User): Promise<Brand> => {
     const db = getDbInstance();
     
     // Encrypt password if it exists
@@ -621,7 +621,7 @@ export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>, userI
     const dataWithTimestamp = { ...brandData, createdAt: serverTimestamp() };
     const docRef = await addDoc(collection(db, 'brands'), dataWithTimestamp);
     
-    await logActivity(brandData.workspaceId, userId, 'BRAND_CREATED', { brandName: brandData.name });
+    await logActivity(brandData.workspaceId, user.uid, 'BRAND_CREATED', { brandName: brandData.name });
 
     return { ...brandData, id: docRef.id, createdAt: Timestamp.now() } as Brand;
 };
@@ -641,7 +641,7 @@ export const getBrand = async (brandId: string): Promise<Brand | null> => {
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Brand : null;
 };
 
-export const updateBrand = async (brandId: string, data: Partial<Brand>, userId: string): Promise<void> => {
+export const updateBrand = async (brandId: string, data: Partial<Brand>, user: User): Promise<void> => {
     const db = getDbInstance();
     const brandRef = doc(db, 'brands', brandId);
     
@@ -659,11 +659,11 @@ export const updateBrand = async (brandId: string, data: Partial<Brand>, userId:
     const brandSnap = await getDoc(brandRef);
     const brandData = brandSnap.data();
     if(brandData) {
-        await logActivity(brandData.workspaceId, userId, 'BRAND_UPDATED', { brandName: brandData.name });
+        await logActivity(brandData.workspaceId, user.uid, 'BRAND_UPDATED', { brandName: brandData.name });
     }
 };
 
-export const deleteBrand = async (brandId: string, userId: string): Promise<void> => {
+export const deleteBrand = async (brandId: string, user: User): Promise<void> => {
     const db = getDbInstance();
     const brandRef = doc(db, 'brands', brandId);
     const brandSnap = await getDoc(brandRef);
@@ -671,7 +671,7 @@ export const deleteBrand = async (brandId: string, userId: string): Promise<void
 
     if(brandData) {
         await deleteDoc(brandRef);
-        await logActivity(brandData.workspaceId, userId, 'BRAND_DELETED', { brandName: brandData.name });
+        await logActivity(brandData.workspaceId, user.uid, 'BRAND_DELETED', { brandName: brandData.name });
     }
 };
 

@@ -1424,6 +1424,10 @@ ${trackingScripts.head}
         text-decoration: underline !important;
     }
     
+    .button-wrapper a {
+        border-radius: ${pageState.brand?.components?.button?.borderRadius || '0.5rem'};
+    }
+
     .button-wrapper a:hover {
       background-color: var(--theme-color-hover) !important;
     }
@@ -1480,8 +1484,8 @@ ${trackingScripts.head}
         width: 100%;
         padding: 15px;
         margin: 0;
-        border: 1px solid #ccc;
-        border-radius: 5px;
+        border: 1px solid ${pageState.brand?.components?.input?.borderColor || '#ccc'};
+        border-radius: ${pageState.brand?.components?.input?.borderRadius || '0.5rem'};
         font-family: "${fontFamilyBody}", sans-serif;
         font-weight: 700;
         font-style: normal;
@@ -1497,7 +1501,7 @@ ${trackingScripts.head}
         width: auto;
         min-width: 200px;
         padding: 15px 30px;
-        border-radius: 30px;
+        border-radius: ${pageState.brand?.components?.button?.borderRadius || '30px'};
         display: inline-flex;
         align-items: center;
         justify-content: center;

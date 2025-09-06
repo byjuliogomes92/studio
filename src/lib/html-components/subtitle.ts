@@ -14,10 +14,10 @@ export function renderSubtitle(component: PageComponent, isForPreview: boolean, 
     if (brand?.typography) {
         const { customFontNameHeadings, fontFamilyHeadings } = brand.typography;
         if (!styles.fontFamily) { // Only apply if no specific font is set on the component
-            finalStyles.fontFamily = customFontNameHeadings || fontFamilyHeadings;
+            finalStyles.fontFamily = `"${customFontNameHeadings || fontFamilyHeadings}", sans-serif`;
         }
     }
-
+    
     const styleString = getStyleString(finalStyles);
     const editableAttrs = isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="text"` : '';
     const dataBinding = props.dataBinding;

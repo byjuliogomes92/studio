@@ -29,8 +29,14 @@ export function renderButton(component: PageComponent, pageState?: CloudPage): s
     // The wrapper div only controls horizontal alignment.
     const wrapperStyle = `text-align: ${align};`;
     
+    // Apply brand styles first, then local component styles
+    const combinedStyles = {
+        borderRadius: brandStyles?.borderRadius,
+        ...styles,
+    };
+    
     // The button itself gets all other styles.
-    const buttonStyleString = getStyleString(styles);
+    const buttonStyleString = getStyleString(combinedStyles);
     const className = `custom-button custom-button--${variant}`;
     
     let element: string;
@@ -42,4 +48,3 @@ export function renderButton(component: PageComponent, pageState?: CloudPage): s
 
     return `<div class="button-wrapper" style="${wrapperStyle}">${element}</div>`;
 }
-

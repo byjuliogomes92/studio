@@ -13,7 +13,7 @@ export function renderTitle(component: PageComponent, isForPreview: boolean, hid
     if (brand?.typography) {
         const { customFontNameHeadings, fontFamilyHeadings } = brand.typography;
         if (!styles.fontFamily) { // Only apply if no specific font is set on the component
-            finalStyles.fontFamily = customFontNameHeadings || fontFamilyHeadings;
+            finalStyles.fontFamily = `"${customFontNameHeadings || fontFamilyHeadings}", sans-serif`;
         }
     }
     

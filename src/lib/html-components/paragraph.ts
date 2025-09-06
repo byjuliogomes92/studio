@@ -13,7 +13,7 @@ export function renderParagraph(component: PageComponent, isForPreview: boolean,
     if (brand?.typography) {
         const { customFontNameBody, fontFamilyBody } = brand.typography;
         if (!styles.fontFamily) { // Only apply if no specific font is set on the component
-            finalStyles.fontFamily = customFontNameBody || fontFamilyBody;
+            finalStyles.fontFamily = `"${customFontNameBody || fontFamilyBody}", sans-serif`;
         }
     }
     
@@ -26,9 +26,6 @@ export function renderParagraph(component: PageComponent, isForPreview: boolean,
         text = `%%=v(@${dataBinding})=%%`;
     }
     
-    // The wrapping div is now only for spacing, the inner p tag gets the styles and contenteditable
-    const wrapperStyle = getSpacingStyle(styles);
-
     return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs}>${text}</div>`;
 }
 
@@ -36,20 +33,9 @@ function getStyleString(styles: any = {}): string {
     const forbiddenKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
     return Object.entries(styles)
       .map(([key, value]) => {
-        if (!value || forbiddenKeys.includes(key)) return '';
+        if (!value) return '';
         const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
         return `${cssKey}: ${value};`;
       })
       .join(' ');
-}
-
-function getSpacingStyle(styles: any = {}): string {
-    const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
-    return spacingKeys.map(key => {
-        if(styles[key]) {
-            const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-            return `${cssKey}: ${styles[key]};`;
-        }
-        return '';
-    }).join(' ');
 }

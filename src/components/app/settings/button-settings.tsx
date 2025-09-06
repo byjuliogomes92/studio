@@ -1,5 +1,7 @@
 
-import type { PageComponent, ButtonVariant, CloudPage } from "@/lib/types";
+"use client";
+
+import type { PageComponent, ButtonVariant, CloudPage, Action } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,7 +59,7 @@ export function ButtonSettings({ component, onPropChange, onSubPropChange, proje
                     <Label htmlFor="button-action-type">Ação do Botão</Label>
                     <Select
                         value={props.action?.type || 'URL'}
-                        onValueChange={(value) => onPropChange('action', { ...props.action, type: value })}
+                        onValueChange={(value: ActionType) => onPropChange('action', { ...props.action, type: value })}
                     >
                         <SelectTrigger id="button-action-type">
                         <SelectValue placeholder="Selecione uma ação" />

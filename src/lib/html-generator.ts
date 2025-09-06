@@ -113,7 +113,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
   
   // Extract only spacing styles for the wrapper
-  const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'];
+  const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
   const wrapperStyles: Record<string, any> = {};
   spacingKeys.forEach(key => {
     if (styles[key]) {
@@ -477,6 +477,10 @@ const getClientSideScripts = (pageState: CloudPage): string => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const el = entry.target;
+                    const animationName = el.dataset.animation;
+                    if (animationName) {
+                        el.style.animationName = animationName;
+                    }
                     el.classList.add('is-visible');
                     observer.unobserve(el);
                 }
@@ -1092,6 +1096,7 @@ ${trackingScripts.head}
       box-sizing: border-box;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      scroll-behavior: smooth;
     }
     *, *:before, *:after {
       box-sizing: inherit;
@@ -2229,37 +2234,40 @@ ${trackingScripts.head}
         fill: currentColor;
     }
     
-    @keyframes fadeInUp { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
-    @keyframes fadeInLeft { from { opacity: 0; transform: translate3d(-50px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
-    @keyframes fadeInRight { from { opacity: 0; transform: translate3d(50px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .animate-on-scroll[data-animation="fadeIn"].is-visible { animation-name: fadeIn; }
 
-    @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-20px);} 60% {transform: translateY(-10px);} }
-    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes floating { 0% { transform: translate(0, 0px); } 50% { transform: translate(0, 8px); } 100% { transform: translate(0, -0px); } }
-    @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
-    @keyframes wave { 2.5s ease-in-out infinite; }
-    @keyframes swing { 2s ease-out infinite; transform-origin: top center; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-on-scroll[data-animation="fadeInUp"].is-visible { animation-name: fadeInUp; }
 
-
-    .animation-loop--bounce { animation: bounce 2s infinite; }
-    .animation-loop--rotate { animation: rotate 5s linear infinite; }
-    .animation-loop--floating { animation: floating 3s ease-in-out infinite; }
-    .animation-loop--shake { animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both infinite; }
-    .animation-loop--wave { animation: wave 2.5s ease-in-out infinite; }
-    .animation-loop--swing { animation: swing 2s ease-out infinite; transform-origin: top center; }
-
-
-    .animate-on-scroll {
-        opacity: 0;
-    }
-    .animate-on-scroll.is-visible {
-        animation-fill-mode: both;
-        animation-name: var(--animation-name);
-        animation-duration: var(--animation-duration);
-        animation-delay: var(--animation-delay);
-    }
+    @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    .animate-on-scroll[data-animation="fadeInLeft"].is-visible { animation-name: fadeInLeft; }
     
+    @keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    .animate-on-scroll[data-animation="fadeInRight"].is-visible { animation-name: fadeInRight; }
+    
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    .animation-loop--pulse { animation: pulse 2s infinite ease-in-out; }
+
+    @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-15px); } 60% { transform: translateY(-7px); } }
+    .animation-loop--bounce { animation: bounce 2s infinite; }
+
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animation-loop--rotate { animation: rotate 5s linear infinite; }
+    
+    @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+    .animation-loop--floating { animation: floating 3s ease-in-out infinite; }
+
+    @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+    .animation-loop--shake { animation: shake 0.5s infinite; }
+
+    @keyframes wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(10deg); } }
+    .animation-loop--wave { animation: wave 2.5s ease-in-out infinite; transform-origin: bottom center; }
+
+    @keyframes swing { 0% { transform: rotate(10deg); } 50% { transform: rotate(-10deg); } 100% { transform: rotate(10deg); } }
+    .animation-loop--swing { animation: swing 2s ease-in-out infinite; transform-origin: top center; }
+
+
     /* Cookie Banner Styles */
     .cookie-banner {
         position: fixed;
@@ -2374,3 +2382,4 @@ ${cookieBannerHtml}
 
   return finalHtml;
 }
+

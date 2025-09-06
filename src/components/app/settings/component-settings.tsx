@@ -226,7 +226,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
             <AccordionItem value="animation" className="border-b-0">
                 <AccordionTrigger className="text-sm font-medium py-0">Animações</AccordionTrigger>
                  <AccordionContent className="pt-4">
-                    <AnimationSettings props={component.props} onPropChange={handlePropChange} />
+                    <AnimationSettings props={component.props} onPropChange={onPropChange} />
                 </AccordionContent>
             </AccordionItem>
              <AccordionItem value="ab-test" className="border-b-0">

@@ -266,6 +266,11 @@ export function SettingsPanel({
     }
   }, [activeWorkspace, toast]);
 
+  if (!pageState || !pageState.components) {
+    return null; // or a loading state
+  }
+
+
   const activeBrand = userBrands.find(b => b.id === pageState?.brandId);
 
   const sensors = useSensors(
@@ -1213,7 +1218,7 @@ export function SettingsPanel({
                                 <Separator />
                                 <h4 className="font-semibold text-sm">Categorias de Cookies</h4>
                                 <div className="space-y-2">
-                                    {pageState.cookieBanner.categories.map((category, index) => (
+                                    {(pageState.cookieBanner.categories || []).map((category, index) => (
                                         <div key={category.id} className="p-3 border rounded-lg bg-muted/40 space-y-2">
                                             <div className="flex justify-end">
                                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeCookieCategory(index)} disabled={category.required}>

@@ -114,6 +114,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const [showComments, setShowComments] = useState(true);
   const [comments, setComments] = useState<PageComment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
@@ -750,6 +751,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     isCommentMode={isCommentMode}
                     setIsCommentMode={setIsCommentMode}
                     onRefreshComments={fetchComments}
+                    isSelectionMode={isSelectionMode}
+                    setIsSelectionMode={setIsSelectionMode}
                 >
                    {showComments && comments.map(comment => (
                         <CommentPin key={comment.id} comment={comment} onUpdate={fetchComments} />

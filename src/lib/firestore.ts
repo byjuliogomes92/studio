@@ -1,8 +1,8 @@
 
 import { getDb, storage } from "./firebase";
-import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit, arrayUnion } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory, CommunityAsset } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory, CommunityAsset, PageComment } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { UAParser } from 'ua-parser-js';
@@ -973,21 +973,45 @@ export const getActivityLogsForWorkspace = async (workspaceId: string): Promise<
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
 }
 
-// Notifications (Admin)
-export const addNotification = async (notificationData: Omit<AppNotification, 'id' | 'createdAt' | 'readBy'>): Promise<string> => {
+// Notifications (User-specific)
+export const createNotificationForMention = async (data: {
+    mentionedEmails: string[],
+    pageId: string,
+    pageName: string,
+    workspaceId: string,
+    mentionedBy: string
+}): Promise<void> => {
     const db = getDbInstance();
-    const dataWithTimestamp = {
-        ...notificationData,
-        createdAt: serverTimestamp(),
-        readBy: [],
-    };
-    const docRef = await addDoc(collection(db, 'notifications'), dataWithTimestamp);
-    return docRef.id;
-};
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', 'in', data.mentionedEmails));
+    const userSnapshots = await getDocs(q);
 
-export const getNotifications = async (): Promise<AppNotification[]> => {
+    if (userSnapshots.empty) return;
+
+    const batch = writeBatch(db);
+    userSnapshots.forEach(userDoc => {
+        const notificationRef = doc(collection(db, 'notifications'));
+        const newNotification: Omit<AppNotification, 'id'> = {
+            userId: userDoc.id,
+            title: `${data.mentionedBy} mencionou você`,
+            url: `/editor/${data.pageId}`, // Link directly to the page editor
+            createdAt: serverTimestamp(),
+            readBy: []
+        };
+        batch.set(notificationRef, newNotification);
+    });
+
+    await batch.commit();
+}
+
+export const getNotifications = async (userId: string): Promise<AppNotification[]> => {
     const db = getDbInstance();
-    const q = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'));
+    const q = query(
+        collection(db, 'notifications'), 
+        where('userId', '==', userId), 
+        orderBy('createdAt', 'desc'),
+        limit(20)
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppNotification));
 };
@@ -1156,4 +1180,55 @@ export const copyCommunityAssetToWorkspace = async (assetId: string, newName: st
     await updateDoc(assetRef, { duplicates: (assetData.duplicates || 0) + 1 });
 
     return newPageId;
+};
+
+// Page Comments
+
+export const addPageComment = async (commentData: Omit<PageComment, 'id' | 'createdAt' | 'replies'>): Promise<string> => {
+    const db = getDbInstance();
+    const dataWithTimestamp = {
+        ...commentData,
+        createdAt: serverTimestamp(),
+        replies: [],
+    };
+    const docRef = await addDoc(collection(db, 'pageComments'), dataWithTimestamp);
+    await logActivity(commentData.workspaceId, commentData.userId, 'COMMENT_ADDED', { pageId: commentData.pageId });
+    return docRef.id;
+};
+
+export const getCommentsForPage = async (pageId: string): Promise<PageComment[]> => {
+    const db = getDbInstance();
+    const q = query(
+        collection(db, 'pageComments'),
+        where('pageId', '==', pageId),
+        orderBy('createdAt', 'asc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PageComment));
+};
+
+export const addCommentReply = async (replyData: Omit<CommentReply, 'id' | 'createdAt'>, user: User, pageId: string, workspaceId: string): Promise<void> => {
+    const db = getDbInstance();
+    const commentRef = doc(db, 'pageComments', replyData.commentId);
+    
+    const newReply = {
+        ...replyData,
+        id: doc(collection(db, 'dummy_id_generator')).id, // Generate a unique ID for the reply
+        createdAt: Timestamp.now(),
+    };
+
+    await updateDoc(commentRef, {
+        replies: arrayUnion(newReply)
+    });
+    
+    await logActivity(workspaceId, user.uid, 'COMMENT_ADDED', { pageId: pageId, commentId: replyData.commentId });
+};
+
+export const resolveCommentThread = async (commentId: string, resolvedBy: string): Promise<void> => {
+    const db = getDbInstance();
+    const commentRef = doc(db, 'pageComments', commentId);
+    await updateDoc(commentRef, {
+        resolved: true,
+        resolvedBy: resolvedBy,
+    });
 };

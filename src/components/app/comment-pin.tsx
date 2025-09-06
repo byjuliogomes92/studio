@@ -17,13 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/hooks/use-auth';
 import type { PageComment, CommentReply, WorkspaceMember } from '@/lib/types';
-import { addCommentReply, resolveCommentThread } from '@/lib/firestore';
+import { addCommentReply, resolveCommentThread, createNotificationForMention } from '@/lib/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2, MessageSquare, Check, Send } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { getWorkspaceMembers } from '@/lib/firestore';
 import React from 'react';
+import { useToast } from '@/hooks/use-toast';
+
 
 function UserMentions({ members, onSelect }: { members: WorkspaceMember[], onSelect: (mention: string) => void }) {
     return (
@@ -58,6 +60,7 @@ function CommentModal({
     onUpdate: () => void 
 }) {
     const { user, activeWorkspace } = useAuth();
+    const { toast } = useToast();
     const [replyText, setReplyText] = useState('');
     const [isReplying, setIsReplying] = useState(false);
     const [isResolving, setIsResolving] = useState(false);
@@ -72,17 +75,35 @@ function CommentModal({
     }, [activeWorkspace]);
 
     const handleReply = async () => {
-        if (!replyText.trim() || !user) return;
+        if (!replyText.trim() || !user || !activeWorkspace) return;
         setIsReplying(true);
         try {
-            await addCommentReply(comment.id, {
+            await addCommentReply({
+                pageId: comment.pageId,
+                commentId: comment.id,
                 userId: user.uid,
                 userName: user.displayName || 'Usuário',
                 userAvatarUrl: user.photoURL || '',
                 text: replyText
-            }, user, pageId: comment.pageId, workspaceId: comment.workspaceId);
+            }, user, comment.pageId, comment.workspaceId);
+
+            // Handle Mentions
+            const mentions = replyText.match(/@([\w.-]+@[\w.-]+)/g) || [];
+            if (mentions.length > 0) {
+                const mentionedEmails = mentions.map(m => m.substring(1));
+                await createNotificationForMention({
+                    mentionedEmails,
+                    pageId: comment.pageId,
+                    pageName: "uma página", // Ideally we'd pass the page name here
+                    workspaceId: activeWorkspace.id,
+                    mentionedBy: user.displayName || user.email || 'Alguém'
+                });
+            }
+
             setReplyText('');
             onUpdate();
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Erro ao responder', description: error.message });
         } finally {
             setIsReplying(false);
         }
@@ -125,7 +146,7 @@ function CommentModal({
         : [];
     
 
-    const allComments: (PageComment | CommentReply)[] = [comment, ...(comment.replies || [])];
+    const allComments: (Partial<PageComment> | CommentReply)[] = [comment, ...(comment.replies || [])];
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>

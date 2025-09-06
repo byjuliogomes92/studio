@@ -251,7 +251,7 @@ export function SettingsPanel({
   const { user, activeWorkspace } = useAuth();
   const { toast } = useToast();
   const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
-  const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState.publishDate || !!pageState.expiryDate);
+  const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState?.publishDate || !!pageState?.expiryDate);
   const [tagInput, setTagInput] = useState('');
   const [userBrands, setUserBrands] = useState<Brand[]>([]);
 
@@ -266,7 +266,7 @@ export function SettingsPanel({
     }
   }, [activeWorkspace, toast]);
 
-  const activeBrand = userBrands.find(b => b.id === pageState.brandId);
+  const activeBrand = userBrands.find(b => b.id === pageState?.brandId);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -669,6 +669,9 @@ export function SettingsPanel({
     };
 
     const renderComponentsRecursive = (parentId: string | null, column: number | null = 0): React.ReactNode[] => {
+        if (!pageState || !pageState.components) { // Safety check
+            return [];
+        }
         const componentsToRender = pageState.components
             .filter(c => c.parentId === parentId && (column === null || c.column === column))
             .sort((a, b) => a.order - b.order);

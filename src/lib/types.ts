@@ -44,6 +44,7 @@ export interface Workspace {
   ownerId: string;
   profileType?: UserProfileType; 
   createdAt: any;
+  members?: WorkspaceMember[]; // Optional, hydrated on client
 }
 
 export type WorkspaceMemberRole = 'owner' | 'editor' | 'viewer';
@@ -414,7 +415,8 @@ export type ActivityLogAction =
     | 'TEMPLATE_CREATED' | 'TEMPLATE_DELETED'
     | 'BRAND_CREATED' | 'BRAND_DELETED' | 'BRAND_UPDATED'
     | 'MEDIA_UPLOADED' | 'MEDIA_DELETED' | 'MEDIA_UPDATED'
-    | 'NOTIFICATION_CREATED';
+    | 'NOTIFICATION_CREATED'
+    | 'COMMENT_ADDED';
 
 export interface ActivityLog {
     id: string;
@@ -432,6 +434,7 @@ export interface AppNotification {
     title: string;
     url: string;
     readBy: string[]; // Array of user IDs who have read it
+    userId: string; // The user to be notified
     createdAt: any;
 }
 
@@ -474,4 +477,32 @@ export interface TicketComment {
     userAvatarUrl?: string;
     comment: string;
     createdAt: any;
+}
+
+// Comments on Pages
+export interface CommentReply {
+    id: string;
+    userId: string;
+    userName: string;
+    userAvatarUrl: string;
+    text: string;
+    createdAt: any;
+}
+
+export interface PageComment {
+    id: string;
+    pageId: string;
+    workspaceId: string;
+    userId: string;
+    userName: string;
+    userAvatarUrl: string;
+    text?: string;
+    position: {
+        x: number;
+        y: number;
+    };
+    resolved: boolean;
+    resolvedBy?: string;
+    createdAt: any;
+    replies?: CommentReply[];
 }

@@ -7,8 +7,8 @@ import { app } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { useToast } from './use-toast';
-import type { Workspace, UserProfileType, Project, CloudPage, Template, Brand } from '@/lib/types';
-import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete, getProjectsForUser, getTemplates, getBrandsForUser } from '@/lib/firestore';
+import type { Workspace, UserProfileType, Project, CloudPage, Template, Brand, WorkspaceMember, AppNotification } from '@/lib/types';
+import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete, getProjectsForUser, getTemplates, getBrandsForUser, getNotifications } from '@/lib/firestore';
 import { produce } from 'immer';
 
 interface AuthContextType {
@@ -21,6 +21,7 @@ interface AuthContextType {
   pages: CloudPage[];
   templates: Template[];
   brands: Brand[];
+  notifications: AppNotification[];
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   switchWorkspace: (workspaceId: string) => void;
   updateWorkspaceName: (workspaceId: string, newName: string) => Promise<void>;
@@ -31,6 +32,7 @@ interface AuthContextType {
   updateUserAvatar: () => Promise<void>;
   updateUserName: (firstName: string, lastName: string) => Promise<void>;
   reloadWorkspaces: () => Promise<void>;
+  refreshNotifications: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,6 +52,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [pages, setPages] = useState<CloudPage[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
 
   const router = useRouter();
   const pathname = usePathname();
@@ -71,6 +75,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar os dados do seu workspace.' });
       }
   }, [toast]);
+  
+  const refreshNotifications = useCallback(async () => {
+    if (user) {
+        const userNotifications = await getNotifications(user.uid);
+        setNotifications(userNotifications);
+    }
+  }, [user]);
 
   const fetchWorkspaces = useCallback(async (userId: string) => {
     try {
@@ -81,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const found = userWorkspaces.find(w => w.id === lastWorkspaceId) || userWorkspaces[0];
         setActiveWorkspace(found);
         await fetchGlobalData(userId, found.id);
+        refreshNotifications();
       } else {
         setActiveWorkspace(null); 
       }
@@ -88,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to fetch workspaces:", error);
       toast({ variant: 'destructive', title: 'Erro Crítico', description: 'Não foi possível carregar seu workspace.' });
     }
-  }, [toast, fetchGlobalData]);
+  }, [toast, fetchGlobalData, refreshNotifications]);
 
 
   useEffect(() => {
@@ -246,10 +258,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     pages,
     templates,
     brands,
+    notifications,
     setProjects,
     switchWorkspace,
     updateWorkspaceName,
     reloadWorkspaces: () => user ? fetchWorkspaces(user.uid) : Promise.resolve(),
+    refreshNotifications,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,15 +3,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand } from "@/lib/types";
+import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand, PageComment } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical, Code, Trash2, PanelLeftOpen, PanelLeftClose } from "lucide-react";
+import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical, Code, Trash2, PanelLeftOpen, PanelLeftClose, Hand, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity, getPagesForProject } from "@/lib/firestore";
+import { updatePage, getPage, addTemplate, updateUserProgress, publishPage, getBrand, logActivity, getPagesForProject, getCommentsForPage } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { produce } from "immer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -29,6 +29,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { EditCodeDialog } from "./edit-code-dialog";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { CommentPin } from "./comment-pin";
 
 
 interface CloudPageForgeProps {
@@ -108,11 +109,30 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  // State for comments
+  const [isCommentMode, setIsCommentMode] = useState(false);
+  const [showComments, setShowComments] = useState(true);
+  const [comments, setComments] = useState<PageComment[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
   const hasBitlyConfig = !!(brand && brand.integrations?.bitly?.encryptedAccessToken);
   
   const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId) || null;
+
+  const fetchComments = useCallback(async () => {
+    if (!pageId || pageId === 'new') return;
+    setIsLoadingComments(true);
+    try {
+        const pageComments = await getCommentsForPage(pageId);
+        setComments(pageComments);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os comentários.' });
+    } finally {
+        setIsLoadingComments(false);
+    }
+  }, [pageId, toast]);
 
 
   useEffect(() => {
@@ -170,6 +190,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 const pages = await getPagesForProject(pageData.projectId, activeWorkspace.id);
                 setProjectPages(pages);
             }
+            // Fetch comments after page data is available
+            fetchComments();
 
           } else {
             toast({ variant: "destructive", title: "Erro", description: "Página não encontrada ou acesso negado." });
@@ -192,7 +214,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if(!authLoading && user) {
         fetchPage();
     }
-  }, [pageId, router, user, toast, authLoading, searchParams, activeWorkspace]);
+  }, [pageId, router, user, toast, authLoading, searchParams, activeWorkspace, fetchComments]);
   
   
   useEffect(() => {
@@ -211,6 +233,10 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         if(canUndo) {
           undo();
         }
+      }
+      // Escape key to exit comment mode
+      if (event.key === 'Escape') {
+          setIsCommentMode(false);
       }
     };
 
@@ -576,6 +602,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+            <Button variant={isCommentMode ? "secondary" : "outline"} size="icon" onClick={() => setIsCommentMode(!isCommentMode)} aria-label="Modo de Comentário">
+                <MessageSquare className="h-5 w-5" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setIsSelectionMode(!isSelectionMode)} aria-label="Modo de Seleção">
+                <Hand className="h-5 w-5"/>
+            </Button>
             <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} variant="secondary">
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 {isSaving ? 'Salvando...' : 'Salvar'}
@@ -715,7 +747,14 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     setPageState={setPageState}
                     onDataExtensionKeyChange={handleDataExtensionKeyChange}
                     onSelectComponent={setSelectedComponentId}
-                />
+                    isCommentMode={isCommentMode}
+                    setIsCommentMode={setIsCommentMode}
+                    onRefreshComments={fetchComments}
+                >
+                   {showComments && comments.map(comment => (
+                        <CommentPin key={comment.id} comment={comment} onUpdate={fetchComments} />
+                    ))}
+                </MainPanel>
             </ResizablePanel>
         </ResizablePanelGroup>
 

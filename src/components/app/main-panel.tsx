@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { accessibilityCheck } from "@/ai/flows/accessibility-checker";
-import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet, Code, Percent, Hand, MoreVertical } from "lucide-react";
+import { Info, Loader2, Sparkles, Monitor, Smartphone, ExternalLink, Copy, Download, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, CaseUpper, CaseLower, Quote, Heading1, Heading2, Text, Tablet, Code, Percent, Hand, MoreVertical, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -18,17 +18,23 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { HowToUseDialog } from "./how-to-use-dialog";
-import type { CloudPage } from "@/lib/types";
+import type { CloudPage, PageComment } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "../ui/dropdown-menu";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
+import { addPageComment } from "@/lib/firestore";
+import { useAuth } from "@/hooks/use-auth";
 
 interface MainPanelProps {
   pageState: CloudPage;
   setPageState: Dispatch<SetStateAction<CloudPage | null>>;
   onDataExtensionKeyChange: (newKey: string) => void;
   onSelectComponent: (id: string) => void;
+  isCommentMode: boolean;
+  setIsCommentMode: Dispatch<SetStateAction<boolean>>;
+  children: React.ReactNode;
+  onRefreshComments: () => void;
 }
 
 interface Device {
@@ -130,12 +136,13 @@ function AmpscriptIcon(props: React.SVGProps<SVGSVGElement>) {
     );
 }
 
-export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent }: MainPanelProps) {
+export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, isCommentMode, setIsCommentMode, children, onRefreshComments }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const iframeWrapperRef = useRef<HTMLDivElement>(null);
   const [selectedDevice, setSelectedDevice] = useState<Device>(devices[0]);
   const [hideAmpscript, setHideAmpscript] = useState(true);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -143,6 +150,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
 
   const [activeEditor, setActiveEditor] = useState<HTMLElement | null>(null);
   const [toolbarUpdate, setToolbarUpdate] = useState(0);
+  const { user, activeWorkspace } = useAuth();
+
 
   // Generate HTML for preview and for final code separately
   const previewHtmlCode = generateHtml(pageState, true, '', hideAmpscript);
@@ -171,11 +180,40 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
     setToolbarUpdate(v => v + 1);
   };
 
+  const handleAddComment = async (x: number, y: number) => {
+    if (!user || !activeWorkspace) return;
+    try {
+        await addPageComment({
+            pageId: pageState.id,
+            workspaceId: activeWorkspace.id,
+            userId: user.uid,
+            userName: user.displayName || 'Usuário',
+            userAvatarUrl: user.photoURL || '',
+            position: { x, y },
+            resolved: false
+        });
+        onRefreshComments();
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível adicionar o comentário.' });
+    } finally {
+        setIsCommentMode(false);
+    }
+  }
+
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
     const handleIframeClick = (e: MouseEvent) => {
+        if (isCommentMode) {
+            const iframeRect = iframe.getBoundingClientRect();
+            // Calculate percentage-based position
+            const x = ((e.clientX - iframeRect.left) / iframeRect.width) * 100;
+            const y = ((e.clientY - iframeRect.top) / iframeRect.height) * 100;
+            handleAddComment(x, y);
+            return;
+        }
+        
         if (!isSelectionMode) return;
         
         let target = e.target as HTMLElement | null;
@@ -262,7 +300,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
         cleanupLoad();
       }
     };
-  }, [previewHtmlCode, handleInlineEdit, isSelectionMode, onSelectComponent]);
+  }, [previewHtmlCode, handleInlineEdit, isSelectionMode, onSelectComponent, isCommentMode]);
 
 
   const handleOpenInNewTab = () => {
@@ -399,20 +437,27 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                 </DropdownMenu>
           </div>
         </div>
-        <div className="flex-grow overflow-auto">
+        <div className="flex-grow overflow-auto relative">
           <TabsContent value="preview" className="w-full h-full m-0">
-            <div className="h-full w-full flex items-start justify-center p-4 overflow-y-auto">
-              <iframe
-                  ref={iframeRef}
-                  srcDoc={previewHtmlCode}
-                  title="Preview da Cloud Page"
-                  className={cn(
-                      "border-8 border-background shadow-2xl rounded-lg bg-white transition-all duration-300 ease-in-out flex-shrink-0",
-                      selectedDevice.name === 'Desktop' ? 'w-full h-full' : '',
-                      isSelectionMode && 'selection-mode' // This class changes the cursor
-                  )}
-                  style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : {}}
-              />
+            <div 
+                ref={iframeWrapperRef}
+                className={cn(
+                    "h-full w-full flex items-start justify-center p-4 overflow-y-auto",
+                    isCommentMode && 'comment-mode-active'
+                )}
+            >
+              <div className="relative flex-shrink-0 transition-all duration-300 ease-in-out" style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : { width: '100%', height: '100%' }}>
+                  <iframe
+                      ref={iframeRef}
+                      srcDoc={previewHtmlCode}
+                      title="Preview da Cloud Page"
+                      className={cn(
+                          "border-8 border-background shadow-2xl rounded-lg bg-white w-full h-full",
+                          isSelectionMode && 'selection-mode' // This class changes the cursor
+                      )}
+                  />
+                  {children}
+              </div>
             </div>
           </TabsContent>
            <TabsContent value="code" className="w-full h-full m-0 relative">

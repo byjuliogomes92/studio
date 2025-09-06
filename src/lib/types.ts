@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 
 export type ComponentType =
@@ -38,11 +39,14 @@ export type ComponentType =
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';
 
+export type PlanType = 'free' | 'starter' | 'professional' | 'enterprise';
+
 export interface Workspace {
   id: string;
   name: string;
   ownerId: string;
   profileType?: UserProfileType; 
+  plan?: PlanType; // Added plan type
   createdAt: any;
   members?: WorkspaceMember[]; // Optional, hydrated on client
 }

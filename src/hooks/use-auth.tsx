@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
@@ -10,6 +11,7 @@ import { useToast } from './use-toast';
 import type { Workspace, UserProfileType, Project, CloudPage, Template, Brand, WorkspaceMember, AppNotification } from '@/lib/types';
 import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWorkspaceNameInDb, logActivity, isProfileComplete, getProjectsForUser, getTemplates, getBrandsForUser, getNotifications } from '@/lib/firestore';
 import { produce } from 'immer';
+import { usePermissions } from './use-permissions'; // Import the new hook
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +24,7 @@ interface AuthContextType {
   templates: Template[];
   brands: Brand[];
   notifications: AppNotification[];
+  permissions: ReturnType<typeof usePermissions>; // Add permissions to context
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   switchWorkspace: (workspaceId: string) => void;
   updateWorkspaceName: (workspaceId: string, newName: string) => Promise<void>;
@@ -53,6 +56,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  
+  // New permissions hook
+  const permissions = usePermissions(activeWorkspace);
 
 
   const router = useRouter();
@@ -259,6 +265,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     templates,
     brands,
     notifications,
+    permissions, // Expose permissions
     setProjects,
     switchWorkspace,
     updateWorkspaceName,

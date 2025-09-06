@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 
 export type ComponentType =
@@ -198,6 +199,14 @@ export type LoaderAnimation = 'pulse' | 'spin';
 
 export type CalendlyEmbedType = 'inline' | 'popup_button' | 'popup_text';
 
+export interface CookieCategory {
+  id: string;
+  name: string;
+  description: string;
+  scripts: string;
+  required: boolean;
+}
+
 export interface CloudPage {
   id: string;
   name: string;
@@ -261,8 +270,21 @@ export interface CloudPage {
   };
   cookieBanner?: {
     enabled: boolean;
-    text: string;
-    buttonText: string;
+    position: 'bottom' | 'bottom-left' | 'bottom-right';
+    layout: 'bar' | 'card';
+    title: string;
+    description: string;
+    acceptButtonText: string;
+    declineButtonText: string;
+    preferencesButtonText: string;
+    privacyPolicyLink?: string;
+    categories: CookieCategory[];
+    styles: {
+      backgroundColor: string;
+      textColor: string;
+      buttonBackgroundColor: string;
+      buttonTextColor: string;
+    };
   };
   publishDate?: any;
   expiryDate?: any;

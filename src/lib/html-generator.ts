@@ -1,6 +1,6 @@
 
 
-import type { CloudPage, PageComponent, ComponentType, Action } from './types';
+import type { CloudPage, PageComponent, ComponentType, Action, CookieCategory } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
@@ -270,76 +270,182 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
     return { head: headScripts, body: bodyScripts };
 };
 
-const getCookieBanner = (cookieBannerConfig: CloudPage['cookieBanner'], themeColor: string): string => {
-    if (!cookieBannerConfig || !cookieBannerConfig.enabled) return '';
+const getCookieBannerHtml = (config: CloudPage['cookieBanner']): string => {
+    if (!config || !config.enabled) return '';
+    const {
+        position = 'bottom',
+        layout = 'bar',
+        title = 'Gerencie seu consentimento de cookies',
+        description = 'Este site usa cookies para garantir que você obtenha a melhor experiência.',
+        acceptButtonText = 'Aceitar Todos',
+        declineButtonText = 'Recusar Todos',
+        preferencesButtonText = 'Preferências',
+        privacyPolicyLink,
+        categories = [],
+        styles = {}
+    } = config;
+
+    const bannerId = 'cookie-consent-banner';
+    const prefsModalId = 'cookie-prefs-modal';
+
+    const categoryToggles = categories.map(cat => `
+        <div class="cookie-category">
+            <div class="cookie-category-header">
+                <label for="cookie-cat-${cat.id}">${cat.name}</label>
+                <input type="checkbox" id="cookie-cat-${cat.id}" data-category-id="${cat.id}" ${cat.required ? 'checked disabled' : ''}>
+            </div>
+            <p>${cat.description}</p>
+        </div>
+    `).join('');
 
     return `
-    <div id="cookie-banner">
-        <p>${cookieBannerConfig.text}</p>
-        <button id="accept-cookies" style="background-color: ${themeColor};">${cookieBannerConfig.buttonText}</button>
-    </div>
-    <style>
-        #cookie-banner {
-            position: fixed;
-            bottom: -200px;
-            left: 20px;
-            max-width: 380px;
-            background-color: rgba(255, 255, 255, 0.95);
-            color: black;
-            padding: 20px;
-            border-radius: 12px;
-            box-sizing: border-box;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 15px;
-            z-index: 10000;
-            transition: bottom 0.5s ease-in-out;
-            border: 1px solid #e0e0e0;
-        }
-        #cookie-banner p {
-            margin: 0;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        #cookie-banner button {
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            align-self: flex-end;
-            font-weight: bold;
-        }
-         @media (max-width: 480px) {
-            #cookie-banner {
-                left: 10px;
-                right: 10px;
-                max-width: none;
-                bottom: -200px;
-            }
-        }
-    </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const cookieBanner = document.getElementById('cookie-banner');
-            const acceptButton = document.getElementById('accept-cookies');
+        <div id="${bannerId}" class="cookie-banner" data-position="${position}" data-layout="${layout}">
+            <div class="cookie-banner-content">
+                <h3 class="cookie-title">${title}</h3>
+                <p>${description} ${privacyPolicyLink ? `<a href="${privacyPolicyLink}" target="_blank">Política de Privacidade</a>` : ''}</p>
+            </div>
+            <div class="cookie-banner-actions">
+                <button id="cookie-prefs-btn">${preferencesButtonText}</button>
+                <button id="cookie-decline-btn">${declineButtonText}</button>
+                <button id="cookie-accept-btn">${acceptButtonText}</button>
+            </div>
+        </div>
 
-            if (cookieBanner && acceptButton && !localStorage.getItem('cookiesAccepted')) {
-                setTimeout(() => {
-                  cookieBanner.style.bottom = '20px';
-                }, 500);
-            }
+        <div id="${prefsModalId}-overlay" class="cookie-modal-overlay"></div>
+        <div id="${prefsModalId}" class="cookie-modal">
+            <div class="cookie-modal-header">
+                <h4>Preferências de Cookies</h4>
+                <button id="cookie-modal-close">&times;</button>
+            </div>
+            <div class="cookie-modal-body">
+                ${categoryToggles}
+            </div>
+            <div class="cookie-modal-footer">
+                <button id="cookie-save-prefs-btn">Salvar Preferências</button>
+            </div>
+        </div>
+    `;
+};
 
-            if(acceptButton) {
-                acceptButton.addEventListener('click', function() {
-                    localStorage.setItem('cookiesAccepted', 'true');
-                    cookieBanner.style.bottom = '-200px';
+const getCookieScripts = (config: CloudPage['cookieBanner']): string => {
+     if (!config || !config.enabled) return `
+        <script>
+            function runCookieScripts() { /* No consent needed */ }
+            document.addEventListener('DOMContentLoaded', runCookieScripts);
+        </script>
+     `;
+     
+    const categories = config.categories || [];
+    const scriptsByCategory = categories.reduce((acc, cat) => {
+        acc[cat.id] = cat.scripts || '';
+        return acc;
+    }, {} as Record<string, string>);
+
+    return `
+        <script>
+        (function() {
+            const COOKIE_CONSENT_KEY = 'cookie_consent';
+            const banner = document.getElementById('cookie-consent-banner');
+            const prefsBtn = document.getElementById('cookie-prefs-btn');
+            const acceptBtn = document.getElementById('cookie-accept-btn');
+            const declineBtn = document.getElementById('cookie-decline-btn');
+            const modal = document.getElementById('cookie-prefs-modal');
+            const overlay = document.getElementById('cookie-prefs-modal-overlay');
+            const closeModalBtn = document.getElementById('cookie-modal-close');
+            const savePrefsBtn = document.getElementById('cookie-save-prefs-btn');
+            const scriptsByCategory = ${JSON.stringify(scriptsByCategory)};
+
+            function runScriptsForConsent(consent) {
+                Object.keys(consent).forEach(categoryId => {
+                    if (consent[categoryId] && scriptsByCategory[categoryId]) {
+                        const scriptElement = document.createElement('script');
+                        scriptElement.innerHTML = scriptsByCategory[categoryId];
+                        document.body.appendChild(scriptElement);
+                    }
                 });
             }
-        });
-    </script>
+
+            function getConsent() {
+                try {
+                    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
+                    return consent ? JSON.parse(consent) : null;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function setConsent(consent) {
+                localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent));
+                hideBanner();
+                runScriptsForConsent(consent);
+            }
+
+            function hideBanner() {
+                if (banner) banner.style.display = 'none';
+            }
+            
+            function showModal() {
+                if (modal && overlay) {
+                    const currentConsent = getConsent() || {};
+                    document.querySelectorAll('.cookie-category input[type="checkbox"]').forEach(checkbox => {
+                        const catId = checkbox.dataset.categoryId;
+                        if (catId) {
+                           checkbox.checked = !!currentConsent[catId];
+                        }
+                    });
+                    modal.classList.add('visible');
+                    overlay.classList.add('visible');
+                }
+            }
+
+            function hideModal() {
+                 if (modal && overlay) {
+                    modal.classList.remove('visible');
+                    overlay.classList.remove('visible');
+                 }
+            }
+
+            if (getConsent()) {
+                hideBanner();
+                runScriptsForConsent(getConsent());
+            } else if (banner) {
+                banner.classList.add('visible');
+            }
+
+            if (acceptBtn) acceptBtn.addEventListener('click', () => {
+                const allConsent = Object.keys(scriptsByCategory).reduce((acc, catId) => {
+                    acc[catId] = true;
+                    return acc;
+                }, {});
+                setConsent(allConsent);
+            });
+
+            if (declineBtn) declineBtn.addEventListener('click', () => {
+                 const necessaryOnlyConsent = Object.keys(scriptsByCategory).reduce((acc, catId) => {
+                    const checkbox = document.querySelector(\`#cookie-cat-\${catId}\`);
+                    acc[catId] = checkbox ? checkbox.disabled : false;
+                    return acc;
+                }, {});
+                setConsent(necessaryOnlyConsent);
+            });
+            
+            if(prefsBtn) prefsBtn.addEventListener('click', showModal);
+            if(closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
+            if(overlay) overlay.addEventListener('click', hideModal);
+            
+            if(savePrefsBtn) savePrefsBtn.addEventListener('click', () => {
+                const newConsent = {};
+                document.querySelectorAll('.cookie-category input[type="checkbox"]').forEach(checkbox => {
+                    const catId = checkbox.dataset.categoryId;
+                    if (catId) {
+                        newConsent[catId] = checkbox.checked;
+                    }
+                });
+                setConsent(newConsent);
+                hideModal();
+            });
+        })();
+        </script>
     `;
 };
 
@@ -358,6 +464,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
       ? '<script src="https://unpkg.com/embla-carousel-autoplay@latest/embla-carousel-autoplay.umd.js"></script>' 
       : '';
     const calendlyScript = hasCalendly ? '<script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>' : '';
+    const cookieScript = getCookieScripts(pageState.cookieBanner);
 
 
     const script = `
@@ -792,7 +899,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     </script>
     `;
 
-    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}`;
+    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}`;
 };
 
 
@@ -905,7 +1012,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const clientSideScripts = getClientSideScripts(pageState);
   
   const trackingScripts = getTrackingScripts(meta.tracking);
-  const cookieBannerHtml = getCookieBanner(cookieBanner, styles.themeColor);
+  const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
   
   const { typography } = pageState.brand || {};
   const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
@@ -2148,6 +2255,85 @@ ${trackingScripts.head}
         animation-duration: var(--animation-duration);
         animation-delay: var(--animation-delay);
     }
+    
+    /* Cookie Banner Styles */
+    .cookie-banner {
+        position: fixed;
+        z-index: 10000;
+        transition: all 0.5s ease-in-out;
+        opacity: 0;
+        visibility: hidden;
+    }
+    .cookie-banner.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) !important;
+    }
+    .cookie-banner[data-position="bottom"] { bottom: 0; left: 0; right: 0; transform: translateY(100%); border-radius: 0; }
+    .cookie-banner[data-position="bottom-left"] { bottom: 20px; left: 20px; transform: translateY(calc(100% + 20px)); }
+    .cookie-banner[data-position="bottom-right"] { bottom: 20px; right: 20px; transform: translateY(calc(100% + 20px)); }
+
+    .cookie-banner[data-layout="bar"] {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+    }
+     .cookie-banner[data-layout="card"] {
+        display: flex;
+        flex-direction: column;
+        width: 380px;
+        max-width: 90vw;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .cookie-banner .cookie-banner-content { flex-grow: 1; }
+    .cookie-banner .cookie-title { font-size: 1.1em; font-weight: bold; }
+    .cookie-banner p { font-size: 0.9em; margin: 0.5em 0 0 0; }
+    .cookie-banner a { text-decoration: underline; }
+    .cookie-banner .cookie-banner-actions { display: flex; gap: 0.5rem; margin-left: 1rem; }
+    .cookie-banner[data-layout="card"] .cookie-banner-actions { margin-left: 0; margin-top: 1rem; }
+    
+    .cookie-modal-overlay, .cookie-modal {
+        position: fixed;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+    }
+    .cookie-modal-overlay {
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.6);
+        z-index: 10001;
+    }
+    .cookie-modal {
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%) scale(0.95);
+        background-color: #fff;
+        color: #000;
+        border-radius: 8px;
+        z-index: 10002;
+        width: 500px;
+        max-width: 90vw;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+    }
+    .cookie-modal.visible, .cookie-modal-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+    .cookie-modal.visible { transform: translate(-50%, -50%) scale(1); }
+    .cookie-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #e5e5e5; }
+    .cookie-modal-header h4 { margin: 0; font-size: 1.25rem; }
+    .cookie-modal-header button { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+    .cookie-modal-body { padding: 1rem; overflow-y: auto; }
+    .cookie-modal-footer { padding: 1rem; border-top: 1px solid #e5e5e5; text-align: right; }
+    .cookie-category { margin-bottom: 1rem; }
+    .cookie-category-header { display: flex; justify-content: space-between; align-items: center; }
+    .cookie-category-header label { font-weight: bold; }
+    .cookie-category p { font-size: 0.9em; color: #666; margin-top: 0.25rem; }
+    .cookie-category input[type="checkbox"] { transform: scale(1.2); }
 
 
     @media (max-width: 768px) {
@@ -2176,6 +2362,7 @@ ${clientSideScripts}
 <body>
 ${!isForPreview ? trackingScripts.body : ''}
 ${bodyContent}
+${cookieBannerHtml}
 </body>
 </html>`;
 

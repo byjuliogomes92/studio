@@ -2,7 +2,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import type { CloudPage, PageComponent, ComponentType, SecurityType, AnimationType, Brand, Action } from "@/lib/types";
+import type { CloudPage, PageComponent, ComponentType, SecurityType, AnimationType, Brand, Action, CookieCategory } from "@/lib/types";
 import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type Active, type Over } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -418,17 +418,70 @@ export function SettingsPanel({
         });
     };
   
-  const handleCookieBannerChange = (prop: keyof NonNullable<CloudPage['cookieBanner']>, value: any) => {
+  const handleCookieBannerChange = (prop: string, value: any) => {
      setPageState(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        cookieBanner: {
-          ...(prev.cookieBanner || { enabled: false, text: '', buttonText: '' }),
-          [prop]: value,
-        },
-      }
+        if (!prev) return null;
+        const currentBanner = prev.cookieBanner || {
+            enabled: false,
+            position: 'bottom',
+            layout: 'bar',
+            title: 'Gerencie seu consentimento de cookies',
+            description: 'Utilizamos cookies para...',
+            acceptButtonText: 'Aceitar Todos',
+            declineButtonText: 'Recusar Todos',
+            preferencesButtonText: 'Preferências',
+            categories: [],
+            styles: {
+                backgroundColor: '#222222',
+                textColor: '#FFFFFF',
+                buttonBackgroundColor: '#FFFFFF',
+                buttonTextColor: '#000000',
+            }
+        };
+
+        const path = prop.split('.');
+        if (path.length > 1) {
+            const newBanner = produce(currentBanner, (draft: any) => {
+                draft[path[0]][path[1]] = value;
+            });
+            return { ...prev, cookieBanner: newBanner };
+        }
+        
+        return {
+          ...prev,
+          cookieBanner: {
+            ...currentBanner,
+            [prop]: value,
+          },
+        }
     });
+  };
+
+  const handleCookieCategoryChange = (index: number, prop: keyof CookieCategory, value: string | boolean) => {
+      setPageState(prev => {
+          if (!prev || !prev.cookieBanner) return prev;
+          const newBanner = produce(prev.cookieBanner, draft => {
+              (draft.categories[index] as any)[prop] = value;
+          });
+          return { ...prev, cookieBanner: newBanner };
+      });
+  };
+
+  const addCookieCategory = () => {
+      const newCategory: CookieCategory = {
+          id: `cat_${Date.now()}`,
+          name: 'Nova Categoria',
+          description: '',
+          scripts: '',
+          required: false,
+      };
+       handleCookieBannerChange('categories', [...(pageState.cookieBanner?.categories || []), newCategory]);
+  }
+  
+  const removeCookieCategory = (index: number) => {
+      if (!pageState.cookieBanner) return;
+      const newCategories = pageState.cookieBanner.categories.filter((_, i) => i !== index);
+      handleCookieBannerChange('categories', newCategories);
   }
 
   const handleTrackingChange = (
@@ -1069,7 +1122,7 @@ export function SettingsPanel({
                         </AccordionContent>
                      </AccordionItem>
 
-                     <AccordionItem value="cookie" className="bg-card rounded-lg border">
+                    <AccordionItem value="cookie" className="bg-card rounded-lg border">
                       <AccordionTrigger className="p-4 text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <Cookie className="h-4 w-4" />
@@ -1079,19 +1132,118 @@ export function SettingsPanel({
                        <AccordionContent className="space-y-4 pt-2 px-4">
                          <div className="flex items-center justify-between">
                             <Label htmlFor="cookie-enabled">Habilitar Banner</Label>
-                            <Switch id="cookie-enabled" checked={pageState.cookieBanner?.enabled || false} onCheckedChange={(checked) => handleCookieBannerChange('enabled', checked)}/>
+                            <Switch id="cookie-enabled" checked={pageState.cookieBanner?.enabled ?? false} onCheckedChange={(checked) => handleCookieBannerChange('enabled', checked)}/>
                          </div>
                          {pageState.cookieBanner?.enabled && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="cookie-text">Texto do Banner</Label>
-                                    <Textarea id="cookie-text" value={pageState.cookieBanner.text} onChange={e => handleCookieBannerChange('text', e.target.value)} rows={3} />
+                            <div className="space-y-4">
+                               <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label>Posição</Label>
+                                    <Select value={pageState.cookieBanner.position || 'bottom'} onValueChange={v => handleCookieBannerChange('position', v)}>
+                                      <SelectTrigger><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="bottom">Barra (Inferior)</SelectItem>
+                                        <SelectItem value="bottom-left">Card (Inf. Esq.)</SelectItem>
+                                        <SelectItem value="bottom-right">Card (Inf. Dir.)</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Layout</Label>
+                                    <Select value={pageState.cookieBanner.layout || 'bar'} onValueChange={v => handleCookieBannerChange('layout', v)}>
+                                      <SelectTrigger><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="bar">Barra</SelectItem>
+                                        <SelectItem value="card">Card</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                               </div>
+
+                               <div className="space-y-2">
+                                   <Label htmlFor="cookie-title">Título</Label>
+                                   <Input id="cookie-title" value={pageState.cookieBanner.title} onChange={e => handleCookieBannerChange('title', e.target.value)} />
+                               </div>
+                               <div className="space-y-2">
+                                   <Label htmlFor="cookie-description">Descrição</Label>
+                                   <Textarea id="cookie-description" value={pageState.cookieBanner.description} onChange={e => handleCookieBannerChange('description', e.target.value)} rows={4} />
+                               </div>
+                               <div className="space-y-2">
+                                   <Label htmlFor="cookie-privacy-link">Link da Política de Privacidade</Label>
+                                   <Input id="cookie-privacy-link" value={pageState.cookieBanner.privacyPolicyLink} onChange={e => handleCookieBannerChange('privacyPolicyLink', e.target.value)} />
+                               </div>
+
+                               <div className="grid grid-cols-2 gap-4">
+                                   <div className="space-y-2">
+                                      <Label>Cor de Fundo</Label>
+                                      <ColorInput value={pageState.cookieBanner.styles?.backgroundColor} onChange={v => handleCookieBannerChange('styles.backgroundColor', v)} />
+                                   </div>
+                                    <div className="space-y-2">
+                                      <Label>Cor do Texto</Label>
+                                      <ColorInput value={pageState.cookieBanner.styles?.textColor} onChange={v => handleCookieBannerChange('styles.textColor', v)} />
+                                   </div>
+                               </div>
+
+                                <Separator />
+                                <h4 className="font-semibold text-sm">Botões</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div className="space-y-2">
+                                        <Label>Texto (Aceitar)</Label>
+                                        <Input value={pageState.cookieBanner.acceptButtonText} onChange={e => handleCookieBannerChange('acceptButtonText', e.target.value)} />
+                                     </div>
+                                      <div className="space-y-2">
+                                        <Label>Texto (Recusar)</Label>
+                                        <Input value={pageState.cookieBanner.declineButtonText} onChange={e => handleCookieBannerChange('declineButtonText', e.target.value)} />
+                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="cookie-button-text">Texto do Botão</Label>
-                                    <Input id="cookie-button-text" value={pageState.cookieBanner.buttonText} onChange={e => handleCookieBannerChange('buttonText', e.target.value)} />
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div className="space-y-2">
+                                        <Label>Cor de Fundo (Botão)</Label>
+                                        <ColorInput value={pageState.cookieBanner.styles?.buttonBackgroundColor} onChange={v => handleCookieBannerChange('styles.buttonBackgroundColor', v)} />
+                                     </div>
+                                      <div className="space-y-2">
+                                        <Label>Cor do Texto (Botão)</Label>
+                                        <ColorInput value={pageState.cookieBanner.styles?.buttonTextColor} onChange={v => handleCookieBannerChange('styles.buttonTextColor', v)} />
+                                     </div>
                                 </div>
-                            </>
+
+                                <Separator />
+                                <h4 className="font-semibold text-sm">Categorias de Cookies</h4>
+                                <div className="space-y-2">
+                                    {pageState.cookieBanner.categories.map((category, index) => (
+                                        <div key={category.id} className="p-3 border rounded-lg bg-muted/40 space-y-2">
+                                            <div className="flex justify-end">
+                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeCookieCategory(index)} disabled={category.required}>
+                                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                                </Button>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="space-y-1">
+                                                    <Label className="text-xs">Nome da Categoria</Label>
+                                                    <Input value={category.name} onChange={e => handleCookieCategoryChange(index, 'name', e.target.value)} disabled={category.required}/>
+                                                </div>
+                                                <div className="flex items-end pb-1">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Switch id={`cat-required-${category.id}`} checked={category.required} onCheckedChange={c => handleCookieCategoryChange(index, 'required', c)} disabled={category.required}/>
+                                                        <Label htmlFor={`cat-required-${category.id}`} className="text-xs">Obrigatório</Label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Descrição</Label>
+                                                <Textarea value={category.description} onChange={e => handleCookieCategoryChange(index, 'description', e.target.value)} rows={2} />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Scripts (cole a tag aqui)</Label>
+                                                <Textarea value={category.scripts} onChange={e => handleCookieCategoryChange(index, 'scripts', e.target.value)} rows={4} className="font-mono text-xs"/>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <Button variant="outline" size="sm" className="w-full" onClick={addCookieCategory}>
+                                        <Plus className="h-4 w-4 mr-2"/> Adicionar Categoria
+                                    </Button>
+                                </div>
+                            </div>
                          )}
                        </AccordionContent>
                      </AccordionItem>

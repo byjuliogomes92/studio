@@ -12,7 +12,7 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { useAuth } from '@/hooks/use-auth';
-import { Folder, FileText, Library, User, Palette, Image as ImageIcon, Plus } from 'lucide-react';
+import { Folder, FileText, Library, User, Palette, Image as ImageIcon, Plus, Users } from 'lucide-react';
 import { DialogTitle, DialogDescription } from '../ui/dialog';
 import { getDefaultTemplates } from '@/lib/firestore';
 
@@ -130,7 +130,7 @@ export function CommandPalette() {
       action.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const navigation = ['Ver Projetos', 'Ver Templates', 'Ver Kits de Marca', 'Ver Biblioteca de Mídia', 'Minha Conta'].some(nav =>
+    const navigation = ['Ver Projetos', 'Ver Templates', 'Ver Kits de Marca', 'Ver Biblioteca de Mídia', 'Minha Conta', 'Comunidade'].some(nav =>
       nav.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -192,6 +192,14 @@ export function CommandPalette() {
               >
                 <Library className="mr-2 h-4 w-4" />
                 <span>Ver Templates</span>
+              </ClickableItem>
+              <ClickableItem
+                searchTerm={searchTerm}
+                searchableText="Comunidade"
+                onItemClick={() => handleNavigation('/community')}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                <span>Comunidade</span>
               </ClickableItem>
               <ClickableItem
                 searchTerm={searchTerm}

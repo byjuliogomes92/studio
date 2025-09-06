@@ -311,6 +311,35 @@ export interface Template {
   isDefault?: boolean; 
 }
 
+export interface CommunityAsset {
+  id: string;
+  name: string;
+  description: string;
+  type: 'template' | 'block';
+  category: string;
+  tags: string[];
+  
+  // Author information
+  authorId: string;
+  authorName: string;
+  authorAvatarUrl: string;
+
+  // The actual content
+  components: PageComponent[];
+  styles: CloudPage['styles'];
+  meta: Template['meta'];
+
+  // Stats
+  likes: number;
+  duplicates: number;
+
+  // Preview
+  previewImageUrl: string;
+
+  createdAt: any;
+  updatedAt: any;
+}
+
 export interface OnboardingObjectives {
   createdFirstProject: boolean;
   createdFirstPage: boolean;

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import type { Template } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Eye, Rocket, Handshake, CalendarClock, Smile, CheckCheck, PartyPopper } from "lucide-react";
+import { Library, Plus, Trash2, Home, MoreVertical, Server, ArrowUpDown, Loader2, Bell, Search, X, List, LayoutGrid, Eye, Rocket, Handshake, CalendarClock, Smile, CheckCheck, PartyPopper, Users } from "lucide-react";
 import React from 'react';
 import {
   DropdownMenu,
@@ -355,6 +355,10 @@ export default function TemplatesPage() {
             <Button variant="outline" onClick={() => router.push('/')}>
                 <Home className="mr-2 h-4 w-4" />
                 Voltar aos Projetos
+            </Button>
+            <Button variant="secondary" onClick={() => router.push('/community')}>
+                <Users className="mr-2 h-4 w-4" />
+                Explorar Comunidade
             </Button>
         </div>
       </header>

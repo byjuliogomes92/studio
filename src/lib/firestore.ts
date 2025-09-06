@@ -2,7 +2,7 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory, CommunityAsset } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { UAParser } from 'ua-parser-js';
@@ -1111,4 +1111,49 @@ export const updateTicketStatus = async (ticketId: string, status: TicketStatus,
     const db = getDbInstance();
     const ticketRef = doc(db, 'supportTickets', ticketId);
     await updateDoc(ticketRef, { status: status, updatedAt: serverTimestamp() });
+};
+
+// Community Hub
+export const getCommunityAssets = async (filters: { category?: string; sort?: string; }): Promise<CommunityAsset[]> => {
+    const db = getDbInstance();
+    // Basic query for now, can be expanded with more complex filters/sorting later
+    const q = query(collection(db, 'communityAssets'), orderBy('createdAt', 'desc'), limit(50));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CommunityAsset));
+};
+
+export const copyCommunityAssetToWorkspace = async (assetId: string, newName: string, targetProjectId: string, targetWorkspaceId: string, userId: string): Promise<string> => {
+    const db = getDbInstance();
+    const assetRef = doc(db, 'communityAssets', assetId);
+    const assetSnap = await getDoc(assetRef);
+
+    if (!assetSnap.exists()) {
+        throw new Error("Recurso da comunidade não encontrado.");
+    }
+
+    const assetData = assetSnap.data() as CommunityAsset;
+
+    const pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: newName,
+        projectId: targetProjectId,
+        workspaceId: targetWorkspaceId,
+        brandId: '', // User will need to assign a brand
+        brandName: 'Sem Marca',
+        slug: generateSlug(newName),
+        components: assetData.components,
+        styles: assetData.styles,
+        meta: {
+            ...assetData.meta,
+            dataExtensionKey: 'CHANGE-ME',
+            redirectUrl: '',
+            tracking: { ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
+        },
+    };
+
+    const newPageId = await addPage(pageData, userId);
+    
+    // Increment the duplicate count on the community asset
+    await updateDoc(assetRef, { duplicates: (assetData.duplicates || 0) + 1 });
+
+    return newPageId;
 };

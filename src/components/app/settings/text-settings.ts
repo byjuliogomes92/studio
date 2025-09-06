@@ -1,16 +1,14 @@
 
 import type { PageComponent, CloudPage } from "@/lib/types";
-import React, { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Wand2, Zap, Italic, Underline, Strikethrough, Save } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Wand2, Zap, Italic, Underline, Strikethrough } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { DebouncedTextInput } from "./debounced-text-input";
 import { AiGenerateTextDialog } from "./ai-generate-text-dialog";
 import { ColorInput } from "./color-input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -33,7 +31,7 @@ function TextStyleSettings({ props, onPropChange, pageState }: { props: any, onP
             <ToggleGroup 
                 type="single" 
                 value={styles.textAlign || 'left'} 
-                onValueChange={(value) => value && handleStyleChange('textAlign', value)}
+                onValueChange={(value) => handleStyleChange('textAlign', value)}
                 className="w-full"
             >
                 <ToggleGroupItem value="left" aria-label="Alinhar à esquerda" className="flex-1">
@@ -96,15 +94,8 @@ function TextStyleSettings({ props, onPropChange, pageState }: { props: any, onP
   );
 }
 
-export function TextSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
+export function TextSettings({ component, onPropChange, pageState }: ComponentSettingsProps) {
     const isParagraph = component.type === 'Paragraph';
-    const [localText, setLocalText] = useState(component.props.text || "");
-    const hasChanges = localText !== component.props.text;
-
-    const handleSaveText = () => {
-        onPropChange("text", localText);
-    };
-
     return (
         <div className="space-y-4">
           <div className="space-y-2">
@@ -118,20 +109,17 @@ export function TextSettings({ component, onPropChange, onSubPropChange, pageSta
                   </Tooltip>
               </div>
                <div className="relative">
-                  <Textarea
+                  <DebouncedTextInput
                       id="text-content"
-                      value={localText}
-                      onChange={(e) => setLocalText(e.target.value)}
+                      value={component.props.text || ""}
+                      onBlur={(value: any) => onPropChange("text", value)}
                       rows={isParagraph ? 8 : 4}
                       className="pr-10"
                   />
                   <AiGenerateTextDialog
                       componentType={component.type}
-                      currentText={localText}
-                      onTextGenerated={(newText: string) => {
-                          setLocalText(newText);
-                          onPropChange("text", newText); // Also update immediately on AI generation
-                      }}
+                      currentText={component.props.text || ""}
+                      onTextGenerated={(newText: string) => onPropChange("text", newText)}
                       trigger={
                           <button className="absolute top-2 right-2 h-7 w-7 text-primary hover:bg-accent rounded-md grid place-items-center">
                               <Wand2 className="h-4 w-4" />
@@ -139,10 +127,6 @@ export function TextSettings({ component, onPropChange, onSubPropChange, pageSta
                       }
                   />
               </div>
-              <Button onClick={handleSaveText} disabled={!hasChanges} size="sm" className="mt-2 w-full">
-                <Save className="mr-2 h-4 w-4" />
-                Salvar Texto
-              </Button>
           </div>
           <Separator />
            <div className="space-y-2">
@@ -166,7 +150,7 @@ export function TextSettings({ component, onPropChange, onSubPropChange, pageSta
               </div>
           </div>
           <Separator />
-          <TextStyleSettings props={component.props} onPropChange={onPropChange} pageState={pageState} onSubPropChange={onSubPropChange} />
+          <TextStyleSettings props={component.props} onPropChange={onPropChange} pageState={pageState} />
         </div>
       );
 }

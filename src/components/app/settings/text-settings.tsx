@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Wand2, Zap } from "lucide-react";
+import { HelpCircle, AlignLeft, AlignCenter, AlignRight, Bold, Wand2, Zap, Italic, Underline, Strikethrough } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DebouncedTextInput } from "./debounced-text-input";
 import { AiGenerateTextDialog } from "./ai-generate-text-dialog";
@@ -67,14 +67,27 @@ function TextStyleSettings({ props, onPropChange, pageState }: { props: any, onP
          <div className="space-y-2">
             <Label>Estilo</Label>
              <ToggleGroup 
-                type="single" 
+                type="multiple" 
                 variant="outline"
-                value={styles.fontWeight} 
-                onValueChange={(value) => handleStyleChange('fontWeight', value)}
+                value={
+                    Object.entries({
+                        'bold': styles.fontWeight === 'bold',
+                        'italic': styles.fontStyle === 'italic',
+                        'underline': styles.textDecoration?.includes('underline'),
+                        'line-through': styles.textDecoration?.includes('line-through')
+                    }).filter(([,v]) => v).map(([k]) => k)
+                } 
+                onValueChange={(value) => {
+                    const decorations = value.filter(v => ['underline', 'line-through'].includes(v));
+                    handleStyleChange('fontWeight', value.includes('bold') ? 'bold' : 'normal');
+                    handleStyleChange('fontStyle', value.includes('italic') ? 'italic' : 'normal');
+                    handleStyleChange('textDecoration', decorations.join(' '));
+                }}
             >
-                <ToggleGroupItem value="bold" aria-label="Negrito">
-                    <Bold className="h-4 w-4" />
-                </ToggleGroupItem>
+                <ToggleGroupItem value="bold" aria-label="Negrito"><Bold className="h-4 w-4" /></ToggleGroupItem>
+                <ToggleGroupItem value="italic" aria-label="Itálico"><Italic className="h-4 w-4" /></ToggleGroupItem>
+                <ToggleGroupItem value="underline" aria-label="Sublinhado"><Underline className="h-4 w-4" /></ToggleGroupItem>
+                <ToggleGroupItem value="line-through" aria-label="Tachado"><Strikethrough className="h-4 w-4" /></ToggleGroupItem>
             </ToggleGroup>
         </div>
     </div>
@@ -87,7 +100,7 @@ export function TextSettings({ component, onPropChange, pageState }: ComponentSe
         <div className="space-y-4">
           <div className="space-y-2">
               <div className="flex items-center justify-between gap-1.5">
-                <Label htmlFor="text-content">Texto Padrão</Label>
+                <Label htmlFor="text-content">Conteúdo (aceita HTML)</Label>
                  <Tooltip>
                       <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground"/></TooltipTrigger>
                       <TooltipContent>

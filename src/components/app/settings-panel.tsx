@@ -41,6 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { ColorInput } from "./settings/color-input";
 import { ComponentSettings } from './settings/component-settings';
+import { ImageInput } from "./settings/image-input";
 
 
 interface SettingsPanelProps {

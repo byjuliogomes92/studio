@@ -1,4 +1,6 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
     
@@ -15,10 +17,6 @@ service cloud.firestore {
       return isAuthenticated() && 
              workspaceId != null &&
              exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId));
-    }
-    
-    function isMember(workspaceId) {
-      return isWorkspaceMember(workspaceId);
     }
     
     function isOwner(workspaceId) {
@@ -60,7 +58,7 @@ service cloud.firestore {
       allow read: if hasWorkspaceAccess(workspaceId);
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.ownerId;
       allow update: if isOwner(workspaceId);
-      allow delete: if isAdmin(); // Apenas admin pode deletar workspaces
+      allow delete: if isAdmin(); // Only admin can delete workspaces
     }
     
     // --- Workspace Members ---
@@ -99,7 +97,7 @@ service cloud.firestore {
     
     // --- Pages Published ---
     match /pages_published/{pageId} {
-      allow read: if true; // Páginas publicadas são públicas
+      allow read: if true; // Public pages
       allow create: if isEditor(request.resource.data.workspaceId);
       allow update, delete: if isEditor(resource.data.workspaceId);
     }
@@ -107,7 +105,7 @@ service cloud.firestore {
     // --- Templates (Default templates) ---
     match /defaultTemplates/{templateId} {
         allow read: if isAuthenticated();
-        allow write: if isAdmin(); // Only admins can manage default templates
+        allow write: if isAdmin();
     }
 
     // --- Templates (User-created) ---
@@ -129,7 +127,15 @@ service cloud.firestore {
     match /activityLogs/{logId} {
       allow read: if hasWorkspaceAccess(resource.data.workspaceId);
       allow create: if isAuthenticated();
-      allow update, delete: if false; // Logs são imutáveis
+      allow update, delete: if false; // Logs are immutable
+    }
+
+    // --- Page Comments ---
+    match /pageComments/{commentId} {
+      allow read: if hasWorkspaceAccess(resource.data.workspaceId);
+      allow create: if isEditor(request.resource.data.workspaceId) && isResourceOwner(request.resource.data.userId);
+      allow update: if isEditor(resource.data.workspaceId); // Allows editors to resolve/update thread
+      allow delete: if isEditor(resource.data.workspaceId) || isResourceOwner(resource.data.userId);
     }
     
     // --- Invitations/Convites ---
@@ -146,22 +152,25 @@ service cloud.firestore {
     
     // --- Analytics ---
     match /pageViews/{viewId} {
-      allow create: if true; // Qualquer um pode registrar uma visualização
+      allow create: if true;
       allow read, list: if hasWorkspaceAccess(resource.data.workspaceId);
-      allow update, delete: if false; // Analytics são imutáveis
+      allow update, delete: if false;
     }
     
     match /formSubmissions/{submissionId} {
-      allow create: if true; // Qualquer um pode submeter um formulário
-      allow read, list: if exists(/databases/$(database)/documents/pages_published/$(resource.data.pageId)) &&
-                           hasWorkspaceAccess(get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId);
-      allow update, delete: if false; // Submissions são imutáveis
+      allow create: if true;
+      // Use pages_drafts to get workspaceId, as it's the source of truth and always exists.
+      allow read, list: if exists(/databases/$(database)/documents/pages_drafts/$(resource.data.pageId)) &&
+                           hasWorkspaceAccess(get(/databases/$(database)/documents/pages_drafts/$(resource.data.pageId)).data.workspaceId);
+      allow update, delete: if false;
     }
     
-    // --- Notifications (for all users) ---
+    // --- Notifications ---
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAdmin();
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow delete: if isAdmin();
     }
     
     // --- Platform Settings ---
@@ -188,10 +197,10 @@ service cloud.firestore {
                      (exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)) &&
                       (get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.userId == request.auth.uid ||
                        isAdmin()));
-      allow update, delete: if false; // Comentários são imutáveis
+      allow update, delete: if false; // Comments are immutable
     }
     
-    // --- Workspace Usage Stats (se precisar no futuro) ---
+    // --- Workspace Usage Stats ---
     match /workspaceUsage/{workspaceId} {
       allow read: if hasWorkspaceAccess(workspaceId);
       allow write: if isEditor(workspaceId) || isAdmin();
@@ -200,6 +209,11 @@ service cloud.firestore {
     // --- User Settings/Preferences ---
     match /userSettings/{userId} {
       allow read, write: if isResourceOwner(userId);
+    }
+
+    // --- Deny all access to backups by default ---
+    match /backups/{backupId} {
+      allow read, write: if false;
     }
   }
 }

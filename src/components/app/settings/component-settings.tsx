@@ -8,11 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { produce } from 'immer';
-import { Star, Scaling, Film, Layers, LayoutGrid, Code, Copy, Trash2 } from "lucide-react";
+import { Star, Scaling, Film, Layers, Code, Copy, Trash2, Smartphone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
 // Importe os novos componentes de configuração
@@ -48,6 +46,7 @@ import { AnimationSettings } from "./animation-settings";
 import { Textarea } from '@/components/ui/textarea';
 import { AddToCalendarSettings } from "./add-to-calendar-settings";
 import { PopUpSettings } from "./popup-settings";
+import { ResponsiveSettings } from "./responsive-settings";
 
 interface ComponentSettingsProps {
   component: PageComponent;
@@ -123,8 +122,8 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
     return null;
   }
   
-  const abTestEnabled = component.abTestEnabled || false;
-  const variantProps = (component.abTestVariants && component.abTestVariants[0]) || {};
+  const abTestEnabled = component.props.abTestEnabled || false;
+  const variantProps = (component.props.abTestVariants && component.props.abTestVariants[0]) || {};
 
   const handlePropChange = (prop: string, value: any) => {
     const updatedComponent = produce(component, draft => {
@@ -152,9 +151,9 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
 
   const handleAbTestToggle = (checked: boolean) => {
     const updatedComponent = produce(component, draft => {
-      draft.abTestEnabled = checked;
-      if (checked && (!draft.abTestVariants || draft.abTestVariants.length === 0)) {
-        draft.abTestVariants = [{}];
+      draft.props.abTestEnabled = checked;
+      if (checked && (!draft.props.abTestVariants || draft.props.abTestVariants.length === 0)) {
+        draft.props.abTestVariants = [{}];
       }
     });
     onComponentChange(component.id, updatedComponent);
@@ -162,14 +161,14 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
   
   const handleVariantPropChange = (variantIndex: number, prop: string, value: any) => {
     const updatedComponent = produce(component, draft => {
-      if (!draft.abTestVariants) {
-        draft.abTestVariants = [];
+      if (!draft.props.abTestVariants) {
+        draft.props.abTestVariants = [];
       }
-      while (draft.abTestVariants.length <= variantIndex) {
-        draft.abTestVariants.push({});
+      while (draft.props.abTestVariants.length <= variantIndex) {
+        draft.props.abTestVariants.push({});
       }
-      draft.abTestVariants[variantIndex] = {
-        ...draft.abTestVariants[variantIndex],
+      draft.props.abTestVariants[variantIndex] = {
+        ...draft.props.abTestVariants[variantIndex],
         [prop]: value,
       };
     });
@@ -178,16 +177,16 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
   
   const handleVariantSubPropChange = (variantIndex: number, prop: string, subProp: string, value: any) => {
     const updatedComponent = produce(component, draft => {
-        if (!draft.abTestVariants) {
-            draft.abTestVariants = [{}];
+        if (!draft.props.abTestVariants) {
+            draft.props.abTestVariants = [{}];
         }
-        if (!draft.abTestVariants[variantIndex]) {
-            draft.abTestVariants[variantIndex] = {};
+        if (!draft.props.abTestVariants[variantIndex]) {
+            draft.props.abTestVariants[variantIndex] = {};
         }
-        if (!draft.abTestVariants[variantIndex][prop]) {
-            draft.abTestVariants[variantIndex][prop] = {};
+        if (!draft.props.abTestVariants[variantIndex][prop]) {
+            draft.props.abTestVariants[variantIndex][prop] = {};
         }
-        draft.abTestVariants[variantIndex][prop][subProp] = value;
+        draft.props.abTestVariants[variantIndex][prop][subProp] = value;
     });
     onComponentChange(component.id, updatedComponent);
   };
@@ -214,17 +213,36 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
             <AccordionItem value="general" className="border-b-0">
                 <AccordionTrigger className="text-sm font-medium py-0">Configurações Gerais</AccordionTrigger>
                 <AccordionContent className="pt-4">
-                    {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages, pageState)}
+                    {renderComponentSettings(component, handlePropChange, onSubPropChange, projectPages, pageState)}
                 </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="spacing" className="border-b-0">
-                <AccordionTrigger className="text-sm font-medium py-0">Espaçamento</AccordionTrigger>
+            <AccordionItem value="responsive" className="border-b-0">
+                <AccordionTrigger className="text-sm font-medium py-0 flex items-center gap-2">
+                    <Smartphone className="h-4 w-4"/>
+                    Responsividade
+                </AccordionTrigger>
+                <AccordionContent className="pt-4">
+                    <ResponsiveSettings 
+                        component={component} 
+                        onSubPropChange={onSubPropChange}
+                        onPropChange={onPropChange}
+                    />
+                </AccordionContent>
+            </AccordionItem>
+             <AccordionItem value="spacing" className="border-b-0">
+                <AccordionTrigger className="text-sm font-medium py-0 flex items-center gap-2">
+                    <Scaling className="h-4 w-4" /> 
+                    Espaçamento
+                </AccordionTrigger>
                  <AccordionContent className="pt-4">
-                    <SpacingSettings props={component.props} onPropChange={handlePropChange} />
+                    <SpacingSettings props={component.props} onPropChange={onPropChange} />
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="animation" className="border-b-0">
-                <AccordionTrigger className="text-sm font-medium py-0">Animações</AccordionTrigger>
+                <AccordionTrigger className="text-sm font-medium py-0 flex items-center gap-2">
+                    <Film className="h-4 w-4" /> 
+                    Animações
+                </AccordionTrigger>
                  <AccordionContent className="pt-4">
                     <AnimationSettings props={component.props} onPropChange={onPropChange} />
                 </AccordionContent>

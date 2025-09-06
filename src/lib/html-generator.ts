@@ -1,6 +1,6 @@
 
 
-import type { CloudPage, PageComponent, ComponentType, Action, CookieCategory } from './types';
+import type { CloudPage, PageComponent, ComponentType, Action, CookieCategory, ResponsiveProps } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
@@ -89,6 +89,7 @@ const getColumnStyle = (columnStyles: any[] = [], index: number): string => {
 
 const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string, hideAmpscript: boolean = false): string => {
   const styles = component.props.styles || {};
+  const responsive = component.props.responsive || {};
   const {
       animationType: entranceAnimation = 'none',
       animationDuration = 1,
@@ -104,6 +105,13 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   
   if (loopAnimation !== 'none') {
       wrapperClass += ` animation-loop--${loopAnimation}`;
+  }
+  
+  if (responsive.hiddenOnDesktop) {
+    wrapperClass += ' hidden-on-desktop';
+  }
+  if (responsive.hiddenOnMobile) {
+      wrapperClass += ' hidden-on-mobile';
   }
 
   const animationAttrs = entranceAnimation !== 'none'
@@ -985,6 +993,42 @@ const getScrollbarStyles = (scrollbarConfig: CloudPage['styles']['scrollbar']): 
   `;
 };
 
+const getResponsiveStyles = (components: PageComponent[]): string => {
+    let mobileStyles = '';
+    components.forEach(component => {
+        const responsive = component.props.responsive as ResponsiveProps | undefined;
+        if (responsive?.mobileStyles) {
+            const componentSelector = `[data-component-id="${component.id}"]`;
+            let componentStyles = '';
+            for (const [key, value] of Object.entries(responsive.mobileStyles)) {
+                if (value) {
+                    const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+                    componentStyles += `${cssKey}: ${value} !important; `;
+                }
+            }
+            if (componentStyles) {
+                mobileStyles += `${componentSelector} { ${componentStyles} }`;
+            }
+        }
+    });
+
+    if (!mobileStyles) return '';
+
+    return `
+        @media (max-width: 768px) {
+            ${mobileStyles}
+            .hidden-on-mobile {
+                display: none !important;
+            }
+        }
+        @media (min-width: 769px) {
+            .hidden-on-desktop {
+                display: none !important;
+            }
+        }
+    `;
+};
+
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false): string {
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
@@ -1024,6 +1068,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const fontFaceStyles = getFontFaceStyles(pageState);
   const scrollbarStyles = getScrollbarStyles(pageState.styles.scrollbar);
+  const responsiveStyles = getResponsiveStyles(components);
   const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
 
   
@@ -1086,6 +1131,7 @@ ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
     ${scrollbarStyles}
+    ${responsiveStyles}
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
       --theme-color-hover: ${styles.themeColorHover || '#333333'};
@@ -2382,4 +2428,3 @@ ${cookieBannerHtml}
 
   return finalHtml;
 }
-

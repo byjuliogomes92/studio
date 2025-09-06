@@ -1,5 +1,4 @@
 
-
 import { Timestamp } from "firebase/firestore";
 
 export type ComponentType =
@@ -180,11 +179,19 @@ export interface Action {
 export type AnimationType = 'none' | 'fadeIn' | 'fadeInUp' | 'fadeInLeft' | 'fadeInRight';
 export type LoopAnimationType = 'none' | 'pulse' | 'bounce' | 'rotate' | 'floating' | 'shake' | 'wave' | 'swing';
 
+export interface ResponsiveProps {
+  hiddenOnDesktop?: boolean;
+  hiddenOnMobile?: boolean;
+  mobileStyles?: { [key: string]: any };
+}
+
 export interface PageComponent {
   id: string;
   type: ComponentType;
   layerName?: string;
-  props: any;
+  props: any & {
+    responsive?: ResponsiveProps;
+  };
   parentId?: string | null; 
   column?: number;        
   order: number;          

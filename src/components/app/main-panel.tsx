@@ -23,8 +23,6 @@ import { generateHtml } from "@/lib/html-generator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "../ui/dropdown-menu";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
-import { addPageComment } from "@/lib/firestore";
-import { useAuth } from "@/hooks/use-auth";
 import { CommentPin } from "./comment-pin";
 
 interface MainPanelProps {
@@ -36,6 +34,7 @@ interface MainPanelProps {
   setEditorMode: Dispatch<SetStateAction<EditorMode>>;
   onRefreshComments: () => void;
   comments: PageComment[];
+  onAddComment: (x: number, y: number) => void;
 }
 
 interface Device {
@@ -52,92 +51,8 @@ const devices: Device[] = [
     { name: 'Samsung S20 Ultra', width: 412, height: 915, icon: Smartphone },
 ];
 
-function WysiwygToolbar({ editor, iframe, onAction }: { editor: HTMLElement | null, iframe: HTMLIFrameElement | null, onAction: () => void }) {
-    if (!editor || !iframe?.contentWindow) return null;
 
-    const selection = iframe.contentWindow.getSelection();
-    if (!selection || selection.rangeCount === 0) return null;
-    
-    const range = selection.getRangeAt(0);
-    if (!range) return null;
-
-    // Don't show toolbar for collapsed selections (carets)
-    if (range.collapsed) return null;
-    
-    const iframeRect = iframe.getBoundingClientRect();
-    const rangeRect = range.getBoundingClientRect();
-    
-    // Position the toolbar above the selection
-    const top = iframeRect.top + rangeRect.top - 50; 
-    const left = iframeRect.left + rangeRect.left + (rangeRect.width / 2) - 150;
-
-    const applyStyle = (command: string, value?: string) => {
-        iframe.contentWindow?.document.execCommand(command, false, value);
-        onAction();
-        editor.focus();
-    };
-    
-    const createLink = () => {
-        const url = prompt('Digite a URL do link:');
-        if (url) {
-            applyStyle('createLink', url);
-        }
-    };
-    
-    const setCase = (caseType: 'uppercase' | 'lowercase') => {
-        const sel = iframe.contentWindow?.getSelection();
-        if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            const selectedText = range.toString();
-            const newText = caseType === 'uppercase' ? selectedText.toUpperCase() : selectedText.toLowerCase();
-            range.deleteContents();
-            range.insertNode(iframe.contentWindow.document.createTextNode(newText));
-            onAction();
-        }
-    };
-
-
-    return (
-        <div 
-            className="fixed z-50 bg-card border shadow-lg rounded-lg p-1 flex items-center gap-1"
-            style={{ top: `${top}px`, left: `${left}px` }}
-            onMouseDown={(e) => e.preventDefault()} // Prevent toolbar from stealing focus
-        >
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('bold')}><Bold className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('italic')}><Italic className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('underline')}><Underline className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('strikeThrough')}><Strikethrough className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={createLink}><LinkIcon className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => applyStyle('formatBlock', '<blockquote>')}><Quote className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCase('uppercase')}><CaseUpper className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCase('lowercase')}><CaseLower className="h-4 w-4" /></Button>
-        </div>
-    );
-}
-
-function AmpscriptIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            {...props}
-        >
-            <path d="M5.5 15h13" />
-            <path d="M5.5 9h13" />
-            <path d="M4 20l-2-8 2-8" />
-            <path d="M20 20l2-8-2-8" />
-        </svg>
-    );
-}
-
-export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, editorMode, setEditorMode, onRefreshComments, comments }: MainPanelProps) {
+export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, editorMode, setEditorMode, onRefreshComments, comments, onAddComment }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
@@ -147,165 +62,46 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
   const [selectedDevice, setSelectedDevice] = useState<Device>(devices[0]);
   const [hideAmpscript, setHideAmpscript] = useState(true);
 
-
-  const [activeEditor, setActiveEditor] = useState<HTMLElement | null>(null);
-  const [toolbarUpdate, setToolbarUpdate] = useState(0);
-  const { user, activeWorkspace } = useAuth();
-
-
   // Generate HTML for preview and for final code separately
   const previewHtmlCode = generateHtml(pageState, true, '', hideAmpscript);
   const finalHtmlCode = generateHtml(pageState, false);
+  
+  useEffect(() => {
+    // Define the functions on the window object so the iframe can call them
+    (window as any).handleComponentSelect = (componentId: string) => {
+      onSelectComponent(componentId);
+      setEditorMode('none'); // Turn off selection mode after selecting
+    };
+    (window as any).handleAddComment = (x: number, y: number, iframeRect: any) => {
+        const adjustedX = ((x - iframeRect.left) / iframeRect.width) * 100;
+        const adjustedY = ((y - iframeRect.top) / iframeRect.height) * 100;
+        onAddComment(adjustedX, adjustedY);
+    };
 
-  const handleInlineEdit = useCallback((componentId: string, propName: string, newContent: string) => {
-    setPageState(prev => {
-      if (!prev) return null;
-      // Avoid updating state if content hasn't changed
-      const component = prev.components.find(c => c.id === componentId);
-      if (component && component.props[propName] === newContent) {
-          return prev;
-      }
-      return {
-        ...prev,
-        components: prev.components.map(c => 
-          c.id === componentId 
-            ? { ...c, props: { ...c.props, [propName]: newContent } } 
-            : c
-        ),
-      };
-    });
-  }, [setPageState]);
-
-  const forceToolbarUpdate = () => {
-    setToolbarUpdate(v => v + 1);
-  };
-
-  const handleAddComment = async (x: number, y: number) => {
-    if (!user || !activeWorkspace) return;
-    try {
-        await addPageComment({
-            pageId: pageState.id,
-            workspaceId: activeWorkspace.id,
-            userId: user.uid,
-            userName: user.displayName || 'Usuário',
-            userAvatarUrl: user.photoURL || '',
-            position: { x, y },
-            text: '', // Text is added in the modal now
-            resolved: false
-        });
-        onRefreshComments();
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível adicionar o comentário.' });
-    } finally {
-        setEditorMode('none');
-    }
-  }
+    return () => {
+        // Cleanup the functions when the component unmounts
+        delete (window as any).handleComponentSelect;
+        delete (window as any).handleAddComment;
+    };
+  }, [onSelectComponent, setEditorMode, onAddComment]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe?.contentWindow) return;
-
-    const iframeDoc = iframe.contentWindow.document;
-
-    const handleIframeClick = (e: MouseEvent) => {
-        let target = e.target as HTMLElement | null;
-        const currentMode = iframeDoc.body.dataset.editorMode || 'none';
-
-        if (currentMode === 'comment') {
-            const iframeRect = iframe.getBoundingClientRect();
-            // Calculate percentage-based position
-            const x = ((e.clientX - iframeRect.left) / iframeRect.width) * 100;
-            const y = ((e.clientY - iframeRect.top) / iframeRect.height) * 100;
-            handleAddComment(x, y);
-            return;
-        }
-        
-        if (currentMode !== 'selection') return;
-        
-        let componentId = null;
-        
-        while(target && target !== iframeDoc.body) {
-            if (target.hasAttribute('data-component-id')) {
-                componentId = target.getAttribute('data-component-id');
-                break;
-            }
-            target = target.parentElement;
-        }
-
-        if (componentId) {
-            onSelectComponent(componentId);
-            setEditorMode('none'); // Turn off selection mode after selecting
-        }
-    };
-    
-    const handleBlur = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.hasAttribute('contenteditable')) {
-        const componentId = target.dataset.componentId;
-        const propName = target.dataset.propName;
-        if (componentId && propName) {
-            handleInlineEdit(componentId, propName, target.innerHTML);
-        }
-      }
-      // Check if the focus is moving outside the iframe before hiding the toolbar
-      setTimeout(() => {
-        if (iframeDoc && (iframeDoc.activeElement === iframeDoc.body || iframeDoc.activeElement === null)) {
-            setActiveEditor(null);
-        }
-      }, 100);
-    };
-
-    const handleLoad = () => {
-      const currentIframeDoc = iframeRef.current?.contentWindow?.document;
-      if (!currentIframeDoc) return;
-      
-      currentIframeDoc.body.dataset.editorMode = editorMode;
-      currentIframeDoc.body.addEventListener('click', handleIframeClick);
-
-      const handleSelectionChange = () => {
-        const selection = currentIframeDoc.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const parentElement = range.startContainer.parentElement;
-
-          if (parentElement?.isContentEditable) {
-            setActiveEditor(parentElement);
-            return;
-          }
-        }
-        // Hide toolbar if selection is not in an editable area or is collapsed
-        if (selection?.isCollapsed) {
-          setActiveEditor(null);
-        }
-      };
-
-      currentIframeDoc.addEventListener('selectionchange', handleSelectionChange);
-      currentIframeDoc.body.addEventListener('blur', handleBlur, true);
-    };
-
-    // The 'load' event fires once the srcdoc is parsed and the document is available.
-    iframe.addEventListener('load', handleLoad);
-
-    // Main cleanup for when the component unmounts or iframe re-renders
-    return () => {
-      iframe.removeEventListener('load', handleLoad);
-    };
-  }, [handleInlineEdit, onSelectComponent, editorMode, setEditorMode, handleAddComment, previewHtmlCode]);
+    if (iframe?.contentWindow?.document?.body) {
+        iframe.contentWindow.document.body.dataset.editorMode = editorMode;
+    }
+  }, [editorMode]);
 
 
   const handleOpenInNewTab = () => {
     try {
-        // Generate the preview HTML
         const previewHtml = generateHtml(pageState, true);
         
-        // Store it in localStorage. This is a simple way to pass a potentially large
-        // string to a new tab without hitting URL length limits.
         const stateToStore = {
             previewHtml: previewHtml,
         };
         localStorage.setItem('cloudPagePreviewState', JSON.stringify(stateToStore));
 
-        // Open the dedicated preview route in a new tab.
         window.open('/api/preview', '_blank');
 
     } catch (error) {
@@ -358,7 +154,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
 
   return (
     <>
-      <WysiwygToolbar key={toolbarUpdate} editor={activeEditor} iframe={iframeRef.current} onAction={forceToolbarUpdate} />
       <Tabs defaultValue="preview" className="w-full h-full flex flex-col bg-muted/20">
         <div className="flex-shrink-0 border-b bg-card flex justify-between items-center pr-2">
           <div className="flex">
@@ -434,9 +229,9 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
             >
               <div className="relative flex-shrink-0 transition-all duration-300 ease-in-out" style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : { width: '100%', height: '100%' }}>
                   <iframe
-                      key={editorMode} 
+                      key={previewHtmlCode} // Force re-render of iframe with new content
                       ref={iframeRef}
-                      srcDoc={previewHtmlCode}
+                      srcDoc={generateHtml(pageState, true, '', hideAmpscript, editorMode)}
                       title="Preview da Cloud Page"
                       className={cn(
                           "border-8 border-background shadow-2xl rounded-lg bg-white w-full h-full"

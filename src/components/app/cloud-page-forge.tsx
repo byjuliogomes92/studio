@@ -29,6 +29,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { EditCodeDialog } from "./edit-code-dialog";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { addPageComment } from "@/lib/firestore";
 
 
 interface CloudPageForgeProps {
@@ -578,6 +579,27 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const handleModeToggle = (mode: EditorMode) => {
     setEditorMode(prevMode => (prevMode === mode ? 'none' : mode));
   };
+  
+  const handleAddComment = async (x: number, y: number) => {
+    if (!user || !activeWorkspace || !pageState) return;
+    try {
+        await addPageComment({
+            pageId: pageState.id,
+            workspaceId: activeWorkspace.id,
+            userId: user.uid,
+            userName: user.displayName || 'Usuário',
+            userAvatarUrl: user.photoURL || '',
+            position: { x, y },
+            text: '', // Text is added in the modal now
+            resolved: false
+        });
+        fetchComments();
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível adicionar o comentário.' });
+    } finally {
+        setEditorMode('none');
+    }
+  }
 
 
   if (isLoading || authLoading || !pageState) {
@@ -745,15 +767,16 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={75}>
-                <MainPanel 
+                <MainPanel
                     pageState={pageState}
                     setPageState={setPageState}
                     onDataExtensionKeyChange={handleDataExtensionKeyChange}
+                    onSelectComponent={setSelectedComponentId}
                     editorMode={editorMode}
                     setEditorMode={setEditorMode}
                     onRefreshComments={fetchComments}
                     comments={comments}
-                    onSelectComponent={setSelectedComponentId}
+                    onAddComment={handleAddComment}
                 />
             </ResizablePanel>
         </ResizablePanelGroup>

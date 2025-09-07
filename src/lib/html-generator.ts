@@ -458,13 +458,12 @@ const getCookieScripts = (config: CloudPage['cookieBanner']): string => {
 };
 
 
-const getClientSideScripts = (pageState: CloudPage): string => {
+const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, editorMode: EditorMode): string => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
     const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
     const hasAutoplayCarousel = hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay);
     const hasCalendly = pageState.components.some(c => c.type === 'Calendly');
     const headerComponent = pageState.components.find(c => c.type === 'Header');
-    const isHeaderOverlay = headerComponent?.props.overlay || false;
 
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
     const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
@@ -474,6 +473,40 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     const calendlyScript = hasCalendly ? '<script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>' : '';
     const cookieScript = getCookieScripts(pageState.cookieBanner);
 
+
+    const editorInteractionScript = isForPreview ? `
+        <script>
+            document.body.addEventListener('click', function(e) {
+                const mode = document.body.dataset.editorMode;
+                if (mode === 'none') return;
+                
+                let target = e.target;
+                
+                if (mode === 'selection') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    let componentId = null;
+                    while(target && target !== document.body) {
+                        if (target.hasAttribute('data-component-id')) {
+                            componentId = target.getAttribute('data-component-id');
+                            break;
+                        }
+                        target = target.parentElement;
+                    }
+                    if (componentId && window.parent.handleComponentSelect) {
+                        window.parent.handleComponentSelect(componentId);
+                    }
+                } else if (mode === 'comment') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.parent.handleAddComment) {
+                        const iframeRect = window.frameElement.getBoundingClientRect();
+                        window.parent.handleAddComment(e.clientX, e.clientY, iframeRect);
+                    }
+                }
+            });
+        </script>
+    ` : '';
 
     const script = `
     <script>
@@ -911,7 +944,7 @@ const getClientSideScripts = (pageState: CloudPage): string => {
     </script>
     `;
 
-    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}`;
+    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}`;
 };
 
 
@@ -1030,7 +1063,7 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
 };
 
 
-export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false): string {
+export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false, editorMode: EditorMode = 'none'): string {
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
   const hasForm = components.some(c => c.type === 'Form');
@@ -1057,7 +1090,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 ]%%` : '';
 
 
-  const clientSideScripts = getClientSideScripts(pageState);
+  const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
@@ -1072,7 +1105,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
 
   
-  const rootComponents = components.filter(c => c.parentId === null);
+  const rootComponents = components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type));
   const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, shouldHideAmpscript);
 
   const bodyStyles = `
@@ -1157,16 +1190,13 @@ ${trackingScripts.head}
       overflow-x: hidden;
     }
     
-    body.selection-mode {
+    body[data-editor-mode='selection'] * {
         cursor: pointer !important;
     }
-    body.selection-mode * {
-        pointer-events: none;
-    }
-     body.comment-mode {
+    body[data-editor-mode='comment'] {
         cursor: crosshair;
     }
-    body.comment-mode * {
+    body[data-editor-mode='comment'] * {
         pointer-events: none;
     }
 
@@ -2424,7 +2454,7 @@ ${trackingScripts.head}
 </style>
 ${clientSideScripts}
 </head>
-<body data-editor-mode='none'>
+<body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
 ${!isForPreview ? trackingScripts.body : ''}
 ${bodyContent}
 ${cookieBannerHtml}

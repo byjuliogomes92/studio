@@ -1,4 +1,5 @@
 
+
 import type { PageComponent, FormFieldConfig, CustomFormField, CustomFormFieldType, CloudPage } from "@/lib/types";
 import React, { useRef } from 'react';
 import { Label } from "@/components/ui/label";
@@ -9,16 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle, GripVertical, Plus, Trash2, Send, CheckCircle, Link } from "lucide-react";
+import { HelpCircle, GripVertical, Plus, Trash2, Send, CheckCircle, Link, Square, Circle } from "lucide-react";
 import { produce } from 'immer';
 import { Badge } from "@/components/ui/badge";
-import { DebouncedTextInput } from "./debounced-text-input";
 import { AnimationPreview } from './animation-preview';
+import { AiGenerateTextDialog } from './ai-generate-text-dialog';
+import { ColorInput } from './color-input';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
+  pageState: CloudPage;
 }
 
 const formFields: {id: keyof FormFieldConfig, label: string, urlParam: string, deName: string}[] = [
@@ -117,7 +122,7 @@ function CustomFieldsManager({ fields, onPropChange }: { fields: CustomFormField
     );
 }
 
-export function FormSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
+export function FormSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     const thankYouTextareaRef = useRef<HTMLTextAreaElement>(null);
     
@@ -183,50 +188,141 @@ export function FormSettings({ component, onPropChange, onSubPropChange }: Compo
     };
 
     return (
-        <div className="space-y-4">
-            <div>
-              <Label className="font-semibold">Campos Padrão</Label>
-              <div className="space-y-3 mt-2">
-                {formFields.map((field, index) => (
-                  <div key={field.id} className="p-3 border rounded-md space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor={`field-${field.id}`}>{field.label}</Label>
-                      <Switch
-                        id={`field-${field.id}`}
-                        checked={props.fields?.[field.id]?.enabled || false}
-                        onCheckedChange={(checked) => handleFieldChange(field.id, 'enabled', checked)}
-                      />
-                    </div>
-                     {props.fields?.[field.id]?.enabled && (
-                        <div className="flex items-center justify-between border-t pt-3">
-                            <Label htmlFor={`prefill-${field.id}`} className="text-xs flex items-center gap-1">
-                                <Link className="h-3 w-3" />
-                                Pré-preencher da URL
-                            </Label>
-                             <Switch
-                                id={`prefill-${field.id}`}
-                                checked={props.fields?.[field.id]?.prefillFromUrl || false}
-                                onCheckedChange={(checked) => handleFieldChange(field.id, 'prefillFromUrl', checked)}
+        <Accordion type="multiple" defaultValue={['fields']} className="w-full">
+            <AccordionItem value="fields">
+                <AccordionTrigger>Campos do Formulário</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div>
+                    <Label className="font-semibold">Campos Padrão</Label>
+                    <div className="space-y-3 mt-2">
+                        {formFields.map((field, index) => (
+                        <div key={field.id} className="p-3 border rounded-md space-y-3">
+                            <div className="flex items-center justify-between">
+                            <Label htmlFor={`field-${field.id}`}>{field.label}</Label>
+                            <Switch
+                                id={`field-${field.id}`}
+                                checked={props.fields?.[field.id]?.enabled || false}
+                                onCheckedChange={(checked) => handleFieldChange(field.id, 'enabled', checked)}
                             />
+                            </div>
+                            {props.fields?.[field.id]?.enabled && (
+                                <div className="flex items-center justify-between border-t pt-3">
+                                    <Label htmlFor={`prefill-${field.id}`} className="text-xs flex items-center gap-1">
+                                        <Link className="h-3 w-3" />
+                                        Pré-preencher da URL
+                                    </Label>
+                                    <Switch
+                                        id={`prefill-${field.id}`}
+                                        checked={props.fields?.[field.id]?.prefillFromUrl || false}
+                                        onCheckedChange={(checked) => handleFieldChange(field.id, 'prefillFromUrl', checked)}
+                                    />
+                                </div>
+                            )}
                         </div>
-                     )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <Separator />
-            <CustomFieldsManager fields={props.customFields || []} onPropChange={onPropChange} />
-            <Separator />
-            <div>
-                <h4 className="font-semibold mb-4">Estilo do Botão de Envio</h4>
-                <div className="space-y-4">
+                        ))}
+                    </div>
+                    </div>
+                    <Separator />
+                    <CustomFieldsManager fields={props.customFields || []} onPropChange={onPropChange} />
+                </AccordionContent>
+            </AccordionItem>
+            
+            <AccordionItem value="style">
+                 <AccordionTrigger>Estilo</AccordionTrigger>
+                 <AccordionContent className="space-y-6 pt-2">
+                     <div className="space-y-4">
+                        <h4 className="font-semibold">Estilo dos Campos (Inputs)</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <ColorInput label="Cor de Fundo" value={props.inputStyles?.backgroundColor || ''} onChange={value => onSubPropChange('inputStyles', 'backgroundColor', value)} brand={pageState.brand} tooltip="Deixe em branco para usar o padrão do Kit de Marca." />
+                            <ColorInput label="Cor da Borda" value={props.inputStyles?.borderColor || ''} onChange={value => onSubPropChange('inputStyles', 'borderColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Cor do Texto" value={props.inputStyles?.color || ''} onChange={value => onSubPropChange('inputStyles', 'color', value)} brand={pageState.brand} />
+                        </div>
+                        <div className="space-y-2">
+                           <Label>Cantos do Input</Label>
+                           <ToggleGroup type="single" value={props.inputStyles?.borderRadius} onValueChange={(value) => value && onSubPropChange('inputStyles', 'borderRadius', value)} className="w-full">
+                               <ToggleGroupItem value="0.25rem" aria-label="Reto"><Square className="h-5 w-5"/></ToggleGroupItem>
+                               <ToggleGroupItem value="0.5rem" aria-label="Curvado"><div className="w-5 h-5 border-2 border-current rounded-md"></div></ToggleGroupItem>
+                               <ToggleGroupItem value="9999px" aria-label="Redondo"><Circle className="h-5 w-5"/></ToggleGroupItem>
+                           </ToggleGroup>
+                        </div>
+                    </div>
+                    <Separator />
+                     <div className="space-y-4">
+                        <h4 className="font-semibold">Estilo do Botão de Envio</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="form-button-text">Texto do Botão</Label>
+                            <Input id="form-button-text" value={props.buttonText || ""} onChange={(e) => onPropChange("buttonText", e.target.value)} />
+                        </div>
+                         <div className="space-y-2">
+                           <Label>Alinhamento do Botão</Label>
+                            <Select value={props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
+                               <SelectTrigger><SelectValue/></SelectTrigger>
+                               <SelectContent>
+                                   <SelectItem value="left">Esquerda</SelectItem>
+                                   <SelectItem value="center">Centro</SelectItem>
+                                   <SelectItem value="right">Direita</SelectItem>
+                               </SelectContent>
+                           </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                             <ColorInput label="Cor de Fundo" value={props.buttonProps?.bgColor || ''} onChange={value => onSubPropChange('buttonProps', 'bgColor', value)} brand={pageState.brand} />
+                             <ColorInput label="Cor do Texto" value={props.buttonProps?.textColor || ''} onChange={value => onSubPropChange('buttonProps', 'textColor', value)} brand={pageState.brand} />
+                        </div>
+                         <div className="space-y-2">
+                           <Label>Cantos do Botão</Label>
+                           <ToggleGroup type="single" value={props.buttonProps?.borderRadius} onValueChange={(value) => value && onSubPropChange('buttonProps', 'borderRadius', value)} className="w-full">
+                               <ToggleGroupItem value="0.25rem" aria-label="Reto"><Square className="h-5 w-5"/></ToggleGroupItem>
+                               <ToggleGroupItem value="0.5rem" aria-label="Curvado"><div className="w-5 h-5 border-2 border-current rounded-md"></div></ToggleGroupItem>
+                               <ToggleGroupItem value="9999px" aria-label="Redondo"><Circle className="h-5 w-5"/></ToggleGroupItem>
+                           </ToggleGroup>
+                        </div>
+                    </div>
+                 </AccordionContent>
+            </AccordionItem>
+            
+            <AccordionItem value="submission">
+                <AccordionTrigger>Ação Pós-Envio</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <p className="text-sm text-muted-foreground">
+                        Preencha a URL para redirecionar o usuário. Se deixado em branco, a mensagem de agradecimento será exibida.
+                    </p>
                     <div className="space-y-2">
-                        <Label htmlFor="form-button-text">Texto do Botão</Label>
-                        <Input id="form-button-text" value={props.buttonText || ""} onChange={(e) => onPropChange("buttonText", e.target.value)} />
+                        <Label htmlFor="form-redirect-url">URL de Redirecionamento (Opcional)</Label>
+                        <Input
+                            id="form-redirect-url"
+                            value={props.submission?.url || ''}
+                            onChange={(e) => handleSubmissionChange('url', e.target.value)}
+                            placeholder="https://exemplo.com/obrigado"
+                        />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="form-button-align">Alinhamento do Botão</Label>
-                        <Select value={props.buttonAlign || 'center'} onValueChange={(value) => onPropChange('buttonAlign', value)}>
+                        <div className="flex items-center gap-1.5">
+                            <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
+                        </div>
+                        <Textarea
+                            id="form-thank-you"
+                            ref={thankYouTextareaRef}
+                            value={props.submission?.message || ''}
+                            onChange={(e) => handleSubmissionChange('message', e.target.value)}
+                            rows={8}
+                            placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
+                        />
+                        <div className="flex flex-wrap gap-2 pt-2">
+                        {activeFormFields.map(field => (
+                            <Badge 
+                                key={field.deName}
+                                variant="secondary"
+                                className="cursor-pointer hover:bg-primary/20"
+                                onClick={() => insertAmpscriptVar(field.deName)}
+                            >
+                                {field.label}
+                            </Badge>
+                        ))}
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="thank-you-align">Alinhamento da Mensagem</Label>
+                        <Select value={props.thankYouAlign || 'center'} onValueChange={(value) => onPropChange('thankYouAlign', value)}>
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="left">Esquerda</SelectItem>
@@ -235,77 +331,24 @@ export function FormSettings({ component, onPropChange, onSubPropChange }: Compo
                             </SelectContent>
                         </Select>
                     </div>
-                </div>
-            </div>
-            <Separator />
-            <div className="space-y-4">
-                <h4 className="font-semibold">Ação Após Envio</h4>
-                 <p className="text-sm text-muted-foreground">
-                    Preencha a URL para redirecionar o usuário. Se deixado em branco, a mensagem de agradecimento será exibida.
-                 </p>
-                <div className="space-y-2">
-                    <Label htmlFor="form-redirect-url">URL de Redirecionamento (Opcional)</Label>
-                    <Input
-                        id="form-redirect-url"
-                        value={props.submission?.url || ''}
-                        onChange={(e) => handleSubmissionChange('url', e.target.value)}
-                        placeholder="https://exemplo.com/obrigado"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <div className="flex items-center gap-1.5">
-                        <Label htmlFor="form-thank-you">Mensagem de Agradecimento</Label>
+                     <div className="space-y-2">
+                        <Label>Animação de Agradecimento</Label>
+                        <Select
+                            value={props.thankYouAnimation || 'none'}
+                            onValueChange={(value) => onPropChange('thankYouAnimation', value === 'none' ? '' : value)}
+                        >
+                            <SelectTrigger>
+                            <SelectValue placeholder="Sem animação" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="none">Nenhuma</SelectItem>
+                            <SelectItem value="confetti">Confete</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <AnimationPreview animation={props.thankYouAnimation || 'none'} />
                     </div>
-                    <Textarea
-                        id="form-thank-you"
-                        ref={thankYouTextareaRef}
-                        value={props.submission?.message || ''}
-                        onChange={(e) => handleSubmissionChange('message', e.target.value)}
-                        rows={8}
-                        placeholder="<h2>Obrigado!</h2><p>Seus dados foram recebidos.</p>"
-                    />
-                    <div className="flex flex-wrap gap-2 pt-2">
-                       {activeFormFields.map(field => (
-                           <Badge 
-                              key={field.deName}
-                              variant="secondary"
-                              className="cursor-pointer hover:bg-primary/20"
-                              onClick={() => insertAmpscriptVar(field.deName)}
-                           >
-                              {field.label}
-                           </Badge>
-                       ))}
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="thank-you-align">Alinhamento da Mensagem</Label>
-                     <Select value={props.thankYouAlign || 'center'} onValueChange={(value) => onPropChange('thankYouAlign', value)}>
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="left">Esquerda</SelectItem>
-                            <SelectItem value="center">Centro</SelectItem>
-                            <SelectItem value="right">Direita</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-            <Separator />
-            <div className="space-y-2">
-              <Label>Animação de Agradecimento</Label>
-              <Select
-                value={props.thankYouAnimation || 'none'}
-                onValueChange={(value) => onPropChange('thankYouAnimation', value === 'none' ? '' : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sem animação" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                  <SelectItem value="confetti">Confete</SelectItem>
-                </SelectContent>
-              </Select>
-              <AnimationPreview animation={props.thankYouAnimation || 'none'} />
-            </div>
-        </div>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
     );
 }

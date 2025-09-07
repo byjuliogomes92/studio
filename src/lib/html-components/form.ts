@@ -10,6 +10,7 @@ const renderField = (
     placeholder: string,
     conditionalLogic: any,
     prefill: boolean,
+    inputStyles: any, // New parameter
     required: boolean = true
   ): string => {
     const conditionalAttrs = conditionalLogic
@@ -27,13 +28,14 @@ const renderField = (
           placeholder="${placeholder}" 
           ${required ? 'required="required"' : ''}
           ${prefillValue}
+          style="${getStyleString(inputStyles)}"
         >
         <div class="error-message" id="error-${fieldName.toLowerCase()}">Por favor, preencha este campo.</div>
       </div>
     `;
 };
 
-const renderCustomField = (field: CustomFormField): string => {
+const renderCustomField = (field: CustomFormField, inputStyles: any): string => {
     const { id, name, label, type, required, placeholder = '' } = field;
     const inputId = `custom-field-${id}`;
 
@@ -56,13 +58,14 @@ const renderCustomField = (field: CustomFormField): string => {
                 name="${name}" 
                 placeholder="${placeholder}" 
                 ${required ? 'required="required"' : ''}
+                style="${getStyleString(inputStyles)}"
             >
             <div class="error-message" id="error-${name.toLowerCase()}">Por favor, preencha este campo.</div>
         </div>
     `;
 };
   
-const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, prefill: boolean, required: boolean = false): string => {
+const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, prefill: boolean, inputStyles: any, required: boolean = false): string => {
     const cities = citiesString.split('\n').filter(city => city.trim() !== '');
     const options = cities.map(city => `<option value="${city}">%%[ IF @CIDADE == "${city}" THEN]%%selected%%[ENDIF]%%${city}</option>`).join('');
     const conditionalAttrs = conditionalLogic
@@ -75,6 +78,7 @@ const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, pr
                 id="CIDADE"
                 name="CIDADE"
                 ${required ? 'required="required"' : ''}
+                style="${getStyleString(inputStyles)}"
             >
                 <option value="" disabled selected>Selecione sua cidade</option>
                 ${options}
@@ -85,9 +89,23 @@ const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, pr
 };
 
 export function renderForm(component: PageComponent, pageState: CloudPage, isForPreview: boolean = false): string {
-    const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, formAlign, thankYouAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [] } = component.props;
-    const { meta } = pageState;
+    const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, formAlign, thankYouAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [], inputStyles = {}, buttonStyles = {} } = component.props;
+    const { meta, brand } = pageState;
     const styleString = getStyleString(component.props.styles);
+    
+    const finalInputStyles = {
+        borderRadius: brand?.components?.input?.borderRadius,
+        backgroundColor: brand?.components?.input?.backgroundColor,
+        borderColor: brand?.components?.input?.borderColor,
+        color: brand?.components?.input?.textColor,
+        ...inputStyles
+    };
+
+    const finalButtonStyles = {
+        borderRadius: brand?.components?.button?.borderRadius,
+        ...buttonProps,
+        ...buttonStyles
+    };
     
     const animationUrls = {
         confetti: 'https://assets10.lottiefiles.com/packages/lf20_u4yrau.json',
@@ -105,9 +123,9 @@ export function renderForm(component: PageComponent, pageState: CloudPage, isFor
         'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
     };
     
-    const iconHtml = buttonProps.icon && lucideIconSvgs[buttonProps.icon] ? lucideIconSvgs[buttonProps.icon] : '';
+    const iconHtml = finalButtonStyles.icon && lucideIconSvgs[finalButtonStyles.icon] ? lucideIconSvgs[finalButtonStyles.icon] : '';
 
-    const buttonContent = buttonProps.iconPosition === 'right' 
+    const buttonContent = finalButtonStyles.iconPosition === 'right' 
         ? `<span>${buttonText || 'Finalizar'}</span>${iconHtml}`
         : `${iconHtml}<span>${buttonText || 'Finalizar'}</span>`;
     
@@ -130,20 +148,20 @@ export function renderForm(component: PageComponent, pageState: CloudPage, isFor
                  <input type="hidden" name="__isFormSubmission" value="true">
 
                  <div class="row">
-                  ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl) : ''}
-                  ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional, !!fields.email.prefillFromUrl) : ''}
+                  ${fields.name?.enabled ? renderField('name', 'NOME', 'text', 'Text', placeholders.name || 'Nome', fields.name.conditional, !!fields.name.prefillFromUrl, finalInputStyles) : ''}
+                  ${fields.email?.enabled ? renderField('email', 'EMAIL', 'email', 'EmailAddress', placeholders.email || 'Email', fields.email.conditional, !!fields.email.prefillFromUrl, finalInputStyles) : ''}
                  </div>
                  <div class="row">
-                  ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional, !!fields.phone.prefillFromUrl) : ''}
-                  ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional, !!fields.cpf.prefillFromUrl) : ''}
+                  ${fields.phone?.enabled ? renderField('phone', 'TELEFONE', 'text', 'Phone', placeholders.phone || 'Telefone - Ex:(11) 9 9999-9999', fields.phone.conditional, !!fields.phone.prefillFromUrl, finalInputStyles) : ''}
+                  ${fields.cpf?.enabled ? renderField('cpf', 'CPF', 'text', 'Text', placeholders.cpf || 'CPF', fields.cpf.conditional, !!fields.cpf.prefillFromUrl, finalInputStyles) : ''}
                  </div>
                  <div class="row">
-                  ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, false) : ''}
-                  ${fields.city?.enabled ? renderCityDropdown(component.props.cities, fields.city.conditional, !!fields.city.prefillFromUrl, false) : ''}
+                  ${fields.birthdate?.enabled ? renderField('birthdate', 'DATANASCIMENTO', 'date', 'Date', placeholders.birthdate || 'Data de Nascimento', fields.birthdate.conditional, !!fields.birthdate.prefillFromUrl, finalInputStyles, false) : ''}
+                  ${fields.city?.enabled ? renderCityDropdown(component.props.cities, fields.city.conditional, !!fields.city.prefillFromUrl, finalInputStyles, false) : ''}
                  </div>
                  
                  <div class="custom-fields-wrapper">
-                  ${customFields.map(renderCustomField).join('\n')}
+                  ${customFields.map(field => renderCustomField(field, finalInputStyles)).join('\n')}
                  </div>
            
                 ${fields.optin?.enabled ? `
@@ -159,12 +177,13 @@ export function renderForm(component: PageComponent, pageState: CloudPage, isFor
                     <button type="submit"
                       class="form-submit-button"
                       style="
-                          background-color: ${buttonProps.bgColor || 'var(--theme-color)'};
-                          color: ${buttonProps.textColor || '#FFFFFF'};
+                          background-color: ${finalButtonStyles.bgColor || 'var(--theme-color)'};
+                          color: ${finalButtonStyles.textColor || '#FFFFFF'};
+                          border-radius: ${finalButtonStyles.borderRadius || '30px'};
                       "
-                      onmouseover="this.style.backgroundColor='${buttonProps.hoverBgColor || 'var(--theme-color-hover)'}'"
-                      onmouseout="this.style.backgroundColor='${buttonProps.bgColor || 'var(--theme-color)'}'"
-                      ${buttonProps.enableWhenValid ? 'disabled' : ''}
+                      onmouseover="this.style.backgroundColor='${finalButtonStyles.hoverBgColor || 'var(--theme-color-hover)'}'"
+                      onmouseout="this.style.backgroundColor='${finalButtonStyles.bgColor || 'var(--theme-color)'}'"
+                      ${finalButtonStyles.enableWhenValid ? 'disabled' : ''}
                     >
                         ${buttonContent}
                     </button>

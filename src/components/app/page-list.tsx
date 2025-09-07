@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Brand, Project, CloudPage, Template, PageView, FormSubmission, PageComponent } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon, GitFork, Undo2 } from "lucide-react";
+import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon, GitFork, Undo2, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Logo, LogoIcon } from "@/components/icons";
 import {
@@ -646,47 +646,44 @@ function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogP
   );
 }
 
-const componentHeightMap: { [key in PageComponent['type']]?: number } = {
-    Header: 10,
-    Title: 10,
-    Subtitle: 8,
-    Paragraph: 12,
-    Image: 30,
-    Form: 25,
-    Button: 8,
-    Spacer: 5,
-    Divider: 2,
-};
-
 const renderComponentThumbnail = (component: PageComponent, allComponents: PageComponent[]) => {
-    const height = componentHeightMap[component.type] || 6;
-    const isPrimaryAction = component.type === 'Button' || component.type === 'Form';
-
-    if (component.type === 'Columns') {
-        const columns = Array.from({ length: component.props.columnCount || 2 }, (_, i) =>
-            allComponents.filter(c => c.parentId === component.id && c.column === i)
-        );
-        return (
-            <div key={component.id} className="flex w-full gap-1 flex-grow" style={{ flexBasis: `${height}%` }}>
-                {columns.map((col, i) => (
-                    <div key={i} className="flex flex-col gap-0.5 w-full bg-muted/50 rounded-sm p-0.5">
-                        {col.map(c => renderComponentThumbnail(c, allComponents))}
-                    </div>
-                ))}
-            </div>
-        );
+    const baseStyle = "bg-muted-foreground/20 rounded-[1px]";
+    switch(component.type) {
+        case 'Header':
+            return <div key={component.id} className="h-2 w-full bg-muted-foreground/30 rounded-t-sm mb-1"></div>;
+        case 'Footer':
+            return <div key={component.id} className="h-2 w-full bg-muted-foreground/30 rounded-b-sm mt-auto"></div>;
+        case 'Banner':
+        case 'Image':
+            return <div key={component.id} className={cn(baseStyle, "h-8 w-full flex items-center justify-center")}><ImageIcon className="h-3 w-3 text-muted-foreground/40"/></div>;
+        case 'Title':
+            return <div key={component.id} className={cn(baseStyle, "h-2 w-3/4 mx-auto")}></div>;
+        case 'Subtitle':
+             return <div key={component.id} className={cn(baseStyle, "h-1 w-2/3 mx-auto")}></div>;
+        case 'Paragraph':
+            return <div key={component.id} className="space-y-0.5"><div className={cn(baseStyle, "h-1 w-full")}></div><div className={cn(baseStyle, "h-1 w-full")}></div><div className={cn(baseStyle, "h-1 w-5/6")}></div></div>;
+        case 'Button':
+            return <div key={component.id} className="h-2 w-8 bg-primary/70 rounded-sm mx-auto"></div>;
+        case 'Spacer':
+             return <div key={component.id} className="h-1 w-full"></div>;
+        case 'Divider':
+            return <div key={component.id} className="h-px w-full bg-muted-foreground/20 my-1"></div>;
+        case 'Columns':
+            const columns = Array.from({ length: component.props.columnCount || 2 }, (_, i) =>
+                allComponents.filter(c => c.parentId === component.id && c.column === i).sort((a, b) => a.order - b.order)
+            );
+            return (
+                <div key={component.id} className="flex w-full gap-1 flex-grow">
+                    {columns.map((col, i) => (
+                        <div key={i} className="flex flex-col gap-0.5 w-full bg-muted/50 rounded-sm p-0.5">
+                            {col.map(c => renderComponentThumbnail(c, allComponents))}
+                        </div>
+                    ))}
+                </div>
+            );
+        default:
+            return <div key={component.id} className={cn(baseStyle, "h-2 w-full")}></div>;
     }
-    
-    return (
-        <div
-            key={component.id}
-            className={cn(
-                "w-full rounded-[2px]",
-                isPrimaryAction ? "bg-primary/80" : "bg-muted-foreground/30"
-            )}
-            style={{ height: `${height}px` }}
-        ></div>
-    );
 };
 
 export function PageList({ projectId }: PageListProps) {

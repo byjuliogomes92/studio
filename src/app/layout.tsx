@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR">
       <head>
         <meta httpEquiv="Content-Language" content="pt-br" />
         <meta name="robots" content="index, follow" />

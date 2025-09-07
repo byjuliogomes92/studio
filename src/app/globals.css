@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 216 25% 98%; /* #F9FAFB */
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
  
-    --primary: 210 90% 40%;
+    --primary: 217 91% 60%; /* #3b82f6 */
     --primary-foreground: 210 40% 98%;
  
     --secondary: 210 40% 96.1%;
@@ -31,16 +31,18 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
- 
-    --radius: 0.5rem;
+    --ring: 217 91% 60%;
+    
+    --primary-gradient-start: #FFC06F;
+    --primary-gradient-mid: #FE631C;
+    --primary-gradient-end: #FFC06F;
   }
  
   .dark {
     --background: 201 30% 14%; /* #19262D */
     --foreground: 45 44% 91%; /* #F2EDE1 */
  
-    --card: 202 30% 17%; /* #1d2c34 - a bit lighter than background */
+    --card: 202 30% 17%; /* #1d2c34 */
     --card-foreground: 45 44% 91%;
     --popover: 202 30% 17%;
     --popover-foreground: 45 44% 91%;
@@ -52,13 +54,13 @@
     --primary-gradient-mid: #FE631C;
     --primary-gradient-end: #FFC06F;
 
-    --secondary: 203 28% 35%; /* A darker shade for secondary elements */
+    --secondary: 203 28% 35%;
     --secondary-foreground: 45 44% 91%;
  
-    --muted: 201 30% 22%; /* Lighter muted for contained elements */
+    --muted: 201 30% 22%;
     --muted-foreground: 203 20% 65%;
  
-    --accent: 202 28% 27%; /* #324957 */
+    --accent: 203 28% 27%; /* #324957 */
     --accent-foreground: 45 44% 91%;
  
     --destructive: 0 72% 51%;

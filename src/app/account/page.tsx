@@ -2,13 +2,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, type Theme } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save, Copy, Users, Activity, Settings, EyeOff, Search, MessageSquare } from 'lucide-react';
+import { Loader2, Trash2, Home, RefreshCw, Plus, UserX, User, ShieldCheck, Save, Copy, Users, Activity, Settings, EyeOff, Search, MessageSquare, Sun, Moon, Palette } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,7 @@ import { getWorkspaceMembers, removeUserFromWorkspace, updateUserRole, inviteUse
 import type { WorkspaceMember, WorkspaceMemberRole, ActivityLog } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 
 function MemberManagement({ activeWorkspace, user, members, fetchMembers }: { activeWorkspace: any; user: any; members: WorkspaceMember[]; fetchMembers: () => void }) {
@@ -255,6 +256,48 @@ function ActivityLogDisplay({ activeWorkspace }: { activeWorkspace: any; }) {
     );
 }
 
+function AppearanceSettings() {
+    const { theme, setTheme } = useAuth();
+  
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Aparência</CardTitle>
+          <CardDescription>
+            Personalize a aparência da plataforma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label>Tema</Label>
+            <div className="grid grid-cols-2 gap-4">
+              {(['light', 'dark'] as Theme[]).map((t) => (
+                <div
+                  key={t}
+                  className={cn(
+                    "cursor-pointer rounded-md border-2 p-4 text-center",
+                    theme === t ? "border-primary" : "border-muted"
+                  )}
+                  onClick={() => setTheme(t)}
+                >
+                  <div
+                    className={cn(
+                      "mx-auto mb-2 h-16 w-full rounded-lg",
+                      t === 'light' ? 'bg-zinc-100' : 'bg-zinc-800'
+                    )}
+                  />
+                  <div className="flex items-center justify-center gap-2">
+                    {t === 'light' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    <span className="capitalize">{t === 'light' ? 'Claro' : 'Escuro'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
 export default function AccountPage() {
   const { user, loading, logout, updateUserAvatar, isUpdatingAvatar, activeWorkspace, updateWorkspaceName, updateUserName } = useAuth();
@@ -493,6 +536,8 @@ export default function AccountPage() {
                         </CardContent>
                     </Card>
                 )}
+
+                <AppearanceSettings />
 
                 <Card>
                 <CardHeader>

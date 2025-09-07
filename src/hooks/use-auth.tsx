@@ -13,10 +13,14 @@ import { getWorkspacesForUser, createWorkspace, updateWorkspaceName as updateWor
 import { produce } from 'immer';
 import { usePermissions } from './use-permissions'; // Import the new hook
 
+export type Theme = 'light' | 'dark';
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isUpdatingAvatar: boolean;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
   activeWorkspace: Workspace | null;
   workspaces: Workspace[];
   projects: Project[];
@@ -47,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [auth, setAuth] = useState<Auth | null>(null);
+  const [theme, setTheme] = useState<Theme>('dark');
   
   // Global data
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -64,6 +69,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+
+  const handleSetTheme = (newTheme: Theme) => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (savedTheme) {
+      handleSetTheme(savedTheme);
+    } else if (prefersDark) {
+      handleSetTheme('dark');
+    } else {
+      handleSetTheme('light');
+    }
+  }, []);
 
   const fetchGlobalData = useCallback(async (userId: string, workspaceId: string) => {
     try {
@@ -252,6 +279,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     loading,
     isUpdatingAvatar,
+    theme,
+    setTheme: handleSetTheme,
     login,
     signup,
     loginWithGoogle,

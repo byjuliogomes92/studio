@@ -44,6 +44,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     
+    // Gradient and grain effect is applied only to the 'default' variant, which is used for primary platform buttons.
     if (variant === "default") {
       return (
         <Comp
@@ -51,14 +52,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           ref={ref}
           {...props}
         >
+          {/* Gradient Layer */}
           <span
             className="absolute inset-0 bg-gradient-to-r from-[var(--primary-gradient-start)] via-[var(--primary-gradient-mid)] to-[var(--primary-gradient-end)] bg-[length:200%_auto] animate-gradient"
-            style={{ animation: 'gradient 5s ease infinite' }}
           />
+          {/* Grain Texture Layer */}
           <span
             className="absolute inset-0 opacity-20"
             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='10' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E")` }}
           />
+           {/* Content Layer */}
           <span className="relative z-10">{props.children}</span>
         </Comp>
       )

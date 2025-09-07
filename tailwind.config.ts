@@ -104,7 +104,7 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'star-pulse': 'star-pulse 2s infinite ease-in-out',
-        gradient: 'gradient 5s ease infinite',
+        gradient: 'gradient 3s ease infinite',
       },
     },
   },

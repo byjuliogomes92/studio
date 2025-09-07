@@ -281,6 +281,31 @@ export function CreatePageFromTemplateDialog({
                     },
                 }
             };
+
+            // Ensure cookieBanner has all required properties to avoid Firestore errors
+            if (!newPageData.cookieBanner) {
+                newPageData.cookieBanner = {
+                    enabled: false,
+                    position: 'bottom',
+                    layout: 'bar',
+                    title: '',
+                    description: '',
+                    acceptButtonText: 'Aceitar',
+                    declineButtonText: 'Recusar',
+                    preferencesButtonText: 'Preferências',
+                    privacyPolicyLink: '',
+                    categories: [],
+                    styles: {
+                        backgroundColor: '',
+                        textColor: '',
+                        buttonBackgroundColor: '',
+                        buttonTextColor: ''
+                    }
+                };
+            } else {
+                newPageData.cookieBanner.styles = newPageData.cookieBanner.styles || { backgroundColor: '', textColor: '', buttonBackgroundColor: '', buttonTextColor: '' };
+                newPageData.cookieBanner.categories = newPageData.cookieBanner.categories || [];
+            }
         }
         
         const newPageId = await addPage(newPageData, user.uid);
@@ -473,4 +498,5 @@ export function CreatePageFromTemplateDialog({
     
 
     
+
 

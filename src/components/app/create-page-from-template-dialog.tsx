@@ -91,8 +91,21 @@ const getInitialPage = (name: string, projectId: string, workspaceId: string, br
       },
       cookieBanner: {
         enabled: true,
-        text: 'Utilizamos cookies para garantir que você tenha a melhor experiência em nosso site. Ao continuar, você concorda com o uso de cookies.',
-        buttonText: 'Aceitar',
+        position: 'bottom',
+        layout: 'bar',
+        title: 'Gerencie seu consentimento de cookies',
+        description: 'Utilizamos cookies para garantir que você tenha a melhor experiência em nosso site. Ao continuar, você concorda com o uso de cookies.',
+        acceptButtonText: 'Aceitar Todos',
+        declineButtonText: 'Recusar Todos',
+        preferencesButtonText: 'Preferências',
+        privacyPolicyLink: '',
+        categories: [],
+        styles: {
+          backgroundColor: '',
+          textColor: '',
+          buttonBackgroundColor: '',
+          buttonTextColor: ''
+        }
       },
       components: hasBrand ? [
         { id: '1', type: 'Header', props: { logoUrl: logoUrl }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
@@ -270,7 +283,7 @@ export function CreatePageFromTemplateDialog({
             };
         }
         
-        const newPageId = await addPage(newPageData);
+        const newPageId = await addPage(newPageData, user.uid);
         toast({ title: "Página criada!", description: `A página "${newPageName}" foi criada com sucesso.` });
         
         // Check onboarding progress

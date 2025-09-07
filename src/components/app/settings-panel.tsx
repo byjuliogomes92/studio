@@ -32,7 +32,18 @@ import { AddComponentDialog } from './add-component-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { cn } from "@/lib/utils";
 import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
-import { Dialog, DialogTrigger, AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/dialog";
+import { Dialog, DialogTrigger } from "../ui/dialog";
+import { 
+    AlertDialog, 
+    AlertDialogTrigger, 
+    AlertDialogContent, 
+    AlertDialogHeader, 
+    AlertDialogTitle, 
+    AlertDialogDescription, 
+    AlertDialogFooter, 
+    AlertDialogCancel, 
+    AlertDialogAction 
+} from "../ui/alert-dialog";
 import { Badge } from "../ui/badge";
 import { MediaLibraryDialog } from "./media-library-dialog";
 import { getBrandsForUser, updateBrand } from "@/lib/firestore";
@@ -104,7 +115,7 @@ const googleFonts = [
     "Poppins",
     "Nunito",
     "Merriweather",
-];
+    ];
 
 const tagColors = [
   'bg-blue-100 text-blue-800 border-blue-400',
@@ -777,7 +788,7 @@ export function SettingsPanel({
     };
     
   
-  const rootComponents = pageState.components.filter(c => c.parentId === null);
+  const rootComponents = pageState.components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type));
 
   const toDatetimeLocal = (date: any) => {
     if (!date) return '';
@@ -1302,3 +1313,5 @@ export function SettingsPanel({
     </div>
     );
 }
+
+    

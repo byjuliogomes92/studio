@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -71,92 +72,100 @@ const sanitizeForFirestore = (obj: any): any => {
 };
 
 const getInitialPage = (name: string, projectId: string, workspaceId: string, brand: Brand | null, platform: string): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
-    
     const brandName = brand?.name ?? 'Sem Marca';
     const brandId = brand?.id ?? '';
-    const themeColor = brand?.colors?.light?.primary ?? '#000000';
-    const themeColorHover = brand?.colors?.light?.primaryHover ?? '#333333';
-    const fontFamily = brand?.typography?.fontFamilyBody ?? 'Roboto';
+
+    // Define base styles and props from brand or defaults
+    const themeColor = brand?.colors?.light?.primary ?? '#3b82f6';
+    const themeColorHover = brand?.colors?.light?.primaryHover ?? '#2563eb';
+    const fontFamilyBody = brand?.typography?.fontFamilyBody ?? 'Roboto';
+    const fontFamilyHeadings = brand?.typography?.fontFamilyHeadings ?? 'Poppins';
     const faviconUrl = brand?.logos?.favicon ?? '';
     const loaderImageUrl = brand?.logos?.iconLight ?? '';
     const logoUrl = brand?.logos?.horizontalLight ?? '';
 
-    const hasBrand = !!brand;
-
     return sanitizeForFirestore({
-      name: name,
-      projectId,
-      workspaceId,
-      brandId: brandId,
-      brandName: brandName,
-      platform,
-      tags: [],
-      meta: {
-        title: `${name}`,
-        faviconUrl: faviconUrl,
-        loaderImageUrl: loaderImageUrl,
-        redirectUrl: 'https://www.google.com',
-        dataExtensionKey: 'CHANGE-ME',
-        metaDescription: `Página de campanha para ${name}.`,
-        metaKeywords: `campanha, ${name.toLowerCase()}`,
-        tracking: {
-          ga4: { enabled: false, id: '' },
-          meta: { enabled: false, id: '' },
-          linkedin: { enabled: false, id: '' }
-        }
-      },
-      styles: {
-        backgroundColor: '#FFFFFF',
-        backgroundImage: '',
-        themeColor: themeColor,
-        themeColorHover: themeColorHover,
-        fontFamily: fontFamily,
-        customCss: '',
-      },
-      cookieBanner: {
-        enabled: true,
-        position: 'bottom',
-        layout: 'bar',
-        title: 'Gerencie seu consentimento de cookies',
-        description: 'Utilizamos cookies para garantir que você tenha a melhor experiência em nosso site. Ao continuar, você concorda com o uso de cookies.',
-        acceptButtonText: 'Aceitar Todos',
-        declineButtonText: 'Recusar Todos',
-        preferencesButtonText: 'Preferências',
-        privacyPolicyLink: '',
-        categories: [],
+        name: name,
+        projectId,
+        workspaceId,
+        brandId: brandId,
+        brandName: brandName,
+        platform,
+        tags: [],
+        meta: {
+            title: name,
+            faviconUrl,
+            loaderImageUrl,
+            redirectUrl: '',
+            dataExtensionKey: 'CHANGE-ME',
+            metaDescription: `Descrição da página ${name}.`,
+            metaKeywords: name.toLowerCase(),
+            tracking: {
+                ga4: { enabled: false, id: '' },
+                meta: { enabled: false, id: '' },
+                linkedin: { enabled: false, id: '' }
+            }
+        },
         styles: {
-          backgroundColor: '',
-          textColor: '',
-          buttonBackgroundColor: '',
-          buttonTextColor: ''
-        }
-      },
-      components: hasBrand ? [
-        { 
-          id: '1', 
-          type: 'Header', 
-          props: { logoUrl: logoUrl }, 
-          order: 0, 
-          parentId: null, 
-          column: 0, 
-          abTestEnabled: false, 
-          abTestVariants: [] 
+            backgroundColor: brand?.colors?.light?.background ?? '#FFFFFF',
+            backgroundImage: '',
+            themeColor,
+            themeColorHover,
+            fontFamily: fontFamilyBody,
+            customCss: '',
         },
-        { 
-          id: '4', 
-          type: 'Footer', 
-          props: { 
-            footerText1: `© ${new Date().getFullYear()} ${brandName}. Todos os direitos reservados.`,
-            footerText2: `...`,
-            footerText3: `...`,
-          }, 
-          order: 1,
-          parentId: null,
-          column: 0,
-          abTestEnabled: false,
-          abTestVariants: []
+        cookieBanner: {
+            enabled: false,
+            position: 'bottom',
+            layout: 'bar',
+            title: '', description: '', acceptButtonText: 'Aceitar',
+            declineButtonText: 'Recusar', preferencesButtonText: 'Preferências',
+            privacyPolicyLink: '', categories: [],
+            styles: { backgroundColor: '', textColor: '', buttonBackgroundColor: '', buttonTextColor: '' }
         },
-      ] : [],
+        components: [
+            {
+                id: 'header-initial', type: 'Header', parentId: null, column: 0, order: 0, props: {
+                    logoUrl: logoUrl,
+                    layout: 'logo-left-menu-button-right',
+                    links: [{ id: '1', text: 'Home', url: '#' }, { id: '2', text: 'Sobre', url: '#' }],
+                    buttonText: 'Contato',
+                    buttonUrl: '#'
+                }
+            },
+            {
+                id: 'div-hero-initial', type: 'Div', parentId: null, column: 0, order: 1, props: {
+                    styles: {
+                        isFullWidth: false,
+                        paddingTop: '6rem', paddingBottom: '6rem', paddingLeft: '2rem', paddingRight: '2rem'
+                    },
+                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
+                }
+            },
+            {
+                id: 'title-initial', type: 'Title', parentId: 'div-hero-initial', column: 0, order: 0, props: {
+                    text: 'Título Principal da Sua Página',
+                    styles: { fontFamily: `"${fontFamilyHeadings}"`, fontSize: '3rem', textAlign: 'center' }
+                }
+            },
+            {
+                id: 'para-initial', type: 'Paragraph', parentId: 'div-hero-initial', column: 0, order: 1, props: {
+                    text: 'Use este espaço para descrever sua oferta de forma clara e concisa. Destaque os principais benefícios e o que o visitante ganha ao continuar.',
+                    styles: { textAlign: 'center', maxWidth: '600px', fontSize: '1.125rem', color: '#64748b' }
+                }
+            },
+            {
+                id: 'btn-initial', type: 'Button', parentId: 'div-hero-initial', column: 0, order: 2, props: {
+                    text: 'Chamada para Ação', href: '#'
+                }
+            },
+            {
+                id: 'footer-initial', type: 'Footer', parentId: null, column: 0, order: 2, props: {
+                    layout: 'default',
+                    footerText1: `© ${new Date().getFullYear()} ${brandName}. Todos os direitos reservados.`
+                }
+            },
+        ],
     });
 };
 
@@ -316,24 +325,7 @@ export function CreatePageFromTemplateDialog({
                     customCss: template.styles?.customCss ?? '',
                 },
                 components: newComponents,
-                cookieBanner: {
-                    enabled: template.cookieBanner?.enabled ?? false,
-                    position: template.cookieBanner?.position ?? 'bottom',
-                    layout: template.cookieBanner?.layout ?? 'bar',
-                    title: template.cookieBanner?.title ?? '',
-                    description: template.cookieBanner?.description ?? '',
-                    acceptButtonText: template.cookieBanner?.acceptButtonText ?? 'Aceitar',
-                    declineButtonText: template.cookieBanner?.declineButtonText ?? 'Recusar',
-                    preferencesButtonText: template.cookieBanner?.preferencesButtonText ?? 'Preferências',
-                    privacyPolicyLink: template.cookieBanner?.privacyPolicyLink ?? '',
-                    categories: template.cookieBanner?.categories ?? [],
-                    styles: {
-                        backgroundColor: template.cookieBanner?.styles?.backgroundColor ?? '',
-                        textColor: template.cookieBanner?.styles?.textColor ?? '',
-                        buttonBackgroundColor: template.cookieBanner?.styles?.buttonBackgroundColor ?? '',
-                        buttonTextColor: template.cookieBanner?.styles?.buttonTextColor ?? ''
-                    }
-                },
+                cookieBanner: template.cookieBanner, // Keep original cookie banner from template
                 meta: {
                     title: `${selectedBrand.name} - ${newPageName}`,
                     faviconUrl: selectedBrand?.logos?.favicon ?? template.meta?.faviconUrl ?? '',
@@ -358,6 +350,19 @@ export function CreatePageFromTemplateDialog({
                     }
                 }
             });
+        }
+        
+        // Ensure cookie banner is fully defined to prevent Firestore errors
+        if (!newPageData.cookieBanner) {
+            newPageData.cookieBanner = {
+                enabled: false, position: 'bottom', layout: 'bar',
+                title: '', description: '', acceptButtonText: 'Aceitar',
+                declineButtonText: 'Recusar', preferencesButtonText: 'Preferências',
+                privacyPolicyLink: '', categories: [],
+                styles: { backgroundColor: '', textColor: '', buttonBackgroundColor: '', buttonTextColor: '' }
+            };
+        } else if (!newPageData.cookieBanner.styles) {
+             newPageData.cookieBanner.styles = { backgroundColor: '', textColor: '', buttonBackgroundColor: '', buttonTextColor: '' };
         }
         
         console.log('Creating page with data:', JSON.stringify(newPageData, null, 2));

@@ -73,6 +73,31 @@ const useHistoryState = <T,>(initialState: T) => {
     return { state: currentState, setState, undo, canUndo, resetState };
 };
 
+// Function to recursively clean undefined values from an object
+const cleanUndefined = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+        return null;
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => cleanUndefined(item));
+    }
+    if (typeof obj === 'object') {
+        const newObj: { [key: string]: any } = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                const value = obj[key];
+                if (value !== undefined) {
+                    newObj[key] = cleanUndefined(value);
+                } else {
+                    newObj[key] = null; // Convert undefined to null
+                }
+            }
+        }
+        return newObj;
+    }
+    return obj;
+};
+
 export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -281,7 +306,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     if (!pageState || !user) return;
     setIsSaving(true);
     try {
-      const finalPageState = produce(pageState, draft => {
+      const stateToSave = cleanUndefined(pageState);
+      const finalPageState = produce(stateToSave, draft => {
           // Ensure footer is always last
           const footerIndex = draft.components.findIndex(c => c.type === 'Footer');
           if (footerIndex > -1) {
@@ -289,12 +315,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
               footer.order = 9999;
               draft.components.push(footer);
           }
-          // Sanitize components before saving to avoid undefined values
-          draft.components.forEach(c => {
-              if (c.parentId === undefined) {
-                  c.parentId = null;
-              }
-          });
       });
       
       await updatePage(pageId, finalPageState);
@@ -314,19 +334,20 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       if (!pageState || !user) return;
       setIsPublishing(true);
       
-      const finalPageState = { ...pageState, slug: pageSlug };
+      const stateWithSlug = { ...pageState, slug: pageSlug };
+      const stateToSave = cleanUndefined(stateWithSlug);
       
       // Reset shortUrl before attempting to publish and generate a new one
       setShortUrl(null);
 
       try {
           if (hasUnsavedChanges || pageState.slug !== pageSlug) {
-              await updatePage(pageId, finalPageState);
-              setSavedPageState(finalPageState);
-              resetState(finalPageState);
+              await updatePage(pageId, stateToSave);
+              setSavedPageState(stateToSave);
+              resetState(stateToSave);
           }
           
-          await publishPage(pageId, finalPageState, user.uid);
+          await publishPage(pageId, stateToSave, user.uid);
 
           let finalShortUrl: string | null = null;
           if (useBitly && hasBitlyConfig) {

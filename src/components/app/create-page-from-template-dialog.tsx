@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -46,20 +44,46 @@ const platforms = [
     { id: 'web', name: 'Web', Icon: Globe, enabled: false },
 ];
 
+// Helper function to sanitize data for Firestore (remove undefined values)
+const sanitizeForFirestore = (obj: any): any => {
+  if (obj === null || obj === undefined) {
+    return null;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirestore);
+  }
+  
+  if (typeof obj === 'object') {
+    const sanitized: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const value = obj[key];
+        if (value !== undefined) {
+          sanitized[key] = sanitizeForFirestore(value);
+        }
+      }
+    }
+    return sanitized;
+  }
+  
+  return obj;
+};
+
 const getInitialPage = (name: string, projectId: string, workspaceId: string, brand: Brand | null, platform: string): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
     
-    const brandName = brand ? brand.name : 'Sem Marca';
-    const brandId = brand ? brand.id : '';
-    const themeColor = brand ? brand.colors.light.primary : '#000000';
-    const themeColorHover = brand ? brand.colors.light.primaryHover : '#333333';
-    const fontFamily = brand ? brand.typography.fontFamilyBody : 'Roboto';
-    const faviconUrl = brand ? brand.logos.favicon : '';
-    const loaderImageUrl = brand ? brand.logos.iconLight : '';
-    const logoUrl = brand ? brand.logos.horizontalLight : '';
+    const brandName = brand?.name ?? 'Sem Marca';
+    const brandId = brand?.id ?? '';
+    const themeColor = brand?.colors?.light?.primary ?? '#000000';
+    const themeColorHover = brand?.colors?.light?.primaryHover ?? '#333333';
+    const fontFamily = brand?.typography?.fontFamilyBody ?? 'Roboto';
+    const faviconUrl = brand?.logos?.favicon ?? '';
+    const loaderImageUrl = brand?.logos?.iconLight ?? '';
+    const logoUrl = brand?.logos?.horizontalLight ?? '';
 
     const hasBrand = !!brand;
 
-    return {
+    return sanitizeForFirestore({
       name: name,
       projectId,
       workspaceId,
@@ -108,7 +132,16 @@ const getInitialPage = (name: string, projectId: string, workspaceId: string, br
         }
       },
       components: hasBrand ? [
-        { id: '1', type: 'Header', props: { logoUrl: logoUrl }, order: 0, parentId: null, column: 0, abTestEnabled: false, abTestVariants: [] },
+        { 
+          id: '1', 
+          type: 'Header', 
+          props: { logoUrl: logoUrl }, 
+          order: 0, 
+          parentId: null, 
+          column: 0, 
+          abTestEnabled: false, 
+          abTestVariants: [] 
+        },
         { 
           id: '4', 
           type: 'Footer', 
@@ -124,7 +157,7 @@ const getInitialPage = (name: string, projectId: string, workspaceId: string, br
           abTestVariants: []
         },
       ] : [],
-    }
+    });
 };
 
 export function CreatePageFromTemplateDialog({ 
@@ -230,83 +263,104 @@ export function CreatePageFromTemplateDialog({
             if (!template) throw new Error("Template não encontrado.");
             if (!selectedBrand) throw new Error("Marca selecionada não encontrada para este template.");
             
-            const newComponents = produce(template.components, draft => {
+            const newComponents = produce(template.components || [], draft => {
                 const idMap: { [oldId: string]: string } = {};
                 const generateNewId = () => `comp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                
                 const traverseAndMap = (components: any[]) => {
                     components.forEach(component => {
-                        const oldId = component.id;
-                        idMap[oldId] = generateNewId();
-                        if (component.children) traverseAndMap(component.children);
+                        if (component && component.id) {
+                            const oldId = component.id;
+                            idMap[oldId] = generateNewId();
+                            if (component.children && Array.isArray(component.children)) {
+                                traverseAndMap(component.children);
+                            }
+                        }
                     });
                 };
+                
                 traverseAndMap(draft);
+                
                 const traverseAndReplace = (components: any[]) => {
                     components.forEach(component => {
-                        component.id = idMap[component.id];
-                        if (component.parentId) component.parentId = idMap[component.parentId];
-                        if (component.children) traverseAndReplace(component.children);
+                        if (component && component.id) {
+                            component.id = idMap[component.id];
+                            if (component.parentId && idMap[component.parentId]) {
+                                component.parentId = idMap[component.parentId];
+                            }
+                            if (component.children && Array.isArray(component.children)) {
+                                traverseAndReplace(component.children);
+                            }
+                        }
                     });
                 }
+                
                 traverseAndReplace(draft);
             });
 
-            newPageData = {
+            // Create the page data with safe defaults
+            newPageData = sanitizeForFirestore({
                 name: newPageName,
                 workspaceId: activeWorkspace.id,
                 brandId: selectedBrand.id,
                 brandName: selectedBrand.name,
                 platform: selectedPlatform,
                 projectId: selectedProjectId,
-                tags: [],
-                styles: selectedBrand ? {
-                    ...template.styles,
-                    themeColor: selectedBrand.colors.light.primary,
-                    themeColorHover: selectedBrand.colors.light.primaryHover,
-                    fontFamily: selectedBrand.typography.fontFamilyBody,
-                } : template.styles,
+                tags: template.tags || [],
+                styles: {
+                    backgroundColor: template.styles?.backgroundColor ?? '#FFFFFF',
+                    backgroundImage: template.styles?.backgroundImage ?? '',
+                    themeColor: selectedBrand?.colors?.light?.primary ?? template.styles?.themeColor ?? '#000000',
+                    themeColorHover: selectedBrand?.colors?.light?.primaryHover ?? template.styles?.themeColorHover ?? '#333333',
+                    fontFamily: selectedBrand?.typography?.fontFamilyBody ?? template.styles?.fontFamily ?? 'Roboto',
+                    customCss: template.styles?.customCss ?? '',
+                },
                 components: newComponents,
-                cookieBanner: template.cookieBanner,
-                meta: {
-                    ...template.meta,
-                    title: `${selectedBrand.name} - ${newPageName}`,
-                    faviconUrl: selectedBrand.logos.favicon,
-                    loaderImageUrl: selectedBrand.logos.iconLight,
-                    redirectUrl: 'https://www.google.com',
-                    dataExtensionKey: 'CHANGE-ME',
-                    tracking: {
-                      ga4: { enabled: false, id: '' },
-                      meta: { enabled: false, id: '' },
-                      linkedin: { enabled: false, id: '' }
-                    },
-                }
-            };
-
-            // Ensure cookieBanner has all required properties to avoid Firestore errors
-            if (!newPageData.cookieBanner) {
-                newPageData.cookieBanner = {
-                    enabled: false,
-                    position: 'bottom',
-                    layout: 'bar',
-                    title: '',
-                    description: '',
-                    acceptButtonText: 'Aceitar',
-                    declineButtonText: 'Recusar',
-                    preferencesButtonText: 'Preferências',
-                    privacyPolicyLink: '',
-                    categories: [],
+                cookieBanner: {
+                    enabled: template.cookieBanner?.enabled ?? false,
+                    position: template.cookieBanner?.position ?? 'bottom',
+                    layout: template.cookieBanner?.layout ?? 'bar',
+                    title: template.cookieBanner?.title ?? '',
+                    description: template.cookieBanner?.description ?? '',
+                    acceptButtonText: template.cookieBanner?.acceptButtonText ?? 'Aceitar',
+                    declineButtonText: template.cookieBanner?.declineButtonText ?? 'Recusar',
+                    preferencesButtonText: template.cookieBanner?.preferencesButtonText ?? 'Preferências',
+                    privacyPolicyLink: template.cookieBanner?.privacyPolicyLink ?? '',
+                    categories: template.cookieBanner?.categories ?? [],
                     styles: {
-                        backgroundColor: '',
-                        textColor: '',
-                        buttonBackgroundColor: '',
-                        buttonTextColor: ''
+                        backgroundColor: template.cookieBanner?.styles?.backgroundColor ?? '',
+                        textColor: template.cookieBanner?.styles?.textColor ?? '',
+                        buttonBackgroundColor: template.cookieBanner?.styles?.buttonBackgroundColor ?? '',
+                        buttonTextColor: template.cookieBanner?.styles?.buttonTextColor ?? ''
                     }
-                };
-            } else {
-                newPageData.cookieBanner.styles = newPageData.cookieBanner.styles || { backgroundColor: '', textColor: '', buttonBackgroundColor: '', buttonTextColor: '' };
-                newPageData.cookieBanner.categories = newPageData.cookieBanner.categories || [];
-            }
+                },
+                meta: {
+                    title: `${selectedBrand.name} - ${newPageName}`,
+                    faviconUrl: selectedBrand?.logos?.favicon ?? template.meta?.faviconUrl ?? '',
+                    loaderImageUrl: selectedBrand?.logos?.iconLight ?? template.meta?.loaderImageUrl ?? '',
+                    redirectUrl: template.meta?.redirectUrl ?? 'https://www.google.com',
+                    dataExtensionKey: template.meta?.dataExtensionKey ?? 'CHANGE-ME',
+                    metaDescription: template.meta?.metaDescription ?? `Página de campanha para ${newPageName}.`,
+                    metaKeywords: template.meta?.metaKeywords ?? `campanha, ${newPageName.toLowerCase()}`,
+                    tracking: {
+                        ga4: { 
+                            enabled: template.meta?.tracking?.ga4?.enabled ?? false, 
+                            id: template.meta?.tracking?.ga4?.id ?? '' 
+                        },
+                        meta: { 
+                            enabled: template.meta?.tracking?.meta?.enabled ?? false, 
+                            id: template.meta?.tracking?.meta?.id ?? '' 
+                        },
+                        linkedin: { 
+                            enabled: template.meta?.tracking?.linkedin?.enabled ?? false, 
+                            id: template.meta?.tracking?.linkedin?.id ?? '' 
+                        }
+                    }
+                }
+            });
         }
+        
+        console.log('Creating page with data:', JSON.stringify(newPageData, null, 2));
         
         const newPageId = await addPage(newPageData, user.uid);
         toast({ title: "Página criada!", description: `A página "${newPageName}" foi criada com sucesso.` });
@@ -494,9 +548,3 @@ export function CreatePageFromTemplateDialog({
     </Dialog>
   );
 }
-
-    
-
-    
-
-

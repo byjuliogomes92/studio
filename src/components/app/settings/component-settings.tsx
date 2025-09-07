@@ -145,7 +145,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
         if (!draft.props[prop]) {
             draft.props[prop] = {};
         }
-        draft.props[prop][subProp] = value;
+        (draft.props[prop] as any)[subProp] = value;
     });
     onComponentChange(component.id, updatedComponent);
   };
@@ -185,9 +185,9 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
             draft.props.abTestVariants[variantIndex] = {};
         }
         if (!draft.props.abTestVariants[variantIndex][prop]) {
-            draft.props.abTestVariants[variantIndex][prop] = {};
+            (draft.props.abTestVariants[variantIndex] as any)[prop] = {};
         }
-        draft.props.abTestVariants[variantIndex][prop][subProp] = value;
+        (draft.props.abTestVariants[variantIndex] as any)[prop][subProp] = value;
     });
     onComponentChange(component.id, updatedComponent);
   };
@@ -214,7 +214,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
             <AccordionItem value="general" className="border-b-0">
                 <AccordionTrigger className="text-sm font-medium py-0">Configurações Gerais</AccordionTrigger>
                 <AccordionContent className="pt-4">
-                    {renderComponentSettings(component, handlePropChange, onSubPropChange, projectPages, pageState)}
+                    {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages, pageState)}
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="responsive" className="border-b-0">
@@ -225,8 +225,8 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
                 <AccordionContent className="pt-4">
                     <ResponsiveSettings 
                         component={component} 
-                        onSubPropChange={onSubPropChange}
-                        onPropChange={onPropChange}
+                        onSubPropChange={handleSubPropChange}
+                        onPropChange={handlePropChange}
                     />
                 </AccordionContent>
             </AccordionItem>
@@ -236,7 +236,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
                     Espaçamento
                 </AccordionTrigger>
                  <AccordionContent className="pt-4">
-                    <SpacingSettings props={component.props} onPropChange={onPropChange} />
+                    <SpacingSettings props={component.props} onPropChange={handlePropChange} />
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="animation" className="border-b-0">
@@ -245,7 +245,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
                     Animações
                 </AccordionTrigger>
                  <AccordionContent className="pt-4">
-                    <AnimationSettings props={component.props} onPropChange={onPropChange} />
+                    <AnimationSettings props={component.props} onPropChange={handlePropChange} />
                 </AccordionContent>
             </AccordionItem>
              <AccordionItem value="ab-test" className="border-b-0">

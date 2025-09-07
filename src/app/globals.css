@@ -48,6 +48,10 @@
     --primary: 203 28% 45%; /* #527C93 */
     --primary-foreground: 45 44% 91%;
 
+    --primary-gradient-start: #FFC06F;
+    --primary-gradient-mid: #FE631C;
+    --primary-gradient-end: #FFC06F;
+
     --secondary: 203 28% 35%; /* A darker shade for secondary elements */
     --secondary-foreground: 45 44% 91%;
  

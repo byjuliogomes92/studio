@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -10,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "relative bg-primary text-primary-foreground hover:opacity-90 overflow-hidden",
+          "relative bg-primary text-primary-foreground overflow-hidden",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
@@ -44,7 +45,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     
-    // Gradient and grain effect is applied only to the 'default' variant, which is used for primary platform buttons.
     if (variant === "default") {
       return (
         <Comp

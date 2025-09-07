@@ -25,6 +25,7 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { addPageComment } from "@/lib/firestore";
 import { useAuth } from "@/hooks/use-auth";
+import { CommentPin } from "./comment-pin";
 
 interface MainPanelProps {
   pageState: CloudPage;
@@ -36,6 +37,7 @@ interface MainPanelProps {
   isSelectionMode: boolean;
   setIsSelectionMode: Dispatch<SetStateAction<boolean>>;
   onRefreshComments: () => void;
+  comments: PageComment[];
 }
 
 interface Device {
@@ -137,7 +139,7 @@ function AmpscriptIcon(props: React.SVGProps<SVGSVGElement>) {
     );
 }
 
-export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, isCommentMode, setIsCommentMode, isSelectionMode, setIsSelectionMode, onRefreshComments }: MainPanelProps) {
+export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, isCommentMode, setIsCommentMode, isSelectionMode, setIsSelectionMode, onRefreshComments, comments }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
@@ -454,8 +456,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                           "border-8 border-background shadow-2xl rounded-lg bg-white w-full h-full"
                       )}
                   />
-                  {pageState.components.map(comment => (
-                        <CommentPin key={comment.id} comment={comment as any} onUpdate={onRefreshComments} />
+                  {comments.map(comment => (
+                        <CommentPin key={comment.id} comment={comment} onUpdate={onRefreshComments} />
                     ))}
               </div>
             </div>

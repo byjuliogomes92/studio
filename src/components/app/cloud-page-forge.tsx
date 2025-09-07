@@ -29,7 +29,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { EditCodeDialog } from "./edit-code-dialog";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { CommentPin } from "./comment-pin";
 
 
 interface CloudPageForgeProps {
@@ -753,6 +752,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     isSelectionMode={isSelectionMode}
                     setIsSelectionMode={setIsSelectionMode}
                     onRefreshComments={fetchComments}
+                    comments={comments}
                 />
             </ResizablePanel>
         </ResizablePanelGroup>

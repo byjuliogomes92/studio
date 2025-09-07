@@ -19,11 +19,11 @@ interface ComponentSettingsProps {
   pageState: CloudPage;
 }
 
-function TextStyleSettings({ props, onPropChange, pageState }: { props: any, onPropChange: (prop: string, value: any) => void, pageState: CloudPage }) {
+function TextStyleSettings({ props, onPropChange, onSubPropChange, pageState }: { props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void, pageState: CloudPage }) {
   const styles = props.styles || {};
   
   const handleStyleChange = (prop: string, value: any) => {
-    onPropChange('styles', { ...styles, [prop]: value });
+    onSubPropChange('styles', prop, value);
   };
 
   return (
@@ -166,7 +166,7 @@ export function TextSettings({ component, onPropChange, onSubPropChange, pageSta
               </div>
           </div>
           <Separator />
-          <TextStyleSettings props={component.props} onPropChange={onPropChange} pageState={pageState} onSubPropChange={onSubPropChange} />
+          <TextStyleSettings props={component.props} onPropChange={onPropChange} onSubPropChange={onSubPropChange} pageState={pageState} />
         </div>
       );
 }

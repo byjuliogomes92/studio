@@ -3,12 +3,12 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Brand, Project, CloudPage, Template, PageView, FormSubmission } from "@/lib/types";
+import type { Brand, Project, CloudPage, Template, PageView, FormSubmission, PageComponent } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Plus, Trash2, X, Copy, Bell, Search, Move, MoreVertical, LayoutGrid, List, ArrowUpDown, Server, LineChart, Users, Globe, Clock, RefreshCw, Download, CheckCheck, Menu, User, LogOut, Folder, Briefcase, Target, BarChart as BarChartIcon, Smile, Code, Link, Laptop, Smartphone, Calendar as CalendarIcon, GitFork, Undo2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Logo } from "@/components/icons";
+import { Logo, LogoIcon } from "@/components/icons";
 import {
   Dialog,
   DialogContent,
@@ -646,6 +646,48 @@ function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogP
   );
 }
 
+const componentHeightMap: { [key in PageComponent['type']]?: number } = {
+    Header: 10,
+    Title: 10,
+    Subtitle: 8,
+    Paragraph: 12,
+    Image: 30,
+    Form: 25,
+    Button: 8,
+    Spacer: 5,
+    Divider: 2,
+};
+
+const renderComponentThumbnail = (component: PageComponent, allComponents: PageComponent[]) => {
+    const height = componentHeightMap[component.type] || 6;
+    const isPrimaryAction = component.type === 'Button' || component.type === 'Form';
+
+    if (component.type === 'Columns') {
+        const columns = Array.from({ length: component.props.columnCount || 2 }, (_, i) =>
+            allComponents.filter(c => c.parentId === component.id && c.column === i)
+        );
+        return (
+            <div className="flex w-full gap-1 flex-grow" style={{ flexBasis: `${height}%` }}>
+                {columns.map((col, i) => (
+                    <div key={i} className="flex flex-col gap-0.5 w-full bg-muted/50 rounded-sm p-0.5">
+                        {col.map(c => renderComponentThumbnail(c, allComponents))}
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    
+    return (
+        <div
+            key={component.id}
+            className={cn(
+                "w-full rounded-[2px]",
+                isPrimaryAction ? "bg-primary/80" : "bg-muted-foreground/30"
+            )}
+            style={{ height: `${height}px` }}
+        ></div>
+    );
+};
 
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
@@ -840,7 +882,7 @@ export function PageList({ projectId }: PageListProps) {
   if (isLoading || authLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Logo className="h-10 w-10 animate-spin text-primary" />
+        <LogoIcon className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -1181,34 +1223,8 @@ export function PageList({ projectId }: PageListProps) {
                                     className="aspect-[4/3] w-full bg-muted/50 rounded-t-lg flex flex-col items-center justify-center p-2 overflow-hidden cursor-pointer"
                                     onClick={() => handlePageClick(page.id)}
                                 >
-                                     <div className="w-full h-full border rounded-md flex flex-col p-2 gap-1.5 bg-background shadow-inner">
-                                        {/* Header */}
-                                        <div className="flex justify-between items-center mb-1">
-                                            <div className="h-2 w-5 rounded-sm bg-muted-foreground/50"></div>
-                                            <div className="flex gap-1">
-                                                <div className="h-1.5 w-4 rounded-full bg-muted"></div>
-                                                <div className="h-1.5 w-4 rounded-full bg-muted"></div>
-                                            </div>
-                                        </div>
-                                        {/* Hero */}
-                                        <div className="flex-grow flex items-center justify-center bg-primary/10 rounded-sm p-2">
-                                            <div className="w-full space-y-1">
-                                                <div className="h-2 w-2/3 rounded-full bg-primary/40"></div>
-                                                <div className="h-1.5 w-full rounded-full bg-primary/20"></div>
-                                                <div className="h-1.5 w-4/5 rounded-full bg-primary/20"></div>
-                                            </div>
-                                        </div>
-                                         {/* Form */}
-                                        <div className="flex gap-1 mt-1">
-                                            <div className="w-1/2 space-y-1">
-                                                <div className="h-2 w-full rounded-sm bg-muted"></div>
-                                                <div className="h-2 w-full rounded-sm bg-muted"></div>
-                                            </div>
-                                            <div className="w-1/2 space-y-1">
-                                                <div className="h-2 w-full rounded-sm bg-muted"></div>
-                                                <div className="h-2 w-full rounded-sm bg-muted"></div>
-                                            </div>
-                                        </div>
+                                     <div className="w-full h-full border rounded-md flex flex-col p-2 gap-0.5 bg-background shadow-inner">
+                                        {page.components.filter(c => c.parentId === null).sort((a, b) => a.order - b.order).map(c => renderComponentThumbnail(c, page.components))}
                                     </div>
                                 </div>
                                 
@@ -1350,3 +1366,4 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
+

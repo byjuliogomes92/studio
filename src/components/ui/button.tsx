@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -11,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "relative bg-primary text-primary-foreground overflow-hidden",
+          "enhanced-gradient-button relative text-white overflow-hidden border-0",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
@@ -48,25 +47,58 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     if (variant === "default") {
       return (
         <Comp
-          className={cn(buttonVariants({ variant, size, className }), "group")}
+          className={cn(buttonVariants({ variant, size, className }))}
           ref={ref}
           {...props}
         >
-          {/* Base Gradient Layer */}
+          {/* Radial overlay for extra depth */}
           <span
-            className="absolute inset-0 bg-gradient-to-r from-[var(--primary-gradient-start)] via-[var(--primary-gradient-mid)] to-[var(--primary-gradient-end)]"
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse at center, rgba(255, 163, 102, 0.3) 0%, rgba(255, 122, 51, 0.6) 40%, rgba(255, 87, 34, 0.8) 100%)'
+            }}
           />
-          {/* Shine Effect on Hover */}
+          
+          {/* Main Shine Effect */}
           <span
-            className="absolute inset-0 block w-full h-full transform -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50 group-hover:translate-x-full transition-transform duration-500 ease-in-out"
+            className="shine-trigger-main absolute inset-0 w-full h-full"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%)',
+              transform: 'translateX(-100%)',
+              opacity: 0
+            }}
           />
-          {/* Grain Texture Layer */}
+          
+          {/* Secondary Shine Effect */}
           <span
-            className="absolute inset-0 opacity-20"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='10' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E")` }}
+            className="shine-trigger-secondary absolute inset-0 w-2/5 h-full"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+              transform: 'translateX(-150%)',
+              opacity: 0
+            }}
           />
-           {/* Content Layer */}
-          <span className="relative z-10">{props.children}</span>
+          
+          {/* Subtle texture */}
+          <span
+            className="absolute inset-0 opacity-8 mix-blend-overlay pointer-events-none"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E")` 
+            }}
+          />
+          
+          {/* Inner shadow for depth */}
+          <span
+            className="absolute inset-0 rounded-md pointer-events-none"
+            style={{
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.1)'
+            }}
+          />
+          
+          {/* Content Layer */}
+          <span className="relative z-10 font-semibold text-white drop-shadow-sm">
+            {props.children}
+          </span>
         </Comp>
       )
     }

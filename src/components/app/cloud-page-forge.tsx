@@ -283,9 +283,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     try {
       const finalPageState = produce(pageState, draft => {
           // Ensure footer is always last
-          const footer = draft.components.find(c => c.type === 'Footer');
-          if (footer) {
+          const footerIndex = draft.components.findIndex(c => c.type === 'Footer');
+          if (footerIndex > -1) {
+              const [footer] = draft.components.splice(footerIndex, 1);
               footer.order = 9999;
+              draft.components.push(footer);
           }
           // Sanitize components before saving to avoid undefined values
           draft.components.forEach(c => {
@@ -823,7 +825,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 onCodeEdit={handleCodeEdit}
                                 projectPages={projectPages}
                                 pageState={pageState}
-                                onDuplicate={onDuplicateComponent}
+                                onDuplicate={duplicateComponent}
                                 onDelete={removeComponent}
                             />
                         </div>

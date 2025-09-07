@@ -47,6 +47,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { AddToCalendarSettings } from "./add-to-calendar-settings";
 import { PopUpSettings } from "./popup-settings";
 import { ResponsiveSettings } from "./responsive-settings";
+import { Button } from "@/components/ui/button";
 
 interface ComponentSettingsProps {
   component: PageComponent;

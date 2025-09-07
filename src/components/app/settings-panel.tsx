@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowLeft, Trash2, PlusCircle, Plus, Megaphone, Library } from "lucide-react";
+import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowLeft, Trash2, PlusCircle, Plus, Megaphone, Library, ArrowUp, ArrowDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -32,7 +32,7 @@ import { AddComponentDialog } from './add-component-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { cn } from "@/lib/utils";
 import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
-import { Dialog, DialogTrigger } from "../ui/dialog";
+import { Dialog, DialogTrigger, AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/dialog";
 import { Badge } from "../ui/badge";
 import { MediaLibraryDialog } from "./media-library-dialog";
 import { getBrandsForUser, updateBrand } from "@/lib/firestore";
@@ -178,6 +178,8 @@ function ComponentItem({
   component,
   selectedComponentId,
   setSelectedComponentId,
+  moveComponent,
+  onDeleteComponent,
   isDraggable = true,
   dndAttributes,
   dndListeners,
@@ -186,6 +188,8 @@ function ComponentItem({
   component: PageComponent;
   selectedComponentId: string | null;
   setSelectedComponentId: (id: string | null) => void;
+  moveComponent: (id: string, direction: 'up' | 'down') => void;
+  onDeleteComponent: (id: string) => void;
   isDraggable?: boolean;
   dndAttributes?: any;
   dndListeners?: any;
@@ -222,6 +226,27 @@ function ComponentItem({
                   {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />}
                 </div>
             </Button>
+            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveComponent(component.id, 'up')}><ArrowUp className="h-4 w-4"/></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveComponent(component.id, 'down')}><ArrowDown className="h-4 w-4"/></Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Componente?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tem certeza que deseja excluir o componente "{component.layerName || component.type}"? Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDeleteComponent(component.id)}>Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
           </div>
           {isContainer && children && (
             <div className="pl-4 pr-1 pb-1">
@@ -594,6 +619,45 @@ export function SettingsPanel({
             });
         });
     };
+    
+     const moveComponent = (componentId: string, direction: 'up' | 'down') => {
+        setPageState(currentState => {
+            if (!currentState) return null;
+            
+            return produce(currentState, draft => {
+                const componentIndex = draft.components.findIndex(c => c.id === componentId);
+                if (componentIndex === -1) return;
+
+                const component = draft.components[componentIndex];
+                const siblings = draft.components
+                    .filter(c => c.parentId === component.parentId && c.column === component.column)
+                    .sort((a, b) => a.order - b.order);
+                
+                const currentOrderIndex = siblings.findIndex(s => s.id === componentId);
+                
+                let swapIndex = -1;
+                if (direction === 'up' && currentOrderIndex > 0) {
+                    swapIndex = currentOrderIndex - 1;
+                } else if (direction === 'down' && currentOrderIndex < siblings.length - 1) {
+                    swapIndex = currentOrderIndex + 1;
+                }
+
+                if (swapIndex !== -1) {
+                    const siblingToSwap = siblings[swapIndex];
+                    const originalOrder = component.order;
+                    
+                    const componentInDraft = draft.components.find(c => c.id === componentId);
+                    const siblingInDraft = draft.components.find(c => c.id === siblingToSwap.id);
+                    
+                    if (componentInDraft && siblingInDraft) {
+                       componentInDraft.order = siblingToSwap.order;
+                       siblingInDraft.order = originalOrder;
+                    }
+                }
+            });
+        });
+    };
+
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -688,6 +752,8 @@ export function SettingsPanel({
                     component={component}
                     selectedComponentId={selectedComponentId}
                     setSelectedComponentId={setSelectedComponentId}
+                    moveComponent={moveComponent}
+                    onDeleteComponent={onDeleteComponent}
                 >
                     {['Columns', 'Div', 'PopUp'].includes(component.type) && (
                         <div 
@@ -711,18 +777,14 @@ export function SettingsPanel({
     };
     
   
-  const rootComponents = pageState.components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type));
-  const stripeComponents = pageState.components.filter(c => c.type === 'Stripe' && c.parentId === null).sort((a,b) => a.order - b.order);
-  const floatingComponents = pageState.components.filter(c => ['FloatingImage', 'FloatingButton', 'WhatsApp'].includes(c.type) && c.parentId === null).sort((a, b) => a.order - b.order);
-  const footerComponent = pageState.components.find(c => c.type === 'Footer');
-  const popupComponents = pageState.components.filter(c => c.type === 'PopUp' && c.parentId === null).sort((a, b) => a.order - b.order);
-  
-    const toDatetimeLocal = (date: any) => {
-        if (!date) return '';
-        const d = date.toDate ? date.toDate() : new Date(date);
-        const pad = (num: number) => num.toString().padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
+  const rootComponents = pageState.components.filter(c => c.parentId === null);
+
+  const toDatetimeLocal = (date: any) => {
+    if (!date) return '';
+    const d = date.toDate ? date.toDate() : new Date(date);
+    const pad = (num: number) => num.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
 
     return (
     <div className="flex flex-col h-full bg-card border-r w-full">
@@ -827,22 +889,10 @@ export function SettingsPanel({
                       <AccordionTrigger className="p-4 text-sm font-medium">
                          <div className="flex items-center gap-2">
                           <LayoutGrid className="h-4 w-4" />
-                          <span>Componentes</span>
+                          <span>Camadas</span>
                          </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4 pt-2 px-4">
-                          <div className="space-y-2">
-                              {stripeComponents.map((component, index) => (
-                                  <ComponentItem
-                                      key={component.id}
-                                      component={component}
-                                      selectedComponentId={selectedComponentId}
-                                      setSelectedComponentId={setSelectedComponentId}
-                                      isDraggable={false} // Stripe is not draggable
-                                  />
-                              ))}
-                              {stripeComponents.length > 0 && <Separator />}
-                          </div>
                            <DndContext 
                             sensors={sensors}
                             collisionDetection={closestCenter}
@@ -852,50 +902,6 @@ export function SettingsPanel({
                                 {renderComponentsRecursive(null)}
                             </Dropzone>
                            </DndContext>
-      
-                          {floatingComponents.length > 0 && (
-                              <div className="pt-2 mt-2 border-t">
-                                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                                      <Hand className="h-4 w-4" />
-                                      Elementos Flutuantes
-                                  </h4>
-                                  <div className="space-y-2">
-                                      {floatingComponents.map((component, index) => (
-                                           <ComponentItem
-                                              key={component.id}
-                                              component={component}
-                                              selectedComponentId={selectedComponentId}
-                                              setSelectedComponentId={setSelectedComponentId}
-                                              isDraggable={false}
-                                          />
-                                      ))}
-                                  </div>
-                              </div>
-                          )}
-                          
-                           {popupComponents.length > 0 && (
-                              <div className="pt-2 mt-2 border-t">
-                                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                                      <Megaphone className="h-4 w-4" />
-                                      Pop-ups da Página
-                                  </h4>
-                                  <div className="space-y-2">
-                                     {renderComponentsRecursive(null, 1)}
-                                  </div>
-                              </div>
-                          )}
-      
-                           {footerComponent && (
-                              <div className="pt-2 mt-2 border-t">
-                                  <ComponentItem
-                                      key={footerComponent.id}
-                                      component={footerComponent}
-                                      selectedComponentId={selectedComponentId}
-                                      setSelectedComponentId={setSelectedComponentId}
-                                      isDraggable={false} // Footer is not draggable
-                                  />
-                              </div>
-                          )}
                       </AccordionContent>
                     </AccordionItem>
 
@@ -917,17 +923,17 @@ export function SettingsPanel({
                            </Select>
                          </div>
                         <div className="space-y-2">
-                           <ColorInput label="Cor de Fundo da Página" value={pageState.styles.backgroundColor} onChange={(value) => handleStyleChange('backgroundColor', value)} brand={activeBrand}/>
+                           <ColorInput label="Cor de Fundo da Página" value={pageState.styles.backgroundColor || ''} onChange={(value) => handleStyleChange('backgroundColor', value)} brand={activeBrand}/>
                         </div>
                         <div className="space-y-2">
-                           <ImageInput label="URL da Imagem de Fundo" value={pageState.styles.backgroundImage} onPropChange={(prop, value) => handleStyleChange(prop as any, value)} propName="backgroundImage" tooltipText="URL para a imagem de fundo da página."/>
+                           <ImageInput label="URL da Imagem de Fundo" value={pageState.styles.backgroundImage || ''} onPropChange={(prop, value) => handleStyleChange(prop as any, value)} propName="backgroundImage" tooltipText="URL para a imagem de fundo da página."/>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-2">
-                              <ColorInput label="Cor do Tema" value={pageState.styles.themeColor} onChange={(value) => handleStyleChange('themeColor', value)} brand={activeBrand} tooltip="Define a cor principal para botões e outros elementos."/>
+                              <ColorInput label="Cor do Tema" value={pageState.styles.themeColor || ''} onChange={(value) => handleStyleChange('themeColor', value)} brand={activeBrand} tooltip="Define a cor principal para botões e outros elementos."/>
                            </div>
                            <div className="space-y-2">
-                             <ColorInput label="Cor do Tema (Hover)" value={pageState.styles.themeColorHover} onChange={(value) => handleStyleChange('themeColorHover', value)} brand={activeBrand} tooltip="Cor ao passar o mouse sobre botões."/>
+                             <ColorInput label="Cor do Tema (Hover)" value={pageState.styles.themeColorHover || ''} onChange={(value) => handleStyleChange('themeColorHover', value)} brand={activeBrand} tooltip="Cor ao passar o mouse sobre botões."/>
                            </div>
                         </div>
                         <Separator />
@@ -952,23 +958,23 @@ export function SettingsPanel({
                             <div className="grid grid-cols-2 gap-4 pt-2">
                                 <div className="space-y-2">
                                     <Label className="text-xs">Largura</Label>
-                                    <Input value={pageState.styles.scrollbar.width} onChange={e => handleScrollbarStyleChange('width', e.target.value)} />
+                                    <Input value={pageState.styles.scrollbar.width || ''} onChange={e => handleScrollbarStyleChange('width', e.target.value)} />
                                 </div>
                                  <div className="space-y-2">
                                     <Label className="text-xs">Borda do Polegar</Label>
-                                    <Input value={pageState.styles.scrollbar.thumbBorderRadius} onChange={e => handleScrollbarStyleChange('thumbBorderRadius', e.target.value)} />
+                                    <Input value={pageState.styles.scrollbar.thumbBorderRadius || ''} onChange={e => handleScrollbarStyleChange('thumbBorderRadius', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <ColorInput label="Cor da Trilha" value={pageState.styles.scrollbar.trackColor} onChange={v => handleScrollbarStyleChange('trackColor', v)} />
+                                    <ColorInput label="Cor da Trilha" value={pageState.styles.scrollbar.trackColor || ''} onChange={v => handleScrollbarStyleChange('trackColor', v)} />
                                 </div>
                                  <div className="space-y-2">
-                                    <ColorInput label="Cor do Polegar" value={pageState.styles.scrollbar.thumbColor} onChange={v => handleScrollbarStyleChange('thumbColor', v)} />
+                                    <ColorInput label="Cor do Polegar" value={pageState.styles.scrollbar.thumbColor || ''} onChange={v => handleScrollbarStyleChange('thumbColor', v)} />
                                 </div>
                             </div>
                         )}
                         <div className="space-y-2">
                            <Label htmlFor="custom-css">CSS Customizado</Label>
-                           <Textarea id="custom-css" value={pageState.styles.customCss} onChange={(e) => handleStyleChange('customCss', e.target.value)} rows={5} placeholder=".minha-classe { color: red; }" />
+                           <Textarea id="custom-css" value={pageState.styles.customCss || ''} onChange={(e) => handleStyleChange('customCss', e.target.value)} rows={5} placeholder=".minha-classe { color: red; }" />
                         </div>
                       </AccordionContent>
                     </AccordionItem>
@@ -983,21 +989,21 @@ export function SettingsPanel({
                        <AccordionContent className="space-y-4 pt-2 px-4">
                          <div className="space-y-2">
                             <Label htmlFor="meta-title">Título da Aba do Navegador</Label>
-                            <Input id="meta-title" value={pageState.meta.title} onChange={e => handleMetaChange('title', e.target.value)} />
+                            <Input id="meta-title" value={pageState.meta.title || ''} onChange={e => handleMetaChange('title', e.target.value)} />
                          </div>
                           <div className="space-y-2">
                             <Label htmlFor="meta-description">Descrição da Página (para buscadores)</Label>
-                            <Textarea id="meta-description" value={pageState.meta.metaDescription} onChange={e => handleMetaChange('metaDescription', e.target.value)} rows={3} />
+                            <Textarea id="meta-description" value={pageState.meta.metaDescription || ''} onChange={e => handleMetaChange('metaDescription', e.target.value)} rows={3} />
                          </div>
                           <div className="space-y-2">
                             <Label htmlFor="meta-keywords">Palavras-chave (separadas por vírgula)</Label>
-                            <Input id="meta-keywords" value={pageState.meta.metaKeywords} onChange={e => handleMetaChange('metaKeywords', e.target.value)} />
+                            <Input id="meta-keywords" value={pageState.meta.metaKeywords || ''} onChange={e => handleMetaChange('metaKeywords', e.target.value)} />
                          </div>
                          <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-2">
                               <Label>Favicon</Label>
                               <div className="flex items-center gap-2">
-                                 <Input value={pageState.meta.faviconUrl} onChange={e => handleMetaChange('faviconUrl', e.target.value)} />
+                                 <Input value={pageState.meta.faviconUrl || ''} onChange={e => handleMetaChange('faviconUrl', e.target.value)} />
                                   <MediaLibraryDialog onSelectImage={(url) => handleMetaChange('faviconUrl', url)}>
                                        <Button variant="outline" size="icon"><Library className="h-4 w-4"/></Button>
                                   </MediaLibraryDialog>
@@ -1171,25 +1177,25 @@ export function SettingsPanel({
 
                                <div className="space-y-2">
                                    <Label htmlFor="cookie-title">Título</Label>
-                                   <Input id="cookie-title" value={pageState.cookieBanner.title} onChange={e => handleCookieBannerChange('title', e.target.value)} />
+                                   <Input id="cookie-title" value={pageState.cookieBanner.title || ''} onChange={e => handleCookieBannerChange('title', e.target.value)} />
                                </div>
                                <div className="space-y-2">
                                    <Label htmlFor="cookie-description">Descrição</Label>
-                                   <Textarea id="cookie-description" value={pageState.cookieBanner.description} onChange={e => handleCookieBannerChange('description', e.target.value)} rows={4} />
+                                   <Textarea id="cookie-description" value={pageState.cookieBanner.description || ''} onChange={e => handleCookieBannerChange('description', e.target.value)} rows={4} />
                                </div>
                                <div className="space-y-2">
                                    <Label htmlFor="cookie-privacy-link">Link da Política de Privacidade</Label>
-                                   <Input id="cookie-privacy-link" value={pageState.cookieBanner.privacyPolicyLink} onChange={e => handleCookieBannerChange('privacyPolicyLink', e.target.value)} />
+                                   <Input id="cookie-privacy-link" value={pageState.cookieBanner.privacyPolicyLink || ''} onChange={e => handleCookieBannerChange('privacyPolicyLink', e.target.value)} />
                                </div>
 
                                <div className="grid grid-cols-2 gap-4">
                                    <div className="space-y-2">
                                       <Label>Cor de Fundo</Label>
-                                      <ColorInput value={pageState.cookieBanner.styles?.backgroundColor} onChange={v => handleCookieBannerChange('styles.backgroundColor', v)} />
+                                      <ColorInput value={pageState.cookieBanner.styles?.backgroundColor || ''} onChange={v => handleCookieBannerChange('styles.backgroundColor', v)} />
                                    </div>
                                     <div className="space-y-2">
                                       <Label>Cor do Texto</Label>
-                                      <ColorInput value={pageState.cookieBanner.styles?.textColor} onChange={v => handleCookieBannerChange('styles.textColor', v)} />
+                                      <ColorInput value={pageState.cookieBanner.styles?.textColor || ''} onChange={v => handleCookieBannerChange('styles.textColor', v)} />
                                    </div>
                                </div>
 
@@ -1198,21 +1204,21 @@ export function SettingsPanel({
                                 <div className="grid grid-cols-2 gap-4">
                                      <div className="space-y-2">
                                         <Label>Texto (Aceitar)</Label>
-                                        <Input value={pageState.cookieBanner.acceptButtonText} onChange={e => handleCookieBannerChange('acceptButtonText', e.target.value)} />
+                                        <Input value={pageState.cookieBanner.acceptButtonText || ''} onChange={e => handleCookieBannerChange('acceptButtonText', e.target.value)} />
                                      </div>
                                       <div className="space-y-2">
                                         <Label>Texto (Recusar)</Label>
-                                        <Input value={pageState.cookieBanner.declineButtonText} onChange={e => handleCookieBannerChange('declineButtonText', e.target.value)} />
+                                        <Input value={pageState.cookieBanner.declineButtonText || ''} onChange={e => handleCookieBannerChange('declineButtonText', e.target.value)} />
                                      </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                      <div className="space-y-2">
                                         <Label>Cor de Fundo (Botão)</Label>
-                                        <ColorInput value={pageState.cookieBanner.styles?.buttonBackgroundColor} onChange={v => handleCookieBannerChange('styles.buttonBackgroundColor', v)} />
+                                        <ColorInput value={pageState.cookieBanner.styles?.buttonBackgroundColor || ''} onChange={v => handleCookieBannerChange('styles.buttonBackgroundColor', v)} />
                                      </div>
                                       <div className="space-y-2">
                                         <Label>Cor do Texto (Botão)</Label>
-                                        <ColorInput value={pageState.cookieBanner.styles?.buttonTextColor} onChange={v => handleCookieBannerChange('styles.buttonTextColor', v)} />
+                                        <ColorInput value={pageState.cookieBanner.styles?.buttonTextColor || ''} onChange={v => handleCookieBannerChange('styles.buttonTextColor', v)} />
                                      </div>
                                 </div>
 
@@ -1229,7 +1235,7 @@ export function SettingsPanel({
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div className="space-y-1">
                                                     <Label className="text-xs">Nome da Categoria</Label>
-                                                    <Input value={category.name} onChange={e => handleCookieCategoryChange(index, 'name', e.target.value)} disabled={category.required}/>
+                                                    <Input value={category.name || ''} onChange={e => handleCookieCategoryChange(index, 'name', e.target.value)} disabled={category.required}/>
                                                 </div>
                                                 <div className="flex items-end pb-1">
                                                     <div className="flex items-center space-x-2">
@@ -1240,11 +1246,11 @@ export function SettingsPanel({
                                             </div>
                                             <div className="space-y-1">
                                                 <Label className="text-xs">Descrição</Label>
-                                                <Textarea value={category.description} onChange={e => handleCookieCategoryChange(index, 'description', e.target.value)} rows={2} />
+                                                <Textarea value={category.description || ''} onChange={e => handleCookieCategoryChange(index, 'description', e.target.value)} rows={2} />
                                             </div>
                                             <div className="space-y-1">
                                                 <Label className="text-xs">Scripts (cole a tag aqui)</Label>
-                                                <Textarea value={category.scripts} onChange={e => handleCookieCategoryChange(index, 'scripts', e.target.value)} rows={4} className="font-mono text-xs"/>
+                                                <Textarea value={category.scripts || ''} onChange={e => handleCookieCategoryChange(index, 'scripts', e.target.value)} rows={4} className="font-mono text-xs"/>
                                             </div>
                                         </div>
                                     ))}

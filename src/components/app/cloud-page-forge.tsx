@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand, PageComment } from "@/lib/types";
+import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand, PageComment, EditorMode } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
@@ -108,12 +108,10 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // State for comments
-  const [isCommentMode, setIsCommentMode] = useState(false);
-  const [showComments, setShowComments] = useState(true);
+  // State for editor modes
+  const [editorMode, setEditorMode] = useState<EditorMode>('none');
   const [comments, setComments] = useState<PageComment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
 
   const hasUnsavedChanges = JSON.stringify(pageState) !== JSON.stringify(savedPageState);
@@ -236,7 +234,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       }
       // Escape key to exit comment mode
       if (event.key === 'Escape') {
-          setIsCommentMode(false);
+          setEditorMode('none');
       }
     };
 
@@ -576,6 +574,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
         }
     }
   };
+  
+  const handleModeToggle = (mode: EditorMode) => {
+    setEditorMode(prevMode => (prevMode === mode ? 'none' : mode));
+  };
+
 
   if (isLoading || authLoading || !pageState) {
     return (
@@ -602,10 +605,10 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant={isCommentMode ? "secondary" : "outline"} size="icon" onClick={() => setIsCommentMode(!isCommentMode)} aria-label="Modo de Comentário">
+            <Button variant={editorMode === 'comment' ? "secondary" : "outline"} size="icon" onClick={() => handleModeToggle('comment')} aria-label="Modo de Comentário">
                 <MessageSquare className="h-5 w-5" />
             </Button>
-            <Button variant={isSelectionMode ? "secondary" : "outline"} size="icon" onClick={() => setIsSelectionMode(!isSelectionMode)} aria-label="Modo de Seleção">
+            <Button variant={editorMode === 'selection' ? "secondary" : "outline"} size="icon" onClick={() => handleModeToggle('selection')} aria-label="Modo de Seleção">
                 <Hand className="h-5 w-5"/>
             </Button>
             <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} variant="secondary">
@@ -746,13 +749,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     pageState={pageState} 
                     setPageState={setPageState}
                     onDataExtensionKeyChange={handleDataExtensionKeyChange}
-                    onSelectComponent={setSelectedComponentId}
-                    isCommentMode={isCommentMode}
-                    setIsCommentMode={setIsCommentMode}
-                    isSelectionMode={isSelectionMode}
-                    setIsSelectionMode={setIsSelectionMode}
+                    editorMode={editorMode}
+                    setEditorMode={setEditorMode}
                     onRefreshComments={fetchComments}
                     comments={comments}
+                    onSelectComponent={setSelectedComponentId}
                 />
             </ResizablePanel>
         </ResizablePanelGroup>

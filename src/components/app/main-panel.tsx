@@ -18,7 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { HowToUseDialog } from "./how-to-use-dialog";
-import type { CloudPage, PageComment } from "@/lib/types";
+import type { CloudPage, PageComment, EditorMode } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "../ui/dropdown-menu";
 import { Switch } from "../ui/switch";
@@ -32,10 +32,8 @@ interface MainPanelProps {
   setPageState: Dispatch<SetStateAction<CloudPage | null>>;
   onDataExtensionKeyChange: (newKey: string) => void;
   onSelectComponent: (id: string) => void;
-  isCommentMode: boolean;
-  setIsCommentMode: Dispatch<SetStateAction<boolean>>;
-  isSelectionMode: boolean;
-  setIsSelectionMode: Dispatch<SetStateAction<boolean>>;
+  editorMode: EditorMode;
+  setEditorMode: Dispatch<SetStateAction<EditorMode>>;
   onRefreshComments: () => void;
   comments: PageComment[];
 }
@@ -139,7 +137,7 @@ function AmpscriptIcon(props: React.SVGProps<SVGSVGElement>) {
     );
 }
 
-export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, isCommentMode, setIsCommentMode, isSelectionMode, setIsSelectionMode, onRefreshComments, comments }: MainPanelProps) {
+export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, editorMode, setEditorMode, onRefreshComments, comments }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
@@ -199,7 +197,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
     } catch (error) {
         toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível adicionar o comentário.' });
     } finally {
-        setIsCommentMode(false);
+        setEditorMode('none');
     }
   }
 
@@ -208,7 +206,9 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
     if (!iframe) return;
 
     const handleIframeClick = (e: MouseEvent) => {
-        if (isCommentMode) {
+        let target = e.target as HTMLElement | null;
+
+        if (editorMode === 'comment') {
             const iframeRect = iframe.getBoundingClientRect();
             // Calculate percentage-based position
             const x = ((e.clientX - iframeRect.left) / iframeRect.width) * 100;
@@ -217,9 +217,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
             return;
         }
         
-        if (!isSelectionMode) return;
+        if (editorMode !== 'selection') return;
         
-        let target = e.target as HTMLElement | null;
         let componentId = null;
         
         while(target && target !== iframe.contentDocument?.body) {
@@ -232,7 +231,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
 
         if (componentId) {
             onSelectComponent(componentId);
-            setIsSelectionMode(false); // Turn off selection mode after selecting
+            setEditorMode('none'); // Turn off selection mode after selecting
         }
     };
     
@@ -303,7 +302,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
         cleanupLoad();
       }
     };
-  }, [previewHtmlCode, handleInlineEdit, isSelectionMode, onSelectComponent, isCommentMode, setIsCommentMode, onRefreshComments, handleAddComment]);
+  }, [previewHtmlCode, handleInlineEdit, onSelectComponent, editorMode, setEditorMode, onRefreshComments, handleAddComment]);
 
 
   const handleOpenInNewTab = () => {
@@ -443,8 +442,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                 ref={iframeWrapperRef}
                 className={cn(
                     "h-full w-full flex items-start justify-center p-4 overflow-y-auto",
-                    isCommentMode && 'comment-mode-active',
-                    isSelectionMode && 'selection-mode'
+                    editorMode === 'comment' && 'comment-mode',
+                    editorMode === 'selection' && 'selection-mode'
                 )}
             >
               <div className="relative flex-shrink-0 transition-all duration-300 ease-in-out" style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : { width: '100%', height: '100%' }}>

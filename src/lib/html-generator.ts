@@ -1,6 +1,6 @@
 
 
-import type { CloudPage, PageComponent, ComponentType, Action, CookieCategory, ResponsiveProps } from './types';
+import type { CloudPage, PageComponent, ComponentType, Action, CookieCategory, ResponsiveProps, EditorMode } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
@@ -1157,15 +1157,19 @@ ${trackingScripts.head}
       overflow-x: hidden;
     }
     
-    .comment-mode-active {
-        cursor: copy;
-    }
-    .selection-mode {
+    body.selection-mode {
         cursor: pointer !important;
     }
-    .selection-mode * {
+    body.selection-mode * {
         pointer-events: none;
     }
+     body.comment-mode {
+        cursor: crosshair;
+    }
+    body.comment-mode * {
+        pointer-events: none;
+    }
+
 
     #loader {
         position: fixed;
@@ -2420,7 +2424,7 @@ ${trackingScripts.head}
 </style>
 ${clientSideScripts}
 </head>
-<body>
+<body data-editor-mode='none'>
 ${!isForPreview ? trackingScripts.body : ''}
 ${bodyContent}
 ${cookieBannerHtml}

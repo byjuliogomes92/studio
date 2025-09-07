@@ -41,6 +41,8 @@ export type UserProfileType = 'owner' | 'employee' | 'freelancer';
 
 export type PlanType = 'free' | 'starter' | 'professional' | 'enterprise';
 
+export type EditorMode = 'none' | 'selection' | 'comment';
+
 export interface Workspace {
   id: string;
   name: string;

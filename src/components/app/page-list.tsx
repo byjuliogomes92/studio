@@ -650,16 +650,15 @@ const PageThumbnail = () => (
     <div className="w-full h-full border rounded-md p-2 flex flex-col gap-2 bg-background shadow-inner">
         <svg width="100%" height="100%" viewBox="0 0 100 75" className="text-muted-foreground">
             {/* Header */}
-            <path d="M 5,8 C 10,6, 90,6, 95,8" stroke="currentColor" strokeWidth="0.5" fill="none" strokeLinecap="round" />
+            <path d="M 5,8 C 10,6, 90,6, 95,8" stroke="currentColor" strokeWidth="0.3" fill="none" strokeLinecap="round" />
             {/* Hero Image */}
-            <path d="M 5,15 C 5,13, 95,13, 95,15 L 95,45 C 95,47, 5,47, 5,45 Z" stroke="currentColor" strokeWidth="0.5" fill="currentColor" fillOpacity="0.02" />
-            <path d="M 10,20 L 90,40 M 90,20 L 10,40" stroke="currentColor" strokeWidth="0.25" fill="none" strokeLinecap="round"/>
+            <path d="M 5,15 C 5,13, 95,13, 95,15 L 95,45 C 95,47, 5,47, 5,45 Z" stroke="currentColor" strokeWidth="0.3" fill="currentColor" fillOpacity="0.05" />
+            <path d="M 10,20 L 90,40 M 90,20 L 10,40" stroke="currentColor" strokeWidth="0.2" fill="none" strokeLinecap="round"/>
             {/* Text lines */}
-            <path d="M 15,52 C 20,51, 80,51, 85,52" stroke="currentColor" strokeWidth="0.5" fill="none" strokeLinecap="round" />
-            <path d="M 15,58 C 20,57, 80,57, 85,58" stroke="currentColor" strokeWidth="0.4" fill="none" strokeLinecap="round" />
-            <path d="M 15,62 C 20,61, 70,61, 75,62" stroke="currentColor" strokeWidth="0.4" fill="none" strokeLinecap="round" />
+            <path d="M 15,55 C 20,54, 80,54, 85,55" stroke="currentColor" strokeWidth="0.3" fill="none" strokeLinecap="round" />
+            <path d="M 15,62 C 20,61, 70,61, 75,62" stroke="currentColor" strokeWidth="0.2" fill="none" strokeLinecap="round" />
             {/* Button */}
-            <path d="M 40,68 C 40,67, 60,67, 60,68 L 60,70 C 60,71, 40,71, 40,70 Z" stroke="hsl(var(--primary))" strokeWidth="0.5" fill="hsl(var(--primary))" fillOpacity="0.1" />
+            <path d="M 40,68 C 40,67, 60,67, 60,68 L 60,70 C 60,71, 40,71, 40,70 Z" stroke="hsl(var(--primary))" strokeWidth="0.3" fill="hsl(var(--primary))" fillOpacity="0.08" />
         </svg>
     </div>
 );

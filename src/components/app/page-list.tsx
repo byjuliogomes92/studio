@@ -667,7 +667,7 @@ const renderComponentThumbnail = (component: PageComponent, allComponents: PageC
             allComponents.filter(c => c.parentId === component.id && c.column === i)
         );
         return (
-            <div className="flex w-full gap-1 flex-grow" style={{ flexBasis: `${height}%` }}>
+            <div key={component.id} className="flex w-full gap-1 flex-grow" style={{ flexBasis: `${height}%` }}>
                 {columns.map((col, i) => (
                     <div key={i} className="flex flex-col gap-0.5 w-full bg-muted/50 rounded-sm p-0.5">
                         {col.map(c => renderComponentThumbnail(c, allComponents))}
@@ -1366,4 +1366,3 @@ export function PageList({ projectId }: PageListProps) {
     </>
   );
 }
-

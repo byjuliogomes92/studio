@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { Logo } from "@/components/icons";
+import { LogoIcon, Logo } from "@/components/icons";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -104,7 +104,7 @@ export default function LoginPage() {
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
-            <Logo className="mx-auto h-10 w-10 mb-4" />
+            <Logo className="mx-auto h-auto mb-4" />
             <h1 className="text-3xl font-bold">Login</h1>
             <p className="text-balance text-muted-foreground">
               Entre com seu email e senha para acessar seus projetos

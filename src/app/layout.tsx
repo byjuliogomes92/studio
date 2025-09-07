@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/use-auth';
 import { AppFooter } from '@/components/app/app-footer';
 import { CommandPalette } from '@/components/app/command-palette';
+import { ThemeProvider } from 'next-themes';
+
 
 export const metadata: Metadata = {
   title: {
@@ -23,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <meta httpEquiv="Content-Language" content="pt-br" />
         <meta name="robots" content="index, follow" />
@@ -32,14 +34,21 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen">
-        <AuthProvider>
-            <div className="flex-grow flex flex-col">
-              <main className="flex-grow">{children}</main>
-              <CommandPalette />
-              <Toaster />
-              <AppFooter />
-            </div>
-        </AuthProvider>
+         <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+                <div className="flex-grow flex flex-col">
+                  <main className="flex-grow">{children}</main>
+                  <CommandPalette />
+                  <Toaster />
+                  <AppFooter />
+                </div>
+            </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

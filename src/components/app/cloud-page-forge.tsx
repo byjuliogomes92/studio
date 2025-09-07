@@ -7,7 +7,7 @@ import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand, P
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
-import { Logo } from "@/components/icons";
+import { LogoIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Loader2, RotateCcw, CopyPlus, X, Settings, Info, UploadCloud, Copy, Share2, ExternalLink, MoreVertical, Code, Trash2, PanelLeftOpen, PanelLeftClose, Hand, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -605,7 +605,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   if (isLoading || authLoading || !pageState) {
     return (
        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Logo className="h-12 w-12 animate-star-pulse" />
+            <LogoIcon className="h-12 w-12 animate-star-pulse" />
        </div>
     );
   }
@@ -622,7 +622,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
           <div className="flex items-center gap-2 font-semibold">
-            <Logo className="h-6 w-6" />
+            <LogoIcon className="h-6 w-6" />
             <h1>Morfeus</h1>
           </div>
         </div>
@@ -823,7 +823,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 onCodeEdit={handleCodeEdit}
                                 projectPages={projectPages}
                                 pageState={pageState}
-                                onDuplicate={duplicateComponent}
+                                onDuplicate={onDuplicateComponent}
                                 onDelete={removeComponent}
                             />
                         </div>

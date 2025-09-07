@@ -461,41 +461,32 @@ export function SettingsPanel({
     };
   
   const handleCookieBannerChange = (prop: string, value: any) => {
-     setPageState(prev => {
+    setPageState(prev => {
         if (!prev) return null;
-        const currentBanner = prev.cookieBanner || {
-            enabled: false,
-            position: 'bottom',
-            layout: 'bar',
-            title: 'Gerencie seu consentimento de cookies',
-            description: 'Utilizamos cookies para...',
-            acceptButtonText: 'Aceitar Todos',
-            declineButtonText: 'Recusar Todos',
-            preferencesButtonText: 'Preferências',
-            categories: [],
-            styles: {
-                backgroundColor: '#222222',
-                textColor: '#FFFFFF',
-                buttonBackgroundColor: '#FFFFFF',
-                buttonTextColor: '#000000',
-            }
-        };
-
-        const path = prop.split('.');
-        if (path.length > 1) {
-            const newBanner = produce(currentBanner, (draft: any) => {
-                draft[path[0]][path[1]] = value;
-            });
-            return { ...prev, cookieBanner: newBanner };
-        }
         
-        return {
-          ...prev,
-          cookieBanner: {
-            ...currentBanner,
-            [prop]: value,
-          },
-        }
+        return produce(prev, draft => {
+            // Ensure cookieBanner object exists
+            if (!draft.cookieBanner) {
+                draft.cookieBanner = {
+                    enabled: false, position: 'bottom', layout: 'bar',
+                    title: '', description: '', acceptButtonText: '',
+                    declineButtonText: '', preferencesButtonText: '',
+                    categories: [],
+                    styles: { backgroundColor: '', textColor: '', buttonBackgroundColor: '', buttonTextColor: '' }
+                };
+            }
+
+            const path = prop.split('.');
+            if (path.length > 1) {
+                // Ensure nested object exists
+                if (!draft.cookieBanner[path[0]]) {
+                    (draft.cookieBanner as any)[path[0]] = {};
+                }
+                (draft.cookieBanner as any)[path[0]][path[1]] = value;
+            } else {
+                (draft.cookieBanner as any)[prop] = value;
+            }
+        });
     });
   };
 
@@ -1314,4 +1305,5 @@ export function SettingsPanel({
     );
 }
 
+    
     

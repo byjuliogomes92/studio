@@ -52,23 +52,23 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
       .map((component) => {
         // Pass the full pageState down to individual renderers
         const componentWithState = { ...component, pageState };
+        
+        // Use component.children if it exists, otherwise find children via parentId
+        const children = component.children || allComponents.filter(c => c.parentId === component.id);
+        const sortedChildren = children.sort((a, b) => (a.column || 0) - (b.column || 0) || a.order - b.order);
 
         let childrenHtml = '';
         if (['Columns', 'Div', 'PopUp'].includes(component.type)) {
-            const children = allComponents
-                .filter(c => c.parentId === component.id)
-                .sort((a, b) => (a.column || 0) - (b.column || 0) || a.order - b.order);
-            
             if (component.type === 'Columns') {
                 const columnCount = component.props.columnCount || 2;
                 let columnsContent = '';
                 for (let i = 0; i < columnCount; i++) {
-                    const columnComponents = children.filter(c => c.column === i);
+                    const columnComponents = sortedChildren.filter(c => c.column === i);
                     columnsContent += `<div class="column" style="${getColumnStyle(component.props.columnStyles, i)}">${renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)}</div>`;
                 }
                 childrenHtml = columnsContent;
             } else {
-                 childrenHtml = renderComponents(children, allComponents, pageState, isForPreview, hideAmpscript);
+                 childrenHtml = renderComponents(sortedChildren, allComponents, pageState, isForPreview, hideAmpscript);
             }
         }
         return renderComponent(componentWithState, pageState, isForPreview, childrenHtml, hideAmpscript);

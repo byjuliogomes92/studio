@@ -162,7 +162,7 @@ const blockList: {
         blocks: [
             { name: "Hero com Imagem de Fundo", description: "Título, subtítulo e botões sobre uma imagem de fundo.", type: 'hero-background-image', icon: LayoutTemplate },
             { name: "Hero Dividido (Img Direita)", description: "Texto e CTA à esquerda, imagem à direita.", type: 'hero-split-right', icon: LayoutTemplate },
-            { name: "Hero Dividido (Img Esquerda)", description: "Imagem à esquerda, texto e CTA à direita.", type: 'hero-split-left', icon: LayoutTemplate },
+            { name: "Hero Dividido (Img Esquerda)", description: "Texto à direita, imagem à esquerda.", type: 'hero-split-left', icon: LayoutTemplate },
             { name: "Hero com Captura de Lead", description: "Layout dividido com campo de formulário para conversão rápida.", type: 'hero-lead-capture', icon: LayoutTemplate },
         ]
     },
@@ -338,65 +338,54 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'header-minimal':
             componentsToAdd = [{ id: `header-${baseId}`, type: 'Header', props: { layout: 'logo-left-button-right', buttonText: 'Fale Conosco', buttonUrl: '#' }, order: 0, parentId: null, column: 0 }];
             break;
-        case 'hero-background-image': {
-            const parentId = `div-hero-bg-${baseId}`;
-            componentsToAdd = [
-                {
-                    id: parentId,
-                    type: 'Div',
-                    props: {
-                        styles: {
-                            isFullWidth: true,
-                            backgroundType: 'image',
-                            backgroundImageUrl: 'https://picsum.photos/1200/800',
-                            paddingTop: '8rem',
-                            paddingBottom: '8rem',
-                            paddingLeft: '2rem',
-                            paddingRight: '2rem',
-                            overlayEnabled: true,
-                            overlayColor: '#000000',
-                            overlayOpacity: 0.5,
-                        },
-                        layout: {
-                            flexDirection: 'column',
-                            verticalAlign: 'center',
-                            horizontalAlign: 'center',
-                            gap: '1rem'
-                        }
-                    },
-                    order: 0, parentId: null, column: 0
+        case 'hero-background-image':
+            componentsToAdd = [{
+                id: `div-hero-bg-${baseId}`, type: 'Div', order: 0, parentId: null, column: 0,
+                props: {
+                    styles: { isFullWidth: true, backgroundType: 'image', backgroundImageUrl: 'https://picsum.photos/1200/800', paddingTop: '8rem', paddingBottom: '8rem', paddingLeft: '2rem', paddingRight: '2rem', overlayEnabled: true, overlayColor: '#000000', overlayOpacity: 0.5 },
+                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
                 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } }, order: 0, parentId: parentId, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center' } }, order: 1, parentId: parentId, column: 0 },
-                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Chamada para Ação', href: '#' }, order: 2, parentId: parentId, column: 0 },
-            ];
+                children: [
+                    { id: `title-${baseId}`, type: 'Title', props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } }, order: 0, column: 0 },
+                    { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center' } }, order: 1, column: 0 },
+                    { id: `btn-${baseId}`, type: 'Button', props: { text: 'Chamada para Ação', href: '#' }, order: 2, column: 0 },
+                ]
+            }];
             break;
-        }
         case 'hero-split-right':
         case 'hero-split-left': {
             const isImageRight = type === 'hero-split-right';
-            const parentId = `hero-split-${baseId}`;
             const textColumn = isImageRight ? 0 : 1;
             const imageColumn = isImageRight ? 1 : 0;
-            componentsToAdd = [
-                { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Resolva um Problema Real', styles: { fontSize: '2.5rem' } }, order: 0, parentId: parentId, column: textColumn },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.' }, order: 1, parentId: parentId, column: textColumn },
-                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Saiba Mais', href: '#', align: 'left' }, order: 2, parentId: parentId, column: textColumn },
-                { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/600/500' }, order: 0, parentId: parentId, column: imageColumn },
-            ];
+            const children: PageComponent[] = [];
+
+            children[textColumn] = { id: `div-text-${baseId}`, type: 'Div', order: 0, column: textColumn,
+                props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } },
+                children: [
+                    { id: `title-${baseId}`, type: 'Title', props: { text: 'Resolva um Problema Real', styles: { fontSize: '2.5rem' } }, order: 0, column: 0 },
+                    { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.' }, order: 1, column: 0 },
+                    { id: `btn-${baseId}`, type: 'Button', props: { text: 'Saiba Mais', href: '#', align: 'left' }, order: 2, column: 0 },
+                ]
+            };
+            children[imageColumn] = { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/600/500' }, order: 0, column: imageColumn };
+
+            componentsToAdd = [{ id: `hero-split-${baseId}`, type: 'Columns', order: 0, parentId: null, column: 0, props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, children }];
             break;
         }
         case 'hero-lead-capture': {
-             const parentId = `hero-lead-${baseId}`;
-             componentsToAdd = [
-                 { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
-                 { id: `title-${baseId}`, type: 'Title', props: { text: 'Receba a Oferta Exclusiva', styles: { fontSize: '2.5rem' } }, order: 0, parentId: parentId, column: 0 },
-                 { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.' }, order: 1, parentId: parentId, column: 0 },
-                 { id: `form-${baseId}`, type: 'Form', props: { fields: { email: {enabled: true, conditional: null, prefillFromUrl: false } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' }, formAlign: 'left', buttonAlign: 'left' }, order: 2, parentId: parentId, column: 0 },
-                 { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/600/500' }, order: 0, parentId: parentId, column: 1 },
-             ];
-             break;
+            const children: PageComponent[] = [];
+            children[0] = { id: `div-text-lead-${baseId}`, type: 'Div', order: 0, column: 0,
+                props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } },
+                children: [
+                    { id: `title-${baseId}`, type: 'Title', props: { text: 'Receba a Oferta Exclusiva', styles: { fontSize: '2.5rem' } }, order: 0, column: 0 },
+                    { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.' }, order: 1, column: 0 },
+                    { id: `form-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true, conditional: null, prefillFromUrl: false } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' }, formAlign: 'left', buttonAlign: 'left' }, order: 2, column: 0 },
+                ]
+            };
+            children[1] = { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/600/500' }, order: 0, column: 1 };
+            
+            componentsToAdd = [{ id: `hero-lead-${baseId}`, type: 'Columns', props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0, children }];
+            break;
         }
         case 'product-showcase': {
             const sectionContainerId = `products-cols-${baseId}`;

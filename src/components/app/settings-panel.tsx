@@ -67,6 +67,7 @@ interface SettingsPanelProps {
   onCodeEdit: (component: PageComponent) => void;
   onDuplicateComponent: (id: string) => void;
   onDeleteComponent: (id: string) => void;
+  onAddComponentToContainer: (parentId: string | null, column: number, typeOrBlock: ComponentType | PageComponent[]) => void;
 }
 
 const componentIcons: Record<ComponentType, React.ElementType> = {
@@ -283,6 +284,7 @@ export function SettingsPanel({
   onCodeEdit,
   onDuplicateComponent,
   onDeleteComponent,
+  onAddComponentToContainer
 }: SettingsPanelProps) {
 
   const { user, activeWorkspace } = useAuth();
@@ -478,7 +480,7 @@ export function SettingsPanel({
 
             const path = prop.split('.');
             if (path.length > 1) {
-                if (!draft.cookieBanner[path[0]]) {
+                if (!(draft.cookieBanner as any)[path[0]]) {
                     (draft.cookieBanner as any)[path[0]] = {};
                 }
                 (draft.cookieBanner as any)[path[0]][path[1]] = value;
@@ -581,46 +583,6 @@ export function SettingsPanel({
     });
   };
   
-    const handleAddComponentToContainer = (parentId: string | null, column: number, typeOrBlock: ComponentType | PageComponent[]) => {
-        setPageState(prev => {
-            if (!prev) return null;
-
-            return produce(prev, draft => {
-                const addSingleComponent = (type: ComponentType) => {
-                    const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
-                    const newId = `${type}-${Date.now()}`;
-                    const newComponent: PageComponent = {
-                        id: newId,
-                        type,
-                        props: {}, // Add default props here if needed
-                        parentId,
-                        column,
-                        order: siblings.length,
-                        abTestEnabled: false,
-                        abTestVariants: []
-                    };
-                    // Simplified default props
-                    if (type === 'Columns') newComponent.props.columnCount = 2;
-                    if (type === 'Spacer') newComponent.props.height = 20;
-                    if (type === 'Button') newComponent.props.text = 'Botão';
-                    
-                    draft.components.push(newComponent);
-                    setSelectedComponentId(newId);
-                };
-
-                if (Array.isArray(typeOrBlock)) {
-                     const componentsWithContext = typeOrBlock.map((comp, index) => {
-                        const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
-                        return {...comp, parentId, column, order: siblings.length + index };
-                    });
-                    draft.components.push(...componentsWithContext);
-                } else {
-                    addSingleComponent(typeOrBlock);
-                }
-            });
-        });
-    };
-    
      const moveComponent = (componentId: string, direction: 'up' | 'down') => {
         setPageState(currentState => {
             if (!currentState) return null;
@@ -765,7 +727,7 @@ export function SettingsPanel({
                                 <Dropzone 
                                     key={`${component.id}-col-${i}`} 
                                     id={`${component.id}-${i}`}
-                                    onAddComponent={(typeOrBlock) => handleAddComponentToContainer(component.id, i, typeOrBlock)}
+                                    onAddComponent={(typeOrBlock) => onAddComponentToContainer(component.id, i, typeOrBlock)}
                                 >
                                     {renderComponentsRecursive(component.id, i)}
                                 </Dropzone>
@@ -899,7 +861,7 @@ export function SettingsPanel({
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
                           >
-                            <Dropzone id="root-dropzone-0" onAddComponent={(typeOrBlock) => handleAddComponentToContainer(null, 0, typeOrBlock)}>
+                            <Dropzone id="root-dropzone-0" onAddComponent={(typeOrBlock) => onAddComponentToContainer(null, 0, typeOrBlock)}>
                                 {renderComponentsRecursive(null)}
                             </Dropzone>
                            </DndContext>

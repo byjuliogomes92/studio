@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand, PageComment, EditorMode } from "@/lib/types";
+import type { CloudPage, PageComponent, Template, OnboardingObjectives, Brand, PageComment, EditorMode, ComponentType } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { SettingsPanel } from "./settings-panel";
 import { MainPanel } from "./main-panel";
@@ -80,7 +80,7 @@ const cleanUndefined = (obj: any): any => {
         return null;
     }
     if (Array.isArray(obj)) {
-        return obj.map(item => cleanUndefined(item));
+        return obj.map(item => cleanUndefined(item)).filter(item => item !== undefined);
     }
     if (typeof obj === 'object') {
         const newObj: { [key: string]: any } = {};
@@ -89,8 +89,6 @@ const cleanUndefined = (obj: any): any => {
                 const value = obj[key];
                 if (value !== undefined) {
                     newObj[key] = cleanUndefined(value);
-                } else {
-                    newObj[key] = null; // Convert undefined to null
                 }
             }
         }
@@ -625,6 +623,51 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     }
   }
 
+  const handleAddComponentToContainer = (parentId: string | null, column: number, typeOrBlock: ComponentType | PageComponent[]) => {
+      setPageState(prev => {
+          if (!prev) return null;
+
+          return produce(prev, draft => {
+              let lastAddedComponentId: string | null = null;
+              
+              if (Array.isArray(typeOrBlock)) {
+                  // This is a block of components
+                  const blockComponents = typeOrBlock.map((comp, index) => {
+                      const siblings = draft.components.filter(c => c.parentId === comp.parentId && c.column === comp.column);
+                      return { ...comp, order: siblings.length + index };
+                  });
+                  draft.components.push(...blockComponents);
+                  if (blockComponents.length > 0) {
+                    lastAddedComponentId = blockComponents[0].id;
+                  }
+              } else {
+                  // This is a single component
+                  const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
+                  const newId = `${typeOrBlock}-${Date.now()}`;
+                  const newComponent: PageComponent = {
+                      id: newId,
+                      type: typeOrBlock,
+                      props: {},
+                      parentId,
+                      column,
+                      order: siblings.length,
+                      abTestEnabled: false,
+                      abTestVariants: []
+                  };
+                  if (typeOrBlock === 'Columns') newComponent.props.columnCount = 2;
+                  if (typeOrBlock === 'Spacer') newComponent.props.height = 20;
+                  if (typeOrBlock === 'Button') newComponent.props.text = 'Botão';
+                  
+                  draft.components.push(newComponent);
+                  lastAddedComponentId = newId;
+              }
+
+              if (lastAddedComponentId) {
+                  setSelectedComponentId(lastAddedComponentId);
+              }
+          });
+      });
+  };
 
   if (isLoading || authLoading || !pageState) {
     return (
@@ -787,6 +830,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     onCodeEdit={handleCodeEdit}
                     onDuplicateComponent={duplicateComponent}
                     onDeleteComponent={removeComponent}
+                    onAddComponentToContainer={handleAddComponentToContainer}
                 />
             </ResizablePanel>
             <ResizableHandle withHandle />

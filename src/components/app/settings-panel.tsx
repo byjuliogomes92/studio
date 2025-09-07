@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
@@ -33,16 +34,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { cn } from "@/lib/utils";
 import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
 import { Dialog, DialogTrigger } from "../ui/dialog";
-import { 
-    AlertDialog, 
-    AlertDialogTrigger, 
-    AlertDialogContent, 
-    AlertDialogHeader, 
-    AlertDialogTitle, 
-    AlertDialogDescription, 
-    AlertDialogFooter, 
-    AlertDialogCancel, 
-    AlertDialogAction 
+import {
+    AlertDialog,
+    AlertDialogTrigger,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogCancel,
+    AlertDialogAction
 } from "../ui/alert-dialog";
 import { Badge } from "../ui/badge";
 import { MediaLibraryDialog } from "./media-library-dialog";
@@ -465,20 +466,18 @@ export function SettingsPanel({
         if (!prev) return null;
         
         return produce(prev, draft => {
-            // Ensure cookieBanner object exists
             if (!draft.cookieBanner) {
                 draft.cookieBanner = {
                     enabled: false, position: 'bottom', layout: 'bar',
-                    title: '', description: '', acceptButtonText: '',
-                    declineButtonText: '', preferencesButtonText: '',
-                    categories: [],
+                    title: '', description: '', acceptButtonText: 'Aceitar',
+                    declineButtonText: 'Recusar', preferencesButtonText: 'Preferências',
+                    privacyPolicyLink: '', categories: [],
                     styles: { backgroundColor: '', textColor: '', buttonBackgroundColor: '', buttonTextColor: '' }
                 };
             }
 
             const path = prop.split('.');
             if (path.length > 1) {
-                // Ensure nested object exists
                 if (!draft.cookieBanner[path[0]]) {
                     (draft.cookieBanner as any)[path[0]] = {};
                 }
@@ -610,11 +609,11 @@ export function SettingsPanel({
                 };
 
                 if (Array.isArray(typeOrBlock)) {
-                     const newComponents = typeOrBlock.map(comp => {
+                     const componentsWithContext = typeOrBlock.map((comp, index) => {
                         const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
-                        return {...comp, parentId, column, order: siblings.length + (comp.order || 0) };
+                        return {...comp, parentId, column, order: siblings.length + index };
                     });
-                    draft.components.push(...newComponents);
+                    draft.components.push(...componentsWithContext);
                 } else {
                     addSingleComponent(typeOrBlock);
                 }

@@ -338,53 +338,57 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'header-minimal':
             componentsToAdd = [{ id: `header-${baseId}`, type: 'Header', props: { layout: 'logo-left-button-right', buttonText: 'Fale Conosco', buttonUrl: '#' }, order: 0, parentId: null, column: 0 }];
             break;
-        case 'hero-background-image':
-            componentsToAdd = [{
-                id: `div-hero-bg-${baseId}`, type: 'Div', order: 0, parentId: null, column: 0,
-                props: {
-                    styles: { isFullWidth: true, backgroundType: 'image', backgroundImageUrl: 'https://picsum.photos/1200/800', paddingTop: '8rem', paddingBottom: '8rem', paddingLeft: '2rem', paddingRight: '2rem', overlayEnabled: true, overlayColor: '#000000', overlayOpacity: 0.5 },
-                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
+        case 'hero-background-image': {
+            const parentId = `div-hero-bg-${baseId}`;
+            componentsToAdd = [
+                {
+                    id: parentId, type: 'Div', order: 0, parentId: null, column: 0, props: {
+                        styles: { isFullWidth: true, backgroundType: 'image', backgroundImageUrl: 'https://picsum.photos/1200/800', paddingTop: '8rem', paddingBottom: '8rem', paddingLeft: '2rem', paddingRight: '2rem', overlayEnabled: true, overlayColor: '#000000', overlayOpacity: 0.5 },
+                        layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
+                    }
                 },
-                children: [
-                    { id: `title-${baseId}`, type: 'Title', props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } }, order: 0, column: 0 },
-                    { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center' } }, order: 1, column: 0 },
-                    { id: `btn-${baseId}`, type: 'Button', props: { text: 'Chamada para Ação', href: '#' }, order: 2, column: 0 },
-                ]
-            }];
+                { id: `title-${baseId}`, type: 'Title', parentId, column: 0, order: 0, props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } } },
+                { id: `para-${baseId}`, type: 'Paragraph', parentId, column: 0, order: 1, props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center' } } },
+                { id: `btn-${baseId}`, type: 'Button', parentId, column: 0, order: 2, props: { text: 'Chamada para Ação', href: '#' } },
+            ];
             break;
+        }
         case 'hero-split-right':
         case 'hero-split-left': {
+            const parentId = `hero-split-${baseId}`;
             const isImageRight = type === 'hero-split-right';
             const textColumn = isImageRight ? 0 : 1;
             const imageColumn = isImageRight ? 1 : 0;
-            const children: PageComponent[] = [];
+            const textContainerId = `div-text-${baseId}`;
 
-            children[textColumn] = { id: `div-text-${baseId}`, type: 'Div', order: 0, column: textColumn,
-                props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } },
-                children: [
-                    { id: `title-${baseId}`, type: 'Title', props: { text: 'Resolva um Problema Real', styles: { fontSize: '2.5rem' } }, order: 0, column: 0 },
-                    { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.' }, order: 1, column: 0 },
-                    { id: `btn-${baseId}`, type: 'Button', props: { text: 'Saiba Mais', href: '#', align: 'left' }, order: 2, column: 0 },
-                ]
-            };
-            children[imageColumn] = { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/600/500' }, order: 0, column: imageColumn };
-
-            componentsToAdd = [{ id: `hero-split-${baseId}`, type: 'Columns', order: 0, parentId: null, column: 0, props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, children }];
+            componentsToAdd = [
+                { id: parentId, type: 'Columns', order: 0, parentId: null, column: 0, props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } } },
+                // Text Container
+                { id: textContainerId, type: 'Div', parentId, column: textColumn, order: 0, props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } } },
+                // Image
+                { id: `img-${baseId}`, type: 'Image', parentId, column: imageColumn, order: 0, props: { src: 'https://picsum.photos/600/500' } },
+                // Children of Text Container
+                { id: `title-${baseId}`, type: 'Title', parentId: textContainerId, column: 0, order: 0, props: { text: 'Resolva um Problema Real', styles: { fontSize: '2.5rem' } } },
+                { id: `para-${baseId}`, type: 'Paragraph', parentId: textContainerId, column: 0, order: 1, props: { text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.' } },
+                { id: `btn-${baseId}`, type: 'Button', parentId: textContainerId, column: 0, order: 2, props: { text: 'Saiba Mais', href: '#', align: 'left' } },
+            ];
             break;
         }
         case 'hero-lead-capture': {
-            const children: PageComponent[] = [];
-            children[0] = { id: `div-text-lead-${baseId}`, type: 'Div', order: 0, column: 0,
-                props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } },
-                children: [
-                    { id: `title-${baseId}`, type: 'Title', props: { text: 'Receba a Oferta Exclusiva', styles: { fontSize: '2.5rem' } }, order: 0, column: 0 },
-                    { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.' }, order: 1, column: 0 },
-                    { id: `form-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true, conditional: null, prefillFromUrl: false } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' }, formAlign: 'left', buttonAlign: 'left' }, order: 2, column: 0 },
-                ]
-            };
-            children[1] = { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/600/500' }, order: 0, column: 1 };
-            
-            componentsToAdd = [{ id: `hero-lead-${baseId}`, type: 'Columns', props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0, children }];
+            const parentId = `hero-lead-${baseId}`;
+            const textContainerId = `div-text-lead-${baseId}`;
+
+            componentsToAdd = [
+                { id: parentId, type: 'Columns', props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } }, order: 0, parentId: null, column: 0 },
+                // Text and Form Container
+                { id: textContainerId, type: 'Div', parentId, column: 0, order: 0, props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } } },
+                // Image
+                { id: `img-${baseId}`, type: 'Image', parentId, column: 1, order: 0, props: { src: 'https://picsum.photos/600/500' } },
+                // Children of Text and Form Container
+                { id: `title-${baseId}`, type: 'Title', parentId: textContainerId, column: 0, order: 0, props: { text: 'Receba a Oferta Exclusiva', styles: { fontSize: '2.5rem' } } },
+                { id: `para-${baseId}`, type: 'Paragraph', parentId: textContainerId, column: 0, order: 1, props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.' } },
+                { id: `form-${baseId}`, type: 'Form', parentId: textContainerId, column: 0, order: 2, props: { fields: { email: { enabled: true, conditional: null, prefillFromUrl: false } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' }, formAlign: 'left', buttonAlign: 'left' } },
+            ];
             break;
         }
         case 'product-showcase': {
@@ -557,22 +561,22 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         }
         case 'popup-coupon': {
             const popupId = `popup-cp-${baseId}`;
+            const columnsId = `cols-${baseId}`;
+            const divId = `div-${baseId}`;
             componentsToAdd = [
                 { id: popupId, type: 'PopUp', props: { trigger: 'exit_intent', styles: { width: '600px', padding: '0', borderRadius: '1rem' } }, order: 0, parentId: null, column: 0 },
-                { 
-                    id: `cols-${baseId}`, type: 'Columns', props: { columnCount: 2, styles: { gap: '0' } }, 
-                    order: 0, parentId: popupId, column: 0 
-                },
-                { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/300/400' }, order: 0, parentId: `cols-${baseId}`, column: 0 },
-                { id: `div-${baseId}`, type: 'Div', props: { styles: { padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem', alignItems: 'center' } }, order: 0, parentId: `cols-${baseId}`, column: 1 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: '20% OFF na sua Primeira Compra!', styles: { textAlign: 'center', fontSize: '2rem', lineHeight: '1.2' } }, order: 0, parentId: `div-${baseId}`, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Use o cupom BEMVINDO20 no checkout.', styles: { textAlign: 'center' } }, order: 1, parentId: `div-${baseId}`, column: 0 },
-                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Ir para a Loja', href: '#' }, order: 2, parentId: `div-${baseId}`, column: 0 },
+                { id: columnsId, type: 'Columns', props: { columnCount: 2, styles: { gap: '0' } }, order: 0, parentId: popupId, column: 0 },
+                { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/300/400' }, order: 0, parentId: columnsId, column: 0 },
+                { id: divId, type: 'Div', props: { styles: { padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem', alignItems: 'center' } }, order: 0, parentId: columnsId, column: 1 },
+                { id: `title-${baseId}`, type: 'Title', props: { text: '20% OFF na sua Primeira Compra!', styles: { textAlign: 'center', fontSize: '2rem', lineHeight: '1.2' } }, order: 0, parentId: divId, column: 0 },
+                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Use o cupom BEMVINDO20 no checkout.', styles: { textAlign: 'center' } }, order: 1, parentId: divId, column: 0 },
+                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Ir para a Loja', href: '#' }, order: 2, parentId: divId, column: 0 },
             ];
             break;
         }
         case 'popup-age-gate': {
             const popupId = `popup-ag-${baseId}`;
+            const divId = `div-btns-${baseId}`;
             componentsToAdd = [
                 { 
                     id: popupId, 
@@ -587,9 +591,9 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                 },
                 { id: `title-${baseId}`, type: 'Title', props: { text: 'Você tem mais de 18 anos?', styles: { textAlign: 'center' } }, order: 0, parentId: popupId, column: 0 },
                 { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Você deve ter 18 anos ou mais para acessar este conteúdo.', styles: { textAlign: 'center' } }, order: 1, parentId: popupId, column: 0 },
-                { id: `div-${baseId}`, type: 'Div', props: { layout: { flexDirection: 'row', horizontalAlign: 'center', gap: '10px' }, styles: { paddingTop: '1rem' } }, order: 2, parentId: popupId, column: 0 },
-                { id: `btn-no-${baseId}`, type: 'Button', props: { text: 'Não', variant: 'outline', action: { type: 'URL', url: 'https://www.google.com' } }, order: 0, parentId: `div-${baseId}`, column: 0 },
-                { id: `btn-yes-${baseId}`, type: 'Button', props: { text: 'Sim', action: { type: 'CLOSE_POPUP' } }, order: 1, parentId: `div-${baseId}`, column: 0 },
+                { id: divId, type: 'Div', props: { layout: { flexDirection: 'row', horizontalAlign: 'center', gap: '10px' }, styles: { paddingTop: '1rem' } }, order: 2, parentId: popupId, column: 0 },
+                { id: `btn-no-${baseId}`, type: 'Button', props: { text: 'Não', variant: 'outline', action: { type: 'URL', url: 'https://www.google.com' } }, order: 0, parentId: divId, column: 0 },
+                { id: `btn-yes-${baseId}`, type: 'Button', props: { text: 'Sim', action: { type: 'CLOSE_POPUP' } }, order: 1, parentId: divId, column: 0 },
             ];
             break;
         }

@@ -351,10 +351,15 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                             paddingBottom: '8rem',
                             paddingLeft: '2rem',
                             paddingRight: '2rem',
-                            display: 'flex',
+                            overlayEnabled: true,
+                            overlayColor: '#000000',
+                            overlayOpacity: 0.5,
+                        },
+                        layout: {
                             flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '1rem',
+                            verticalAlign: 'center',
+                            horizontalAlign: 'center',
+                            gap: '1rem'
                         }
                     },
                     order: 0, parentId: null, column: 0
@@ -590,7 +595,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                 },
                 { id: `title-${baseId}`, type: 'Title', props: { text: 'Você tem mais de 18 anos?', styles: { textAlign: 'center' } }, order: 0, parentId: popupId, column: 0 },
                 { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Você deve ter 18 anos ou mais para acessar este conteúdo.', styles: { textAlign: 'center' } }, order: 1, parentId: popupId, column: 0 },
-                { id: `div-${baseId}`, type: 'Div', props: { styles: { display: 'flex', flexDirection: 'row', gap: '10px', justifyContent: 'center', paddingTop: '1rem' } }, order: 2, parentId: popupId, column: 0 },
+                { id: `div-${baseId}`, type: 'Div', props: { layout: { flexDirection: 'row', horizontalAlign: 'center', gap: '10px' }, styles: { paddingTop: '1rem' } }, order: 2, parentId: popupId, column: 0 },
                 { id: `btn-no-${baseId}`, type: 'Button', props: { text: 'Não', variant: 'outline', action: { type: 'URL', url: 'https://www.google.com' } }, order: 0, parentId: `div-${baseId}`, column: 0 },
                 { id: `btn-yes-${baseId}`, type: 'Button', props: { text: 'Sim', action: { type: 'CLOSE_POPUP' } }, order: 1, parentId: `div-${baseId}`, column: 0 },
             ];

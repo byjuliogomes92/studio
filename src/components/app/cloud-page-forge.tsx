@@ -606,7 +606,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             <Button variant={isCommentMode ? "secondary" : "outline"} size="icon" onClick={() => setIsCommentMode(!isCommentMode)} aria-label="Modo de Comentário">
                 <MessageSquare className="h-5 w-5" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => setIsSelectionMode(!isSelectionMode)} aria-label="Modo de Seleção">
+            <Button variant={isSelectionMode ? "secondary" : "outline"} size="icon" onClick={() => setIsSelectionMode(!isSelectionMode)} aria-label="Modo de Seleção">
                 <Hand className="h-5 w-5"/>
             </Button>
             <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} variant="secondary">
@@ -750,14 +750,11 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     onSelectComponent={setSelectedComponentId}
                     isCommentMode={isCommentMode}
                     setIsCommentMode={setIsCommentMode}
-                    onRefreshComments={fetchComments}
                     isSelectionMode={isSelectionMode}
                     setIsSelectionMode={setIsSelectionMode}
-                >
-                   {showComments && comments.map(comment => (
-                        <CommentPin key={comment.id} comment={comment} onUpdate={fetchComments} />
-                    ))}
-                </MainPanel>
+                    children={children}
+                    onRefreshComments={fetchComments}
+                />
             </ResizablePanel>
         </ResizablePanelGroup>
 

@@ -1157,6 +1157,9 @@ ${trackingScripts.head}
       overflow-x: hidden;
     }
     
+    .comment-mode-active {
+        cursor: copy;
+    }
     .selection-mode {
         cursor: pointer !important;
     }

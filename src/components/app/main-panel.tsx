@@ -191,6 +191,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
             userName: user.displayName || 'Usuário',
             userAvatarUrl: user.photoURL || '',
             position: { x, y },
+            text: '', // Text is added in the modal now
             resolved: false
         });
         onRefreshComments();
@@ -301,7 +302,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
         cleanupLoad();
       }
     };
-  }, [previewHtmlCode, handleInlineEdit, isSelectionMode, onSelectComponent, isCommentMode]);
+  }, [previewHtmlCode, handleInlineEdit, isSelectionMode, onSelectComponent, isCommentMode, setIsCommentMode, onRefreshComments, handleAddComment]);
 
 
   const handleOpenInNewTab = () => {
@@ -391,9 +392,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
             </TooltipProvider>
           </div>
           <div className="flex items-center gap-2">
-               <Button onClick={() => setIsSelectionMode(!isSelectionMode)} variant={isSelectionMode ? "secondary" : "ghost"} size="icon" aria-label="Modo de Seleção">
-                    <Hand className="h-5 w-5"/>
-               </Button>
                <Button onClick={() => setIsHowToUseOpen(true)} variant="outline">
                 <Info className="mr-2 h-4 w-4" />
                 Como Publicar
@@ -444,7 +442,8 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                 ref={iframeWrapperRef}
                 className={cn(
                     "h-full w-full flex items-start justify-center p-4 overflow-y-auto",
-                    isCommentMode && 'comment-mode-active'
+                    isCommentMode && 'comment-mode-active',
+                    isSelectionMode && 'selection-mode'
                 )}
             >
               <div className="relative flex-shrink-0 transition-all duration-300 ease-in-out" style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : { width: '100%', height: '100%' }}>
@@ -453,8 +452,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                       srcDoc={previewHtmlCode}
                       title="Preview da Cloud Page"
                       className={cn(
-                          "border-8 border-background shadow-2xl rounded-lg bg-white w-full h-full",
-                          isSelectionMode && 'selection-mode' // This class changes the cursor
+                          "border-8 border-background shadow-2xl rounded-lg bg-white w-full h-full"
                       )}
                   />
                   {children}

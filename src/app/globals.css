@@ -42,7 +42,6 @@
  
     --card: 202 30% 17%; /* #1d2c34 - a bit lighter than background */
     --card-foreground: 45 44% 91%;
- 
     --popover: 202 30% 17%;
     --popover-foreground: 45 44% 91%;
  
@@ -55,7 +54,7 @@
     --muted: 201 30% 22%; /* Lighter muted for contained elements */
     --muted-foreground: 203 20% 65%;
  
-    --accent: 203 28% 55%; /* Lighter accent for hover */
+    --accent: 202 28% 18%; /* #253844 - New, more subtle hover color */
     --accent-foreground: 45 44% 91%;
  
     --destructive: 0 72% 51%;

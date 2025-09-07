@@ -48,13 +48,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     if (variant === "default") {
       return (
         <Comp
-          className={cn(buttonVariants({ variant, size, className }))}
+          className={cn(buttonVariants({ variant, size, className }), "group")}
           ref={ref}
           {...props}
         >
-          {/* Gradient Layer */}
+          {/* Base Gradient Layer */}
           <span
-            className="absolute inset-0 bg-gradient-to-r from-[var(--primary-gradient-start)] via-[var(--primary-gradient-mid)] to-[var(--primary-gradient-end)] bg-[length:200%_auto] animate-gradient"
+            className="absolute inset-0 bg-gradient-to-r from-[var(--primary-gradient-start)] via-[var(--primary-gradient-mid)] to-[var(--primary-gradient-end)]"
+          />
+          {/* Shine Effect on Hover */}
+          <span
+            className="absolute inset-0 block w-full h-full transform -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50 group-hover:translate-x-full transition-transform duration-500 ease-in-out"
           />
           {/* Grain Texture Layer */}
           <span

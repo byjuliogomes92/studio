@@ -646,45 +646,24 @@ function MovePageDialog({ page, onPageMoved, currentProjectId }: MovePageDialogP
   );
 }
 
-const renderComponentThumbnail = (component: PageComponent, allComponents: PageComponent[]) => {
-    const baseStyle = "bg-muted-foreground/20 rounded-[1px]";
-    switch(component.type) {
-        case 'Header':
-            return <div key={component.id} className="h-2 w-full bg-muted-foreground/30 rounded-t-sm mb-1"></div>;
-        case 'Footer':
-            return <div key={component.id} className="h-2 w-full bg-muted-foreground/30 rounded-b-sm mt-auto"></div>;
-        case 'Banner':
-        case 'Image':
-            return <div key={component.id} className={cn(baseStyle, "h-8 w-full flex items-center justify-center")}><ImageIcon className="h-3 w-3 text-muted-foreground/40"/></div>;
-        case 'Title':
-            return <div key={component.id} className={cn(baseStyle, "h-2 w-3/4 mx-auto")}></div>;
-        case 'Subtitle':
-             return <div key={component.id} className={cn(baseStyle, "h-1 w-2/3 mx-auto")}></div>;
-        case 'Paragraph':
-            return <div key={component.id} className="space-y-0.5"><div className={cn(baseStyle, "h-1 w-full")}></div><div className={cn(baseStyle, "h-1 w-full")}></div><div className={cn(baseStyle, "h-1 w-5/6")}></div></div>;
-        case 'Button':
-            return <div key={component.id} className="h-2 w-8 bg-primary/70 rounded-sm mx-auto"></div>;
-        case 'Spacer':
-             return <div key={component.id} className="h-1 w-full"></div>;
-        case 'Divider':
-            return <div key={component.id} className="h-px w-full bg-muted-foreground/20 my-1"></div>;
-        case 'Columns':
-            const columns = Array.from({ length: component.props.columnCount || 2 }, (_, i) =>
-                allComponents.filter(c => c.parentId === component.id && c.column === i).sort((a, b) => a.order - b.order)
-            );
-            return (
-                <div key={component.id} className="flex w-full gap-1 flex-grow">
-                    {columns.map((col, i) => (
-                        <div key={i} className="flex flex-col gap-0.5 w-full bg-muted/50 rounded-sm p-0.5">
-                            {col.map(c => renderComponentThumbnail(c, allComponents))}
-                        </div>
-                    ))}
-                </div>
-            );
-        default:
-            return <div key={component.id} className={cn(baseStyle, "h-2 w-full")}></div>;
-    }
-};
+const PageThumbnail = () => (
+    <div className="w-full h-full border rounded-md p-2 flex flex-col gap-2 bg-background shadow-inner">
+        <svg width="100%" height="100%" viewBox="0 0 100 75" className="text-muted-foreground">
+            {/* Header */}
+            <path d="M 5,8 C 10,6, 90,6, 95,8" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            {/* Hero Image */}
+            <path d="M 5,15 C 5,13, 95,13, 95,15 L 95,45 C 95,47, 5,47, 5,45 Z" stroke="currentColor" strokeWidth="1" fill="currentColor" fillOpacity="0.05" />
+            <path d="M 10,20 L 90,40 M 90,20 L 10,40" stroke="currentColor" strokeWidth="0.5" fill="none" strokeLinecap="round"/>
+            {/* Text lines */}
+            <path d="M 15,52 C 20,51, 80,51, 85,52" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round" />
+            <path d="M 15,58 C 20,57, 80,57, 85,58" stroke="currentColor" strokeWidth="0.75" fill="none" strokeLinecap="round" />
+            <path d="M 15,62 C 20,61, 70,61, 75,62" stroke="currentColor" strokeWidth="0.75" fill="none" strokeLinecap="round" />
+            {/* Button */}
+            <path d="M 40,68 C 40,67, 60,67, 60,68 L 60,70 C 60,71, 40,71, 40,70 Z" stroke="hsl(var(--primary))" strokeWidth="1" fill="hsl(var(--primary))" fillOpacity="0.5" />
+        </svg>
+    </div>
+);
+
 
 export function PageList({ projectId }: PageListProps) {
   const router = useRouter();
@@ -1220,9 +1199,7 @@ export function PageList({ projectId }: PageListProps) {
                                     className="aspect-[4/3] w-full bg-muted/50 rounded-t-lg flex flex-col items-center justify-center p-2 overflow-hidden cursor-pointer"
                                     onClick={() => handlePageClick(page.id)}
                                 >
-                                     <div className="w-full h-full border rounded-md flex flex-col p-2 gap-0.5 bg-background shadow-inner">
-                                        {page.components.filter(c => c.parentId === null).sort((a, b) => a.order - b.order).map(c => renderComponentThumbnail(c, page.components))}
-                                    </div>
+                                    <PageThumbnail />
                                 </div>
                                 
                                 <div className="p-4 flex-grow flex flex-col justify-between" onClick={() => handlePageClick(page.id)}>

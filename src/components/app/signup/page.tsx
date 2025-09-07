@@ -117,7 +117,7 @@ export default function SignupPage() {
        <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[450px] gap-6">
             <div className="grid gap-2 text-center">
-                <Logo className="mx-auto h-10 w-10 mb-4" />
+            <Logo className="mx-auto h-auto text-primary mb-4" />
                 <h1 className="text-3xl font-bold">Crie sua Conta</h1>
                 <p className="text-balance text-muted-foreground">
                     É rápido e fácil. Comece a construir suas páginas agora mesmo.

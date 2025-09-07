@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Home, Loader2, Plus, Trash2, UploadCloud, Copy, Image as ImageIcon, Search, Tag, X, Edit, Save, Bell, CheckCheck, User, LogOut, Palette, Library, Database, Check, Hand, ArrowUpDown, LayoutGrid, List } from 'lucide-react';
-import { Logo } from '@/components/icons';
+import { Logo, LogoIcon } from '@/components/icons';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
@@ -545,7 +545,7 @@ export default function MediaLibraryPage() {
       <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 font-semibold text-lg">
-            <Logo className="h-6 w-6 text-primary" />
+            <LogoIcon className="h-6 w-6 text-primary" />
             <h1>Biblioteca de Mídia</h1>
           </div>
             <Button variant="outline" size="sm" onClick={() => {

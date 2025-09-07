@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Logo } from "@/components/icons";
+import { Logo, LogoIcon } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { getTemplates, deleteTemplate, getDefaultTemplates } from "@/lib/firestore";
 import { defaultTemplates as hardcodedTemplates } from "@/lib/default-templates";
@@ -336,7 +336,7 @@ export default function TemplatesPage() {
       <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 font-semibold text-lg">
-            <Logo className="h-6 w-6 text-primary" />
+            <LogoIcon className="h-6 w-6 text-primary" />
             <h1>Templates</h1>
           </div>
            <Button variant="outline" size="sm" onClick={() => {

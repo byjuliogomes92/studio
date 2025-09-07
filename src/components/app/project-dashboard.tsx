@@ -37,7 +37,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Logo } from "@/components/icons";
+import { Logo, LogoIcon } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { addProject, deleteProject, updateProject, getUserProgress, getPlatformSettings } from "@/lib/firestore";
 import { format } from 'date-fns';
@@ -353,7 +353,7 @@ export function ProjectDashboard() {
   if (authLoading || isLoadingData) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Logo className="h-12 w-12 animate-star-pulse" />
+        <LogoIcon className="h-12 w-12 animate-star-pulse" />
       </div>
     );
   }
@@ -362,7 +362,7 @@ export function ProjectDashboard() {
     return (
         <div className="flex h-screen w-full items-center justify-center text-center">
             <div>
-                <Logo className="h-12 w-12 mx-auto mb-4" />
+                <LogoIcon className="h-12 w-12 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold">Nenhum workspace encontrado.</h2>
                 <p className="text-muted-foreground">Parece que algo deu errado. Tente recarregar a página.</p>
                 <Button className="mt-4" onClick={() => window.location.reload()}>Recarregar</Button>
@@ -591,7 +591,7 @@ export function ProjectDashboard() {
       <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b bg-card">
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex items-center gap-2 font-semibold text-lg">
-            <Logo className="h-6 w-6" />
+            <LogoIcon className="h-6 w-6" />
             <h1 className="hidden md:block">Projetos</h1>
           </div>
           <Separator orientation="vertical" className="h-6 mx-2 hidden md:block" />
@@ -627,7 +627,7 @@ export function ProjectDashboard() {
                     data-ai-hint="abstract banner"
                     objectPosition="left 53%"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#131C35] to-transparent flex items-center p-6 md:p-10">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#1F2F39] to-transparent flex items-center p-6 md:p-10">
                     <div className="max-w-md text-white">
                         <h3 className="text-xl md:text-2xl font-bold">{banner.title}</h3>
                         <p className="mt-2 text-sm md:text-base opacity-90">{banner.description}</p>

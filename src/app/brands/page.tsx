@@ -32,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Home, Loader2, Palette, Plus, Trash2, Edit, Server, Eye, EyeOff, Link2, Sun, Moon, Type, Square, Circle, Hand, Image as ImageIcon, Text, Search, HelpCircle, Library, Upload } from "lucide-react";
-import { Logo } from "@/components/icons";
+import { Logo, LogoIcon } from "@/components/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -305,7 +305,7 @@ export default function BrandsPage() {
       <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 font-semibold text-lg">
-            <Logo className="h-6 w-6 text-primary" />
+            <LogoIcon className="h-6 w-6 text-primary" />
             <h1>Kits de Marca</h1>
           </div>
           <Button variant="outline" size="sm" onClick={() => {

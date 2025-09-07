@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Home, Loader2, Users, Search, Copy, Heart, Library, LayoutTemplate, Star } from "lucide-react";
-import { Logo } from "@/components/icons";
+import { Logo, LogoIcon } from "@/components/icons";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
@@ -164,7 +164,7 @@ export default function CommunityPage() {
             <header className="flex items-center justify-between h-16 px-6 border-b bg-card">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 font-semibold text-lg">
-                        <Logo className="h-6 w-6 text-primary" />
+                        <LogoIcon className="h-6 w-6 text-primary" />
                         <h1>Comunidade</h1>
                     </div>
                 </div>

@@ -478,8 +478,8 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
         <script>
             document.body.addEventListener('click', function(e) {
                 const mode = document.body.dataset.editorMode;
-                if (mode === 'none') return;
-                
+                if (mode === 'none' || !window.parent) return;
+
                 let target = e.target;
                 
                 if (mode === 'selection') {
@@ -500,7 +500,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
                     e.preventDefault();
                     e.stopPropagation();
                     if (window.parent.handleAddComment) {
-                        const iframeRect = window.frameElement.getBoundingClientRect();
+                        const iframeRect = window.frameElement ? window.frameElement.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
                         window.parent.handleAddComment(e.clientX, e.clientY, iframeRect);
                     }
                 }

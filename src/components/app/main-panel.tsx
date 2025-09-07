@@ -66,25 +66,18 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
   const previewHtmlCode = generateHtml(pageState, true, '', hideAmpscript);
   const finalHtmlCode = generateHtml(pageState, false);
   
-  useEffect(() => {
-    // This function is called from within the iframe's script
-    (window as any).handleComponentSelect = (componentId: string) => {
-      onSelectComponent(componentId);
-      setEditorMode('none'); 
-    };
+  // This function is called from within the iframe's script
+  (window as any).handleComponentSelect = (componentId: string) => {
+    onSelectComponent(componentId);
+    setEditorMode('none'); 
+  };
 
-    // This function is also called from within the iframe
-    (window as any).handleAddComment = (x: number, y: number, iframeRect: any) => {
-        const adjustedX = ((x - iframeRect.left) / iframeRect.width) * 100;
-        const adjustedY = ((y - iframeRect.top) / iframeRect.height) * 100;
-        onAddComment(adjustedX, adjustedY);
-    };
-
-    return () => {
-        delete (window as any).handleComponentSelect;
-        delete (window as any).handleAddComment;
-    };
-  }, [onSelectComponent, setEditorMode, onAddComment]);
+  // This function is also called from within the iframe
+  (window as any).handleAddComment = (x: number, y: number, iframeRect: any) => {
+      const adjustedX = ((x - iframeRect.left) / iframeRect.width) * 100;
+      const adjustedY = ((y - iframeRect.top) / iframeRect.height) * 100;
+      onAddComment(adjustedX, adjustedY);
+  };
 
 
   const handleOpenInNewTab = () => {
@@ -297,5 +290,3 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
     </>
   );
 }
-
-    

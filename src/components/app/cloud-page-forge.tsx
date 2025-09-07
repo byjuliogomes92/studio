@@ -746,7 +746,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={75}>
                 <MainPanel 
-                    pageState={pageState} 
+                    pageState={pageState}
                     setPageState={setPageState}
                     onDataExtensionKeyChange={handleDataExtensionKeyChange}
                     editorMode={editorMode}

@@ -203,12 +203,15 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe) return;
+    if (!iframe?.contentWindow) return;
+
+    const iframeDoc = iframe.contentWindow.document;
 
     const handleIframeClick = (e: MouseEvent) => {
         let target = e.target as HTMLElement | null;
+        const currentMode = iframeDoc.body.dataset.editorMode || 'none';
 
-        if (editorMode === 'comment') {
+        if (currentMode === 'comment') {
             const iframeRect = iframe.getBoundingClientRect();
             // Calculate percentage-based position
             const x = ((e.clientX - iframeRect.left) / iframeRect.width) * 100;
@@ -217,11 +220,11 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
             return;
         }
         
-        if (editorMode !== 'selection') return;
+        if (currentMode !== 'selection') return;
         
         let componentId = null;
         
-        while(target && target !== iframe.contentDocument?.body) {
+        while(target && target !== iframeDoc.body) {
             if (target.hasAttribute('data-component-id')) {
                 componentId = target.getAttribute('data-component-id');
                 break;
@@ -246,7 +249,6 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
       }
       // Check if the focus is moving outside the iframe before hiding the toolbar
       setTimeout(() => {
-        const iframeDoc = iframe.contentWindow?.document;
         if (iframeDoc && (iframeDoc.activeElement === iframeDoc.body || iframeDoc.activeElement === null)) {
             setActiveEditor(null);
         }
@@ -254,13 +256,14 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
     };
 
     const handleLoad = () => {
-      const iframeDoc = iframe.contentWindow?.document;
-      if (!iframeDoc) return;
+      const currentIframeDoc = iframeRef.current?.contentWindow?.document;
+      if (!currentIframeDoc) return;
       
-      iframeDoc.body.addEventListener('click', handleIframeClick);
+      currentIframeDoc.body.dataset.editorMode = editorMode;
+      currentIframeDoc.body.addEventListener('click', handleIframeClick);
 
       const handleSelectionChange = () => {
-        const selection = iframeDoc.getSelection();
+        const selection = currentIframeDoc.getSelection();
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           const parentElement = range.startContainer.parentElement;
@@ -276,33 +279,18 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
         }
       };
 
-      iframeDoc.addEventListener('selectionchange', handleSelectionChange);
-      iframeDoc.body.addEventListener('blur', handleBlur, true);
-
-      // Return a cleanup function for when the iframe reloads or component unmounts
-      return () => {
-        iframeDoc.body.removeEventListener('click', handleIframeClick);
-        iframeDoc.removeEventListener('selectionchange', handleSelectionChange);
-        iframeDoc.body.removeEventListener('blur', handleBlur, true);
-      };
+      currentIframeDoc.addEventListener('selectionchange', handleSelectionChange);
+      currentIframeDoc.body.addEventListener('blur', handleBlur, true);
     };
 
-    let cleanupLoad: (() => void) | undefined;
-    
-    const setup = () => {
-      cleanupLoad = handleLoad();
-    }
-    
-    iframe.addEventListener('load', setup);
+    // The 'load' event fires once the srcdoc is parsed and the document is available.
+    iframe.addEventListener('load', handleLoad);
 
-    // Main cleanup for when the component unmounts
+    // Main cleanup for when the component unmounts or iframe re-renders
     return () => {
-      iframe.removeEventListener('load', setup);
-      if (cleanupLoad) {
-        cleanupLoad();
-      }
+      iframe.removeEventListener('load', handleLoad);
     };
-  }, [previewHtmlCode, handleInlineEdit, onSelectComponent, editorMode, setEditorMode, onRefreshComments, handleAddComment]);
+  }, [handleInlineEdit, onSelectComponent, editorMode, setEditorMode, handleAddComment, previewHtmlCode]);
 
 
   const handleOpenInNewTab = () => {
@@ -441,13 +429,12 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
             <div 
                 ref={iframeWrapperRef}
                 className={cn(
-                    "h-full w-full flex items-start justify-center p-4 overflow-y-auto",
-                    editorMode === 'comment' && 'comment-mode',
-                    editorMode === 'selection' && 'selection-mode'
+                    "h-full w-full flex items-start justify-center p-4 overflow-y-auto"
                 )}
             >
               <div className="relative flex-shrink-0 transition-all duration-300 ease-in-out" style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : { width: '100%', height: '100%' }}>
                   <iframe
+                      key={editorMode} 
                       ref={iframeRef}
                       srcDoc={previewHtmlCode}
                       title="Preview da Cloud Page"

@@ -128,7 +128,7 @@ export function ProjectDashboard() {
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Nova funcionalidade: Kits de Marca!', slug: 'kits-de-marca-consistencia-visual', read: false },
     { id: 2, title: 'Melhoria no alinhamento de formulários.', slug: 'melhoria-alinhamento-formularios', read: true },
-    { id: 3, title: 'Bem-vindo ao Morfeu!', slug: 'bem-vindo-cloudpage-studio', read: true },
+    { id: 3, title: 'Bem-vindo ao Morfeus!', slug: 'bem-vindo-cloudpage-studio', read: true },
   ]);
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 

@@ -8,8 +8,8 @@ import { CommandPalette } from '@/components/app/command-palette';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Morfeu',
-    template: '%s | Morfeu',
+    default: 'Morfeus',
+    template: '%s | Morfeus',
   },
   description: 'Crie e gerencie Cloud Pages para Salesforce Marketing Cloud com uma interface visual intuitiva, componentes reutilizáveis e publicação instantânea.',
   icons: {

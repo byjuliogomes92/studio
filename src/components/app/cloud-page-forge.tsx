@@ -623,14 +623,14 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           </Button>
           <div className="flex items-center gap-2 font-semibold">
             <Logo className="h-6 w-6" />
-            <h1>Morfeu</h1>
+            <h1>Morfeus</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
             <Button variant={editorMode === 'comment' ? "secondary" : "outline"} size="icon" onClick={() => handleModeToggle('comment')} aria-label="Modo de Comentário">
                 <MessageSquare className="h-5 w-5" />
             </Button>
-            <Button variant={editorMode === 'selection' ? "secondary" : "outline"} size="icon" onClick={() => handleModeToggle('selection')} aria-label="Modo de Seleção">
+            <Button variant={editorMode === 'selection' ? 'secondary' : 'outline'} size="icon" onClick={() => handleModeToggle('selection')} aria-label="Modo de Seleção">
                 <Hand className="h-5 w-5"/>
             </Button>
             <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} variant="secondary">

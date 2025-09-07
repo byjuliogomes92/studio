@@ -753,11 +753,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                     isSelectionMode={isSelectionMode}
                     setIsSelectionMode={setIsSelectionMode}
                     onRefreshComments={fetchComments}
-                >
-                    {comments.map(comment => (
-                        <CommentPin key={comment.id} comment={comment} onUpdate={fetchComments} />
-                    ))}
-                </MainPanel>
+                />
             </ResizablePanel>
         </ResizablePanelGroup>
 

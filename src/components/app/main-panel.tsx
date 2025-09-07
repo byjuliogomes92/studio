@@ -35,7 +35,6 @@ interface MainPanelProps {
   setIsCommentMode: Dispatch<SetStateAction<boolean>>;
   isSelectionMode: boolean;
   setIsSelectionMode: Dispatch<SetStateAction<boolean>>;
-  children: React.ReactNode;
   onRefreshComments: () => void;
 }
 
@@ -138,7 +137,7 @@ function AmpscriptIcon(props: React.SVGProps<SVGSVGElement>) {
     );
 }
 
-export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, isCommentMode, setIsCommentMode, isSelectionMode, setIsSelectionMode, children, onRefreshComments }: MainPanelProps) {
+export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, onSelectComponent, isCommentMode, setIsCommentMode, isSelectionMode, setIsSelectionMode, onRefreshComments }: MainPanelProps) {
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
@@ -455,7 +454,9 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                           "border-8 border-background shadow-2xl rounded-lg bg-white w-full h-full"
                       )}
                   />
-                  {children}
+                  {pageState.components.map(comment => (
+                        <CommentPin key={comment.id} comment={comment as any} onUpdate={onRefreshComments} />
+                    ))}
               </div>
             </div>
           </TabsContent>

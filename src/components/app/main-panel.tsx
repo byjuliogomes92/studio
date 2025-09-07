@@ -67,11 +67,13 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
   const finalHtmlCode = generateHtml(pageState, false);
   
   useEffect(() => {
-    // Define the functions on the window object so the iframe can call them
+    // This function is called from within the iframe's script
     (window as any).handleComponentSelect = (componentId: string) => {
       onSelectComponent(componentId);
-      setEditorMode('none'); // Turn off selection mode after selecting
+      setEditorMode('none'); 
     };
+
+    // This function is also called from within the iframe
     (window as any).handleAddComment = (x: number, y: number, iframeRect: any) => {
         const adjustedX = ((x - iframeRect.left) / iframeRect.width) * 100;
         const adjustedY = ((y - iframeRect.top) / iframeRect.height) * 100;
@@ -79,18 +81,10 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
     };
 
     return () => {
-        // Cleanup the functions when the component unmounts
         delete (window as any).handleComponentSelect;
         delete (window as any).handleAddComment;
     };
   }, [onSelectComponent, setEditorMode, onAddComment]);
-
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe?.contentWindow?.document?.body) {
-        iframe.contentWindow.document.body.dataset.editorMode = editorMode;
-    }
-  }, [editorMode]);
 
 
   const handleOpenInNewTab = () => {
@@ -229,7 +223,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
             >
               <div className="relative flex-shrink-0 transition-all duration-300 ease-in-out" style={selectedDevice.name !== 'Desktop' ? { width: `${selectedDevice.width}px`, height: `${selectedDevice.height}px` } : { width: '100%', height: '100%' }}>
                   <iframe
-                      key={previewHtmlCode} // Force re-render of iframe with new content
+                      key={`${previewHtmlCode}-${editorMode}`} // Force re-render of iframe when mode changes
                       ref={iframeRef}
                       srcDoc={generateHtml(pageState, true, '', hideAmpscript, editorMode)}
                       title="Preview da Cloud Page"
@@ -303,3 +297,5 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
     </>
   );
 }
+
+    

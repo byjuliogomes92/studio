@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType, Action, CookieCategory, ResponsiveProps, EditorMode } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
@@ -55,7 +54,7 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
         
         // Use component.children if it exists, otherwise find children via parentId
         const children = component.children || allComponents.filter(c => c.parentId === component.id);
-        const sortedChildren = children.sort((a, b) => (a.column || 0) - (b.column || 0) || a.order - b.order);
+        const sortedChildren = [...children].sort((a, b) => (a.column || 0) - (b.column || 0) || a.order - b.order);
 
         let childrenHtml = '';
         if (['Columns', 'Div', 'PopUp'].includes(component.type)) {

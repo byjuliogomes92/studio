@@ -1,4 +1,5 @@
 
+
 import type { PageComponent } from '@/lib/types';
 
 export function renderPopUp(component: PageComponent, childrenHtml: string): string {
@@ -103,6 +104,7 @@ export function renderPopUp(component: PageComponent, childrenHtml: string): str
                         }
                     }, 300);
                 }
+                window.closePopup = closePopup;
 
                 closeBtn.addEventListener('click', closePopup);
                 if (${closeOnOutsideClick}) {

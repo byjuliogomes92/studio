@@ -1,4 +1,5 @@
 
+
 import type { PageComponent } from '@/lib/types';
 
 function hexToRgba(hex: string, alpha: number): string {

@@ -2,7 +2,7 @@
 import type { PageComponent } from '@/lib/types';
 
 function hexToRgba(hex: string, alpha: number): string {
-    if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+    if (!hex || !/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
         return `rgba(0,0,0,${alpha})`; // fallback
     }
     let c = hex.substring(1).split('');

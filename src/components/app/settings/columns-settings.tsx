@@ -1,5 +1,5 @@
 
-import type { PageComponent } from "@/lib/types";
+import type { PageComponent, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -10,14 +10,32 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, ClipboardPaste } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { ColorInput } from "./color-input";
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
+  pageState: CloudPage;
 }
 
-export function ColumnsSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
+function hexToRgba(hex: string, alpha: number): string {
+    if (!hex || !/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+        return `rgba(0,0,0,${alpha})`; // fallback
+    }
+    let c = hex.substring(1).split('');
+    if (c.length === 3) {
+        c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+    }
+    const i = parseInt(c.join(''), 16);
+    const r = (i >> 16) & 255;
+    const g = (i >> 8) & 255;
+    const b = i & 255;
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
+export function ColumnsSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     const styles = props.styles || {};
     const columnStyles = props.columnStyles || [];
@@ -46,14 +64,13 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange }: Co
     }
 
     const columnCount = props.columnCount || 2;
-    const columnWidths = props.columnWidths || Array(columnCount).fill(100 / columnCount);
+    const columnWidths = props.columnWidths || [];
 
     const handleWidthChange = (index: number, value: number) => {
         const newWidths = [...columnWidths];
         newWidths[index] = value;
         onPropChange('columnWidths', newWidths);
     };
-
 
     return (
         <div className="space-y-4">
@@ -92,6 +109,69 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange }: Co
                         </div>
                     </AccordionContent>
                 </AccordionItem>
+                 <AccordionItem value="background">
+                    <AccordionTrigger>Fundo</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-2">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="div-full-width">Largura Total da Tela</Label>
+                            <Switch
+                                id="div-full-width"
+                                checked={styles.isFullWidth || false}
+                                onCheckedChange={(checked) => handleStyleChange('isFullWidth', checked)}
+                            />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Tipo de Fundo</Label>
+                            <Select value={styles.backgroundType || 'solid'} onValueChange={(value) => handleStyleChange('backgroundType', value)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="solid">Cor Sólida</SelectItem>
+                                    <SelectItem value="gradient">Gradiente</SelectItem>
+                                    <SelectItem value="image">Imagem</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {styles.backgroundType === 'image' && (
+                           <>
+                           {/* Image Input component here */}
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="div-overlay-enabled">Habilitar Sobreposição</Label>
+                                <Switch
+                                    id="div-overlay-enabled"
+                                    checked={styles.overlayEnabled || false}
+                                    onCheckedChange={(c) => handleStyleChange('overlayEnabled', c)}
+                                />
+                            </div>
+                            {styles.overlayEnabled && (
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div className="space-y-2">
+                                        <ColorInput label="Cor da Sobreposição" value={styles.overlayColor || '#000000'} onChange={value => handleStyleChange('overlayColor', value)} brand={pageState.brand} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Opacidade ({Math.round((styles.overlayOpacity || 0.5) * 100)}%)</Label>
+                                        <Slider defaultValue={[styles.overlayOpacity || 0.5]} min={0} max={1} step={0.05} onValueChange={([val]) => handleStyleChange('overlayOpacity', val)} />
+                                    </div>
+                                </div>
+                            )}
+                           </>
+                        )}
+                        {styles.backgroundType === 'gradient' && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <ColorInput label="Cor Inicial" value={styles.gradientFrom || '#000000'} onChange={value => handleStyleChange('gradientFrom', value)} brand={pageState.brand} />
+                                </div>
+                                <div className="space-y-2">
+                                    <ColorInput label="Cor Final" value={styles.gradientTo || '#434343'} onChange={value => handleStyleChange('gradientTo', value)} brand={pageState.brand} />
+                                </div>
+                            </div>
+                        )}
+                         {(styles.backgroundType === 'solid' || !styles.backgroundType) && (
+                            <div className="space-y-2">
+                                <ColorInput label="Cor de Fundo" value={styles.backgroundColor || '#ffffff'} onChange={value => handleStyleChange('backgroundColor', value)} brand={pageState.brand} />
+                            </div>
+                        )}
+                    </AccordionContent>
+                </AccordionItem>
                 <AccordionItem value="columns">
                     <AccordionTrigger>Configurar Colunas Individuais</AccordionTrigger>
                     <AccordionContent>
@@ -121,11 +201,11 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange }: Co
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Cor de Fundo</Label>
-                                            <Input 
-                                                type="color" 
+                                            <ColorInput 
+                                                label=""
                                                 value={columnStyles[index]?.backgroundColor || ''} 
-                                                onChange={(e) => handleColumnStyleChange(index, 'backgroundColor', e.target.value)} 
-                                                className="p-1 h-10 w-full"
+                                                onChange={(value) => handleColumnStyleChange(index, 'backgroundColor', value)}
+                                                brand={pageState.brand}
                                             />
                                         </div>
                                         <div className="space-y-2">

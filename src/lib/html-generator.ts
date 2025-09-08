@@ -121,6 +121,9 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   const componentId = component.props.idOverride || component.id;
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : `id="${componentId}"`;
   
+  const parentComponent = pageState.components.find(c => c.id === component.parentId);
+  const isInFlexRow = parentComponent?.type === 'Div' && parentComponent?.props?.layout?.flexDirection === 'row';
+
   // Extract only spacing styles for the wrapper
   const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'];
   const wrapperStyles: Record<string, any> = {};
@@ -131,7 +134,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   });
 
   // Inherit text-align from the child component for the wrapper
-  if (styles.textAlign) {
+  if (styles.textAlign && !isInFlexRow) {
       wrapperStyles['text-align'] = styles.textAlign;
   }
   
@@ -145,9 +148,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     return renderedComponent;
   }
   
-  // Prevent nested component wrappers if parent is a horizontal flex Div
-  const parentComponent = pageState.components.find(c => c.id === component.parentId);
-  if (parentComponent?.type === 'Div' && parentComponent?.props?.layout?.flexDirection === 'row') {
+  if (isInFlexRow) {
       return renderedComponent;
   }
 
@@ -1066,19 +1067,6 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
 
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false, editorMode: EditorMode = 'none'): string {
-  let codeBlocks: string[] = [];
-  const protectCode = (code: string): string => {
-    if (!code || !code.trim()) return '';
-    const placeholder = `__CODE_PLACEHOLDER_${codeBlocks.length}__`;
-    codeBlocks.push(code);
-    return placeholder;
-  }
-  const restoreCode = (html: string): string => {
-    return html.replace(/__CODE_PLACEHOLDER_(\d+)__/g, (match, index) => {
-        return codeBlocks[parseInt(index, 10)] || '';
-    });
-  }
-
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
   const hasForm = components.some(c => c.type === 'Form');
@@ -1095,8 +1083,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState) : '';
   const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState) : '';
   
-  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript} ${meta.customAmpscript || ''} ${prefillAmpscript || ''} ]%%` : '';
-
+  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) 
+    ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript} ${meta.customAmpscript || ''} ${prefillAmpscript || ''} ]%%` 
+    : '';
 
   const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
   
@@ -1171,8 +1160,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${protectCode(ssjsScript)}
-${protectCode(initialAmpscript)}
+${ssjsScript}
+${initialAmpscript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -2503,16 +2492,14 @@ ${trackingScripts.head}
 
     ${styles.customCss || ''}
 </style>
-${protectCode(clientSideScripts)}
+${clientSideScripts}
 </head>
 <body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
-${!isForPreview ? protectCode(trackingScripts.body) : ''}
+${!isForPreview ? trackingScripts.body : ''}
 ${bodyContent}
-${protectCode(cookieBannerHtml)}
+${cookieBannerHtml}
 </body>
 </html>`;
 
-  finalHtml = restoreCode(finalHtml);
-
-  return finalHtml;
+  return finalHtml.replace(/\n/g, "");
 }

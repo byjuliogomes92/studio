@@ -24,12 +24,15 @@ function TextStyleSettings({ props, onPropChange, onSubPropChange, pageState }: 
   const isTitle = props.isTitle; // A flag to know if we are styling a title
   
   const handleStyleChange = (prop: string, value: any) => {
-    onSubPropChange('styles', prop, value);
+    // This is the key change: ensure we're updating a copy of the styles object,
+    // not a shared one.
+    const newStyles = { ...styles, [prop]: value };
+    onPropChange('styles', newStyles);
   };
   
    const handleGradientChange = (prop: 'from' | 'to', value: string) => {
     const newGradient = { ...(styles.gradient || {}), [prop]: value };
-    onSubPropChange('styles', 'gradient', newGradient);
+    handleStyleChange('gradient', newGradient);
   };
 
 

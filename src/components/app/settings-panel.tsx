@@ -633,53 +633,65 @@ export function SettingsPanel({
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-    
-        if (!over || active.id === over.id) return;
-    
+
+        if (!over || active.id === over.id) {
+            return;
+        }
+
         setPageState((currentState) => {
             if (!currentState) return null;
-    
+
             return produce(currentState, (draft) => {
                 const activeComponent = draft.components.find(c => c.id === active.id);
-                if (!activeComponent || isComponentLocked(activeComponent)) return;
-    
+                if (!activeComponent || isComponentLocked(activeComponent)) {
+                    return;
+                }
+
                 const overComponent = draft.components.find(c => c.id === over.id);
                 const overIsDropzone = over.data.current?.isDropzone;
-    
-                if (overIsDropzone) {
-                    // Dropping into a container (Div, Columns, etc.)
+
+                if (overComponent && !overIsDropzone && activeComponent.parentId === overComponent.parentId && activeComponent.column === overComponent.column) {
+                    // This is a reorder operation among siblings.
+                    const siblings = draft.components
+                        .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
+                        .sort((a, b) => a.order - b.order);
+                    
+                    const oldIndex = siblings.findIndex(s => s.id === active.id);
+                    const newIndex = siblings.findIndex(s => s.id === over.id);
+
+                    if (oldIndex !== -1 && newIndex !== -1) {
+                        const [movedItem] = siblings.splice(oldIndex, 1);
+                        siblings.splice(newIndex, 0, movedItem);
+
+                        siblings.forEach((sibling, index) => {
+                            const compToUpdate = draft.components.find(c => c.id === sibling.id);
+                            if (compToUpdate) compToUpdate.order = index;
+                        });
+                    }
+                } else if (overIsDropzone) {
+                    // This is a nesting operation.
                     const newParentId = over.id.startsWith('root-dropzone') ? null : over.id.split('-')[0];
                     const newColumnIndex = over.id.includes('-') ? parseInt(over.id.split('-')[1], 10) : 0;
                     
                     activeComponent.parentId = newParentId;
                     activeComponent.column = newColumnIndex;
-    
-                } else if (overComponent) {
-                    // Dropping onto another component to reorder
-                    if (isComponentLocked(overComponent)) return;
                     
-                    // Reorder if they are siblings, otherwise do nothing to prevent accidental nesting.
-                    if (activeComponent.parentId === overComponent.parentId && activeComponent.column === overComponent.column) {
-                        const siblings = draft.components
-                            .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
-                            .sort((a, b) => a.order - b.order);
-                        
-                        const oldIndex = siblings.findIndex(s => s.id === active.id);
-                        const newIndex = siblings.findIndex(s => s.id === over.id);
-
-                        if (oldIndex !== -1 && newIndex !== -1) {
-                            const [movedItem] = siblings.splice(oldIndex, 1);
-                            siblings.splice(newIndex, 0, movedItem);
-    
-                            siblings.forEach((sibling, index) => {
-                                const compToUpdate = draft.components.find(c => c.id === sibling.id);
-                                if (compToUpdate) compToUpdate.order = index;
-                            });
-                        }
-                    }
+                    // Recalculate order for both old and new siblings
+                    const oldSiblings = draft.components
+                        .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column && c.id !== active.id)
+                        .sort((a, b) => a.order - b.order);
+                    oldSiblings.forEach((sibling, index) => {
+                        const compToUpdate = draft.components.find(c => c.id === sibling.id);
+                        if (compToUpdate) compToUpdate.order = index;
+                    });
+                    
+                    const newSiblings = draft.components
+                        .filter(c => c.parentId === newParentId && c.column === newColumnIndex)
+                        .sort((a, b) => a.order - b.order);
+                    activeComponent.order = newSiblings.length - 1; // It's already in the list
                 }
-    
-                // Final re-ordering of all components to ensure data integrity
+
+                // Final re-ordering pass for all containers to ensure data integrity
                 const allParentIds = new Set(draft.components.map(c => c.parentId));
                 allParentIds.forEach(pId => {
                     const container = draft.components.find(c => c.id === pId);
@@ -1262,10 +1274,3 @@ export function SettingsPanel({
     </div>
     );
 }
-
-    
-    
-
-
-
-

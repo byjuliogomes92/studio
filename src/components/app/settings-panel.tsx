@@ -137,8 +137,13 @@ const getTagColor = (tag: string) => {
     return tagColors[Math.abs(hash) % tagColors.length];
 };
 
+const isComponentLocked = (component: PageComponent) => {
+    const name = component.layerName?.toLowerCase().trim();
+    return component.type === 'Header' || component.type === 'Footer' || name === 'header' || name === 'footer';
+};
+
 function SortableItem({ component, children }: { component: PageComponent; children: React.ReactNode }) {
-  const isLocked = component.type === 'Header' || component.type === 'Footer';
+  const isLocked = isComponentLocked(component);
   const {
     attributes,
     listeners,
@@ -209,7 +214,7 @@ function ComponentItem({
 }) {
   const Icon = componentIcons[component.type] || Text;
   const isContainer = ['Columns', 'Div', 'PopUp'].includes(component.type);
-  const isLocked = component.type === 'Header' || component.type === 'Footer';
+  const isLocked = isComponentLocked(component);
 
   const handleSelect = () => {
     if (selectedComponentId === component.id) {
@@ -592,10 +597,10 @@ export function SettingsPanel({
                 if (componentIndex === -1) return;
 
                 const component = draft.components[componentIndex];
-                 if (component.type === 'Header' || component.type === 'Footer') return; // Cannot move locked components
+                 if (isComponentLocked(component)) return;
 
                 const siblings = draft.components
-                    .filter(c => c.parentId === component.parentId && c.column === component.column && !['Header', 'Footer'].includes(c.type))
+                    .filter(c => c.parentId === component.parentId && c.column === component.column && !isComponentLocked(c))
                     .sort((a, b) => a.order - b.order);
                 
                 const currentOrderIndex = siblings.findIndex(s => s.id === componentId);
@@ -637,7 +642,7 @@ export function SettingsPanel({
     
             return produce(currentState, draft => {
                 const activeComponent = draft.components.find(c => c.id === activeId);
-                if (!activeComponent || ['Header', 'Footer'].includes(activeComponent.type)) return;
+                if (!activeComponent || isComponentLocked(activeComponent)) return;
 
                 const overIsDropzone = over.data.current?.isDropzone;
 
@@ -649,7 +654,7 @@ export function SettingsPanel({
                     activeComponent.column = newColumnIndex;
                 } else {
                     const overComponent = draft.components.find(c => c.id === overId);
-                    if (!overComponent || ['Header', 'Footer'].includes(overComponent.type)) return;
+                    if (!overComponent || isComponentLocked(overComponent)) return;
 
                     const sameContainer = activeComponent.parentId === overComponent.parentId;
                     
@@ -657,7 +662,7 @@ export function SettingsPanel({
                         const parentId = activeComponent.parentId;
                         const column = activeComponent.column;
                         const siblings = draft.components
-                            .filter(c => c.parentId === parentId && c.column === column && !['Header', 'Footer'].includes(c.type))
+                            .filter(c => c.parentId === parentId && c.column === column && !isComponentLocked(c))
                             .sort((a,b) => a.order - b.order); 
                         
                         const oldIndex = siblings.findIndex(c => c.id === activeId);
@@ -1271,4 +1276,5 @@ export function SettingsPanel({
 
     
     
+
 

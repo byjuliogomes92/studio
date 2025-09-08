@@ -1077,97 +1077,86 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
     `;
 };
 
-
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false, editorMode: EditorMode = 'none'): string {
-  const { id, slug, styles, components, meta, cookieBanner } = pageState;
-  
-  const hasForm = components.some(c => c.type === 'Form');
-  const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
-  const hasDataBinding = components.some(c => !!c.props.dataBinding);
-  const needsSecurity = meta.security?.type !== 'none';
-  const hasCustomAmpscript = !!meta.customAmpscript;
-  
-  const processAmpscript = hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload;
-  
-  const shouldHideAmpscript = isForPreview && hideAmpscript;
+    const { id, slug, styles, components, meta, cookieBanner } = pageState;
 
-  let initialAmpscript = '';
-  if (processAmpscript && !shouldHideAmpscript) {
-      // Correctly build a single, valid AMPScript block
-      const securityBlock = getAmpscriptSecurityBlock(pageState).replace(/%%\[|\]%%/g, '');
-      const prefillBlock = getPrefillAmpscript(pageState).replace(/%%\[|\]%%/g, '');
-      
-      initialAmpscript = `%%[
-          /* --- Global Variables --- */
-          VAR @showThanks
-          IF EMPTY(RequestParameter("__isPost")) THEN
-              SET @showThanks = "false"
-          ENDIF
-          
-          /* --- Security --- */
-          ${securityBlock}
-          
-          /* --- Custom AMPScript --- */
-          ${meta.customAmpscript || ''}
-          
-          /* --- Prefill --- */
-          ${prefillBlock}
-      ]%%`;
-  }
-  
-  const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
-  
-  const trackingScripts = getTrackingScripts(meta.tracking);
-  const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
-  
-  const { typography } = pageState.brand || {};
-  const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
-  const fontFamilyBody = typography?.customFontNameBody || typography?.fontFamilyBody || 'Roboto';
+    // Determine se precisamos de AMPscript
+    const hasForm = components.some(c => c.type === 'Form');
+    const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
+    const hasDataBinding = components.some(c => !!c.props.dataBinding);
+    const needsSecurity = meta.security?.type !== 'none';
+    const hasCustomAmpscript = !!meta.customAmpscript;
 
-  const fontFaceStyles = getFontFaceStyles(pageState);
-  const scrollbarStyles = getScrollbarStyles(pageState.styles.scrollbar);
-  const responsiveStyles = getResponsiveStyles(components);
-  const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700;900&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
+    const needsAmpscript = !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload);
 
-  
-  const rootComponents = components.filter(c => c.parentId === null).sort((a,b) => a.order - b.order);
-  const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, shouldHideAmpscript);
+    // Gerar conteúdo principal
+    const rootComponents = components.filter(c => c.parentId === null).sort((a,b) => a.order - b.order);
+    const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
 
-  const bodyStyles = `
-    background-color: ${styles.backgroundColor};
-    background-image: url(${styles.backgroundImage});
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    font-family: "${fontFamilyBody}", sans-serif;
-    font-weight: 400;
-    margin: 0;
-    width: 100%;
-    overflow-x: hidden; /* Prevent horizontal scroll */
-    position: relative; /* Needed for absolute positioned children */
-  `;
-  
-  const headerComponent = components.find(c => c.type === 'Header');
-  const isHeaderSticky = headerComponent?.props?.isSticky;
-  const mainStyle = isHeaderSticky ? `padding-top: ${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
+    // Configurações de estilo
+    const { typography } = pageState.brand || {};
+    const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
+    const fontFamilyBody = typography?.customFontNameBody || typography?.fontFamilyBody || 'Roboto';
+    const fontFaceStyles = getFontFaceStyles(pageState);
+    const scrollbarStyles = getScrollbarStyles(pageState.styles.scrollbar);
+    const responsiveStyles = getResponsiveStyles(components);
+    const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700;900&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
 
-  let bodyContent: string;
+    // Estilos do corpo
+    const bodyStyles = `background-color: ${styles.backgroundColor}; background-image: url(${styles.backgroundImage}); background-size: cover; background-repeat: no-repeat; background-attachment: fixed; font-family: "${fontFamilyBody}", sans-serif; font-weight: 400; margin: 0; width: 100%; overflow-x: hidden; position: relative;`;
 
-  if (processAmpscript && !shouldHideAmpscript) {
-      const ssjsScript = getFormSubmissionScript(pageState);
-      bodyContent = `
-          ${ssjsScript}
-          %%[ IF @isAuthenticated == true THEN ]%%
-          <main style="${mainStyle}">${mainContentHtml}</main>
-          %%[ ELSE ]%%
-          ${getSecurityFormHtml(pageState)}
-          %%[ ENDIF ]%%
-      `;
-  } else {
-      bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
-  }
+    // Configuração do cabeçalho
+    const headerComponent = components.find(c => c.type === 'Header');
+    const isHeaderSticky = headerComponent?.props?.isSticky;
+    const mainStyle = isHeaderSticky ? `padding-top: ${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
 
-  let finalHtml = `<!DOCTYPE html>
+    // Scripts e tracking
+    const trackingScripts = getTrackingScripts(meta.tracking);
+    const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
+    const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
+
+    let ampscriptBlock = '';
+    if (needsAmpscript) {
+        const securityAmpscript = getAmpscriptSecurityBlock(pageState).replace(/%%\[\s*|\s*\]%%/g, '').trim();
+        const prefillAmpscript = getPrefillAmpscript(pageState).replace(/%%\[\s*|\s*\]%%/g, '').trim();
+        
+        ampscriptBlock = `%%[
+/* --- Morfeus AMPscript Block --- */
+/* --- Global Variables --- */
+VAR @showThanks
+IF EMPTY(RequestParameter("__isPost")) THEN
+    SET @showThanks = "false"
+ENDIF
+
+/* --- Security --- */
+${securityAmpscript}
+
+/* --- Custom AMPScript --- */
+${meta.customAmpscript || '/* No custom AMPScript */'}
+
+/* --- Prefill --- */
+${prefillAmpscript}
+]%%`;
+    }
+
+    let ssjsBlock = '';
+    if (needsAmpscript && hasForm) {
+        ssjsBlock = getFormSubmissionScript(pageState);
+    }
+    
+    let bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
+
+    if (needsAmpscript) {
+        bodyContent = `%%[ IF @isAuthenticated == true THEN ]%%
+            ${ssjsBlock}
+            ${bodyContent}
+        %%[ ELSE ]%%
+            ${getSecurityFormHtml(pageState)}
+        %%[ ENDIF ]%%`;
+    }
+
+    const html = `
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1184,7 +1173,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${initialAmpscript}
+${ampscriptBlock}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -2525,8 +2514,5 @@ ${cookieBannerHtml}
 </body>
 </html>`;
 
-  return finalHtml;
+  return html;
 }
-
-
-

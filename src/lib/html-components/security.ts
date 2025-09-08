@@ -19,8 +19,6 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
         script += ' SET @isAuthenticated = true';
     }
 
-    // Return the full block wrapped in AMPScript tags.
-    // The generator will handle removing them if it needs to combine this script.
     return `%%[ ${script} ]%%`;
 }
 

@@ -127,6 +127,29 @@ const getInitialPage = (
   const brandId = brand?.id ?? "";
   const faviconUrl = brand?.logos?.favicon ?? "";
 
+  const styleTokens = {
+    colors: {
+      background: "#000000",
+      surface: "#1a1a1a",
+      border: "#333333",
+      textPrimary: "#FFFFFF",
+      textSecondary: "#a0a0a0",
+      accent: "#FFFFFF",
+    },
+    radius: {
+      sm: "0.5rem",
+      md: "0.75rem",
+      lg: "1rem",
+    },
+    spacing: {
+      sectionY: "6rem",
+      cardPadding: "2rem",
+    },
+    animations: {
+      fadeInUp: "fadeInUp",
+    },
+  };
+
   return sanitizeForFirestore({
     name: name,
     projectId,
@@ -138,460 +161,46 @@ const getInitialPage = (
     meta: {
       title: name,
       faviconUrl,
-      metaDescription: `Descrição da página ${name}.`,
-      loaderType: 'image',
-      loaderImageUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_icon.svg?alt=media&token=3fcd759a-3975-4285-9c59-98b824674514',
-      redirectUrl: '',
-      dataExtensionKey: 'CHANGE-ME',
+      metaDescription: `Landing page ${name} criada com Morfeus.`,
+      loaderType: "image",
+      loaderImageUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_icon.svg?alt=media&token=3fcd759a-3975-4285-9c59-98b824674514",
+      redirectUrl: "",
+      dataExtensionKey: "CHANGE-ME",
     },
     styles: {
-      backgroundColor: "#000000",
+      backgroundColor: styleTokens.colors.background,
       fontFamily: "Inter, sans-serif",
     },
-    cookieBanner: {
-      enabled: false,
-    },
+    cookieBanner: { enabled: false },
     components: [
-      // Header
-      {
-        id: "header-initial",
-        type: "Header",
-        parentId: null,
-        column: 0,
-        order: 0,
-        props: {
-          logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b",
-          logoHeight: 24,
-          layout: "logo-left-menu-button-right",
-          isSticky: true,
-          backgroundColor: "rgba(0,0,0,0.7)",
-          styles: { backdropFilter: "blur(10px)", borderBottom: "1px solid #333333"},
-          linkColor: "#d1d5db",
-          linkHoverColor: "#ffffff",
-          links: [
-            { id: "1", text: "Recursos", url: "#" },
-            { id: "2", text: "Preços", url: "#" },
-            { id: "3", text: "Contato", url: "#" },
-          ],
-          buttonText: "Começar Agora",
-          buttonUrl: "#",
-          buttonProps: { variant: 'primary', bgColor: "#FFFFFF", textColor: "#000000", hoverBgColor: "#e5e5e5" },
-        },
-      },
-      // Hero Section
-      {
-        id: "div-hero-initial",
-        type: "Div",
-        parentId: null,
-        column: 0,
-        order: 1,
-        props: {
-          styles: { paddingTop: "8rem", paddingBottom: "8rem" },
-          layout: {
-            flexDirection: "column",
-            verticalAlign: "center",
-            horizontalAlign: "center",
-            gap: "1.5rem",
-          },
-        },
-      },
-      {
-        id: "title-hero",
-        type: "Title",
-        parentId: "div-hero-initial",
-        column: 0,
-        order: 0,
-        props: {
-          text: "Construa Jornadas Incríveis com Morfeus",
-          styles: {
-            fontFamily: `Inter, sans-serif`,
-            fontSize: "3.75rem",
-            textAlign: "center",
-            fontWeight: "900",
-            letterSpacing: "-0.05em",
-            color: '#FFFFFF'
-          },
-        },
-      },
-      {
-        id: "para-hero",
-        type: "Paragraph",
-        parentId: "div-hero-initial",
-        column: 0,
-        order: 1,
-        props: {
-          text: "Plataforma completa para automação de marketing, campanhas inteligentes e resultados reais.",
-          styles: {
-            textAlign: "center",
-            maxWidth: "42rem",
-            fontSize: "1.25rem",
-            color: "#a0a0a0",
-          },
-        },
-      },
-      {
-        id: "div-buttons-hero",
-        type: "Div",
-        parentId: "div-hero-initial",
-        column: 0,
-        order: 2,
-        props: {
-          layout: {
-            flexDirection: "row",
-            gap: "1rem",
-            horizontalAlign: "center",
-          },
-          styles: {
-              paddingTop: "1rem"
-          }
-        },
-      },
-      {
-        id: "btn-hero-1",
-        type: "Button",
-        parentId: "div-buttons-hero",
-        column: 0,
-        order: 0,
-        props: {
-          text: "Criar Conta Gratuitamente",
-          variant: 'primary',
-          styles: {
-            backgroundColor: "#FFFFFF",
-            color: "#000000",
-            borderRadius: "0.5rem",
-            padding: "0.875rem 1.5rem",
-            fontWeight: "500",
-          },
-        },
-      },
-      {
-        id: "btn-hero-2",
-        type: "Button",
-        parentId: "div-buttons-hero",
-        column: 0,
-        order: 1,
-        props: {
-          text: "Saiba Mais",
-          variant: "outline",
-          styles: {
-            borderRadius: "0.5rem",
-            padding: "0.875rem 1.5rem",
-            color: "#FFFFFF",
-            backgroundColor: 'transparent',
-            borderColor: "#FFFFFF",
-             fontWeight: "500",
-          },
-        },
-      },
-       // Features Section
-      {
-        id: "div-features-section",
-        type: "Div",
-        parentId: null,
-        column: 0,
-        order: 2,
-        props: {
-          styles: {
-            paddingTop: "6rem",
-            paddingBottom: "6rem",
-            backgroundColor: "#000000",
-          },
-        },
-      },
-      {
-        id: "div-features-title",
-        type: "Div",
-        parentId: "div-features-section",
-        column: 0,
-        order: 0,
-        props: {
-          styles: { marginBottom: "3rem" },
-          layout: { horizontalAlign: "center", gap: "0.5rem", flexDirection: 'column' },
-        },
-      },
-      {
-        id: "title-features",
-        type: "Title",
-        parentId: "div-features-title",
-        column: 0,
-        order: 0,
-        props: {
-          text: "Por que escolher o Morfeus?",
-          styles: {
-            textAlign: "center",
-            fontSize: "2.25rem",
-            color: "#FFFFFF",
-            fontWeight: "700"
-          },
-        },
-      },
-      {
-        id: "para-features",
-        type: "Paragraph",
-        parentId: "div-features-title",
-        column: 0,
-        order: 1,
-        props: {
-          text: "Tudo que você precisa para escalar sua comunicação.",
-          styles: { textAlign: "center", color: "#a0a0a0" },
-        },
-      },
-      {
-        id: "cols-features",
-        type: "Columns",
-        parentId: "div-features-section",
-        column: 0,
-        order: 1,
-        props: { columnCount: 3, styles: { gap: "2rem" } },
-      },
-      // Feature 1
-      {
-        id: "div-feature-1",
-        type: "Div",
-        parentId: "cols-features",
-        column: 0,
-        order: 0,
-        props: {
-          styles: {
-            backgroundColor: "#1a1a1a",
-            border: "1px solid #333333",
-            padding: "2rem",
-            borderRadius: "0.75rem",
-          },
-          layout: {
-            flexDirection: "column",
-            horizontalAlign: "flex-start",
-            gap: "0.5rem",
-          },
-        },
-      },
-       {
-        id: "icon-f1",
-        type: "CustomHTML",
-        parentId: "div-feature-1",
-        column: 0,
-        order: 0,
-        props: { htmlContent: '<div class="flex items-center justify-center h-12 w-12 rounded-lg bg-gray-800 mb-4"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>' },
-      },
-      {
-        id: "title-f1",
-        type: "Subtitle",
-        parentId: "div-feature-1",
-        column: 0,
-        order: 1,
-        props: { text: "Automação Rápida", styles: { fontWeight: "600", color: '#FFFFFF', marginTop: '0.5rem' } },
-      },
-      {
-        id: "para-f1",
-        type: "Paragraph",
-        parentId: "div-feature-1",
-        column: 0,
-        order: 2,
-        props: {
-          text: "Monte fluxos em minutos e ganhe agilidade para focar no que realmente importa.",
-          styles: { color: "#a0a0a0" },
-        },
-      },
-      // Feature 2
-      {
-        id: "div-feature-2",
-        type: "Div",
-        parentId: "cols-features",
-        column: 1,
-        order: 0,
-        props: {
-          styles: {
-            backgroundColor: "#1a1a1a",
-            border: "1px solid #333333",
-            padding: "2rem",
-            borderRadius: "0.75rem",
-          },
-          layout: {
-            flexDirection: "column",
-            horizontalAlign: "flex-start",
-            gap: "0.5rem",
-          },
-        },
-      },
-       {
-        id: "icon-f2",
-        type: "CustomHTML",
-        parentId: "div-feature-2",
-        column: 0,
-        order: 0,
-        props: { htmlContent: '<div class="flex items-center justify-center h-12 w-12 rounded-lg bg-gray-800 mb-4"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>' },
-      },
-      {
-        id: "title-f2",
-        type: "Subtitle",
-        parentId: "div-feature-2",
-        column: 0,
-        order: 1,
-        props: { text: "Segmentação Inteligente", styles: { fontWeight: "600", color: '#FFFFFF', marginTop: '0.5rem' } },
-      },
-      {
-        id: "para-f2",
-        type: "Paragraph",
-        parentId: "div-feature-2",
-        column: 0,
-        order: 2,
-        props: {
-          text: "Conecte-se com o público certo na hora certa e maximize o impacto das suas campanhas.",
-          styles: { color: "#a0a0a0" },
-        },
-      },
-      // Feature 3
-      {
-        id: "div-feature-3",
-        type: "Div",
-        parentId: "cols-features",
-        column: 2,
-        order: 0,
-        props: {
-          styles: {
-            backgroundColor: "#1a1a1a",
-            border: "1px solid #333333",
-            padding: "2rem",
-            borderRadius: "0.75rem",
-          },
-          layout: {
-            flexDirection: "column",
-            horizontalAlign: "flex-start",
-            gap: "0.5rem",
-          },
-        },
-      },
-       {
-        id: "icon-f3",
-        type: "CustomHTML",
-        parentId: "div-feature-3",
-        column: 0,
-        order: 0,
-        props: { htmlContent: '<div class="flex items-center justify-center h-12 w-12 rounded-lg bg-gray-800 mb-4"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M2.06 12.87a2.38 2.38 0 0 0 .34 1.47l2.63 4.3c.23.38.49.71.78.99a2.38 2.38 0 0 0 1.47.34h11.44a2.38 2.38 0 0 0 1.47-.34c.29-.28.55-.61.78-.99l2.63-4.3a2.38 2.38 0 0 0 .34-1.47V4.38a2.38 2.38 0 0 0-.34-1.47l-2.63-4.3c-.23-.38-.49-.71-.78-.99a2.38 2.38 0 0 0-1.47-.34H7.62a2.38 2.38 0 0 0-1.47.34c-.29.28-.55.61-.78.99L2.74 2.91a2.38 2.38 0 0 0-.34 1.47Z"></path><path d="m11.33 12.4-2.13 3.42"></path><path d="m14.8 15.82-2.9-4.66"></path><path d="m13.4 7.6-1.6 2.53"></path><path d="M12 2v2.5"></path><path d="M12 19.5V22"></path><path d="m16.5 4.5.8 1.35"></path><path d="m6.7 18.15.8 1.35"></path><path d="m20.91 10.91 1.35.8"></path><path d="m1.74 12.29 1.35.8"></path><path d="m7.5 4.5-.8 1.35"></path><path d="m17.3 18.15-.8 1.35"></path><path d="m3.09 10.91-1.35.8"></path><path d="m22.26 12.29-1.35.8"></path></svg></div>' },
-      },
-      {
-        id: "title-f3",
-        type: "Subtitle",
-        parentId: "div-feature-3",
-        column: 0,
-        order: 1,
-        props: { text: "Relatórios Avançados", styles: { fontWeight: "600", color: '#FFFFFF', marginTop: '0.5rem' } },
-      },
-      {
-        id: "para-f3",
-        type: "Paragraph",
-        parentId: "div-feature-3",
-        column: 0,
-        order: 2,
-        props: {
-          text: "Tome decisões estratégicas com base em dados reais e visualizações claras.",
-          styles: { color: "#a0a0a0" },
-        },
-      },
-      // CTA Section
-      {
-        id: "div-cta-section",
-        type: "Div",
-        parentId: null,
-        column: 0,
-        order: 3,
-        props: { styles: { paddingTop: "5rem", paddingBottom: "8rem" } },
-      },
-      {
-        id: "div-cta-inner",
-        type: "Div",
-        parentId: "div-cta-section",
-        column: 0,
-        order: 0,
-        props: {
-          styles: {
-            backgroundColor: "#1a1a1a",
-            border: "1px solid #333333",
-            padding: "4rem 2.5rem",
-            borderRadius: "1rem",
-          },
-          layout: { horizontalAlign: "center", gap: "1rem", flexDirection: "column" },
-        },
-      },
-      {
-        id: "title-cta",
-        type: "Title",
-        parentId: "div-cta-inner",
-        column: 0,
-        order: 0,
-        props: {
-          text: "Pronto para transformar sua comunicação?",
-          styles: {
-            textAlign: "center",
-            fontSize: "2.25rem",
-            color: "#FFFFFF",
-            fontWeight: "700",
-          },
-        },
-      },
-      {
-        id: "para-cta",
-        type: "Paragraph",
-        parentId: "div-cta-inner",
-        column: 0,
-        order: 1,
-        props: {
-          text: "Cadastre-se no Morfeus e descubra como levar suas campanhas para o próximo nível. Comece gratuitamente, sem necessidade de cartão de crédito.",
-          styles: {
-            textAlign: "center",
-            maxWidth: "42rem",
-            fontSize: "1.125rem",
-            color: "#a0a0a0",
-          },
-        },
-      },
-      {
-        id: "btn-cta",
-        type: "Button",
-        parentId: "div-cta-inner",
-        column: 0,
-        order: 2,
-        props: {
-          text: "Criar Conta Gratuitamente",
-          variant: 'primary',
-          styles: {
-            marginTop: "1rem",
-            backgroundColor: "#FFFFFF",
-            color: "#000000",
-            borderRadius: "0.5rem",
-            padding: "0.875rem 1.5rem",
-            fontWeight: "500",
-          },
-        },
-      },
-      // Footer
-       {
-        id: "footer-initial",
-        type: "Footer",
-        parentId: null,
-        column: 0,
-        order: 4,
-        props: {
-          layout: 'menus-and-social',
-          logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b",
-          footerText1: `© ${new Date().getFullYear()} Morfeus. Todos os direitos reservados.`,
-          linksLeft: [
-            { id: "f1", text: 'Início', url: '#' },
-            { id: "f2", text: 'Preços', url: '#' },
-          ],
-          linksRight: [
-            { id: "f3", text: 'Termos', url: '#' },
-            { id: "f4", text: 'Privacidade', url: '#' },
-          ],
-          socialLinks: { twitter: "#", github: "#" },
-          styles: {
-            borderTop: "1px solid #333333",
-            paddingTop: "2rem",
-            paddingBottom: "2rem",
-            backgroundColor: '#000000'
-          },
-        },
-      },
+      { id: "header-initial", type: "Header", parentId: null, column: 0, order: 0, props: { logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b", logoHeight: 24, layout: "logo-left-menu-button-right", isSticky: true, backgroundColor: "rgba(0,0,0,0.7)", styles: { backdropFilter: "blur(10px)", borderBottom: `1px solid ${styleTokens.colors.border}` }, linkColor: "#d1d5db", linkHoverColor: "#ffffff", links: [{ id: "1", text: "Recursos", url: "#" }, { id: "2", text: "Preços", url: "#" }, { id: "3", text: "Contato", url: "#" }], buttonText: "Começar Agora", buttonUrl: "#", buttonProps: { bgColor: styleTokens.colors.accent, textColor: styleTokens.colors.background, hoverBgColor: "#e5e5e5" } } },
+      { id: "div-hero-initial", type: "Div", parentId: null, column: 0, order: 1, props: { styles: { paddingTop: "8rem", paddingBottom: "8rem", animationType: styleTokens.animations.fadeInUp }, layout: { flexDirection: "column", verticalAlign: "center", horizontalAlign: "center", gap: "1.5rem" } } },
+      { id: "title-hero", type: "Title", parentId: "div-hero-initial", column: 0, order: 0, props: { text: "Crie Landing Pages que Convertem com o Morfeus", styles: { fontSize: "3.75rem", textAlign: "center", fontWeight: "900", letterSpacing: "-0.05em", color: styleTokens.colors.textPrimary } } },
+      { id: "para-hero", type: "Paragraph", parentId: "div-hero-initial", column: 0, order: 1, props: { text: "A plataforma inteligente para empresas que querem impactar clientes com páginas rápidas, modernas e personalizadas.", styles: { textAlign: "center", maxWidth: "42rem", fontSize: "1.25rem", color: styleTokens.colors.textSecondary } } },
+      { id: "div-buttons-hero", type: "Div", parentId: "div-hero-initial", column: 0, order: 2, props: { layout: { flexDirection: "row", gap: "1rem", horizontalAlign: "center" } } },
+      { id: "btn-hero-1", type: "Button", parentId: "div-buttons-hero", column: 0, order: 0, props: { text: "Criar Conta Gratuitamente", variant: "primary", styles: { backgroundColor: styleTokens.colors.accent, color: styleTokens.colors.background, borderRadius: styleTokens.radius.sm, padding: "0.875rem 1.5rem", fontWeight: "500" } } },
+      { id: "btn-hero-2", type: "Button", parentId: "div-buttons-hero", column: 0, order: 1, props: { text: "Saiba Mais", variant: "outline", styles: { borderRadius: styleTokens.radius.sm, padding: "0.875rem 1.5rem", color: styleTokens.colors.textPrimary, borderColor: styleTokens.colors.accent, fontWeight: "500" } } },
+      { id: "div-features-section", type: "Div", parentId: null, column: 0, order: 2, props: { styles: { paddingTop: styleTokens.spacing.sectionY, paddingBottom: styleTokens.spacing.sectionY, backgroundColor: styleTokens.colors.background } } },
+      { id: "div-features-title", type: "Div", parentId: "div-features-section", column: 0, order: 0, props: { styles: { marginBottom: "3rem", animationType: styleTokens.animations.fadeInUp }, layout: { horizontalAlign: "center", gap: "0.5rem", flexDirection: "column" } } },
+      { id: "title-features", type: "Title", parentId: "div-features-title", column: 0, order: 0, props: { text: "Por que escolher o Morfeus?", styles: { textAlign: "center", fontSize: "2.25rem", color: styleTokens.colors.textPrimary, fontWeight: "700" } } },
+      { id: "para-features", type: "Paragraph", parentId: "div-features-title", column: 0, order: 1, props: { text: "Tudo que você precisa para escalar sua comunicação.", styles: { textAlign: "center", color: styleTokens.colors.textSecondary } } },
+      { id: "cols-features", type: "Columns", parentId: "div-features-section", column: 0, order: 1, props: { columnCount: 3, styles: { gap: "2rem" } } },
+      { id: "div-feature-1", type: "Div", parentId: "cols-features", column: 0, order: 0, props: { styles: { backgroundColor: styleTokens.colors.surface, border: `1px solid ${styleTokens.colors.border}`, padding: styleTokens.spacing.cardPadding, borderRadius: styleTokens.radius.md }, hoverStyles: { transform: "translateY(-4px)", borderColor: styleTokens.colors.accent } } },
+      { id: "icon-f1", type: "CustomHTML", parentId: "div-feature-1", column: 0, order: 0, props: { htmlContent: `<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" x2="12" y1="22.08" y2="12"></line></svg></div>` } },
+      { id: "title-f1", type: "Subtitle", parentId: "div-feature-1", column: 0, order: 1, props: { text: "Automação Rápida", styles: { fontWeight: "600", color: styleTokens.colors.textPrimary } } },
+      { id: "para-f1", type: "Paragraph", parentId: "div-feature-1", column: 0, order: 2, props: { text: "Construa páginas e fluxos em minutos, sem complicação.", styles: { color: styleTokens.colors.textSecondary } } },
+      { id: "div-feature-2", type: "Div", parentId: "cols-features", column: 1, order: 0, props: { styles: { backgroundColor: styleTokens.colors.surface, border: `1px solid ${styleTokens.colors.border}`, padding: styleTokens.spacing.cardPadding, borderRadius: styleTokens.radius.md }, hoverStyles: { transform: "translateY(-4px)", borderColor: styleTokens.colors.accent } } },
+      { id: "icon-f2", type: "CustomHTML", parentId: "div-feature-2", column: 0, order: 0, props: { htmlContent: `<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>` } },
+      { id: "title-f2", type: "Subtitle", parentId: "div-feature-2", column: 0, order: 1, props: { text: "Segmentação Inteligente", styles: { fontWeight: "600", color: styleTokens.colors.textPrimary } } },
+      { id: "para-f2", type: "Paragraph", parentId: "div-feature-2", column: 0, order: 2, props: { text: "Conecte-se com quem realmente importa.", styles: { color: styleTokens.colors.textSecondary } } },
+      { id: "div-feature-3", type: "Div", parentId: "cols-features", column: 2, order: 0, props: { styles: { backgroundColor: styleTokens.colors.surface, border: `1px solid ${styleTokens.colors.border}`, padding: styleTokens.spacing.cardPadding, borderRadius: styleTokens.radius.md }, hoverStyles: { transform: "translateY(-4px)", borderColor: styleTokens.colors.accent } } },
+      { id: "icon-f3", type: "CustomHTML", parentId: "div-feature-3", column: 0, order: 0, props: { htmlContent: `<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"></line><line x1="18" x2="18" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="16"></line></svg></div>` } },
+      { id: "title-f3", type: "Subtitle", parentId: "div-feature-3", column: 0, order: 1, props: { text: "Relatórios Avançados", styles: { fontWeight: "600", color: styleTokens.colors.textPrimary } } },
+      { id: "para-f3", type: "Paragraph", parentId: "div-feature-3", column: 0, order: 2, props: { text: "Tome decisões com base em dados reais.", styles: { color: styleTokens.colors.textSecondary } } },
+      { id: "div-newsletter", type: "Div", parentId: null, column: 0, order: 3, props: { styles: { paddingTop: styleTokens.spacing.sectionY, paddingBottom: styleTokens.spacing.sectionY, backgroundColor: styleTokens.colors.surface }, layout: { flexDirection: "column", gap: "1.5rem", horizontalAlign: "center" } } },
+      { id: "title-newsletter", type: "Title", parentId: "div-newsletter", column: 0, order: 0, props: { text: "Receba dicas exclusivas de marketing e landing pages", styles: { textAlign: "center", fontSize: "1.875rem", fontWeight: "700", color: styleTokens.colors.textPrimary } } },
+      { id: "form-newsletter", type: "Form", parentId: "div-newsletter", column: 0, order: 1, props: { fields: { email: { enabled: true } }, formAlign: 'center', buttonAlign: 'left', buttonText: 'Inscrever', inputStyles: { backgroundColor: '#333333', borderColor: '#555555', color: '#FFFFFF', borderRadius: styleTokens.radius.sm }, buttonProps: { bgColor: styleTokens.colors.accent, textColor: styleTokens.colors.background } } },
+      { id: "footer-initial", type: "Footer", parentId: null, column: 0, order: 4, props: { layout: "menus-and-social", logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b", footerText1: `© ${new Date().getFullYear()} Morfeus. Todos os direitos reservados.`, linksLeft: [{ id: "f1", text: "Início", url: "#" }, { id: "f2", text: "Preços", url: "#" }], linksRight: [{ id: "f3", text: "Termos", url: "#" }, { id: "f4", text: "Privacidade", url: "#" }], socialLinks: { twitter: "#", github: "#" }, styles: { borderTop: `1px solid ${styleTokens.colors.border}`, paddingTop: "2rem", paddingBottom: "2rem", backgroundColor: "#111111" } } },
     ],
   });
 };

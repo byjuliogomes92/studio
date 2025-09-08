@@ -119,7 +119,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     : '';
   
   const componentId = component.props.idOverride || component.id;
-  const selectableAttrs = isForPreview ? `data-component-id="${component.id}" id="${componentId}"` : `id="${componentId}"`;
+  const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : `id="${componentId}"`;
   
   // Extract only spacing styles for the wrapper
   const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
@@ -129,6 +129,12 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
       wrapperStyles[key] = styles[key];
     }
   });
+
+  // Critical fix: Inherit text-align from the child component for the wrapper
+  if (styles.textAlign) {
+      wrapperStyles['text-align'] = styles.textAlign;
+  }
+  
   const wrapperStyleString = getStyleString(wrapperStyles);
   
   // Render the component's HTML

@@ -18,6 +18,7 @@ export function renderParagraph(component: PageComponent, isForPreview: boolean,
         }
     }
     
+    // Do not apply alignment directly to the p tag, it's handled by the wrapper.
     const styleString = getStyleString(finalStyles);
     const editableAttrs = isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="text"` : '';
     const dataBinding = props.dataBinding;
@@ -29,14 +30,15 @@ export function renderParagraph(component: PageComponent, isForPreview: boolean,
     
     const idAttr = idOverride ? `id="${idOverride}"` : '';
 
-    return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs} ${idAttr}>${text}</div>`;
+    return `<p style="white-space: pre-wrap; ${styleString}" ${editableAttrs} ${idAttr}>${text}</p>`;
 }
 
 function getStyleString(styles: any = {}): string {
-    const forbiddenKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
+    // Remove text-align as it's handled by the wrapper div
+    const forbiddenKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'textAlign'];
     return Object.entries(styles)
       .map(([key, value]) => {
-        if (!value) return '';
+        if (!value || forbiddenKeys.includes(key)) return '';
         const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
         return `${cssKey}: ${value};`;
       })

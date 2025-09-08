@@ -149,6 +149,8 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   }
   
   if (isInFlexRow) {
+      // For items in a horizontal flex row, we don't want the individual alignment wrapper.
+      // The parent Div controls alignment.
       return renderedComponent;
   }
 
@@ -1085,18 +1087,34 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const needsSecurity = meta.security?.type !== 'none';
   const hasCustomAmpscript = !!meta.customAmpscript;
   
-  const ampscriptIsNeeded = hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload;
+  const processAmpscript = hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload;
   
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
-  const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getFormSubmissionScript(pageState).replace(/\n\s*/g, ' ') : '';
-  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState).replace(/\n\s*/g, ' ') : '';
-  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState).replace(/\n\s*/g, '') : '';
+  let initialAmpscript = '';
+  if (processAmpscript && !shouldHideAmpscript) {
+      // Correctly build a single, valid AMPScript block
+      const securityBlock = getAmpscriptSecurityBlock(pageState).replace(/%%\[|\]%%/g, '');
+      const prefillBlock = getPrefillAmpscript(pageState).replace(/%%\[|\]%%/g, '');
+      
+      initialAmpscript = `%%[
+          /* --- Global Variables --- */
+          VAR @showThanks
+          IF EMPTY(RequestParameter("__isPost")) THEN
+              SET @showThanks = "false"
+          ENDIF
+          
+          /* --- Security --- */
+          ${securityBlock}
+          
+          /* --- Custom AMPScript --- */
+          ${meta.customAmpscript || ''}
+          
+          /* --- Prefill --- */
+          ${prefillBlock}
+      ]%%`;
+  }
   
-  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) 
-    ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript} ${meta.customAmpscript || ''} ${prefillAmpscript} ]%%` 
-    : '';
-
   const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
   
   const trackingScripts = getTrackingScripts(meta.tracking);
@@ -1133,17 +1151,21 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const isHeaderSticky = headerComponent?.props?.isSticky;
   const mainStyle = isHeaderSticky ? `padding-top: ${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
 
-  const bodyContent = `
-    ${renderLoader(meta, styles.themeColor)}
-    %%[ IF @isAuthenticated == true THEN ]%%
-    ${ssjsScript}
-    <main style="${mainStyle}">
-      ${mainContentHtml}
-    </main>
-    %%[ ELSE ]%%
-    ${getSecurityFormHtml(pageState)}
-    %%[ ENDIF ]%%
-    `;
+  let bodyContent: string;
+
+  if (processAmpscript && !shouldHideAmpscript) {
+      const ssjsScript = getFormSubmissionScript(pageState);
+      bodyContent = `
+          ${ssjsScript}
+          %%[ IF @isAuthenticated == true THEN ]%%
+          <main style="${mainStyle}">${mainContentHtml}</main>
+          %%[ ELSE ]%%
+          ${getSecurityFormHtml(pageState)}
+          %%[ ENDIF ]%%
+      `;
+  } else {
+      bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
+  }
 
   let finalHtml = `<!DOCTYPE html>
 <html>
@@ -2497,12 +2519,14 @@ ${clientSideScripts}
 </head>
 <body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
 ${!isForPreview ? trackingScripts.body : ''}
-${shouldHideAmpscript ? mainContentHtml : bodyContent}
+${renderLoader(meta, styles.themeColor)}
+${bodyContent}
 ${cookieBannerHtml}
 </body>
 </html>`;
 
   return finalHtml;
 }
+
 
 

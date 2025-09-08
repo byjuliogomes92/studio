@@ -27,7 +27,7 @@ export function getPrefillAmpscript(pageState: CloudPage): string {
 
     const prefillLines = fieldsToPrefill.map(fieldName => `SET @${fieldName} = QueryParameter("${fieldName.toLowerCase()}")`);
     
-    // Return just the logic, not the full block
+    // Return just the logic, not the full block, and without newlines.
     return `/* --- Prefill --- */ ${prefillLines.join(' ')}`;
 }
 
@@ -125,6 +125,6 @@ try {
     }
 }`;
 
-    // Return the SSJS logic wrapped in script tags
-    return `<script runat="server">${ssjsLogic}</script>`;
+    // Return the SSJS logic wrapped in script tags, with newlines removed to prevent issues.
+    return `<script runat="server">${ssjsLogic.replace(/\n/g, ' ')}</script>`;
 }

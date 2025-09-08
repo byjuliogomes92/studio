@@ -4,6 +4,9 @@ import type { CloudPage } from '../types';
 export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
+    // This function will now return just the logic part, without the %%[...]%% delimiters.
+    // The main html-generator will wrap everything in a single block.
+
     let script = 'VAR @isAuthenticated, @LoginURL SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))';
     
     if (!security || security.type === 'none') {
@@ -14,11 +17,11 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
         const config = security.passwordConfig;
         script += ` VAR @submittedPassword, @identifier, @correctPassword SET @isAuthenticated = false SET @submittedPassword = RequestParameter("page_password") SET @identifier = RequestParameter("${config.urlParameter}") IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier) IF @submittedPassword == @correctPassword THEN SET @isAuthenticated = true ENDIF ENDIF`;
     } else {
+        // Fallback for misconfigured security
         script += ' SET @isAuthenticated = true';
     }
 
-    // Return only the logic, without %%[...]%%
-    return script;
+    return script.replace(/\n/g, ' '); // Ensure no newlines
 }
 
 export const getSecurityFormHtml = (pageState: CloudPage): string => {

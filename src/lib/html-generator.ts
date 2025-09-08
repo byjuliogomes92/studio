@@ -1,5 +1,5 @@
 
-import type { CloudPage, PageComponent, ComponentType, EditorMode, ResponsiveProps } from './types';
+import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
@@ -1094,18 +1094,13 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false, editorMode: EditorMode = 'none'): string {
     const { id, slug, styles, components, meta, cookieBanner } = pageState;
-
     const hasForm = components.some(c => c.type === 'Form');
     const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
     const hasDataBinding = components.some(c => !!c.props.dataBinding);
     const needsSecurity = meta.security?.type !== 'none';
     const hasCustomAmpscript = !!meta.customAmpscript;
-
     const needsAmpscript = !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload);
-
-    const rootComponents = components.filter(c => c.parentId === null).sort((a,b) => a.order - b.order);
-    const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
-
+    const mainContentHtml = renderComponents(components.filter(c => c.parentId === null), components, pageState, isForPreview, hideAmpscript);
     const { typography } = pageState.brand || {};
     const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
     const fontFamilyBody = typography?.customFontNameBody || typography?.fontFamilyBody || 'Roboto';
@@ -1113,48 +1108,39 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const scrollbarStyles = getScrollbarStyles(pageState.styles.scrollbar);
     const responsiveStyles = getResponsiveStyles(components);
     const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700;900&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
-    const bodyStyles = `background-color: ${styles.backgroundColor}; background-image: url(${styles.backgroundImage}); background-size: cover; background-repeat: no-repeat; background-attachment: fixed; font-family: "${fontFamilyBody}", sans-serif; font-weight: 400; margin: 0; width: 100%; overflow-x: hidden; position: relative;`;
+    const bodyStyles = `background-color:${styles.backgroundColor};background-image:url(${styles.backgroundImage});background-size:cover;background-repeat:no-repeat;background-attachment:fixed;font-family:"${fontFamilyBody}",sans-serif;font-weight:400;margin:0;width:100%;overflow-x:hidden;position:relative;`;
     const headerComponent = components.find(c => c.type === 'Header');
-    const isHeaderSticky = headerComponent?.props?.isSticky;
-    const mainStyle = isHeaderSticky ? `padding-top: ${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
+    const mainStyle = headerComponent?.props?.isSticky ? `padding-top:${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
     const trackingScripts = getTrackingScripts(meta.tracking);
     const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
     const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
 
-    let ampscriptBlock = '';
+    let initialAmpscript = '';
     if (needsAmpscript) {
-        const securityAmpscript = getAmpscriptSecurityBlock(pageState);
-        const prefillAmpscript = getPrefillAmpscript(pageState);
-        const customAmpscript = meta.customAmpscript || '';
-        
-        const allAmpscript = [
-            `VAR @showThanks,@isAuthenticated,@LoginURL SET @LoginURL=Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=",URLEncode(CloudPagesURL(PageID)))`,
-            `IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks="false" ENDIF`,
-            securityAmpscript,
-            customAmpscript,
-            prefillAmpscript,
-        ].filter(Boolean).join(' ');
+        const securityLogic = getAmpscriptSecurityBlock(pageState).replace(/%%\[|\]%%/g, '').trim();
+        const prefillLogic = getPrefillAmpscript(pageState).replace(/%%\[|\]%%/g, '').trim();
+        const customLogic = (meta.customAmpscript || '').replace(/%%\[|\]%%/g, '').trim();
 
-        ampscriptBlock = `%%[${allAmpscript}]%%`;
+        initialAmpscript = `%%[
+            VAR @showThanks,@isAuthenticated,@LoginURL 
+            SET @LoginURL=Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=",URLEncode(CloudPagesURL(PageID))) 
+            IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks="false" ENDIF 
+            ${securityLogic} 
+            ${prefillLogic} 
+            ${customLogic}
+        ]%%`;
     }
+    
+    let bodyContent = '';
+    const ssjsScript = (needsAmpscript && hasForm) ? getFormSubmissionScript(pageState) : '';
 
-    const ssjsBlock = (needsAmpscript && hasForm) ? getFormSubmissionScript(pageState) : '';
-
-    let bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
     if (needsAmpscript && needsSecurity) {
-        bodyContent = `%%[IF @isAuthenticated == true THEN]%%
-            ${ssjsBlock}
-            ${bodyContent}
-        %%[ELSE]%%
-            ${getSecurityFormHtml(pageState)}
-        %%[ENDIF]%%`;
-    } else if (needsAmpscript && hasForm) {
-        bodyContent = `${ssjsBlock}${bodyContent}`;
+        bodyContent = `%%[IF @isAuthenticated == true THEN]%%${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>%%[ELSE]%%${getSecurityFormHtml(pageState)}%%[ENDIF]%%`;
+    } else {
+        bodyContent = `${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
-
-
-    const html = `
-<!DOCTYPE html>
+    
+    return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1171,7 +1157,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ampscriptBlock}
+${initialAmpscript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -2489,6 +2475,4 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
 </html>`;
-
-  return html;
 }

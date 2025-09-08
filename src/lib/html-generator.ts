@@ -1,5 +1,5 @@
 
-import type { CloudPage, PageComponent, ComponentType, Action, CookieCategory, ResponsiveProps, EditorMode } from './types';
+import type { CloudPage, PageComponent, ComponentType, EditorMode } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
@@ -1078,22 +1078,19 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
 };
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false, editorMode: EditorMode = 'none'): string {
-    const { id, slug, styles, components, meta, cookieBanner } = pageState;
+    const { styles, components, meta, cookieBanner } = pageState;
 
-    // Determine se precisamos de AMPscript
     const hasForm = components.some(c => c.type === 'Form');
     const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
     const hasDataBinding = components.some(c => !!c.props.dataBinding);
     const needsSecurity = meta.security?.type !== 'none';
     const hasCustomAmpscript = !!meta.customAmpscript;
 
-    const needsAmpscript = !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload);
+    const processAmpscript = !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload);
 
-    // Gerar conteúdo principal
     const rootComponents = components.filter(c => c.parentId === null).sort((a,b) => a.order - b.order);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
 
-    // Configurações de estilo
     const { typography } = pageState.brand || {};
     const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
     const fontFamilyBody = typography?.customFontNameBody || typography?.fontFamilyBody || 'Roboto';
@@ -1101,26 +1098,21 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const scrollbarStyles = getScrollbarStyles(pageState.styles.scrollbar);
     const responsiveStyles = getResponsiveStyles(components);
     const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700;900&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
-
-    // Estilos do corpo
     const bodyStyles = `background-color: ${styles.backgroundColor}; background-image: url(${styles.backgroundImage}); background-size: cover; background-repeat: no-repeat; background-attachment: fixed; font-family: "${fontFamilyBody}", sans-serif; font-weight: 400; margin: 0; width: 100%; overflow-x: hidden; position: relative;`;
-
-    // Configuração do cabeçalho
     const headerComponent = components.find(c => c.type === 'Header');
     const isHeaderSticky = headerComponent?.props?.isSticky;
     const mainStyle = isHeaderSticky ? `padding-top: ${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
-
-    // Scripts e tracking
     const trackingScripts = getTrackingScripts(meta.tracking);
     const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
     const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
 
-    let ampscriptBlock = '';
-    if (needsAmpscript) {
-        const securityAmpscript = getAmpscriptSecurityBlock(pageState).replace(/%%\[\s*|\s*\]%%/g, '').trim();
-        const prefillAmpscript = getPrefillAmpscript(pageState).replace(/%%\[\s*|\s*\]%%/g, '').trim();
-        
-        ampscriptBlock = `%%[
+    let initialAmpscript = '';
+    if (processAmpscript) {
+        const securityLogic = getAmpscriptSecurityBlock(pageState);
+        const prefillLogic = getPrefillAmpscript(pageState);
+        const customLogic = hasCustomAmpscript ? `/* --- Custom AMPScript --- */ ${meta.customAmpscript}` : '';
+
+        initialAmpscript = `%%[
 /* --- Morfeus AMPscript Block --- */
 /* --- Global Variables --- */
 VAR @showThanks
@@ -1128,25 +1120,16 @@ IF EMPTY(RequestParameter("__isPost")) THEN
     SET @showThanks = "false"
 ENDIF
 
-/* --- Security --- */
-${securityAmpscript}
-
-/* --- Custom AMPScript --- */
-${meta.customAmpscript || '/* No custom AMPScript */'}
-
-/* --- Prefill --- */
-${prefillAmpscript}
+${securityLogic}
+${customLogic}
+${prefillLogic}
 ]%%`;
     }
 
-    let ssjsBlock = '';
-    if (needsAmpscript && hasForm) {
-        ssjsBlock = getFormSubmissionScript(pageState);
-    }
+    const ssjsBlock = (processAmpscript && hasForm) ? `<script runat="server">${getFormSubmissionScript(pageState)}</script>` : '';
     
     let bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
-
-    if (needsAmpscript) {
+    if (processAmpscript) {
         bodyContent = `%%[ IF @isAuthenticated == true THEN ]%%
             ${ssjsBlock}
             ${bodyContent}
@@ -1173,7 +1156,7 @@ ${prefillAmpscript}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ampscriptBlock}
+${initialAmpscript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}

@@ -12,7 +12,7 @@ const socialSvgs: Record<string, string> = {
 
 function renderLinkList(links: HeaderLink[] = []): string {
     if (!links || links.length === 0) return '';
-    const itemsHtml = links.map(link => `<li><a href="${link.url}">${link.text}</a></li>`).join('');
+    const itemsHtml = links.map(link => `<li><a href="${link.url}" class="footer-link">${link.text}</a></li>`).join('');
     return `<ul class="footer-link-list">${itemsHtml}</ul>`;
 }
 
@@ -34,28 +34,40 @@ export function renderFooter(component: PageComponent): string {
         linksLeft,
         linksRight,
         socialLinks,
-        footerText1 = `© ${new Date().getFullYear()} Empresa. Todos os direitos reservados.`,
-        footerText2 = 'Informações legais ou endereço da empresa.',
-        footerText3 = 'Links úteis ou outros avisos.',
+        footerText1 = `© ${new Date().getFullYear()} Morfeus. Todos os direitos reservados.`,
         styles = {}
     } = props;
     
     const styleString = getStyleString(styles);
 
     let contentHtml = '';
+    
+    const logoHtml = `
+      <div class="footer-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+        </svg>
+        <span>Morfeus</span>
+      </div>`;
+
     if (layout === 'menus-and-social') {
         contentHtml = `
+            <div class="footer-col footer-col-main">
+                ${logoHtml}
+                <p class="footer-copyright">${footerText1}</p>
+            </div>
             <div class="footer-col">${renderLinkList(linksLeft)}</div>
-            <div class="footer-col footer-col-center">${renderSocialIcons(socialLinks)}</div>
-            <div class="footer-col footer-col-right">${renderLinkList(linksRight)}</div>
+            <div class="footer-col">${renderLinkList(linksRight)}</div>
+            <div class="footer-col">${renderSocialIcons(socialLinks)}</div>
         `;
     } else {
         // Default layout
         contentHtml = `
             <div class="footer-col footer-col-center">
-                <div class="footer-text">${footerText1}</div>
-                <div class="footer-text">${footerText2}</div>
-                <div class="footer-text">${footerText3}</div>
+                ${logoHtml}
+                <p class="footer-copyright">${footerText1}</p>
             </div>
         `;
     }

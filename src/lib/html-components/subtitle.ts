@@ -31,6 +31,7 @@ export function renderSubtitle(component: PageComponent, isForPreview: boolean, 
 }
 
 function getStyleString(styles: any = {}): string {
+    const forbiddenKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
     return Object.entries(styles)
       .map(([key, value]) => {
         if (!value) return '';

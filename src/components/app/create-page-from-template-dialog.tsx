@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -89,7 +90,6 @@ const platforms = [
   }, { id: "web", name: "Web", Icon: Globe, enabled: false },
 ];
 
-// Helper function to sanitize data for Firestore (remove undefined values)
 const sanitizeForFirestore = (obj: any): any => {
   if (obj === null || obj === undefined) {
     return null;
@@ -115,58 +115,12 @@ const sanitizeForFirestore = (obj: any): any => {
   return obj;
 };
 
-// Applies brand styles to a page object
-const applyBrandToPage = (page: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>, brand: Brand): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
-  return produce(page, draft => {
-      draft.brandId = brand.id;
-      draft.brandName = brand.name;
-      draft.brand = brand;
-      
-      // Apply global styles
-      draft.styles.backgroundColor = brand.colors.light.background;
-      draft.styles.themeColor = brand.colors.light.primary;
-      draft.styles.themeColorHover = brand.colors.light.primaryHover;
-      draft.styles.fontFamily = brand.typography.customFontNameBody || brand.typography.fontFamilyBody;
-      
-      // Apply meta styles
-      draft.meta.title = `${brand.name} - ${draft.name}`;
-      draft.meta.faviconUrl = brand.logos.favicon;
-      draft.meta.loaderImageUrl = brand.logos.iconLight;
-
-      // Update specific components
-      draft.components.forEach(comp => {
-          if (comp.type === 'Header') {
-              comp.props.logoUrl = brand.logos.horizontalLight;
-          }
-          if (comp.type === 'Footer') {
-              comp.props.footerText1 = `© ${new Date().getFullYear()} ${brand.name}. Todos os direitos reservados.`;
-          }
-          if (comp.type === 'Title' || comp.type === 'Subtitle') {
-             comp.props.styles = {
-                 ...comp.props.styles,
-                 fontFamily: `"${brand.typography.customFontNameHeadings || brand.typography.fontFamilyHeadings}", sans-serif`
-             };
-          }
-           if (comp.type === 'Button' && comp.id === 'btn-hero-1') {
-               comp.props.styles = {
-                   ...comp.props.styles,
-                   backgroundColor: brand.colors.light.primary,
-                   color: brand.colors.light.primaryForeground
-               };
-           }
-      });
-  });
-};
-
-
 const getInitialPage = (
   name: string,
   projectId: string,
   workspaceId: string,
-  brand: Brand | null,
   platform: string
 ): Omit<CloudPage, "id" | "createdAt" | "updatedAt"> => {
-  
   const basePage: Omit<CloudPage, "id" | "createdAt" | "updatedAt"> = {
     name: name,
     projectId,
@@ -186,47 +140,91 @@ const getInitialPage = (
     },
     styles: {
       backgroundColor: "#FFFFFF",
-      fontFamily: "Inter, sans-serif",
+      fontFamily: "Roboto, sans-serif",
+      themeColor: '#FE9347',
+      themeColorHover: '#E65E00',
     },
     cookieBanner: { enabled: false },
     components: [
-      { id: "header-initial", type: "Header", parentId: null, column: 0, order: 0, props: { logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b", logoHeight: 24, layout: "logo-left-menu-button-right", isSticky: true, backgroundColor: "rgba(255,255,255,0.7)", styles: { backdropFilter: "blur(10px)", borderBottom: '1px solid #e5e7eb' }, linkColor: "#374151", linkHoverColor: "#000000", links: [{ id: "1", text: "Recursos", url: "#" }, { id: "2", text: "Preços", url: "#" }, { id: "3", text: "Contato", url: "#" }], buttonText: "Começar Agora", buttonUrl: "#", buttonProps: { bgColor: "#000000", textColor: "#FFFFFF", hoverBgColor: "#333333" } } },
-      { id: "div-hero-initial", type: "Div", parentId: null, column: 0, order: 1, props: { styles: { paddingTop: "8rem", paddingBottom: "8rem", animationType: 'fadeInUp' }, layout: { flexDirection: "column", verticalAlign: "center", horizontalAlign: "center", gap: "1.5rem" } } },
-      { id: "title-hero", type: "Title", parentId: "div-hero-initial", column: 0, order: 0, props: { text: "Construa Jornadas Incríveis com Morfeus", styles: { fontSize: "3.75rem", textAlign: "center", fontWeight: "900", letterSpacing: "-0.05em", color: "#111827" } } },
-      { id: "para-hero", type: "Paragraph", parentId: "div-hero-initial", column: 0, order: 1, props: { text: "Plataforma completa para automação de marketing, campanhas inteligentes e resultados reais.", styles: { textAlign: "center", maxWidth: "42rem", fontSize: "1.25rem", color: "#4b5563" } } },
-      { id: "div-buttons-hero", type: "Div", parentId: "div-hero-initial", column: 0, order: 2, props: { layout: { flexDirection: "row", gap: "1rem", horizontalAlign: "center" } } },
-      { id: "btn-hero-1", type: "Button", parentId: "div-buttons-hero", column: 0, order: 0, props: { text: "Criar Conta Gratuitamente", variant: "default", styles: { backgroundColor: "#000000", color: "#FFFFFF", borderRadius: '0.5rem', padding: "0.875rem 1.5rem", fontWeight: "500", boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' } } },
-      { id: "btn-hero-2", type: "Button", parentId: "div-buttons-hero", column: 0, order: 1, props: { text: "Saiba Mais", variant: "outline", styles: { borderRadius: '0.5rem', padding: "0.875rem 1.5rem", color: "#111827", borderColor: "#d1d5db", fontWeight: "500" } } },
-      { id: "div-features-section", type: "Div", parentId: null, column: 0, order: 2, props: { styles: { paddingTop: '6rem', paddingBottom: '6rem', backgroundColor: "#f9fafb" } } },
-      { id: "div-features-title", type: "Div", parentId: "div-features-section", column: 0, order: 0, props: { styles: { marginBottom: "3rem", animationType: 'fadeInUp' }, layout: { horizontalAlign: "center", gap: "0.5rem", flexDirection: "column" } } },
-      { id: "title-features", type: "Title", parentId: "div-features-title", column: 0, order: 0, props: { text: "Por que escolher o Morfeus?", styles: { textAlign: "center", fontSize: "2.25rem", color: "#111827", fontWeight: "700" } } },
-      { id: "para-features", type: "Paragraph", parentId: "div-features-title", column: 0, order: 1, props: { text: "Tudo que você precisa para escalar sua comunicação.", styles: { textAlign: "center", color: '#4b5563' } } },
-      { id: "cols-features", type: "Columns", parentId: "div-features-section", column: 0, order: 1, props: { columnCount: 3, styles: { gap: "2rem" } } },
-      { id: "div-feature-1", type: "Div", parentId: "cols-features", column: 0, order: 0, props: { styles: { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', padding: '2rem', borderRadius: '0.75rem', animationType: 'fadeInUp' }, hoverStyles: { transform: "translateY(-4px)", borderColor: "var(--theme-color)" } } },
-      { id: "icon-f1", type: "CustomHTML", parentId: "div-feature-1", column: 0, order: 0, props: { htmlContent: '<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>' } },
-      { id: "title-f1", type: "Subtitle", parentId: "div-feature-1", column: 0, order: 1, props: { text: "Automação Rápida", styles: { fontWeight: "600", color: "#111827" } } },
-      { id: "para-f1", type: "Paragraph", parentId: "div-feature-1", column: 0, order: 2, props: { text: "Construa páginas e fluxos em minutos, sem complicação.", styles: { color: "#4b5563" } } },
-      { id: "div-feature-2", type: "Div", parentId: "cols-features", column: 1, order: 0, props: { styles: { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', padding: '2rem', borderRadius: '0.75rem', animationType: 'fadeInUp', animationDelay: 0.2 }, hoverStyles: { transform: "translateY(-4px)", borderColor: "var(--theme-color)" } } },
-      { id: "icon-f2", type: "CustomHTML", parentId: "div-feature-2", column: 0, order: 0, props: { htmlContent: '<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>' } },
-      { id: "title-f2", type: "Subtitle", parentId: "div-feature-2", column: 0, order: 1, props: { text: "Segmentação Inteligente", styles: { fontWeight: "600", color: "#111827" } } },
-      { id: "para-f2", type: "Paragraph", parentId: "div-feature-2", column: 0, order: 2, props: { text: "Conecte-se com quem realmente importa.", styles: { color: "#4b5563" } } },
-      { id: "div-feature-3", type: "Div", parentId: "cols-features", column: 2, order: 0, props: { styles: { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', padding: '2rem', borderRadius: '0.75rem', animationType: 'fadeInUp', animationDelay: 0.4 }, hoverStyles: { transform: "translateY(-4px)", borderColor: "var(--theme-color)" } } },
-      { id: "icon-f3", type: "CustomHTML", parentId: "div-feature-3", column: 0, order: 0, props: { htmlContent: '<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"></line><line x1="18" x2="18" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="16"></line></svg></div>' } },
-      { id: "title-f3", type: "Subtitle", parentId: "div-feature-3", column: 0, order: 1, props: { text: "Relatórios Avançados", styles: { fontWeight: "600", color: "#111827" } } },
-      { id: "para-f3", type: "Paragraph", parentId: "div-feature-3", column: 0, order: 2, props: { text: "Tome decisões com base em dados reais.", styles: { color: "#4b5563" } } },
-      { id: "div-newsletter", type: "Div", parentId: null, column: 0, order: 3, props: { styles: { paddingTop: '6rem', paddingBottom: '6rem', backgroundColor: '#FFFFFF' }, layout: { flexDirection: "column", gap: "1.5rem", horizontalAlign: "center" } } },
-      { id: "title-newsletter", type: "Title", parentId: "div-newsletter", column: 0, order: 0, props: { text: "Receba dicas exclusivas", styles: { textAlign: "center", fontSize: "1.875rem", fontWeight: "700", color: "#111827" } } },
-      { id: "form-newsletter", type: "Form", parentId: "div-newsletter", column: 0, order: 1, props: { fields: { email: { enabled: true } }, formAlign: 'center', buttonAlign: 'left', buttonText: 'Inscrever', inputStyles: { backgroundColor: '#f9fafb', borderColor: '#e5e7eb', color: '#111827', borderRadius: '0.5rem' }, buttonProps: { bgColor: '#000000', textColor: '#FFFFFF' } } },
-      { id: "footer-initial", type: "Footer", parentId: null, column: 0, order: 4, props: { layout: "menus-and-social", logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_light.svg?alt=media&token=8d8eda65-809f-445f-9487-a8ceb3baaecd", footerText1: `© ${new Date().getFullYear()} Morfeus. Todos os direitos reservados.`, linksLeft: [{ id: "f1", text: "Início", url: "#" }, { id: "f2", text: "Preços", url: "#" }], linksRight: [{ id: "f3", text: "Termos", url: "#" }, { id: "f4", text: "Privacidade", url: "#" }], socialLinks: { twitter: "#", github: "#" }, styles: { borderTop: '1px solid #e5e7eb', paddingTop: "2rem", paddingBottom: "2rem", backgroundColor: "#FFFFFF" } } },
+      { id: "header-initial", type: "Header", parentId: null, column: 0, order: 0, props: { isSticky: true, backgroundColor: 'rgba(255,255,255,0.7)', styles: { backdropFilter: 'blur(10px)', borderBottom: '1px solid #e5e7eb' }, layout: "logo-left-menu-button-right", logoHeight: 32, links: [{ id: "1", text: "Recursos", url: "#" }, { id: "2", text: "Preços", url: "#" }], buttonText: "Começar Agora", buttonUrl: "#" } },
+      { id: "div-hero", type: 'Div', parentId: null, column: 0, order: 1, props: { styles: { paddingTop: "8rem", paddingBottom: "8rem", animationType: 'fadeInUp' }, layout: { flexDirection: "column", verticalAlign: "center", horizontalAlign: "center", gap: "1.5rem" } } },
+      { id: "title-hero", type: 'Title', parentId: 'div-hero', column: 0, order: 0, props: { text: "Construa Jornadas Incríveis com Morfeus", styles: { fontSize: "3.75rem", textAlign: 'center', fontWeight: "900", letterSpacing: "-0.05em", color: "#111827" } } },
+      { id: "para-hero", type: 'Paragraph', parentId: 'div-hero', column: 0, order: 1, props: { text: "Plataforma completa para automação de marketing, campanhas inteligentes e resultados reais.", styles: { textAlign: 'center', maxWidth: "42rem", fontSize: "1.25rem", color: "#4b5563" } } },
+      { id: "div-buttons", type: 'Div', parentId: 'div-hero', column: 0, order: 2, props: { layout: { flexDirection: 'row', gap: '1rem', horizontalAlign: 'center' } } },
+      { id: "btn-hero-1", type: 'Button', parentId: 'div-buttons', column: 0, order: 0, props: { text: "Criar Conta Gratuitamente", variant: 'default', styles: { padding: '0.875rem 1.5rem', fontWeight: "500" } } },
+      { id: "btn-hero-2", type: 'Button', parentId: 'div-buttons', column: 0, order: 1, props: { text: "Ver Demonstração", variant: 'outline', styles: { padding: '0.875rem 1.5rem', fontWeight: "500" } } },
+      { id: "div-features-section", type: 'Div', parentId: null, column: 0, order: 2, props: { styles: { paddingTop: '6rem', paddingBottom: '6rem', backgroundColor: "#f9fafb" } } },
+      { id: "div-features-title", type: 'Div', parentId: "div-features-section", column: 0, order: 0, props: { styles: { marginBottom: "3rem", animationType: 'fadeInUp' }, layout: { horizontalAlign: 'center', gap: '0.5rem', flexDirection: "column" } } },
+      { id: "title-features", type: 'Title', parentId: 'div-features-title', column: 0, order: 0, props: { text: 'Por que escolher o Morfeus?', styles: { textAlign: 'center', fontSize: '2.25rem', color: "#111827", fontWeight: "700" } } },
+      { id: "para-features", type: 'Paragraph', parentId: 'div-features-title', column: 0, order: 1, props: { text: 'Tudo que você precisa para escalar sua comunicação.', styles: { textAlign: 'center', color: '#4b5563' } } },
+      { id: 'cols-features', type: 'Columns', parentId: 'div-features-section', column: 0, order: 1, props: { columnCount: 3, styles: { gap: "2rem" } } },
+      { id: 'div-feature-1', type: 'Div', parentId: 'cols-features', column: 0, order: 0, props: { styles: { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', padding: '2rem', borderRadius: '0.75rem', animationType: 'fadeInUp' }, layout: { flexDirection: 'column' }, hoverStyles: { transform: "translateY(-4px)", borderColor: "var(--theme-color)" } } },
+      { id: 'icon-f1', type: 'CustomHTML', parentId: 'div-feature-1', column: 0, order: 0, props: { htmlContent: '<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--theme-color))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>' } },
+      { id: 'title-f1', type: 'Subtitle', parentId: 'div-feature-1', column: 0, order: 1, props: { text: "Automação Rápida", styles: { fontWeight: "600", color: "#111827" } } },
+      { id: 'para-f1', type: 'Paragraph', parentId: 'div-feature-1', column: 0, order: 2, props: { text: "Construa páginas e fluxos em minutos, sem complicação.", styles: { color: "#4b5563" } } },
+      { id: 'div-feature-2', type: 'Div', parentId: 'cols-features', column: 1, order: 0, props: { styles: { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', padding: '2rem', borderRadius: '0.75rem', animationType: 'fadeInUp', animationDelay: 0.2 }, layout: { flexDirection: 'column' }, hoverStyles: { transform: "translateY(-4px)", borderColor: "var(--theme-color)" } } },
+      { id: 'icon-f2', type: 'CustomHTML', parentId: 'div-feature-2', column: 0, order: 0, props: { htmlContent: '<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--theme-color))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>' } },
+      { id: 'title-f2', type: 'Subtitle', parentId: 'div-feature-2', column: 0, order: 1, props: { text: "Segmentação Inteligente", styles: { fontWeight: "600", color: "#111827" } } },
+      { id: 'para-f2', type: 'Paragraph', parentId: 'div-feature-2', column: 0, order: 2, props: { text: "Conecte-se com quem realmente importa.", styles: { color: "#4b5563" } } },
+      { id: 'div-feature-3', type: 'Div', parentId: 'cols-features', column: 2, order: 0, props: { styles: { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', padding: '2rem', borderRadius: '0.75rem', animationType: 'fadeInUp', animationDelay: 0.4 }, layout: { flexDirection: 'column' }, hoverStyles: { transform: "translateY(-4px)", borderColor: "var(--theme-color)" } } },
+      { id: 'icon-f3', type: 'CustomHTML', parentId: 'div-feature-3', column: 0, order: 0, props: { htmlContent: '<div style="display:flex; justify-content:flex-start; margin-bottom: 1rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--theme-color))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"></line><line x1="18" x2="18" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="16"></line></svg></div>' } },
+      { id: 'title-f3', type: 'Subtitle', parentId: 'div-feature-3', column: 0, order: 1, props: { text: "Relatórios Avançados", styles: { fontWeight: "600", color: "#111827" } } },
+      { id: 'para-f3', type: 'Paragraph', parentId: 'div-feature-3', column: 0, order: 2, props: { text: "Tome decisões com base em dados reais.", styles: { color: "#4b5563" } } },
+      { id: 'div-cta', type: 'Div', parentId: null, column: 0, order: 3, props: { styles: { paddingTop: '6rem', paddingBottom: '6rem' }, layout: { flexDirection: 'column', gap: '1.5rem', horizontalAlign: 'center' } } },
+      { id: 'title-cta', type: 'Title', parentId: 'div-cta', column: 0, order: 0, props: { text: 'Pronto para transformar sua comunicação?', styles: { textAlign: 'center', fontSize: '2.5rem', color: '#111827', fontWeight: '700' } } },
+      { id: 'para-cta', type: 'Paragraph', parentId: 'div-cta', column: 0, order: 1, props: { text: 'Crie sua conta gratuita e comece hoje mesmo.', styles: { textAlign: 'center', color: '#4b5563' } } },
+      { id: 'btn-cta', type: 'Button', parentId: 'div-cta', column: 0, order: 2, props: { text: 'Começar Agora', variant: 'default', align: 'center', styles: { padding: '0.875rem 1.5rem', fontWeight: "500" } } },
+      { id: "footer-initial", type: "Footer", parentId: null, column: 0, order: 4, props: { layout: "menus-and-social", footerText1: `© ${new Date().getFullYear()} Morfeus. Todos os direitos reservados.`, linksLeft: [{ id: "f1", text: "Início", url: "#" }, { id: "f2", text: "Preços", url: "#" }], linksRight: [{ id: "f3", text: "Termos", url: "#" }, { id: "f4", text: "Privacidade", url: "#" }], socialLinks: { twitter: "#", github: "#" }, styles: { borderTop: '1px solid #e5e7eb', paddingTop: "2rem", paddingBottom: "2rem", backgroundColor: "#FFFFFF" } } },
     ],
   };
-
-  if (brand) {
-    return applyBrandToPage(basePage, brand);
-  }
-  
   return sanitizeForFirestore(basePage);
 };
+
+const applyBrandToPage = (
+    page: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>,
+    brand: Brand
+): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
+  return produce(page, draft => {
+    draft.brandId = brand.id;
+    draft.brandName = brand.name;
+    draft.brand = brand;
+    
+    // Apply global styles
+    draft.styles.backgroundColor = brand.colors.light.background;
+    draft.styles.themeColor = brand.colors.light.primary;
+    draft.styles.themeColorHover = brand.colors.light.primaryHover;
+    draft.styles.fontFamily = brand.typography.customFontNameBody || brand.typography.fontFamilyBody;
+    
+    // Apply meta styles
+    draft.meta.title = `${brand.name} - ${draft.name}`;
+    draft.meta.faviconUrl = brand.logos.favicon;
+    draft.meta.loaderImageUrl = brand.logos.iconLight;
+
+    // Update specific components
+    draft.components.forEach(comp => {
+        if (comp.type === 'Header') {
+            comp.props.logoUrl = brand.logos.horizontalLight;
+        }
+        if (comp.type === 'Footer') {
+            comp.props.footerText1 = `© ${new Date().getFullYear()} ${brand.name}. Todos os direitos reservados.`;
+        }
+        if (comp.type === 'Title' || comp.type === 'Subtitle') {
+           comp.props.styles = {
+               ...comp.props.styles,
+               fontFamily: `"${brand.typography.customFontNameHeadings || brand.typography.fontFamilyHeadings}", sans-serif`
+           };
+        }
+        if (comp.type === 'Button' && comp.id === 'btn-hero-1') {
+           comp.props.styles = {
+               ...comp.props.styles,
+               backgroundColor: brand.colors.light.primary,
+               color: brand.colors.light.primaryForeground
+           };
+        }
+    });
+  });
+};
+
 
 export function CreatePageFromTemplateDialog({
   trigger,
@@ -335,121 +333,48 @@ export function CreatePageFromTemplateDialog({
     setIsCreating(true);
 
     try {
-      let pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
-      const selectedBrand =
-        userBrands.find((b) => b.id === selectedBrandId) || null;
+      let pageToCreate: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
+      const selectedBrand = userBrands.find((b) => b.id === selectedBrandId) || null;
 
       if (selectedTemplate === "blank") {
-        pageData = getInitialPage(
+        const basePage = getInitialPage(
           newPageName,
           selectedProjectId,
           activeWorkspace.id,
-          selectedBrand,
           selectedPlatform
         );
+        pageToCreate = selectedBrand ? applyBrandToPage(basePage, selectedBrand) : basePage;
       } else {
-        let templateData: Omit<
-          Template,
-          "id" | "createdAt" | "updatedAt" | "createdBy"
-        > | null = null;
-        if (selectedTemplateIsDefault) {
-          templateData = await getDefaultTemplate(selectedTemplate!);
-        } else {
-          templateData = await getTemplate(selectedTemplate!);
-        }
+        const templateData = selectedTemplateIsDefault
+          ? await getDefaultTemplate(selectedTemplate!)
+          : await getTemplate(selectedTemplate!);
 
         if (!templateData) throw new Error("Template não encontrado.");
         
-        // Deep copy the template to make it mutable and break references
-        const mutableTemplate = JSON.parse(JSON.stringify(templateData));
+        const templateCopy = JSON.parse(JSON.stringify(templateData));
 
-        const newComponents = produce(mutableTemplate.components || [], (draft) => {
-          const idMap: { [oldId: string]: string } = {};
-          const generateNewId = () =>
-            `comp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-          const traverseAndMap = (components: any[]) => {
-            components.forEach((component) => {
-              if (component && component.id) {
-                const oldId = component.id;
-                idMap[oldId] = generateNewId();
-                if (component.children && Array.isArray(component.children)) {
-                  traverseAndMap(component.children);
-                }
-              }
-            });
-          };
-
-          traverseAndMap(draft);
-
-          const traverseAndReplace = (components: any[]) => {
-            components.forEach((component) => {
-              if (component && component.id) {
-                component.id = idMap[component.id];
-                if (component.parentId && idMap[component.parentId]) {
-                  component.parentId = idMap[component.parentId];
-                }
-                if (component.children && Array.isArray(component.children)) {
-                  traverseAndReplace(component.children);
-                }
-              }
-            });
-          };
-
-          traverseAndReplace(draft);
-        });
-
-        // Create the page data with safe defaults and apply brand styles
-        pageData = {
+        const basePage = {
           name: newPageName,
           workspaceId: activeWorkspace.id,
+          projectId: selectedProjectId,
+          platform: selectedPlatform,
           brandId: '',
           brandName: 'Sem Marca',
-          platform: selectedPlatform,
-          projectId: selectedProjectId,
-          tags: mutableTemplate.tags || [],
-          styles: { ...mutableTemplate.styles },
-          components: newComponents,
-          cookieBanner: mutableTemplate.cookieBanner,
+          tags: templateCopy.tags || [],
+          styles: { ...templateCopy.styles },
+          components: templateCopy.components || [],
           meta: {
-            ...mutableTemplate.meta,
+            ...templateCopy.meta,
             title: newPageName,
-            dataExtensionKey: mutableTemplate.meta?.dataExtensionKey ?? "CHANGE-ME",
-            redirectUrl: mutableTemplate.meta?.redirectUrl ?? "https://www.google.com",
+            dataExtensionKey: templateCopy.meta?.dataExtensionKey ?? "CHANGE-ME",
+            redirectUrl: templateCopy.meta?.redirectUrl ?? "https://www.google.com",
             tracking: { ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
           },
         };
+        pageToCreate = selectedBrand ? applyBrandToPage(basePage, selectedBrand) : basePage;
       }
-
-      // Use produce on the entire new page object to ensure it's mutable
-      const finalPageData = produce(pageData, draft => {
-        // Apply brand if selected
-        if (selectedBrand) {
-            draft.brandId = selectedBrand.id;
-            draft.brandName = selectedBrand.name;
-            draft.brand = selectedBrand;
-            
-            draft.styles.backgroundColor = selectedBrand.colors.light.background;
-            draft.styles.themeColor = selectedBrand.colors.light.primary;
-            draft.styles.themeColorHover = selectedBrand.colors.light.primaryHover;
-            draft.styles.fontFamily = selectedBrand.typography.customFontNameBody || selectedBrand.typography.fontFamilyBody;
-            
-            draft.meta.title = `${selectedBrand.name} - ${draft.name}`;
-            draft.meta.faviconUrl = selectedBrand.logos.favicon;
-            draft.meta.loaderImageUrl = selectedBrand.logos.iconLight;
-
-            draft.components.forEach(comp => {
-                if (comp.type === 'Header') comp.props.logoUrl = selectedBrand.logos.horizontalLight;
-                if (comp.type === 'Footer') comp.props.footerText1 = `© ${new Date().getFullYear()} ${selectedBrand.name}. Todos os direitos reservados.`;
-                if (comp.type === 'Title' || comp.type === 'Subtitle') {
-                    comp.props.styles = { ...comp.props.styles, fontFamily: `"${selectedBrand.typography.customFontNameHeadings || selectedBrand.typography.fontFamilyHeadings}", sans-serif` };
-                }
-                if (comp.type === 'Button' && comp.id === 'btn-hero-1') {
-                    comp.props.styles = { ...comp.props.styles, backgroundColor: selectedBrand.colors.light.primary, color: selectedBrand.colors.light.primaryForeground };
-                }
-            });
-        }
-        
+      
+      const finalPageData = produce(pageToCreate, draft => {
         // Ensure cookie banner is fully defined to prevent Firestore errors
         if (!draft.cookieBanner) {
             draft.cookieBanner = {
@@ -467,18 +392,15 @@ export function CreatePageFromTemplateDialog({
       });
       
       const sanitizedPageData = sanitizeForFirestore(finalPageData);
-
       const newPageId = await addPage(sanitizedPageData, user.uid);
+      
       toast({
         title: "Página criada!",
         description: `A página "${newPageName}" foi criada com sucesso.`,
       });
 
       // Check onboarding progress
-      const updatedProgress = await updateUserProgress(
-        user.uid,
-        "createdFirstPage"
-      );
+      const updatedProgress = await updateUserProgress(user.uid, "createdFirstPage");
       if (updatedProgress.objectives.createdFirstPage) {
         toast({
           title: "🎉 Objetivo Concluído!",
@@ -493,13 +415,14 @@ export function CreatePageFromTemplateDialog({
       console.error("Failed to create page from template:", error);
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível criar a página.",
+        title: "Erro ao Criar Página",
+        description: `Não foi possível criar a página. Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
       });
     } finally {
       setIsCreating(false);
     }
   };
+
 
   const combinedTemplates = useMemo(() => {
     return [...defaultTemplates, ...userTemplates];

@@ -1,4 +1,4 @@
-# **App Name**: Cloud Page Forge
+# **App Name**: Morfeus
 
 ## Core Features:
 

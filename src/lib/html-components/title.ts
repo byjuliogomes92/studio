@@ -18,8 +18,8 @@ export function renderTitle(component: PageComponent, isForPreview: boolean, hid
     }
     
     // Apply gradient if defined
-    if (styles.gradient) {
-        finalStyles.background = `linear-gradient(to right, ${styles.gradient.from || '#FFFFFF'}, ${styles.gradient.to || '#a0a0a0'})`;
+    if (styles.gradient && styles.gradient.from && styles.gradient.to) {
+        finalStyles.background = `linear-gradient(to right, ${styles.gradient.from}, ${styles.gradient.to})`;
         finalStyles['-webkit-background-clip'] = 'text';
         finalStyles['-webkit-text-fill-color'] = 'transparent';
         delete finalStyles.gradient;
@@ -39,6 +39,7 @@ export function renderTitle(component: PageComponent, isForPreview: boolean, hid
 }
 
 function getStyleString(styles: any = {}): string {
+    const forbiddenKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
     return Object.entries(styles)
       .map(([key, value]) => {
         if (!value) return '';

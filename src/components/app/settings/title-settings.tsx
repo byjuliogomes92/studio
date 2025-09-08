@@ -21,10 +21,17 @@ interface ComponentSettingsProps {
 
 function TextStyleSettings({ props, onPropChange, onSubPropChange, pageState }: { props: any, onPropChange: (prop: string, value: any) => void, onSubPropChange: (prop: string, subProp: string, value: any) => void, pageState: CloudPage }) {
   const styles = props.styles || {};
+  const isTitle = props.isTitle; // A flag to know if we are styling a title
   
   const handleStyleChange = (prop: string, value: any) => {
     onSubPropChange('styles', prop, value);
   };
+  
+   const handleGradientChange = (prop: 'from' | 'to', value: string) => {
+    const newGradient = { ...(styles.gradient || {}), [prop]: value };
+    onSubPropChange('styles', 'gradient', newGradient);
+  };
+
 
   return (
     <div className="space-y-4">
@@ -66,6 +73,16 @@ function TextStyleSettings({ props, onPropChange, onSubPropChange, pageState }: 
              />
           </div>
         </div>
+         {isTitle && (
+            <div className="space-y-2">
+                <Label>Gradiente de Texto</Label>
+                 <div className="grid grid-cols-2 gap-4">
+                     <ColorInput label="De" value={styles.gradient?.from || ''} onChange={value => handleGradientChange('from', value)} brand={pageState.brand} />
+                     <ColorInput label="Para" value={styles.gradient?.to || ''} onChange={value => handleGradientChange('to', value)} brand={pageState.brand} />
+                 </div>
+                 <p className="text-xs text-muted-foreground">Preencha para ativar o gradiente. Isso sobrescreve a cor sólida.</p>
+            </div>
+        )}
          <div className="space-y-2">
             <Label>Estilo</Label>
              <ToggleGroup 
@@ -98,6 +115,7 @@ function TextStyleSettings({ props, onPropChange, onSubPropChange, pageState }: 
 
 export function TextSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
     const isParagraph = component.type === 'Paragraph';
+    const isTitle = component.type === 'Title';
     const [localText, setLocalText] = useState(component.props.text || "");
     const hasChanges = localText !== component.props.text;
 
@@ -166,7 +184,7 @@ export function TextSettings({ component, onPropChange, onSubPropChange, pageSta
               </div>
           </div>
           <Separator />
-          <TextStyleSettings props={component.props} onPropChange={onPropChange} onSubPropChange={onSubPropChange} pageState={pageState} />
+          <TextStyleSettings props={{...component.props, isTitle}} onPropChange={onPropChange} onSubPropChange={onSubPropChange} pageState={pageState} />
         </div>
       );
 }

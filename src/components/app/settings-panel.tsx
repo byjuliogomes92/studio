@@ -137,10 +137,12 @@ const getTagColor = (tag: string) => {
     return tagColors[Math.abs(hash) % tagColors.length];
 };
 
-const isComponentLocked = (component: PageComponent) => {
+const isComponentLocked = (component?: PageComponent | null) => {
+    if (!component) return false;
     const name = component.layerName?.toLowerCase().trim();
     return component.type === 'Header' || component.type === 'Footer' || name === 'header' || name === 'footer';
 };
+
 
 function SortableItem({ component, children }: { component: PageComponent; children: React.ReactNode }) {
   const isLocked = isComponentLocked(component);
@@ -629,18 +631,20 @@ export function SettingsPanel({
     };
 
 
-    const handleDragEnd = (event: DragEndEvent) => {
+   const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+
         if (!over) return;
-        const activeId = active.id.toString();
-        const overId = over.id.toString();
-    
+
+        const activeId = String(active.id);
+        const overId = String(over.id);
+
         if (activeId === overId) return;
-    
-        setPageState(currentState => {
+
+        setPageState((currentState) => {
             if (!currentState) return null;
-    
-            return produce(currentState, draft => {
+
+            return produce(currentState, (draft) => {
                 const activeComponent = draft.components.find(c => c.id === activeId);
                 if (!activeComponent || isComponentLocked(activeComponent)) return;
 
@@ -652,40 +656,38 @@ export function SettingsPanel({
                     
                     activeComponent.parentId = newParentId;
                     activeComponent.column = newColumnIndex;
-                } else {
+                
+                } else { // Dropped on another component
                     const overComponent = draft.components.find(c => c.id === overId);
                     if (!overComponent || isComponentLocked(overComponent)) return;
-
-                    const sameContainer = activeComponent.parentId === overComponent.parentId;
                     
-                    if (sameContainer) {
-                        const parentId = activeComponent.parentId;
-                        const column = activeComponent.column;
-                        const siblings = draft.components
-                            .filter(c => c.parentId === parentId && c.column === column && !isComponentLocked(c))
-                            .sort((a,b) => a.order - b.order); 
+                    // Move component to the same container and column as the one it was dropped on
+                    activeComponent.parentId = overComponent.parentId;
+                    activeComponent.column = overComponent.column;
+
+                    const siblings = draft.components
+                        .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
+                        .sort((a, b) => a.order - b.order);
+                    
+                    const oldIndex = siblings.findIndex(c => c.id === activeId);
+                    const newIndex = siblings.findIndex(c => c.id === overId);
+                    
+                    if (oldIndex !== -1 && newIndex !== -1) {
+                        const [movedItem] = siblings.splice(oldIndex, 1);
+                        siblings.splice(newIndex, 0, movedItem);
                         
-                        const oldIndex = siblings.findIndex(c => c.id === activeId);
-                        const newIndex = siblings.findIndex(c => c.id === overId);
-
-                        if (oldIndex !== -1 && newIndex !== -1) {
-                            const [movedItem] = siblings.splice(oldIndex, 1);
-                            siblings.splice(newIndex, 0, movedItem);
-
-                            siblings.forEach((sibling, index) => {
-                                const componentInDraft = draft.components.find(c => c.id === sibling.id);
-                                if (componentInDraft) {
-                                    componentInDraft.order = index;
-                                }
-                            });
-                        }
-                    } else {
-                        activeComponent.parentId = overComponent.parentId;
-                        activeComponent.column = overComponent.column;
+                        // Reassign order based on new sorted array
+                        siblings.forEach((sibling, index) => {
+                            const componentToUpdate = draft.components.find(c => c.id === sibling.id);
+                            if (componentToUpdate) {
+                                componentToUpdate.order = index;
+                            }
+                        });
                     }
                 }
-                
-                // Final re-ordering of all components to ensure integrity
+
+                // --- Final Integrity Check ---
+                // Re-order all components to ensure integrity
                 const parentIds = new Set(draft.components.map(c => c.parentId));
                 parentIds.add(null); 
                 parentIds.forEach(pId => {
@@ -705,6 +707,7 @@ export function SettingsPanel({
                         });
                     }
                 });
+
             });
         });
     };
@@ -1276,5 +1279,6 @@ export function SettingsPanel({
 
     
     
+
 
 

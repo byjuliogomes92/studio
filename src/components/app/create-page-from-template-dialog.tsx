@@ -334,12 +334,12 @@ export function CreatePageFromTemplateDialog({
     setIsCreating(true);
 
     try {
-      let newPageData: Omit<CloudPage, "id" | "createdAt" | "updatedAt">;
+      let pageToCreate: Omit<CloudPage, "id" | "createdAt" | "updatedAt">;
       const selectedBrand =
         userBrands.find((b) => b.id === selectedBrandId) || null;
 
       if (selectedTemplate === "blank") {
-        newPageData = getInitialPage(
+        pageToCreate = getInitialPage(
           newPageName,
           selectedProjectId,
           activeWorkspace.id,
@@ -358,8 +358,11 @@ export function CreatePageFromTemplateDialog({
         }
 
         if (!template) throw new Error("Template não encontrado.");
+        
+        // Deep copy the template to make it mutable
+        const mutableTemplate = JSON.parse(JSON.stringify(template));
 
-        const newComponents = produce(template.components || [], (draft) => {
+        const newComponents = produce(mutableTemplate.components || [], (draft) => {
           const idMap: { [oldId: string]: string } = {};
           const generateNewId = () =>
             `comp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -403,59 +406,42 @@ export function CreatePageFromTemplateDialog({
           brandName: 'Sem Marca',
           platform: selectedPlatform,
           projectId: selectedProjectId,
-          tags: template.tags || [],
-          styles: { ...template.styles },
+          tags: mutableTemplate.tags || [],
+          styles: { ...mutableTemplate.styles },
           components: newComponents,
-          cookieBanner: template.cookieBanner,
+          cookieBanner: mutableTemplate.cookieBanner,
           meta: {
-            ...template.meta,
+            ...mutableTemplate.meta,
             title: newPageName,
-            dataExtensionKey: template.meta?.dataExtensionKey ?? "CHANGE-ME",
-            redirectUrl: template.meta?.redirectUrl ?? "https://www.google.com",
+            dataExtensionKey: mutableTemplate.meta?.dataExtensionKey ?? "CHANGE-ME",
+            redirectUrl: mutableTemplate.meta?.redirectUrl ?? "https://www.google.com",
             tracking: { ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
           },
         };
         
         if (selectedBrand) {
-          newPageData = applyBrandToPage(basePageData, selectedBrand);
+          pageToCreate = applyBrandToPage(basePageData, selectedBrand);
         } else {
-          newPageData = basePageData;
+          pageToCreate = basePageData;
         }
       }
 
       // Ensure cookie banner is fully defined to prevent Firestore errors
-      newPageData.cookieBanner = produce(newPageData.cookieBanner || { enabled: false }, draft => {
-        if (!draft) {
-          draft = {
-            enabled: false,
-            position: "bottom",
-            layout: "bar",
-            title: "",
-            description: "",
-            acceptButtonText: "Aceitar",
-            declineButtonText: "Recusar",
-            preferencesButtonText: "Preferências",
-            privacyPolicyLink: "",
-            categories: [],
-            styles: {
-              backgroundColor: "",
-              textColor: "",
-              buttonBackgroundColor: "",
-              buttonTextColor: "",
-            },
-          };
-        }
-        if (!draft.styles) {
-          draft.styles = {
-            backgroundColor: "",
-            textColor: "",
-            buttonBackgroundColor: "",
-            buttonTextColor: "",
-          };
-        }
-      });
+      if (!pageToCreate.cookieBanner) {
+        pageToCreate.cookieBanner = {
+            enabled: false, position: "bottom", layout: "bar",
+            title: "", description: "", acceptButtonText: "Aceitar",
+            declineButtonText: "Recusar", preferencesButtonText: "Preferências",
+            privacyPolicyLink: "", categories: [],
+            styles: { backgroundColor: "", textColor: "", buttonBackgroundColor: "", buttonTextColor: "" }
+        };
+      } else if (!pageToCreate.cookieBanner.styles) {
+        pageToCreate.cookieBanner.styles = {
+            backgroundColor: "", textColor: "", buttonBackgroundColor: "", buttonTextColor: ""
+        };
+      }
       
-      const finalPageData = sanitizeForFirestore(newPageData);
+      const finalPageData = sanitizeForFirestore(pageToCreate);
 
       console.log(
         "Creating page with data:",

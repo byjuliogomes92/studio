@@ -635,15 +635,24 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
               let lastAddedComponentId: string | null = null;
               
               if (Array.isArray(typeOrBlock)) {
-                  // This is a block of components
-                  const blockComponents = typeOrBlock.map((comp, index) => {
-                      const siblings = draft.components.filter(c => c.parentId === comp.parentId && c.column === comp.column);
-                      return { ...comp, order: siblings.length + index };
-                  });
-                  draft.components.push(...blockComponents);
-                  if (blockComponents.length > 0) {
-                    lastAddedComponentId = blockComponents[0].id;
+                // This is a block of components
+                const allNewComponents: PageComponent[] = [];
+                const blockQueue: PageComponent[] = [...typeOrBlock];
+          
+                while (blockQueue.length > 0) {
+                  const comp = blockQueue.shift()!;
+                  allNewComponents.push(comp);
+                  if (comp.children) {
+                    blockQueue.push(...comp.children);
+                    delete comp.children; // Remove children array after processing
                   }
+                }
+          
+                draft.components.push(...allNewComponents);
+                if (allNewComponents.length > 0) {
+                  lastAddedComponentId = allNewComponents[0].id;
+                }
+
               } else {
                   // This is a single component
                   const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);

@@ -62,6 +62,7 @@ import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { produce } from "immer";
 
 const componentList: {
   category: string;
@@ -459,11 +460,14 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             const sectionId = `div-features-${baseId}`;
             const columnsId = `cols-features-${baseId}`;
             componentsToAdd = [
-                { id: sectionId, type: 'Div', order: 0, parentId: null, column: 0, props: { styles: { paddingTop: '4rem', paddingBottom: '4rem' }, layout: { flexDirection: 'column', gap: '1rem', alignItems: 'center' } } },
-                { id: `title-features-${baseId}`, type: 'Title', parentId: sectionId, order: 0, column: 0, props: { text: 'Funcionalidades Incríveis', styles: { textAlign: 'center', fontSize: '2.5rem' } } },
-                { id: `para-features-${baseId}`, type: 'Paragraph', parentId: sectionId, order: 1, column: 0, props: { text: 'Tudo o que você precisa para decolar.', styles: { textAlign: 'center', maxWidth: '600px', color: '#666' } } },
-                { id: `spacer-features-${baseId}`, type: 'Spacer', parentId: sectionId, order: 2, column: 0, props: { height: 40 } },
-                { id: columnsId, type: 'Columns', parentId: sectionId, order: 3, column: 0, props: { columnCount, styles: { gap: '2rem' } } },
+                { id: sectionId, type: 'Div', order: 0, parentId: null, column: 0, props: { styles: { paddingTop: '4rem', paddingBottom: '4rem' }, layout: { flexDirection: 'column', gap: '1rem', alignItems: 'center' } },
+                    children: [
+                        { id: `title-features-${baseId}`, type: 'Title', parentId: sectionId, order: 0, column: 0, props: { text: 'Funcionalidades Incríveis', styles: { textAlign: 'center', fontSize: '2.5rem' } } },
+                        { id: `para-features-${baseId}`, type: 'Paragraph', parentId: sectionId, order: 1, column: 0, props: { text: 'Tudo o que você precisa para decolar.', styles: { textAlign: 'center', maxWidth: '600px', color: '#666' } } },
+                        { id: `spacer-features-${baseId}`, type: 'Spacer', parentId: sectionId, order: 2, column: 0, props: { height: 40 } },
+                        { id: columnsId, type: 'Columns', parentId: sectionId, order: 3, column: 0, props: { columnCount, styles: { gap: '2rem' } } },
+                    ]
+                },
             ];
             for (let i = 0; i < columnCount; i++) {
                 componentsToAdd.push(
@@ -483,12 +487,18 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                 const divId = `div-flist-${baseId}-${i}`;
                 
                 componentsToAdd.push(
-                    { id: colsId, type: 'Columns', order: i, parentId: null, column: 0, props: { columnCount: 2, styles: { paddingTop: '3rem', paddingBottom: '3rem', gap: '3rem', alignItems: 'center' } } },
-                    { id: `img-${baseId}-${i}`, type: 'Image', parentId: colsId, column: imageColumn, order: 0, props: { src: `https://picsum.photos/500/400?random=${i}`, styles: { borderRadius: '1rem' } } },
-                    { id: divId, type: 'Div', parentId: colsId, column: textColumn, order: 0, props: { layout: { flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' } } },
-                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', parentId: divId, column: 0, order: 0, props: { text: `Detalhe da Funcionalidade ${i + 1}`, styles: { fontSize: '2rem' } } },
-                    { id: `para-${baseId}-${i}`, type: 'Paragraph', parentId: divId, column: 0, order: 1, props: { text: 'Aprofunde na explicação do recurso, destacando como ele resolve um problema específico do usuário e quais são os principais benefícios práticos de utilizá-lo no dia a dia.' } },
-                    { id: `btn-${baseId}-${i}`, type: 'Button', parentId: divId, column: 0, order: 2, props: { text: 'Ver Detalhes', href: '#', variant: 'link', align: 'left' } },
+                    { id: colsId, type: 'Columns', order: i, parentId: null, column: 0, props: { columnCount: 2, styles: { paddingTop: '3rem', paddingBottom: '3rem', gap: '3rem', alignItems: 'center' } },
+                        children: [
+                            { id: `img-${baseId}-${i}`, type: 'Image', parentId: colsId, column: imageColumn, order: 0, props: { src: `https://picsum.photos/500/400?random=${i}`, styles: { borderRadius: '1rem' } } },
+                            { id: divId, type: 'Div', parentId: colsId, column: textColumn, order: 0, props: { layout: { flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' } },
+                                children: [
+                                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', parentId: divId, column: 0, order: 0, props: { text: `Detalhe da Funcionalidade ${i + 1}`, styles: { fontSize: '2rem' } } },
+                                    { id: `para-${baseId}-${i}`, type: 'Paragraph', parentId: divId, column: 0, order: 1, props: { text: 'Aprofunde na explicação do recurso, destacando como ele resolve um problema específico do usuário e quais são os principais benefícios práticos de utilizá-lo no dia a dia.' } },
+                                    { id: `btn-${baseId}-${i}`, type: 'Button', parentId: divId, column: 0, order: 2, props: { text: 'Ver Detalhes', href: '#', variant: 'link', align: 'left' } },
+                                ]
+                            }
+                        ]
+                    }
                 );
             }
             break;
@@ -497,22 +507,38 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             const sectionId = `div-fcards-${baseId}`;
             const columnsId = `cols-fcards-${baseId}`;
             componentsToAdd = [
-                { id: sectionId, type: 'Div', order: 0, parentId: null, column: 0, props: { styles: { paddingTop: '4rem', paddingBottom: '4rem', backgroundColor: '#f9fafb' }, layout: { flexDirection: 'column', gap: '1rem', alignItems: 'center' } } },
-                { id: `title-fcards-${baseId}`, type: 'Title', parentId: sectionId, order: 0, column: 0, props: { text: 'Vantagens Competitivas', styles: { textAlign: 'center', fontSize: '2.5rem' } } },
-                { id: `spacer-fcards-${baseId}`, type: 'Spacer', parentId: sectionId, order: 1, column: 0, props: { height: 40 } },
-                { id: columnsId, type: 'Columns', parentId: sectionId, order: 2, column: 0, props: { columnCount: 2, styles: { gap: '2rem' } } },
-                // Card 1
-                { id: `card1-div-${baseId}`, type: 'Div', parentId: columnsId, column: 0, order: 0, props: { styles: { border: '1px solid #e5e7eb', borderRadius: '1rem', overflow: 'hidden' } } },
-                { id: `card1-img-${baseId}`, type: 'Image', parentId: `card1-div-${baseId}`, column: 0, order: 0, props: { src: 'https://picsum.photos/600/350?random=1' } },
-                { id: `card1-textdiv-${baseId}`, type: 'Div', parentId: `card1-div-${baseId}`, column: 0, order: 1, props: { styles: { padding: '1.5rem' }, layout: { gap: '0.5rem' } } },
-                { id: `card1-title-${baseId}`, type: 'Subtitle', parentId: `card1-textdiv-${baseId}`, column: 0, order: 0, props: { text: 'Design Intuitivo' } },
-                { id: `card1-para-${baseId}`, type: 'Paragraph', parentId: `card1-textdiv-${baseId}`, column: 0, order: 1, props: { text: 'Interface amigável que permite criar e gerenciar campanhas sem complicação.' } },
-                // Card 2
-                { id: `card2-div-${baseId}`, type: 'Div', parentId: columnsId, column: 1, order: 0, props: { styles: { border: '1px solid #e5e7eb', borderRadius: '1rem', overflow: 'hidden' } } },
-                { id: `card2-img-${baseId}`, type: 'Image', parentId: `card2-div-${baseId}`, column: 0, order: 0, props: { src: 'https://picsum.photos/600/350?random=2' } },
-                { id: `card2-textdiv-${baseId}`, type: 'Div', parentId: `card2-div-${baseId}`, column: 0, order: 1, props: { styles: { padding: '1.5rem' }, layout: { gap: '0.5rem' } } },
-                { id: `card2-title-${baseId}`, type: 'Subtitle', parentId: `card2-textdiv-${baseId}`, column: 0, order: 0, props: { text: 'Resultados em Tempo Real' } },
-                { id: `card2-para-${baseId}`, type: 'Paragraph', parentId: `card2-textdiv-${baseId}`, column: 0, order: 1, props: { text: 'Acompanhe o desempenho das suas páginas e tome decisões baseadas em dados.' } },
+                { id: sectionId, type: 'Div', order: 0, parentId: null, column: 0, props: { styles: { paddingTop: '4rem', paddingBottom: '4rem', backgroundColor: '#f9fafb' }, layout: { flexDirection: 'column', gap: '1rem', alignItems: 'center' } },
+                    children: [
+                        { id: `title-fcards-${baseId}`, type: 'Title', parentId: sectionId, order: 0, column: 0, props: { text: 'Vantagens Competitivas', styles: { textAlign: 'center', fontSize: '2.5rem' } } },
+                        { id: `spacer-fcards-${baseId}`, type: 'Spacer', parentId: sectionId, order: 1, column: 0, props: { height: 40 } },
+                        { id: columnsId, type: 'Columns', parentId: sectionId, order: 2, column: 0, props: { columnCount: 2, styles: { gap: '2rem' } },
+                            children: [
+                                { id: `card1-div-${baseId}`, type: 'Div', parentId: columnsId, column: 0, order: 0, props: { styles: { border: '1px solid #e5e7eb', borderRadius: '1rem', overflow: 'hidden' } },
+                                    children: [
+                                        { id: `card1-img-${baseId}`, type: 'Image', parentId: `card1-div-${baseId}`, column: 0, order: 0, props: { src: 'https://picsum.photos/600/350?random=1' } },
+                                        { id: `card1-textdiv-${baseId}`, type: 'Div', parentId: `card1-div-${baseId}`, column: 0, order: 1, props: { styles: { padding: '1.5rem' }, layout: { gap: '0.5rem' } },
+                                            children: [
+                                                { id: `card1-title-${baseId}`, type: 'Subtitle', parentId: `card1-textdiv-${baseId}`, column: 0, order: 0, props: { text: 'Design Intuitivo' } },
+                                                { id: `card1-para-${baseId}`, type: 'Paragraph', parentId: `card1-textdiv-${baseId}`, column: 0, order: 1, props: { text: 'Interface amigável que permite criar e gerenciar campanhas sem complicação.' } },
+                                            ]
+                                        },
+                                    ]
+                                },
+                                { id: `card2-div-${baseId}`, type: 'Div', parentId: columnsId, column: 1, order: 0, props: { styles: { border: '1px solid #e5e7eb', borderRadius: '1rem', overflow: 'hidden' } },
+                                    children: [
+                                        { id: `card2-img-${baseId}`, type: 'Image', parentId: `card2-div-${baseId}`, column: 0, order: 0, props: { src: 'https://picsum.photos/600/350?random=2' } },
+                                        { id: `card2-textdiv-${baseId}`, type: 'Div', parentId: `card2-div-${baseId}`, column: 0, order: 1, props: { styles: { padding: '1.5rem' }, layout: { gap: '0.5rem' } },
+                                            children: [
+                                                { id: `card2-title-${baseId}`, type: 'Subtitle', parentId: `card2-textdiv-${baseId}`, column: 0, order: 0, props: { text: 'Resultados em Tempo Real' } },
+                                                { id: `card2-para-${baseId}`, type: 'Paragraph', parentId: `card2-textdiv-${baseId}`, column: 0, order: 1, props: { text: 'Acompanhe o desempenho das suas páginas e tome decisões baseadas em dados.' } },
+                                            ]
+                                        },
+                                    ]
+                                },
+                            ]
+                        },
+                    ]
+                },
             ];
             break;
         }
@@ -612,21 +638,24 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'footer-columns': {
             const parentId = `cols-footer-${baseId}`;
             componentsToAdd = [
-                { id: parentId, type: 'Columns', props: { columnCount: 4, styles: { paddingTop: '3rem', paddingBottom: '3rem', gap: '2rem' } }, order: 0, parentId: null, column: 0 },
-                // Coluna 1
-                { id: `img-footer-${baseId}`, type: 'Image', props: { src: 'https://placehold.co/150x50.png', alt: 'Logo' }, order: 0, parentId, column: 0 },
-                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: 'Sua missão em poucas palavras. Conectando pessoas e criando valor.', styles: { fontSize: '0.9rem', marginTop: '1rem' } }, order: 1, parentId, column: 0 },
-                // Coluna 2
-                { id: `sub1-footer-${baseId}`, type: 'Subtitle', props: { text: 'Empresa', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 1 },
-                { id: `btn1-footer-${baseId}`, type: 'Button', props: { text: 'Sobre Nós', href: '#', align: 'left', variant: 'link' }, order: 1, parentId, column: 1 },
-                { id: `btn2-footer-${baseId}`, type: 'Button', props: { text: 'Carreiras', href: '#', align: 'left', variant: 'link' }, order: 2, parentId, column: 1 },
-                // Coluna 3
-                { id: `sub2-footer-${baseId}`, type: 'Subtitle', props: { text: 'Recursos', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 2 },
-                { id: `btn3-footer-${baseId}`, type: 'Button', props: { text: 'Blog', href: '#', align: 'left', variant: 'link' }, order: 1, parentId, column: 2 },
-                { id: `btn4-footer-${baseId}`, type: 'Button', props: { text: 'Suporte', href: '#', align: 'left', variant: 'link' }, order: 2, parentId, column: 2 },
-                // Coluna 4
-                { id: `sub3-footer-${baseId}`, type: 'Subtitle', props: { text: 'Siga-nos', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 3 },
-                { id: `social-footer-${baseId}`, type: 'SocialIcons', props: { links: { facebook: '#', instagram: '#', twitter: '#' }, styles: { align: 'left' } }, order: 1, parentId, column: 3 },
+                { id: parentId, type: 'Columns', props: { columnCount: 4, styles: { paddingTop: '3rem', paddingBottom: '3rem', gap: '2rem' } }, order: 0, parentId: null, column: 0,
+                    children: [
+                        // Coluna 1
+                        { id: `img-footer-${baseId}`, type: 'Image', props: { src: 'https://placehold.co/150x50.png', alt: 'Logo' }, order: 0, parentId, column: 0 },
+                        { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: 'Sua missão em poucas palavras. Conectando pessoas e criando valor.', styles: { fontSize: '0.9rem', marginTop: '1rem' } }, order: 1, parentId, column: 0 },
+                        // Coluna 2
+                        { id: `sub1-footer-${baseId}`, type: 'Subtitle', props: { text: 'Empresa', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 1 },
+                        { id: `btn1-footer-${baseId}`, type: 'Button', props: { text: 'Sobre Nós', href: '#', align: 'left', variant: 'link' }, order: 1, parentId, column: 1 },
+                        { id: `btn2-footer-${baseId}`, type: 'Button', props: { text: 'Carreiras', href: '#', align: 'left', variant: 'link' }, order: 2, parentId, column: 1 },
+                        // Coluna 3
+                        { id: `sub2-footer-${baseId}`, type: 'Subtitle', props: { text: 'Recursos', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 2 },
+                        { id: `btn3-footer-${baseId}`, type: 'Button', props: { text: 'Blog', href: '#', align: 'left', variant: 'link' }, order: 1, parentId, column: 2 },
+                        { id: `btn4-footer-${baseId}`, type: 'Button', props: { text: 'Suporte', href: '#', align: 'left', variant: 'link' }, order: 2, parentId, column: 2 },
+                        // Coluna 4
+                        { id: `sub3-footer-${baseId}`, type: 'Subtitle', props: { text: 'Siga-nos', styles: { fontSize: '1.1rem' } }, order: 0, parentId, column: 3 },
+                        { id: `social-footer-${baseId}`, type: 'SocialIcons', props: { links: { facebook: '#', instagram: '#', twitter: '#' }, styles: { align: 'left' } }, order: 1, parentId, column: 3 },
+                    ]
+                },
                 // Copyright
                 { id: `divider-footer-${baseId}`, type: 'Divider', props: { margin: 20 }, order: 1, parentId: null, column: 0 },
                 { id: `copy-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa.`, styles: { textAlign: 'center', fontSize: '0.8rem' } }, order: 2, parentId: null, column: 0 },
@@ -675,10 +704,13 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'popup-newsletter': {
             const popupId = `popup-nl-${baseId}`;
             componentsToAdd = [
-                { id: popupId, type: 'PopUp', props: { trigger: 'delay', delay: 5, styles: { width: '450px' } }, order: 0, parentId: null, column: 0 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Junte-se à Nossa Newsletter', styles: { textAlign: 'center', fontSize: '1.8rem', marginBottom: '0.5rem' } }, order: 0, parentId: popupId, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Receba promoções, novidades e dicas exclusivas diretamente no seu e-mail.', styles: { textAlign: 'center', marginBottom: '1.5rem', color: '#666' } }, order: 1, parentId: popupId, column: 0 },
-                { id: `form-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true } }, buttonText: 'Inscrever-se', buttonAlign: 'center' }, order: 2, parentId: popupId, column: 0 },
+                { id: popupId, type: 'PopUp', props: { trigger: 'delay', delay: 5, styles: { width: '450px' } }, order: 0, parentId: null, column: 0,
+                    children: [
+                        { id: `title-${baseId}`, type: 'Title', props: { text: 'Junte-se à Nossa Newsletter', styles: { textAlign: 'center', fontSize: '1.8rem', marginBottom: '0.5rem' } }, order: 0, parentId: popupId, column: 0 },
+                        { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Receba promoções, novidades e dicas exclusivas diretamente no seu e-mail.', styles: { textAlign: 'center', marginBottom: '1.5rem', color: '#666' } }, order: 1, parentId: popupId, column: 0 },
+                        { id: `form-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true } }, buttonText: 'Inscrever-se', buttonAlign: 'center' }, order: 2, parentId: popupId, column: 0 },
+                    ]
+                },
             ];
             break;
         }
@@ -687,13 +719,22 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             const columnsId = `cols-${baseId}`;
             const divId = `div-${baseId}`;
             componentsToAdd = [
-                { id: popupId, type: 'PopUp', props: { trigger: 'exit_intent', styles: { width: '600px', padding: '0', borderRadius: '1rem' } }, order: 0, parentId: null, column: 0 },
-                { id: columnsId, type: 'Columns', props: { columnCount: 2, styles: { gap: '0' } }, order: 0, parentId: popupId, column: 0 },
-                { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/300/400' }, order: 0, parentId: columnsId, column: 0 },
-                { id: divId, type: 'Div', props: { styles: { padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem', alignItems: 'center' } }, order: 0, parentId: columnsId, column: 1 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: '20% OFF na sua Primeira Compra!', styles: { textAlign: 'center', fontSize: '2rem', lineHeight: '1.2' } }, order: 0, parentId: divId, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Use o cupom BEMVINDO20 no checkout.', styles: { textAlign: 'center' } }, order: 1, parentId: divId, column: 0 },
-                { id: `btn-${baseId}`, type: 'Button', props: { text: 'Ir para a Loja', href: '#' }, order: 2, parentId: divId, column: 0 },
+                { id: popupId, type: 'PopUp', props: { trigger: 'exit_intent', styles: { width: '600px', padding: '0', borderRadius: '1rem' } }, order: 0, parentId: null, column: 0,
+                    children: [
+                        { id: columnsId, type: 'Columns', props: { columnCount: 2, styles: { gap: '0' } }, order: 0, parentId: popupId, column: 0,
+                            children: [
+                                { id: `img-${baseId}`, type: 'Image', props: { src: 'https://picsum.photos/300/400' }, order: 0, parentId: columnsId, column: 0 },
+                                { id: divId, type: 'Div', props: { styles: { padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem', alignItems: 'center' } }, order: 0, parentId: columnsId, column: 1,
+                                    children: [
+                                        { id: `title-${baseId}`, type: 'Title', props: { text: '20% OFF na sua Primeira Compra!', styles: { textAlign: 'center', fontSize: '2rem', lineHeight: '1.2' } }, order: 0, parentId: divId, column: 0 },
+                                        { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Use o cupom BEMVINDO20 no checkout.', styles: { textAlign: 'center' } }, order: 1, parentId: divId, column: 0 },
+                                        { id: `btn-${baseId}`, type: 'Button', props: { text: 'Ir para a Loja', href: '#' }, order: 2, parentId: divId, column: 0 },
+                                    ]
+                                },
+                            ]
+                        },
+                    ]
+                },
             ];
             break;
         }
@@ -710,18 +751,21 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                         closeOnOutsideClick: false,
                         preventBodyScroll: true
                     },
-                    order: 0, parentId: null, column: 0 
+                    order: 0, parentId: null, column: 0,
+                    children: [
+                        { id: `title-${baseId}`, type: 'Title', props: { text: 'Você tem mais de 18 anos?', styles: { textAlign: 'center' } }, order: 0, parentId: popupId, column: 0 },
+                        { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Você deve ter 18 anos ou mais para acessar este conteúdo.', styles: { textAlign: 'center' } }, order: 1, parentId: popupId, column: 0 },
+                        { id: divId, type: 'Div', props: { layout: { flexDirection: 'row', horizontalAlign: 'center', gap: '10px' }, styles: { paddingTop: '1rem' } }, order: 2, parentId: popupId, column: 0,
+                            children: [
+                                { id: `btn-no-${baseId}`, type: 'Button', props: { text: 'Não', variant: 'outline', action: { type: 'URL', url: 'https://www.google.com' } }, order: 0, parentId: divId, column: 0 },
+                                { id: `btn-yes-${baseId}`, type: 'Button', props: { text: 'Sim', action: { type: 'CLOSE_POPUP' } }, order: 1, parentId: divId, column: 0 },
+                            ]
+                        },
+                    ]
                 },
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Você tem mais de 18 anos?', styles: { textAlign: 'center' } }, order: 0, parentId: popupId, column: 0 },
-                { id: `para-${baseId}`, type: 'Paragraph', props: { text: 'Você deve ter 18 anos ou mais para acessar este conteúdo.', styles: { textAlign: 'center' } }, order: 1, parentId: popupId, column: 0 },
-                { id: divId, type: 'Div', props: { layout: { flexDirection: 'row', horizontalAlign: 'center', gap: '10px' }, styles: { paddingTop: '1rem' } }, order: 2, parentId: popupId, column: 0 },
-                { id: `btn-no-${baseId}`, type: 'Button', props: { text: 'Não', variant: 'outline', action: { type: 'URL', url: 'https://www.google.com' } }, order: 0, parentId: divId, column: 0 },
-                { id: `btn-yes-${baseId}`, type: 'Button', props: { text: 'Sim', action: { type: 'CLOSE_POPUP' } }, order: 1, parentId: divId, column: 0 },
             ];
             break;
         }
-
-
     }
 
     onAddComponent(componentsToAdd);

@@ -19,6 +19,9 @@ function hexToRgba(hex: string, alpha: number): string {
 export function renderColumns(component: PageComponent, childrenHtml: string): string {
     const { props } = component;
     const styles = props.styles || {};
+    const idOverride = props.idOverride || `columns-container-${component.id}`;
+    const customClasses = props.customClasses || '';
+
     const { 
         isFullWidth, 
         backgroundType, 
@@ -66,7 +69,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
         `;
     }
 
-    const className = `columns-container ${heroClass}`;
+    const className = `columns-container ${heroClass} ${customClasses}`;
 
     // Handle column widths
     const columnCount = props.columnCount || 2;
@@ -90,13 +93,13 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
     `;
 
     if (isFullWidth) {
-        return `<div class="section-wrapper" style="${backgroundStyle}">
+        return `<div class="section-wrapper" style="${backgroundStyle}" id="${idOverride}">
                     <div class="section-overlay" style="${overlayStyle}"></div>
                     <div class="${className}" style="${finalContainerStyle}">${childrenHtml}</div>
                 </div>`;
     }
 
-    return `<div class="${className}" style="${backgroundStyle} ${finalContainerStyle}">
+    return `<div class="${className}" style="${backgroundStyle} ${finalContainerStyle}" id="${idOverride}">
                 <div class="section-overlay" style="${overlayStyle}"></div>
                 ${childrenHtml}
             </div>`;

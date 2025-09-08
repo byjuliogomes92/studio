@@ -209,12 +209,13 @@ export type MobileMenuBehavior = 'push' | 'drawer' | 'overlay';
 
 export type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 
-export type ActionType = 'URL' | 'PAGE' | 'CLOSE_POPUP';
+export type ActionType = 'URL' | 'PAGE' | 'CLOSE_POPUP' | 'ANCHOR';
 
 export interface Action {
   type: ActionType;
   url?: string;
   pageId?: string;
+  anchorId?: string;
 }
 
 export type AnimationType = 'none' | 'fadeIn' | 'fadeInUp' | 'fadeInLeft' | 'fadeInRight';

@@ -84,9 +84,9 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
     
     const finalChildrenHtml = childrenHtml.replace(/<div class="component-wrapper"[^>]*>([\s\S]*?)<\/div>/gs, '$1');
 
-    return `<div class="${wrapperClass}" style="${wrapperStyle}">
+    return `<div class="${wrapperClass}" style="${wrapperStyle}" id="${idOverride}">
                 ${overlayHtml}
-                <div id="${idOverride}" class="${className}" style="${innerStyle}">${finalChildrenHtml}</div>
+                <div class="${className}" style="${innerStyle}">${finalChildrenHtml}</div>
             </div>`;
 }
 

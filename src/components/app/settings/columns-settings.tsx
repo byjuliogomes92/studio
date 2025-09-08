@@ -244,6 +244,19 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange, page
                         </Accordion>
                     </AccordionContent>
                 </AccordionItem>
+                 <AccordionItem value="advanced">
+                    <AccordionTrigger>Avançado</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-2">
+                        <div className="space-y-2">
+                            <Label>ID do Elemento (para Âncora)</Label>
+                            <Input value={props.idOverride || ''} onChange={e => onPropChange('idOverride', e.target.value)} placeholder="ID único para âncoras"/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Classes CSS Customizadas</Label>
+                            <Input value={props.customClasses || ''} onChange={e => onPropChange('customClasses', e.target.value)} placeholder="classe-1 classe-2"/>
+                        </div>
+                    </AccordionContent>
+                 </AccordionItem>
             </Accordion>
         </div>
     );

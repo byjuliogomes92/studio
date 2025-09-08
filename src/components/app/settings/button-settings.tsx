@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { PageComponent, ButtonVariant, CloudPage, Action } from "@/lib/types";
+import type { PageComponent, ButtonVariant, CloudPage, Action, ActionType } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -67,6 +67,7 @@ export function ButtonSettings({ component, onPropChange, onSubPropChange, proje
                         <SelectContent>
                         <SelectItem value="URL">Ir para URL externa</SelectItem>
                         <SelectItem value="PAGE">Ir para outra página</SelectItem>
+                        <SelectItem value="ANCHOR">Ir para âncora na página</SelectItem>
                         <SelectItem value="CLOSE_POPUP">Fechar Pop-up</SelectItem>
                         </SelectContent>
                     </Select>
@@ -103,6 +104,18 @@ export function ButtonSettings({ component, onPropChange, onSubPropChange, proje
                         </SelectContent>
                         </Select>
                     </div>
+                    )}
+
+                     {(props.action?.type === 'ANCHOR') && (
+                        <div className="space-y-2">
+                            <Label htmlFor="button-anchor-id">ID da Âncora</Label>
+                            <Input
+                            id="button-anchor-id"
+                            value={props.action?.anchorId || ''}
+                            onChange={(e) => onPropChange('action', { ...props.action, anchorId: e.target.value, type: 'ANCHOR' })}
+                            placeholder="#contato"
+                            />
+                        </div>
                     )}
                 </div>
             </div>

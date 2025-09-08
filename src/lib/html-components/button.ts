@@ -22,6 +22,8 @@ export function renderButton(component: PageComponent, pageState?: CloudPage): s
         href = action.url || '#';
     } else if (action?.type === 'PAGE' && action.pageId) {
         href = `%%=CloudPagesURL(${action.pageId})=%%`;
+    } else if (action?.type === 'ANCHOR' && action.anchorId) {
+        href = action.anchorId;
     }
 
     const brandStyles = pageState?.brand?.components?.button;
@@ -43,7 +45,8 @@ export function renderButton(component: PageComponent, pageState?: CloudPage): s
     if (action?.type === 'CLOSE_POPUP') {
         element = `<button type="button" class="${className}" style="${buttonStyleString}" onclick="window.closePopup && window.closePopup()">${text}</button>`;
     } else {
-        element = `<a href="${href}" target="_blank" class="${className}" style="${buttonStyleString}">${text}</a>`;
+        const target = href.startsWith('#') ? '' : 'target="_blank"';
+        element = `<a href="${href}" ${target} class="${className}" style="${buttonStyleString}">${text}</a>`;
     }
 
     return `<div class="button-wrapper" style="${wrapperStyle}">${element}</div>`;

@@ -195,7 +195,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange, pageStat
                     <AccordionTrigger>Avançado</AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
                         <div className="space-y-2">
-                            <Label>ID do Elemento</Label>
+                            <Label>ID do Elemento (para Âncora)</Label>
                             <Input value={props.idOverride || ''} onChange={e => onPropChange('idOverride', e.target.value)} placeholder="ID único para âncoras"/>
                         </div>
                         <div className="space-y-2">

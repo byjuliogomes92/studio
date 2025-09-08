@@ -1094,7 +1094,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState) : '';
   
   const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) 
-    ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript.replace(/^%%\[\s*|\s*]%%$/g, '')} ${meta.customAmpscript || ''} ${prefillAmpscript.replace(/^%%\[\s*|\s*]%%$/g, '')} ]%%` 
+    ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript.replace(/^%%\[\s*|\s*]%%/g, '').replace(/\n/g, ' ')} ${meta.customAmpscript || ''} ${prefillAmpscript.replace(/^%%\[\s*|\s*]%%/g, '').replace(/\n/g, ' ')} ]%%` 
     : '';
 
   const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
@@ -1133,25 +1133,17 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const isHeaderSticky = headerComponent?.props?.isSticky;
   const mainStyle = isHeaderSticky ? `padding-top: ${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
 
-
-  const bodyContent = shouldHideAmpscript
-  ? `
+  const bodyContent = `
     ${renderLoader(meta, styles.themeColor)}
-    <main style="${mainStyle}">
-      ${mainContentHtml}
-    </main>
-  `
-  : `
     %%[ IF @isAuthenticated == true THEN ]%%
-    ${renderLoader(meta, styles.themeColor)}
     <main style="${mainStyle}">
       ${mainContentHtml}
     </main>
+    ${ssjsScript.replace(/\n\s*/g, ' ')}
     %%[ ELSE ]%%
     ${getSecurityFormHtml(pageState)}
     %%[ ENDIF ]%%
     `;
-
 
   let finalHtml = `<!DOCTYPE html>
 <html>
@@ -1170,8 +1162,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ssjsScript.replace(/\n/g, '')}
-${initialAmpscript.replace(/\n/g, '')}
+${initialAmpscript.replace(/\n\s*/g, ' ')}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -2506,7 +2497,7 @@ ${clientSideScripts}
 </head>
 <body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
 ${!isForPreview ? trackingScripts.body : ''}
-${bodyContent}
+${shouldHideAmpscript ? mainContentHtml : bodyContent}
 ${cookieBannerHtml}
 </body>
 </html>`;

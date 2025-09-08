@@ -26,6 +26,10 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
 export const getSecurityFormHtml = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
+    if (security?.type === 'sso') {
+        return `<div class="sso-redirect-container"><h1>Redirecionando para o login...</h1><script>window.location.href = "%%=v(@LoginURL)=%%";</script></div>`;
+    }
+    
     if (!security || security.type !== 'password' || !security.passwordConfig) {
         return '';
     }

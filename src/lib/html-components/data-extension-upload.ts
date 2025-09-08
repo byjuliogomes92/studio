@@ -76,6 +76,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const statusMessage = document.getElementById('status-message-${component.id}');
           const initialContent = dropZone.querySelector('.de-upload-v2-drop-content.initial');
           const selectedContent = dropZone.querySelector('.de-upload-v2-drop-content.selected');
+          const submitBtnText = uploadBtn.querySelector('.button-text');
+          const submitBtnLoader = uploadBtn.querySelector('.button-loader');
           
           let selectedFile = null;
 
@@ -127,7 +129,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               initialContent.style.display = 'block';
               selectedContent.style.display = 'none';
               uploadBtn.disabled = true;
-              submitBtnText.style.display = 'inline';
+              submitBtnText.style.display = 'inline-block';
               submitBtnLoader.style.display = 'none';
               hideStatus();
               setProgress(0);
@@ -155,9 +157,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               handleFileSelect(e.dataTransfer.files[0]);
           });
           
-          const submitBtnText = uploadBtn.querySelector('.button-text');
-          const submitBtnLoader = uploadBtn.querySelector('.button-loader');
-
           uploadBtn.addEventListener('click', async () => {
               if (!selectedFile) return;
 
@@ -189,7 +188,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               } catch (err) {
                   showStatus('Erro: ' + (err.message || 'Falha no processamento.'), 'error');
                   uploadBtn.disabled = false;
-                  submitBtnText.style.display = 'inline';
+                  submitBtnText.style.display = 'inline-block';
                   submitBtnLoader.style.display = 'none';
               }
           });

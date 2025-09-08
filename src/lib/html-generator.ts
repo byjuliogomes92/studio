@@ -1687,119 +1687,72 @@ ${trackingScripts.head}
         width: 100%;
     }
 
-    .ftp-upload-container, .de-upload-container {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 20px;
-        margin: 20px 0;
-        background-color: #f9fafb;
-    }
-    .ftp-upload-header, .de-upload-header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .ftp-upload-header h4, .de-upload-header h4 {
-      font-size: 1.25rem;
-      font-weight: bold;
-      margin: 0 0 5px 0;
-    }
-    .ftp-upload-header p, .de-upload-header p {
-      font-size: 0.9rem;
-      color: #666;
-      margin: 0;
-    }
-    .ftp-upload-form, .de-upload-form {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-    .ftp-upload-drop-area, .de-upload-drop-area {
-        border: 2px dashed #ccc;
-        border-radius: 8px;
-        padding: 40px 20px;
+    .de-upload-v2-container {
+        background-color: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         text-align: center;
+        font-family: inherit;
+    }
+    .de-upload-v2-container h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+    .de-upload-v2-drop-zone {
+        border: 2px dashed #d1d5db;
+        border-radius: 0.5rem;
+        padding: 2rem;
         cursor: pointer;
-        transition: background-color 0.2s ease;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+        margin-bottom: 1rem;
     }
-    .ftp-upload-drop-area.active, .de-upload-drop-area.active {
-        background-color: #e9e9e9;
-        border-color: var(--theme-color);
+    .de-upload-v2-drop-zone.highlight {
+        background-color: #eff6ff;
+        border-color: #3b82f6;
     }
-    .ftp-upload-drop-area input[type="file"], .de-upload-drop-area input[type="file"] {
-        display: none;
+    .de-upload-v2-drop-content .de-upload-v2-icon {
+        color: #6b7280;
+        margin: 0 auto 0.75rem auto;
     }
-    .ftp-upload-icon svg, .de-upload-icon svg {
-        width: 48px;
-        height: 48px;
-        color: var(--theme-color);
-        margin: 0 auto 10px auto;
+    .de-upload-v2-drop-content p {
+        color: #6b7280;
+        margin: 0;
     }
-    .ftp-upload-instruction, .de-upload-instruction {
-        font-weight: bold;
-        color: #333;
+     .de-upload-v2-drop-content.selected p strong {
+        color: #11182c;
     }
-    .ftp-upload-filename, .de-upload-filename {
-        display: block;
-        margin-top: 10px;
-        font-size: 0.9rem;
-        color: #555;
+    .de-upload-v2-feedback {
+        margin-bottom: 1rem;
     }
-    .ftp-upload-progress-wrapper, .de-upload-progress-wrapper {
-        display: none;
-        width: 100%;
-        height: 8px;
-        background-color: #e0e0e0;
-        border-radius: 4px;
-        margin-top: 10px;
+    .de-upload-v2-progress-container {
+        background-color: #e5e7eb;
+        border-radius: 9999px;
+        height: 0.5rem;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
     }
-    .ftp-upload-progress-bar, .de-upload-progress-bar {
-        width: 0%;
+    .de-upload-v2-progress-bar {
+        background-color: #3b82f6;
         height: 100%;
-        background-color: var(--theme-color);
-        border-radius: 4px;
+        width: 0%;
         transition: width 0.3s ease;
     }
-    .ftp-upload-footer, .de-upload-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 15px;
+    .de-upload-v2-status {
+        font-size: 0.875rem;
+        min-height: 1.25rem;
     }
-    .ftp-upload-status, .de-upload-status {
-        font-size: 0.9rem;
-    }
-    .ftp-upload-form .custom-button, .de-upload-form .custom-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 20px;
-      border-radius: 5px;
-    }
-    .de-upload-auth-required {
-        text-align: center;
-        padding: 40px 20px;
-        background-color: #fff8e1;
-        border: 1px solid #ffecb3;
-    }
-    .de-upload-auth-required .de-upload-auth-icon {
-        color: #f59e0b;
-        margin-bottom: 10px;
-    }
-    .de-upload-auth-required .de-upload-auth-icon svg {
-        width: 32px;
-        height: 32px;
-        margin: 0 auto;
-    }
-    .de-upload-auth-required h4 {
-        font-size: 1.1rem;
-        color: #333;
-    }
-    .de-upload-auth-required p {
-        color: #666;
-        margin-bottom: 20px;
-    }
+    .de-upload-v2-status.info { color: #3b82f6; }
+    .de-upload-v2-status.success { color: #16a34a; }
+    .de-upload-v2-status.error { color: #dc2626; }
 
+    .de-upload-v2-container .custom-button .button-loader {
+       border-top: 3px solid var(--theme-color);
+       border-left-color: var(--theme-color);
+    }
+    
 
     footer {
         -webkit-font-smoothing: antialiased;

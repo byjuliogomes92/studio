@@ -141,6 +141,8 @@ const getInitialPage = (
       metaDescription: `Descrição da página ${name}.`,
       loaderType: 'image',
       loaderImageUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_icon.svg?alt=media&token=3fcd759a-3975-4285-9c59-98b824674514',
+      redirectUrl: '',
+      dataExtensionKey: 'CHANGE-ME',
     },
     styles: {
       backgroundColor: "#000000",
@@ -238,8 +240,10 @@ const getInitialPage = (
             flexDirection: "row",
             gap: "1rem",
             horizontalAlign: "center",
-            marginTop: "1rem"
           },
+          styles: {
+              paddingTop: "1rem"
+          }
         },
       },
       {

@@ -412,7 +412,7 @@ export function CreatePageFromTemplateDialog({
             title: newPageName,
             dataExtensionKey: template.meta?.dataExtensionKey ?? "CHANGE-ME",
             redirectUrl: template.meta?.redirectUrl ?? "https://www.google.com",
-            tracking: { gtm: { enabled: false }, ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
+            tracking: { ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
           },
         };
         
@@ -424,33 +424,36 @@ export function CreatePageFromTemplateDialog({
       }
 
       // Ensure cookie banner is fully defined to prevent Firestore errors
-      if (!newPageData.cookieBanner) {
-        newPageData.cookieBanner = {
-          enabled: false,
-          position: "bottom",
-          layout: "bar",
-          title: "",
-          description: "",
-          acceptButtonText: "Aceitar",
-          declineButtonText: "Recusar",
-          preferencesButtonText: "Preferências",
-          privacyPolicyLink: "",
-          categories: [],
-          styles: {
+      newPageData.cookieBanner = produce(newPageData.cookieBanner || { enabled: false }, draft => {
+        if (!draft) {
+          draft = {
+            enabled: false,
+            position: "bottom",
+            layout: "bar",
+            title: "",
+            description: "",
+            acceptButtonText: "Aceitar",
+            declineButtonText: "Recusar",
+            preferencesButtonText: "Preferências",
+            privacyPolicyLink: "",
+            categories: [],
+            styles: {
+              backgroundColor: "",
+              textColor: "",
+              buttonBackgroundColor: "",
+              buttonTextColor: "",
+            },
+          };
+        }
+        if (!draft.styles) {
+          draft.styles = {
             backgroundColor: "",
             textColor: "",
             buttonBackgroundColor: "",
             buttonTextColor: "",
-          },
-        };
-      } else if (!newPageData.cookieBanner.styles) {
-        newPageData.cookieBanner.styles = {
-          backgroundColor: "",
-          textColor: "",
-          buttonBackgroundColor: "",
-          buttonTextColor: "",
-        };
-      }
+          };
+        }
+      });
       
       const finalPageData = sanitizeForFirestore(newPageData);
 

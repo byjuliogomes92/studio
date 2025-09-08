@@ -680,24 +680,63 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
              break;
         }
         case 'faq-section': {
+            const sectionId = `faq-section-${baseId}`;
             componentsToAdd = [
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Perguntas Frequentes', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: null, column: 0 },
                 {
-                    id: `accordion-${baseId}`,
-                    type: 'Accordion',
-                    props: {
-                        items: [
-                            { id: 'faq1', title: 'Qual é a política de devolução?', content: 'Nossa política de devolução permite que você devolva qualquer item dentro de 30 dias após a compra para um reembolso total.' },
-                            { id: 'faq2', title: 'Como acompanho meu pedido?', content: 'Você pode acompanhar seu pedido usando o link de rastreamento enviado para o seu e-mail após a confirmação da compra.' },
-                            { id: 'faq3', title: 'Vocês oferecem frete internacional?', content: 'Sim, oferecemos frete para a maioria dos países. Os custos e prazos de entrega variam de acordo com o destino.' },
-                            { id: 'faq4', title: 'Como posso entrar em contato com o suporte?', content: 'Você pode entrar em contato com nosso suporte ao cliente através do e-mail suporte@exemplo.com ou pelo telefone (XX) XXXX-XXXX.' },
-                        ]
-                    },
-                    order: 1,
+                    id: sectionId,
+                    type: 'Div',
+                    order: 0,
                     parentId: null,
-                    column: 0
-                },
-                { id: `spacer-${baseId}`, type: 'Spacer', props: { height: 40 }, order: 2, parentId: null, column: 0 }
+                    column: 0,
+                    props: {
+                        styles: {
+                            paddingTop: '4rem',
+                            paddingBottom: '4rem',
+                            paddingLeft: '1.5rem',
+                            paddingRight: '1.5rem',
+                        },
+                        layout: {
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '1rem'
+                        },
+                    },
+                    children: [
+                        {
+                            id: `faq-title-${baseId}`,
+                            type: 'Title',
+                            parentId: sectionId,
+                            order: 0,
+                            column: 0,
+                            props: { text: 'Perguntas Frequentes', styles: { textAlign: 'center', fontSize: '2.5rem' } },
+                        },
+                        {
+                            id: `faq-subtitle-${baseId}`,
+                            type: 'Paragraph',
+                            parentId: sectionId,
+                            order: 1,
+                            column: 0,
+                            props: { text: 'Não encontrou o que procurava? Entre em contato com nosso time de suporte.', styles: { textAlign: 'center', maxWidth: '600px', color: '#6B7280' } },
+                        },
+                        { id: `spacer-${baseId}`, type: 'Spacer', parentId: sectionId, order: 2, column: 0, props: { height: 32 } },
+                        {
+                            id: `accordion-${baseId}`,
+                            type: 'Accordion',
+                            parentId: sectionId,
+                            order: 3,
+                            column: 0,
+                            props: {
+                                styles: { maxWidth: '768px', width: '100%' },
+                                items: [
+                                    { id: 'faq1', title: 'Qual é a política de devolução?', content: 'Nossa política de devolução permite que você devolva qualquer item dentro de 30 dias após a compra para um reembolso total. O produto deve estar em sua embalagem original e sem sinais de uso.' },
+                                    { id: 'faq2', title: 'Como acompanho meu pedido?', content: 'Assim que seu pedido for despachado, você receberá um e-mail com um link de rastreamento. Você pode usar esse link para acompanhar o status da sua entrega em tempo real.' },
+                                    { id: 'faq3', title: 'Vocês oferecem frete internacional?', content: 'Sim, oferecemos frete para a maioria dos países. Os custos e prazos de entrega variam de acordo com o destino. Você pode simular o frete na página do carrinho.' },
+                                    { id: 'faq4', title: 'Como posso entrar em contato com o suporte?', content: 'Você pode entrar em contato com nosso time de suporte através do e-mail suporte@exemplo.com ou pelo chat online em nosso site, de segunda a sexta, das 9h às 18h.' },
+                                ]
+                            },
+                        },
+                    ],
+                }
             ];
             break;
         }

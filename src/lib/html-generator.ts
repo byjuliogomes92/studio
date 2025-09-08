@@ -178,7 +178,7 @@ export const renderSingleComponent = (component: PageComponent, pageState: Cloud
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState, isForPreview);
     case 'FTPUpload': return renderFTPUpload(component, pageState);
-    case 'DataExtensionUpload': return renderDataExtensionUpload(component);
+    case 'DataExtensionUpload': return renderDataExtensionUpload(component, pageState);
     case 'FloatingImage': return renderFloatingImage(component);
     case 'FloatingButton': return renderFloatingButton(component);
     case 'Calendly': return renderCalendly(component);
@@ -1068,11 +1068,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
   const hasForm = components.some(c => c.type === 'Form');
+  const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
   const hasDataBinding = components.some(c => !!c.props.dataBinding);
   const needsSecurity = meta.security?.type !== 'none';
   const hasCustomAmpscript = !!meta.customAmpscript;
   
-  const ampscriptIsNeeded = hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript;
+  const ampscriptIsNeeded = hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload;
   
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 

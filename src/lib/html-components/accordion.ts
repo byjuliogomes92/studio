@@ -9,12 +9,16 @@ export function renderAccordion(component: PageComponent): string {
         .map(
         (item: { id: string; title: string; content: string }) => `
         <div class="accordion-item">
-            <button class="accordion-header" aria-expanded="false" aria-controls="content-${item.id}">
-            ${item.title}
-            <span class="accordion-icon"></span>
-            </button>
-            <div id="content-${item.id}" class="accordion-content">
-            ${item.content}
+            <h2 class="accordion-heading">
+              <button class="accordion-header" aria-expanded="false" aria-controls="content-${item.id}">
+                <span>${item.title}</span>
+                <span class="accordion-icon"></span>
+              </button>
+            </h2>
+            <div id="content-${item.id}" class="accordion-content-wrapper">
+              <div class="accordion-content">
+                  ${item.content}
+              </div>
             </div>
         </div>`
         )

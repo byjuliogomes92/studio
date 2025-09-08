@@ -389,16 +389,22 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             break;
        case 'hero-background-image': {
             const parentId = `div-hero-bg-${baseId}`;
+            const buttonContainerId = `div-buttons-${baseId}`;
             componentsToAdd = [
                 {
                     id: parentId, type: 'Div', order: 0, parentId: null, column: 0, props: {
-                        styles: { isFullWidth: true, backgroundType: 'image', backgroundImageUrl: 'https://picsum.photos/1200/800', paddingTop: '8rem', paddingBottom: '8rem', overlayEnabled: true, overlayColor: '#000000', overlayOpacity: 0.5 },
-                        layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
+                        styles: { isFullWidth: true, backgroundType: 'image', backgroundImageUrl: 'https://picsum.photos/1200/800?random=1', paddingTop: '8rem', paddingBottom: '8rem', overlayEnabled: true, overlayColor: '#000000', overlayOpacity: 0.5 },
+                        layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1.5rem' }
                     },
                     children: [
-                        { id: `title-${baseId}`, type: 'Title', parentId, column: 0, order: 0, props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } } },
-                        { id: `para-${baseId}`, type: 'Paragraph', parentId, column: 0, order: 1, props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center' } } },
-                        { id: `btn-${baseId}`, type: 'Button', parentId, column: 0, order: 2, props: { text: 'Chamada para Ação', href: '#' } },
+                        { id: `title-${baseId}`, type: 'Title', parentId, column: 0, order: 0, props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3.75rem', color: '#FFFFFF', textAlign: 'center', fontWeight: '900', letterSpacing: '-0.05em' } } },
+                        { id: `para-${baseId}`, type: 'Paragraph', parentId, column: 0, order: 1, props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa, incentivando o usuário a tomar a próxima ação.', styles: { fontSize: '1.25rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center', opacity: '0.9' } } },
+                        { id: buttonContainerId, type: 'Div', parentId: parentId, column: 0, order: 2, props: { layout: { flexDirection: 'row', gap: '1rem', horizontalAlign: 'center' } },
+                            children: [
+                                { id: `btn1-${baseId}`, type: 'Button', parentId: buttonContainerId, column: 0, order: 0, props: { text: 'Chamada para Ação', href: '#', styles: { padding: '0.875rem 1.5rem', fontWeight: '500' } } },
+                                { id: `btn2-${baseId}`, type: 'Button', parentId: buttonContainerId, column: 0, order: 1, props: { text: 'Saiba Mais', href: '#', variant: 'outline', styles: { padding: '0.875rem 1.5rem', fontWeight: '500', color: '#FFFFFF', borderColor: '#FFFFFF' } } },
+                            ]
+                        }
                     ]
                 }
             ];
@@ -415,18 +421,18 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             componentsToAdd = [
                 {
                     id: parentId, type: 'Columns', order: 0, parentId: null, column: 0,
-                    props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } },
+                    props: { columnCount: 2, styles: { alignItems: 'center', gap: '4rem', paddingTop: '6rem', paddingBottom: '6rem', paddingLeft: '2rem', paddingRight: '2rem' } },
                     children: [
                         {
                             id: textContainerId, type: 'Div', parentId: parentId, column: textColumn, order: 0,
-                            props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } },
+                            props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1.5rem' } },
                             children: [
-                                { id: `title-${baseId}`, type: 'Title', parentId: textContainerId, column: 0, order: 0, props: { text: 'Resolva um Problema Real', styles: { fontSize: '2.5rem' } } },
-                                { id: `para-${baseId}`, type: 'Paragraph', parentId: textContainerId, column: 0, order: 1, props: { text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.' } },
-                                { id: `btn-${baseId}`, type: 'Button', parentId: textContainerId, column: 0, order: 2, props: { text: 'Saiba Mais', href: '#', align: 'left' } },
+                                { id: `title-${baseId}`, type: 'Title', parentId: textContainerId, column: 0, order: 0, props: { text: 'Resolva um Problema Real e Importante', styles: { fontSize: '3rem', fontWeight: '900', letterSpacing: '-0.025em' } } },
+                                { id: `para-${baseId}`, type: 'Paragraph', parentId: textContainerId, column: 0, order: 1, props: { text: 'Descreva como seu produto ou serviço é a solução definitiva que o cliente precisa, destacando os principais benefícios de forma clara e convincente.', styles: { fontSize: '1.125rem' } } },
+                                { id: `btn-${baseId}`, type: 'Button', parentId: textContainerId, column: 0, order: 2, props: { text: 'Saiba Mais', href: '#', align: 'left', styles: { padding: '0.75rem 1.25rem' } } },
                             ],
                         },
-                        { id: `img-${baseId}`, type: 'Image', parentId: parentId, column: imageColumn, order: 0, props: { src: 'https://picsum.photos/600/500' } },
+                        { id: `img-${baseId}`, type: 'Image', parentId: parentId, column: imageColumn, order: 0, props: { src: 'https://picsum.photos/600/500?random=2', styles: { borderRadius: '1rem' } } },
                     ],
                 },
             ];
@@ -439,18 +445,18 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             componentsToAdd = [
                 {
                     id: parentId, type: 'Columns', order: 0, parentId: null, column: 0,
-                    props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } },
+                    props: { columnCount: 2, styles: { alignItems: 'center', gap: '4rem', paddingTop: '6rem', paddingBottom: '6rem', paddingLeft: '2rem', paddingRight: '2rem' } },
                     children: [
                         {
                             id: textContainerId, type: 'Div', parentId: parentId, column: 0, order: 0,
-                            props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } },
+                            props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1.5rem' } },
                             children: [
-                                { id: `title-${baseId}`, type: 'Title', parentId: textContainerId, column: 0, order: 0, props: { text: 'Receba a Oferta Exclusiva', styles: { fontSize: '2.5rem' } } },
-                                { id: `para-${baseId}`, type: 'Paragraph', parentId: textContainerId, column: 0, order: 1, props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.' } },
-                                { id: `form-${baseId}`, type: 'Form', parentId: textContainerId, column: 0, order: 2, props: { fields: { email: { enabled: true } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' }, formAlign: 'left', buttonAlign: 'left' } },
+                                { id: `title-${baseId}`, type: 'Title', parentId: textContainerId, column: 0, order: 0, props: { text: 'Receba uma Oferta Exclusiva Agora', styles: { fontSize: '3rem', fontWeight: '900', letterSpacing: '-0.025em' } } },
+                                { id: `para-${baseId}`, type: 'Paragraph', parentId: textContainerId, column: 0, order: 1, props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis. É rápido e fácil!', styles: { fontSize: '1.125rem' } } },
+                                { id: `form-${baseId}`, type: 'Form', parentId: textContainerId, column: 0, order: 2, props: { fields: { email: { enabled: true } }, placeholders: { email: 'seu-melhor@email.com' }, buttonText: 'Quero Receber!', submission: { message: 'Obrigado por se inscrever!' }, formAlign: 'left', buttonAlign: 'left' } },
                             ],
                         },
-                        { id: `img-${baseId}`, type: 'Image', parentId: parentId, column: 1, order: 0, props: { src: 'https://picsum.photos/600/500' } },
+                        { id: `img-${baseId}`, type: 'Image', parentId: parentId, column: 1, order: 0, props: { src: 'https://picsum.photos/600/500?random=3', styles: { borderRadius: '1rem' } } },
                     ],
                 },
             ];
@@ -623,7 +629,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'footer-simple':
             componentsToAdd = [
                 {
-                    id: `div-footer-${baseId}`, type: 'Div', order: 0, parentId: null, column: 0, props: {
+                    id: `div-footer-${baseId}`, type: 'Footer', order: 0, parentId: null, column: 0, props: {
                         styles: { paddingTop: '2rem', paddingBottom: '2rem', textAlign: 'center' },
                         layout: { flexDirection: 'column', gap: '1rem', verticalAlign: 'center', horizontalAlign: 'center' }
                     },
@@ -638,7 +644,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'footer-columns': {
             const parentId = `cols-footer-${baseId}`;
             componentsToAdd = [
-                { id: parentId, type: 'Columns', props: { columnCount: 4, styles: { paddingTop: '3rem', paddingBottom: '3rem', gap: '2rem' } }, order: 0, parentId: null, column: 0,
+                { id: parentId, type: 'Footer', props: { columnCount: 4, styles: { paddingTop: '3rem', paddingBottom: '3rem', gap: '2rem' } }, order: 0, parentId: null, column: 0,
                     children: [
                         // Coluna 1
                         { id: `img-footer-${baseId}`, type: 'Image', props: { src: 'https://placehold.co/150x50.png', alt: 'Logo' }, order: 0, parentId, column: 0 },
@@ -665,7 +671,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'footer-newsletter': {
              componentsToAdd = [
                 {
-                    id: `div-footer-${baseId}`, type: 'Div', order: 0, parentId: null, column: 0, props: {
+                    id: `div-footer-${baseId}`, type: 'Footer', order: 0, parentId: null, column: 0, props: {
                         styles: { paddingTop: '3rem', paddingBottom: '3rem', textAlign: 'center', backgroundColor: '#f9fafb' },
                         layout: { flexDirection: 'column', alignItems: 'center', gap: '1rem' }
                     },
@@ -806,8 +812,23 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             break;
         }
     }
+    
+    // Flatten the structure for the main component list
+    const allComponents: PageComponent[] = [];
+    const queue: PageComponent[] = [...componentsToAdd];
+    while(queue.length > 0) {
+        const current = queue.shift();
+        if (current) {
+            if (current.children) {
+                queue.push(...current.children);
+                delete current.children;
+            }
+            allComponents.push(current);
+        }
+    }
 
-    onAddComponent(componentsToAdd);
+
+    onAddComponent(allComponents);
     setIsOpen(false);
   }
 

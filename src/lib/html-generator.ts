@@ -1459,19 +1459,22 @@ ${trackingScripts.head}
         font-weight: bold;
     }
 
-    pre, code {
-        font-family: 'Courier New', Courier, monospace;
+    pre {
+      background-color: #282c34;
+      color: #abb2bf;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre;
     }
 
-    pre {
-        background-color: #f4f4f4;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 1em;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+    code {
+      font-family: inherit;
     }
-    
+
     .dark pre {
         background-color: #2d2d2d;
         border-color: #444;
@@ -2446,3 +2449,4 @@ ${cookieBannerHtml}
 
   return finalHtml;
 }
+

@@ -178,4 +178,15 @@
   .enhanced-gradient-button:hover .shine-trigger-secondary {
       animation: shineSecondary 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
   }
+
+  .de-upload-v2-drop-zone,
+  .ftp-upload-drop-area {
+    background-color: hsla(var(--primary), 0.05);
+  }
+
+  .de-upload-v2-drop-zone.highlight,
+  .ftp-upload-drop-area.active {
+    background-color: hsla(var(--primary), 0.15);
+    border-color: hsl(var(--primary));
+  }
 }

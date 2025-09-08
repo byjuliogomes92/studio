@@ -909,14 +909,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
         });
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const loader = document.getElementById('loader');
-        if (loader) {
-            setTimeout(function () {
-                loader.style.display = 'none';
-            }, 2000);
-        }
-        
+    function initializePage() {
         const phoneInput = document.getElementById('TELEFONE');
         if(phoneInput) phoneInput.addEventListener('input', function() { formatPhoneNumber(this); });
         
@@ -943,7 +936,24 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
         setupFloatingButtons();
         setupAnimations();
         setupPopups();
+    }
+    
+    window.addEventListener('load', function() {
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+        initializePage();
     });
+
+    if (document.readyState === 'complete') {
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+        initializePage();
+    }
+
     </script>
     `;
 
@@ -1084,7 +1094,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState) : '';
   
   const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) 
-    ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript} ${meta.customAmpscript || ''} ${prefillAmpscript || ''} ]%%` 
+    ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript.replace(/^%%\[\s*|\s*]%%$/g, '')} ${meta.customAmpscript || ''} ${prefillAmpscript.replace(/^%%\[\s*|\s*]%%$/g, '')} ]%%` 
     : '';
 
   const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
@@ -1160,8 +1170,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ssjsScript}
-${initialAmpscript}
+${ssjsScript.replace(/\n/g, '')}
+${initialAmpscript.replace(/\n/g, '')}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -2501,5 +2511,6 @@ ${cookieBannerHtml}
 </body>
 </html>`;
 
-  return finalHtml.replace(/\n/g, "");
+  return finalHtml;
 }
+

@@ -13,26 +13,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const { brandId } = pageState;
     const finalDeKey = environment === 'test' ? `TEST_${dataExtensionKey}` : dataExtensionKey;
 
-    // SSO Authentication Check
-    const authCheckHtml = `
-      %%[ IF @isAuthenticated != true THEN ]%%
-        <div class="de-upload-auth-required">
-          <div class="de-upload-auth-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          </div>
-          <h4>Acesso Restrito</h4>
-          <p>Você precisa estar logado no Marketing Cloud para usar esta funcionalidade.</p>
-          <a href="%%=v(@LoginURL)=%%" class="custom-button">Fazer Login</a>
-        </div>
-      %%[ ELSE ]%%
-    `;
-    const authCheckEndHtml = `%%[ ENDIF ]%%`;
-
     const iconUpload = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;
     const iconFile = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
 
     return `
-      ${authCheckHtml}
       <div class="de-upload-v2-container">
           <h4>${title}</h4>
           <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone">
@@ -63,7 +47,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
       <script>
       (function() {
           const container = document.querySelector('.de-upload-v2-container');
-          if (!container) return; // Exit if elements are not on the page (e.g., due to auth)
+          if (!container) return; 
 
           const dropZone = document.getElementById('drop-zone-${component.id}');
           const fileInput = document.getElementById('file-input-${component.id}');
@@ -194,6 +178,5 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           });
       })();
       </script>
-      ${authCheckEndHtml}
     `;
 }

@@ -335,12 +335,12 @@ export function CreatePageFromTemplateDialog({
     setIsCreating(true);
 
     try {
-      let pageToCreate: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
+      let pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
       const selectedBrand =
         userBrands.find((b) => b.id === selectedBrandId) || null;
 
       if (selectedTemplate === "blank") {
-        pageToCreate = getInitialPage(
+        pageData = getInitialPage(
           newPageName,
           selectedProjectId,
           activeWorkspace.id,
@@ -361,7 +361,7 @@ export function CreatePageFromTemplateDialog({
         if (!templateData) throw new Error("Template não encontrado.");
         
         // Deep copy the template to make it mutable and break references
-        let mutableTemplate = JSON.parse(JSON.stringify(templateData));
+        const mutableTemplate = JSON.parse(JSON.stringify(templateData));
 
         const newComponents = produce(mutableTemplate.components || [], (draft) => {
           const idMap: { [oldId: string]: string } = {};
@@ -400,7 +400,7 @@ export function CreatePageFromTemplateDialog({
         });
 
         // Create the page data with safe defaults and apply brand styles
-        const basePageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> = {
+        pageData = {
           name: newPageName,
           workspaceId: activeWorkspace.id,
           brandId: '',
@@ -419,34 +419,56 @@ export function CreatePageFromTemplateDialog({
             tracking: { ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
           },
         };
-        
-        if (selectedBrand) {
-          pageToCreate = applyBrandToPage(basePageData, selectedBrand);
-        } else {
-          pageToCreate = basePageData;
-        }
       }
 
-      // Ensure cookie banner is fully defined to prevent Firestore errors
-      pageToCreate.cookieBanner = produce(pageToCreate.cookieBanner || { enabled: false }, draft => {
-        if (!draft) {
-          draft = {
-            enabled: false, position: "bottom", layout: "bar",
-            title: "", description: "", acceptButtonText: "Aceitar",
-            declineButtonText: "Recusar", preferencesButtonText: "Preferências",
-            privacyPolicyLink: "", categories: [],
-            styles: { backgroundColor: "", textColor: "", buttonBackgroundColor: "", buttonTextColor: "" }
-          };
-        } else if (!pageToCreate.cookieBanner!.styles) {
-            draft.styles = {
+      // Use produce on the entire new page object to ensure it's mutable
+      const finalPageData = produce(pageData, draft => {
+        // Apply brand if selected
+        if (selectedBrand) {
+            draft.brandId = selectedBrand.id;
+            draft.brandName = selectedBrand.name;
+            draft.brand = selectedBrand;
+            
+            draft.styles.backgroundColor = selectedBrand.colors.light.background;
+            draft.styles.themeColor = selectedBrand.colors.light.primary;
+            draft.styles.themeColorHover = selectedBrand.colors.light.primaryHover;
+            draft.styles.fontFamily = selectedBrand.typography.customFontNameBody || selectedBrand.typography.fontFamilyBody;
+            
+            draft.meta.title = `${selectedBrand.name} - ${draft.name}`;
+            draft.meta.faviconUrl = selectedBrand.logos.favicon;
+            draft.meta.loaderImageUrl = selectedBrand.logos.iconLight;
+
+            draft.components.forEach(comp => {
+                if (comp.type === 'Header') comp.props.logoUrl = selectedBrand.logos.horizontalLight;
+                if (comp.type === 'Footer') comp.props.footerText1 = `© ${new Date().getFullYear()} ${selectedBrand.name}. Todos os direitos reservados.`;
+                if (comp.type === 'Title' || comp.type === 'Subtitle') {
+                    comp.props.styles = { ...comp.props.styles, fontFamily: `"${selectedBrand.typography.customFontNameHeadings || selectedBrand.typography.fontFamilyHeadings}", sans-serif` };
+                }
+                if (comp.type === 'Button' && comp.id === 'btn-hero-1') {
+                    comp.props.styles = { ...comp.props.styles, backgroundColor: selectedBrand.colors.light.primary, color: selectedBrand.colors.light.primaryForeground };
+                }
+            });
+        }
+        
+        // Ensure cookie banner is fully defined to prevent Firestore errors
+        if (!draft.cookieBanner) {
+            draft.cookieBanner = {
+                enabled: false, position: "bottom", layout: "bar",
+                title: "", description: "", acceptButtonText: "Aceitar",
+                declineButtonText: "Recusar", preferencesButtonText: "Preferências",
+                privacyPolicyLink: "", categories: [],
+                styles: { backgroundColor: "", textColor: "", buttonBackgroundColor: "", buttonTextColor: "" }
+            };
+        } else if (!draft.cookieBanner.styles) {
+            draft.cookieBanner.styles = {
                 backgroundColor: "", textColor: "", buttonBackgroundColor: "", buttonTextColor: ""
             };
         }
       });
       
-      const finalPageData = sanitizeForFirestore(pageToCreate);
+      const sanitizedPageData = sanitizeForFirestore(finalPageData);
 
-      const newPageId = await addPage(finalPageData, user.uid);
+      const newPageId = await addPage(sanitizedPageData, user.uid);
       toast({
         title: "Página criada!",
         description: `A página "${newPageName}" foi criada com sucesso.`,

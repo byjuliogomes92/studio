@@ -62,5 +62,3 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
 </div>
 `;
 }
-
-    

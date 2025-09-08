@@ -1722,6 +1722,21 @@ ${trackingScripts.head}
         font-weight: 600;
         margin-bottom: 1.5rem;
     }
+    .de-upload-v2-campaign-selector {
+        margin-bottom: 1.5rem;
+        text-align: left;
+    }
+    .de-upload-v2-campaign-selector label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    .de-upload-v2-campaign-selector select {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        border: 1px solid #d1d5db;
+    }
     .de-upload-v2-drop-zone {
         border: 2px dashed #d1d5db;
         border-radius: 0.5rem;
@@ -2449,4 +2464,3 @@ ${cookieBannerHtml}
 
   return finalHtml;
 }
-

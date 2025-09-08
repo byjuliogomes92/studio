@@ -6,19 +6,33 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         title = "Upload para Data Extension",
         instructionText = "Arraste e solte o arquivo CSV aqui, ou clique para selecionar.",
         buttonText = "Processar Arquivo",
-        dataExtensionKey = "",
-        environment = "prod"
+        campaigns = [], // Now an array of campaigns
     } = component.props;
     
     const { brandId } = pageState;
-    const finalDeKey = environment === 'test' ? `TEST_${dataExtensionKey}` : dataExtensionKey;
+    const componentId = `de-upload-${component.id}`;
 
     const iconUpload = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;
     const iconFile = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
 
+    const campaignOptionsHtml = campaigns.map((campaign: { deKey: string, name: string }) => 
+        `<option value="${campaign.deKey}">${campaign.name}</option>`
+    ).join('');
+
+    const campaignSelectorHtml = campaigns.length > 0 ? `
+        <div class="de-upload-v2-campaign-selector">
+            <label for="campaign-select-${component.id}">Selecione a campanha de destino:</label>
+            <select id="campaign-select-${component.id}">
+                <option value="" disabled selected>-- Escolha uma opção --</option>
+                ${campaignOptionsHtml}
+            </select>
+        </div>
+    ` : '';
+
     return `
       <div class="de-upload-v2-container">
           <h4>${title}</h4>
+          ${campaignSelectorHtml}
           <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone">
               <div class="de-upload-v2-drop-content initial">
                   <div class="de-upload-v2-icon">${iconUpload}</div>
@@ -49,6 +63,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const container = document.querySelector('.de-upload-v2-container');
           if (!container) return; 
 
+          const campaignSelect = document.getElementById('campaign-select-${component.id}');
           const dropZone = document.getElementById('drop-zone-${component.id}');
           const fileInput = document.getElementById('file-input-${component.id}');
           const filenameDisplay = document.getElementById('filename-display-${component.id}');
@@ -88,6 +103,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           function setProgress(percentage) {
               progressBar.style.width = percentage + '%';
           }
+          
+          function checkCanUpload() {
+              const campaignSelected = campaignSelect ? campaignSelect.value !== '' : true;
+              uploadBtn.disabled = !(selectedFile && campaignSelected);
+          }
 
           function handleFileSelect(file) {
               if (file && file.type === 'text/csv') {
@@ -96,7 +116,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   filesizeDisplay.textContent = formatBytes(file.size);
                   initialContent.style.display = 'none';
                   selectedContent.style.display = 'block';
-                  uploadBtn.disabled = false;
+                  checkCanUpload();
                   hideStatus();
                   setProgress(0);
               } else {
@@ -119,6 +139,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               setProgress(0);
           }
           
+          if(campaignSelect) {
+            campaignSelect.addEventListener('change', checkCanUpload);
+          }
           dropZone.addEventListener('click', () => fileInput.click());
           fileInput.addEventListener('change', () => handleFileSelect(fileInput.files[0]));
           
@@ -143,6 +166,12 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           
           uploadBtn.addEventListener('click', async () => {
               if (!selectedFile) return;
+              const selectedDeKey = campaignSelect ? campaignSelect.value : '${campaigns.length > 0 ? campaigns[0].deKey : ''}';
+              if (!selectedDeKey) {
+                  showStatus('Por favor, selecione uma campanha de destino.', 'error');
+                  return;
+              }
+
 
               uploadBtn.disabled = true;
               submitBtnText.style.display = 'none';

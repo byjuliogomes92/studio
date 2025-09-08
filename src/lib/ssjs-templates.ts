@@ -36,7 +36,7 @@ ${prefillLines.join('\n')}
 
 export function getFormSubmissionScript(pageState: CloudPage): string {
     const formComponent = pageState.components.find(c => c.type === 'Form');
-    const deUploadComponent = pageState.components.find(c => c.type === 'DataExtensionUpload');
+    const hasDataExtensionUpload = pageState.components.some(c => c.type === 'DataExtensionUpload');
 
     let script = `
 <script runat="server">
@@ -46,25 +46,11 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     try {
         if (Request.Method == "POST") {`;
 
-    // CSV Upload Logic
-    if (deUploadComponent) {
+    if (hasDataExtensionUpload) {
+        // This part is a placeholder. The actual upload logic is handled by a separate API route
+        // and Firebase Functions. This SSJS block is just for showing the concept.
         script += `
-            if (Request.GetFormField("__isCsvUpload") == "true") {
-                var deKey = Request.GetFormField("__deKey");
-                var jsonData = Request.GetFormField("userdata");
-                
-                if (deKey && jsonData) {
-                    var de = DataExtension.Init(deKey);
-                    var data = Platform.Function.ParseJSON(jsonData);
-
-                    for (var i = 0; i < data.length; i++) {
-                        // The InsertData function can take a JSON object directly
-                        // if the keys match the DE column names.
-                        de.Rows.Add(data[i]);
-                    }
-                    Variable.SetValue("@showThanks", "true");
-                }
-            }
+            /* DataExtensionUpload logic would be handled by a Firebase Function, not here. */
         `;
     }
 

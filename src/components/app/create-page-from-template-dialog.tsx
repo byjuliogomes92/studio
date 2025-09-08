@@ -76,13 +76,15 @@ const getInitialPage = (name: string, projectId: string, workspaceId: string, br
     const brandId = brand?.id ?? '';
 
     // Define base styles and props from brand or defaults
-    const themeColor = brand?.colors?.light?.primary ?? '#3b82f6';
-    const themeColorHover = brand?.colors?.light?.primaryHover ?? '#2563eb';
     const fontFamilyBody = brand?.typography?.fontFamilyBody ?? 'Roboto';
     const fontFamilyHeadings = brand?.typography?.fontFamilyHeadings ?? 'Poppins';
     const faviconUrl = brand?.logos?.favicon ?? '';
-    const loaderImageUrl = brand?.logos?.iconLight ?? '';
-    const logoUrl = brand?.logos?.horizontalLight ?? '';
+    
+    // Define the color palette from the user's components
+    const purpleColor = '#6d28d9'; // purple-600
+    const indigoColor = '#4f46e5'; // indigo-600
+    const yellowColor = '#facc15'; // yellow-400
+    const yellowHoverColor = '#eab308'; // yellow-500
 
     return sanitizeForFirestore({
         name: name,
@@ -95,76 +97,79 @@ const getInitialPage = (name: string, projectId: string, workspaceId: string, br
         meta: {
             title: name,
             faviconUrl,
-            loaderImageUrl,
-            redirectUrl: '',
-            dataExtensionKey: 'CHANGE-ME',
             metaDescription: `Descrição da página ${name}.`,
-            metaKeywords: name.toLowerCase(),
-            tracking: {
-                ga4: { enabled: false, id: '' },
-                meta: { enabled: false, id: '' },
-                linkedin: { enabled: false, id: '' }
-            }
         },
         styles: {
-            backgroundColor: brand?.colors?.light?.background ?? '#FFFFFF',
-            backgroundImage: '',
-            themeColor,
-            themeColorHover,
+            backgroundColor: '#f9fafb', // Cor de fundo da página (bg-gray-50)
             fontFamily: fontFamilyBody,
-            customCss: '',
         },
         cookieBanner: {
             enabled: false,
-            position: 'bottom',
-            layout: 'bar',
-            title: '', description: '', acceptButtonText: 'Aceitar',
-            declineButtonText: 'Recusar', preferencesButtonText: 'Preferências',
-            privacyPolicyLink: '', categories: [],
-            styles: { backgroundColor: '', textColor: '', buttonBackgroundColor: '', buttonTextColor: '' }
         },
         components: [
+            // Header
             {
                 id: 'header-initial', type: 'Header', parentId: null, column: 0, order: 0, props: {
-                    logoUrl: logoUrl,
+                    logoUrl: 'https://mkt.twblocks.com.br/morfeus/morfeus_logo.png',
+                    logoHeight: 40,
                     layout: 'logo-left-menu-button-right',
-                    links: [{ id: '1', text: 'Home', url: '#' }, { id: '2', text: 'Sobre', url: '#' }],
-                    buttonText: 'Contato',
-                    buttonUrl: '#'
+                    links: [
+                        { id: '1', text: 'Início', url: '#'}, 
+                        { id: '2', text: 'Recursos', url: '#'},
+                        { id: '3', text: 'Preços', url: '#'},
+                        { id: '4', text: 'Contato', url: '#'}
+                    ],
+                    styles: { backgroundColor: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', borderRadius: '0 0 1rem 1rem', paddingTop: '1rem', paddingBottom: '1rem' }
                 }
             },
+            // Hero Section
             {
                 id: 'div-hero-initial', type: 'Div', parentId: null, column: 0, order: 1, props: {
                     styles: {
                         isFullWidth: false,
-                        paddingTop: '6rem', paddingBottom: '6rem', paddingLeft: '2rem', paddingRight: '2rem'
+                        paddingTop: '5rem', paddingBottom: '5rem', 
+                        backgroundType: 'gradient', gradientFrom: purpleColor, gradientTo: indigoColor,
+                        borderRadius: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                        marginTop: '2rem'
                     },
-                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
+                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1.5rem' }
                 }
             },
+            { id: 'title-hero', type: 'Title', parentId: 'div-hero-initial', column: 0, order: 0, props: { text: 'Construa Jornadas Incríveis com <span style="color: #fde047;">Morfeus</span>', styles: { fontFamily: `"${fontFamilyHeadings}"`, fontSize: '3.75rem', textAlign: 'center', color: '#ffffff' } } },
+            { id: 'para-hero', type: 'Paragraph', parentId: 'div-hero-initial', column: 0, order: 1, props: { text: 'Plataforma completa para automação de marketing, campanhas inteligentes e resultados reais.', styles: { textAlign: 'center', maxWidth: '42rem', fontSize: '1.25rem', color: 'rgba(255,255,255,0.9)' } } },
+            { id: 'div-buttons-hero', type: 'Div', parentId: 'div-hero-initial', column: 0, order: 2, props: { layout: { flexDirection: 'row', gap: '1rem' } } },
+            { id: 'btn-hero-1', type: 'Button', parentId: 'div-buttons-hero', column: 0, order: 0, props: { text: 'Começar Agora', styles: { backgroundColor: yellowColor, color: '#000000', borderRadius: '0.75rem', padding: '0.75rem 1.5rem', fontWeight: '600' } } },
+            { id: 'btn-hero-2', type: 'Button', parentId: 'div-buttons-hero', column: 0, order: 1, props: { text: 'Saiba Mais', variant: 'outline', styles: { borderRadius: '0.75rem', padding: '0.75rem 1.5rem', color: '#ffffff', borderColor: '#ffffff' } } },
+            // Features Section
+            { id: 'title-features', type: 'Title', parentId: null, column: 0, order: 2, props: { text: 'Por que escolher o <span style="color: #6d28d9;">Morfeus</span>?', styles: { textAlign: 'center', marginTop: '4rem', marginBottom: '3rem', fontSize: '2.25rem' } } },
+            { id: 'cols-features', type: 'Columns', parentId: null, column: 0, order: 3, props: { columnCount: 3, styles: { gap: '2rem' } } },
+            // Feature 1
+            { id: 'div-feature-1', type: 'Div', parentId: 'cols-features', column: 0, order: 0, props: { styles: { backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }, layout: { flexDirection: 'column', horizontalAlign: 'center', gap: '1rem' } } },
+            { id: 'para-f1-icon', type: 'Paragraph', parentId: 'div-feature-1', column: 0, order: 0, props: { text: '⚡️', styles: { fontSize: '2rem' } } },
+            { id: 'title-f1', type: 'Subtitle', parentId: 'div-feature-1', column: 0, order: 1, props: { text: 'Automação Rápida' } },
+            { id: 'para-f1', type: 'Paragraph', parentId: 'div-feature-1', column: 0, order: 2, props: { text: 'Monte fluxos em minutos e ganhe agilidade.', styles: { textAlign: 'center', color: '#4b5563' } } },
+            // Feature 2
+            { id: 'div-feature-2', type: 'Div', parentId: 'cols-features', column: 1, order: 0, props: { styles: { backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }, layout: { flexDirection: 'column', horizontalAlign: 'center', gap: '1rem' } } },
+            { id: 'para-f2-icon', type: 'Paragraph', parentId: 'div-feature-2', column: 0, order: 0, props: { text: '👥', styles: { fontSize: '2rem' } } },
+            { id: 'title-f2', type: 'Subtitle', parentId: 'div-feature-2', column: 0, order: 1, props: { text: 'Segmentação Inteligente' } },
+            { id: 'para-f2', type: 'Paragraph', parentId: 'div-feature-2', column: 0, order: 2, props: { text: 'Conecte-se com quem realmente importa.', styles: { textAlign: 'center', color: '#4b5563' } } },
+            // Feature 3
+            { id: 'div-feature-3', type: 'Div', parentId: 'cols-features', column: 2, order: 0, props: { styles: { backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }, layout: { flexDirection: 'column', horizontalAlign: 'center', gap: '1rem' } } },
+            { id: 'para-f3-icon', type: 'Paragraph', parentId: 'div-feature-3', column: 0, order: 0, props: { text: '📊', styles: { fontSize: '2rem' } } },
+            { id: 'title-f3', type: 'Subtitle', parentId: 'div-feature-3', column: 0, order: 1, props: { text: 'Relatórios Avançados' } },
+            { id: 'para-f3', type: 'Paragraph', parentId: 'div-feature-3', column: 0, order: 2, props: { text: 'Tome decisões com base em dados reais.', styles: { textAlign: 'center', color: '#4b5563' } } },
+            // CTA Section
             {
-                id: 'title-initial', type: 'Title', parentId: 'div-hero-initial', column: 0, order: 0, props: {
-                    text: 'Título Principal da Sua Página',
-                    styles: { fontFamily: `"${fontFamilyHeadings}"`, fontSize: '3rem', textAlign: 'center' }
+                id: 'div-cta-initial', type: 'Div', parentId: null, column: 0, order: 4, props: {
+                    styles: { backgroundColor: '#5b21b6', padding: '4rem 1.5rem', borderRadius: '1rem', marginTop: '3rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' },
+                    layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1.5rem' }
                 }
             },
-            {
-                id: 'para-initial', type: 'Paragraph', parentId: 'div-hero-initial', column: 0, order: 1, props: {
-                    text: 'Use este espaço para descrever sua oferta de forma clara e concisa. Destaque os principais benefícios e o que o visitante ganha ao continuar.',
-                    styles: { textAlign: 'center', maxWidth: '600px', fontSize: '1.125rem', color: '#64748b' }
-                }
-            },
-            {
-                id: 'btn-initial', type: 'Button', parentId: 'div-hero-initial', column: 0, order: 2, props: {
-                    text: 'Chamada para Ação', href: '#'
-                }
-            },
-            {
-                id: 'footer-initial', type: 'Footer', parentId: null, column: 0, order: 2, props: {
-                    layout: 'default',
-                    footerText1: `© ${new Date().getFullYear()} ${brandName}. Todos os direitos reservados.`
-                }
-            },
+            { id: 'title-cta', type: 'Title', parentId: 'div-cta-initial', column: 0, order: 0, props: { text: 'Pronto para transformar sua comunicação?', styles: { textAlign: 'center', fontSize: '2.25rem', color: '#ffffff' } } },
+            { id: 'para-cta', type: 'Paragraph', parentId: 'div-cta-initial', column: 0, order: 1, props: { text: 'Cadastre-se no Morfeus e descubra como levar suas campanhas para o próximo nível.', styles: { textAlign: 'center', maxWidth: '42rem', fontSize: '1.125rem', color: 'rgba(255,255,255,0.9)' } } },
+            { id: 'btn-cta', type: 'Button', parentId: 'div-cta-initial', column: 0, order: 2, props: { text: 'Criar Conta Gratuitamente', styles: { backgroundColor: yellowColor, color: '#000000', borderRadius: '0.75rem', padding: '0.75rem 1.5rem', fontWeight: '600' } } },
+            // Footer
+            { id: 'footer-initial', type: 'Footer', parentId: null, column: 0, order: 5, props: { styles: { backgroundColor: '#111827', paddingTop: '2.5rem', paddingBottom: '2.5rem', marginTop: '3rem', borderRadius: '1rem 1rem 0 0' } } }
         ],
     });
 };

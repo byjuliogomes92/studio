@@ -46,6 +46,12 @@ const nextConfig: NextConfig = {
         hostname: 'mkt.twblocks.com.br',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        port: '',
+        pathname: '/**',
       }
     ],
   },

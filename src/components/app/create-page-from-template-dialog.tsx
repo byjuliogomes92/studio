@@ -139,6 +139,8 @@ const getInitialPage = (
       title: name,
       faviconUrl,
       metaDescription: `Descrição da página ${name}.`,
+      loaderType: 'image',
+      loaderImageUrl: 'https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_icon.svg?alt=media&token=3fcd759a-3975-4285-9c59-98b824674514',
     },
     styles: {
       backgroundColor: "#000000",
@@ -266,7 +268,7 @@ const getInitialPage = (
         order: 1,
         props: {
           text: "Saiba Mais",
-          variant: "secondary",
+          variant: "outline",
           styles: {
             borderRadius: "0.5rem",
             padding: "0.875rem 1.5rem",
@@ -300,7 +302,7 @@ const getInitialPage = (
         order: 0,
         props: {
           styles: { marginBottom: "3rem" },
-          layout: { horizontalAlign: "center", gap: "0.5rem" },
+          layout: { horizontalAlign: "center", gap: "0.5rem", flexDirection: 'column' },
         },
       },
       {
@@ -567,6 +569,7 @@ const getInitialPage = (
         order: 4,
         props: {
           layout: 'menus-and-social',
+          logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b",
           footerText1: `© ${new Date().getFullYear()} Morfeus. Todos os direitos reservados.`,
           linksLeft: [
             { id: "f1", text: 'Início', url: '#' },
@@ -685,14 +688,6 @@ export function CreatePageFromTemplateDialog({
       });
       return;
     }
-    if (!selectedBrandId && selectedTemplate !== "blank") {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Por favor, selecione uma marca para este template.",
-      });
-      return;
-    }
     if (newPageName.trim() === "") {
       toast({
         variant: "destructive",
@@ -728,7 +723,7 @@ export function CreatePageFromTemplateDialog({
         }
 
         if (!template) throw new Error("Template não encontrado.");
-        if (!selectedBrand)
+        if (!selectedBrand && selectedTemplate !== 'blank')
           throw new Error(
             "Marca selecionada não encontrada para este template."
           );
@@ -773,8 +768,8 @@ export function CreatePageFromTemplateDialog({
         newPageData = sanitizeForFirestore({
           name: newPageName,
           workspaceId: activeWorkspace.id,
-          brandId: selectedBrand.id,
-          brandName: selectedBrand.name,
+          brandId: selectedBrand?.id || '',
+          brandName: selectedBrand?.name || 'Sem Marca',
           platform: selectedPlatform,
           projectId: selectedProjectId,
           tags: template.tags || [],
@@ -798,7 +793,7 @@ export function CreatePageFromTemplateDialog({
           components: newComponents,
           cookieBanner: template.cookieBanner, // Keep original cookie banner from template
           meta: {
-            title: `${selectedBrand.name} - ${newPageName}`,
+            title: `${selectedBrand?.name || 'Marca'} - ${newPageName}`,
             faviconUrl:
               selectedBrand?.logos?.favicon ?? template.meta?.faviconUrl ?? "",
             loaderImageUrl:
@@ -1126,4 +1121,3 @@ export function CreatePageFromTemplateDialog({
     </Dialog>
   );
 }
-

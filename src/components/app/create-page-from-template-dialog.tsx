@@ -40,7 +40,7 @@ import {
 import { cn } from "@/lib/utils";
 import { FileText, Globe, Loader2, Server, Palette } from "lucide-react";
 import { produce } from "immer";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "../ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -189,7 +189,7 @@ const getInitialPage = (
     },
     cookieBanner: { enabled: false },
     components: [
-      { id: "header-initial", type: "Header", parentId: null, column: 0, order: 0, props: { logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b", logoHeight: 24, layout: "logo-left-menu-button-right", isSticky: true, backgroundColor: "rgba(0,0,0,0.7)", styles: { backdropFilter: "blur(10px)", borderBottom: '1px solid #333333' }, linkColor: "#d1d5db", linkHoverColor: "#ffffff", links: [{ id: "1", text: "Recursos", url: "#" }, { id: "2", text: "Preços", url: "#" }, { id: "3", text: "Contato", url: "#" }], buttonText: "Começar Agora", buttonUrl: "#", buttonProps: { bgColor: "#FFFFFF", textColor: "#000000", hoverBgColor: "#e5e5e5" } } },
+      { id: "header-initial", type: "Header", parentId: null, column: 0, order: 0, props: { logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b", logoHeight: 24, layout: "logo-left-menu-button-right", isSticky: true, backgroundColor: "rgba(0,0,0,0.7)", styles: { backdropFilter: "blur(10px)", borderBottom: '1px solid #333' }, linkColor: "#d1d5db", linkHoverColor: "#ffffff", links: [{ id: "1", text: "Recursos", url: "#" }, { id: "2", text: "Preços", url: "#" }, { id: "3", text: "Contato", url: "#" }], buttonText: "Começar Agora", buttonUrl: "#", buttonProps: { bgColor: "#FFFFFF", textColor: "#000000", hoverBgColor: "#e5e5e5" } } },
       { id: "div-hero-initial", type: "Div", parentId: null, column: 0, order: 1, props: { styles: { paddingTop: "8rem", paddingBottom: "8rem", animationType: 'fadeInUp' }, layout: { flexDirection: "column", verticalAlign: "center", horizontalAlign: "center", gap: "1.5rem" } } },
       { id: "title-hero", type: "Title", parentId: "div-hero-initial", column: 0, order: 0, props: { text: "Construa Jornadas Incríveis com Morfeus", styles: { fontSize: "3.75rem", textAlign: "center", fontWeight: "900", letterSpacing: "-0.05em", color: "#FFFFFF" } } },
       { id: "para-hero", type: "Paragraph", parentId: "div-hero-initial", column: 0, order: 1, props: { text: "Plataforma completa para automação de marketing, campanhas inteligentes e resultados reais.", styles: { textAlign: "center", maxWidth: "42rem", fontSize: "1.25rem", color: "#a0a0a0" } } },
@@ -334,7 +334,7 @@ export function CreatePageFromTemplateDialog({
     setIsCreating(true);
 
     try {
-      let pageToCreate: Omit<CloudPage, "id" | "createdAt" | "updatedAt">;
+      let pageToCreate: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>;
       const selectedBrand =
         userBrands.find((b) => b.id === selectedBrandId) || null;
 
@@ -347,20 +347,20 @@ export function CreatePageFromTemplateDialog({
           selectedPlatform
         );
       } else {
-        let template: Omit<
+        let templateData: Omit<
           Template,
           "id" | "createdAt" | "updatedAt" | "createdBy"
         > | null = null;
         if (selectedTemplateIsDefault) {
-          template = await getDefaultTemplate(selectedTemplate!);
+          templateData = await getDefaultTemplate(selectedTemplate!);
         } else {
-          template = await getTemplate(selectedTemplate!);
+          templateData = await getTemplate(selectedTemplate!);
         }
 
-        if (!template) throw new Error("Template não encontrado.");
+        if (!templateData) throw new Error("Template não encontrado.");
         
-        // Deep copy the template to make it mutable
-        const mutableTemplate = JSON.parse(JSON.stringify(template));
+        // Deep copy the template to make it mutable and break references
+        const mutableTemplate = JSON.parse(JSON.stringify(templateData));
 
         const newComponents = produce(mutableTemplate.components || [], (draft) => {
           const idMap: { [oldId: string]: string } = {};

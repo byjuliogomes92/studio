@@ -53,6 +53,9 @@ import {
   Gift,
   Megaphone,
   AlertTriangle,
+  ListChecks,
+  ListTree,
+  Rows,
 } from "lucide-react";
 import type { ComponentType, PageComponent, BlockType } from "@/lib/types";
 import { useState } from "react";
@@ -146,6 +149,14 @@ const blockList: {
         ]
     },
     {
+        category: 'Funcionalidades',
+        blocks: [
+            { name: "Grade de Funcionalidades (Ícones)", description: "Uma grade simples com ícone, título e descrição para cada funcionalidade.", type: "features-grid", icon: ListChecks },
+            { name: "Lista Detalhada (Imagem e Texto)", description: "Seção que alterna imagem e texto para detalhar cada funcionalidade.", type: "features-list", icon: ListTree },
+            { name: "Grade de Vantagens (Cards)", description: "Cards com imagem para destacar os principais benefícios ou recursos.", type: "features-cards", icon: Rows },
+        ]
+    },
+    {
         category: 'Pop-ups',
         blocks: [
             { name: "Captura de Newsletter", description: "Um pop-up simples com título, texto e um formulário para capturar e-mails.", type: "popup-newsletter", icon: Mail },
@@ -172,6 +183,64 @@ const blockList: {
         ]
     }
 ];
+
+function FeaturesGridConfigDialog({ onConfirm }: { onConfirm: (columnCount: number) => void }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [columnCount, setColumnCount] = useState<string>("3");
+
+    const handleConfirm = () => {
+        onConfirm(Number(columnCount));
+        setIsOpen(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <div className="border rounded-lg p-4 flex flex-col items-start gap-3 hover:bg-accent/50 hover:border-primary cursor-pointer">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-md bg-muted">
+                            <ListChecks className="h-6 w-6 text-primary" />
+                        </div>
+                        <h3 className="font-semibold text-base">Grade de Funcionalidades (Ícones)</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Uma grade simples com ícone, título e descrição para cada funcionalidade.</p>
+                </div>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Configurar Grade de Funcionalidades</DialogTitle>
+                    <DialogDescription>
+                        Escolha quantas colunas você quer exibir na grade.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label>Número de colunas</Label>
+                    <RadioGroup
+                        value={columnCount}
+                        onValueChange={setColumnCount}
+                        className="mt-2 grid grid-cols-2 gap-4"
+                    >
+                        {[2, 3].map(count => (
+                             <Label
+                                key={count}
+                                htmlFor={`features-${count}`}
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                            >
+                                <RadioGroupItem value={String(count)} id={`features-${count}`} className="sr-only" />
+                                <span className="text-2xl font-bold">{count}</span>
+                                <span className="text-sm text-muted-foreground">Colunas</span>
+                            </Label>
+                        ))}
+                    </RadioGroup>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleConfirm}>Adicionar Bloco</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 function ProductShowcaseConfigDialog({ onConfirm }: { onConfirm: (columnCount: number) => void }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -383,6 +452,67 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                         { id: `img-${baseId}`, type: 'Image', parentId: parentId, column: 1, order: 0, props: { src: 'https://picsum.photos/600/500' } },
                     ],
                 },
+            ];
+            break;
+        }
+        case 'features-grid': {
+            const sectionId = `div-features-${baseId}`;
+            const columnsId = `cols-features-${baseId}`;
+            componentsToAdd = [
+                { id: sectionId, type: 'Div', order: 0, parentId: null, column: 0, props: { styles: { paddingTop: '4rem', paddingBottom: '4rem' }, layout: { flexDirection: 'column', gap: '1rem', alignItems: 'center' } } },
+                { id: `title-features-${baseId}`, type: 'Title', parentId: sectionId, order: 0, column: 0, props: { text: 'Funcionalidades Incríveis', styles: { textAlign: 'center', fontSize: '2.5rem' } } },
+                { id: `para-features-${baseId}`, type: 'Paragraph', parentId: sectionId, order: 1, column: 0, props: { text: 'Tudo o que você precisa para decolar.', styles: { textAlign: 'center', maxWidth: '600px', color: '#666' } } },
+                { id: `spacer-features-${baseId}`, type: 'Spacer', parentId: sectionId, order: 2, column: 0, props: { height: 40 } },
+                { id: columnsId, type: 'Columns', parentId: sectionId, order: 3, column: 0, props: { columnCount, styles: { gap: '2rem' } } },
+            ];
+            for (let i = 0; i < columnCount; i++) {
+                componentsToAdd.push(
+                    { id: `icon-${baseId}-${i}`, type: 'CustomHTML', parentId: columnsId, column: i, order: 0, props: { htmlContent: `<div style="display:flex; justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></div>` } },
+                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', parentId: columnsId, column: i, order: 1, props: { text: `Funcionalidade ${i + 1}`, styles: { textAlign: 'center', fontSize: '1.25rem', marginTop: '1rem' } } },
+                    { id: `para-desc-${baseId}-${i}`, type: 'Paragraph', parentId: columnsId, column: i, order: 2, props: { text: 'Descrição curta e impactante sobre o benefício desta funcionalidade.', styles: { textAlign: 'center', color: '#666' } } },
+                );
+            }
+            break;
+        }
+        case 'features-list': {
+            for (let i = 0; i < 3; i++) {
+                const isImageLeft = i % 2 === 0;
+                const textColumn = isImageLeft ? 1 : 0;
+                const imageColumn = isImageLeft ? 0 : 1;
+                const colsId = `cols-flist-${baseId}-${i}`;
+                const divId = `div-flist-${baseId}-${i}`;
+                
+                componentsToAdd.push(
+                    { id: colsId, type: 'Columns', order: i, parentId: null, column: 0, props: { columnCount: 2, styles: { paddingTop: '3rem', paddingBottom: '3rem', gap: '3rem', alignItems: 'center' } } },
+                    { id: `img-${baseId}-${i}`, type: 'Image', parentId: colsId, column: imageColumn, order: 0, props: { src: `https://picsum.photos/500/400?random=${i}`, styles: { borderRadius: '1rem' } } },
+                    { id: divId, type: 'Div', parentId: colsId, column: textColumn, order: 0, props: { layout: { flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' } } },
+                    { id: `subtitle-${baseId}-${i}`, type: 'Subtitle', parentId: divId, column: 0, order: 0, props: { text: `Detalhe da Funcionalidade ${i + 1}`, styles: { fontSize: '2rem' } } },
+                    { id: `para-${baseId}-${i}`, type: 'Paragraph', parentId: divId, column: 0, order: 1, props: { text: 'Aprofunde na explicação do recurso, destacando como ele resolve um problema específico do usuário e quais são os principais benefícios práticos de utilizá-lo no dia a dia.' } },
+                    { id: `btn-${baseId}-${i}`, type: 'Button', parentId: divId, column: 0, order: 2, props: { text: 'Ver Detalhes', href: '#', variant: 'link', align: 'left' } },
+                );
+            }
+            break;
+        }
+        case 'features-cards': {
+            const sectionId = `div-fcards-${baseId}`;
+            const columnsId = `cols-fcards-${baseId}`;
+            componentsToAdd = [
+                { id: sectionId, type: 'Div', order: 0, parentId: null, column: 0, props: { styles: { paddingTop: '4rem', paddingBottom: '4rem', backgroundColor: '#f9fafb' }, layout: { flexDirection: 'column', gap: '1rem', alignItems: 'center' } } },
+                { id: `title-fcards-${baseId}`, type: 'Title', parentId: sectionId, order: 0, column: 0, props: { text: 'Vantagens Competitivas', styles: { textAlign: 'center', fontSize: '2.5rem' } } },
+                { id: `spacer-fcards-${baseId}`, type: 'Spacer', parentId: sectionId, order: 1, column: 0, props: { height: 40 } },
+                { id: columnsId, type: 'Columns', parentId: sectionId, order: 2, column: 0, props: { columnCount: 2, styles: { gap: '2rem' } } },
+                // Card 1
+                { id: `card1-div-${baseId}`, type: 'Div', parentId: columnsId, column: 0, order: 0, props: { styles: { border: '1px solid #e5e7eb', borderRadius: '1rem', overflow: 'hidden' } } },
+                { id: `card1-img-${baseId}`, type: 'Image', parentId: `card1-div-${baseId}`, column: 0, order: 0, props: { src: 'https://picsum.photos/600/350?random=1' } },
+                { id: `card1-textdiv-${baseId}`, type: 'Div', parentId: `card1-div-${baseId}`, column: 0, order: 1, props: { styles: { padding: '1.5rem' }, layout: { gap: '0.5rem' } } },
+                { id: `card1-title-${baseId}`, type: 'Subtitle', parentId: `card1-textdiv-${baseId}`, column: 0, order: 0, props: { text: 'Design Intuitivo' } },
+                { id: `card1-para-${baseId}`, type: 'Paragraph', parentId: `card1-textdiv-${baseId}`, column: 0, order: 1, props: { text: 'Interface amigável que permite criar e gerenciar campanhas sem complicação.' } },
+                // Card 2
+                { id: `card2-div-${baseId}`, type: 'Div', parentId: columnsId, column: 1, order: 0, props: { styles: { border: '1px solid #e5e7eb', borderRadius: '1rem', overflow: 'hidden' } } },
+                { id: `card2-img-${baseId}`, type: 'Image', parentId: `card2-div-${baseId}`, column: 0, order: 0, props: { src: 'https://picsum.photos/600/350?random=2' } },
+                { id: `card2-textdiv-${baseId}`, type: 'Div', parentId: `card2-div-${baseId}`, column: 0, order: 1, props: { styles: { padding: '1.5rem' }, layout: { gap: '0.5rem' } } },
+                { id: `card2-title-${baseId}`, type: 'Subtitle', parentId: `card2-textdiv-${baseId}`, column: 0, order: 0, props: { text: 'Resultados em Tempo Real' } },
+                { id: `card2-para-${baseId}`, type: 'Paragraph', parentId: `card2-textdiv-${baseId}`, column: 0, order: 1, props: { text: 'Acompanhe o desempenho das suas páginas e tome decisões baseadas em dados.' } },
             ];
             break;
         }
@@ -621,7 +751,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             </TabsList>
             <TabsContent value="blocos">
                 <Tabs defaultValue={blockList[0].category} className="w-full">
-                    <TabsList className="grid w-full grid-cols-5">
+                    <TabsList className="grid w-full grid-cols-6">
                         {blockList.map((group) => (
                             <TabsTrigger key={group.category} value={group.category}>{group.category}</TabsTrigger>
                         ))}
@@ -635,6 +765,9 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
                                     }
                                     if (block.type === 'simple-gallery') {
                                         return <GalleryConfigDialog key={block.type} onConfirm={(count) => handleBlockClick(block.type, count)} />
+                                    }
+                                    if (block.type === 'features-grid') {
+                                        return <FeaturesGridConfigDialog key={block.type} onConfirm={(count) => handleBlockClick(block.type, count)} />
                                     }
                                     const Icon = block.icon;
                                     return (

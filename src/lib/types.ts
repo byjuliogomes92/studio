@@ -56,7 +56,10 @@ export type BlockType =
     | 'faq-section'
     | 'popup-newsletter'
     | 'popup-coupon'
-    | 'popup-age-gate';
+    | 'popup-age-gate'
+    | 'features-grid'
+    | 'features-list'
+    | 'features-cards';
 
 
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';

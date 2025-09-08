@@ -26,7 +26,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import type { Brand, Template, Project, CloudPage } from "@/lib/types";
+import type { Brand, Template, Project, CloudPage, PageComponent } from "@/lib/types";
 import {
   getTemplates,
   getTemplate,
@@ -312,10 +312,6 @@ export function CreatePageFromTemplateDialog({
         }
 
         if (!template) throw new Error("Template não encontrado.");
-        if (!selectedBrand && selectedTemplate !== 'blank')
-          throw new Error(
-            "Marca selecionada não encontrada para este template."
-          );
 
         const newComponents = produce(template.components || [], (draft) => {
           const idMap: { [oldId: string]: string } = {};
@@ -353,7 +349,7 @@ export function CreatePageFromTemplateDialog({
           traverseAndReplace(draft);
         });
 
-        // Create the page data with safe defaults
+        // Create the page data with safe defaults and apply brand styles
         newPageData = sanitizeForFirestore({
           name: newPageName,
           workspaceId: activeWorkspace.id,
@@ -363,45 +359,32 @@ export function CreatePageFromTemplateDialog({
           projectId: selectedProjectId,
           tags: template.tags || [],
           styles: {
-            backgroundColor: template.styles?.backgroundColor ?? "#FFFFFF",
-            backgroundImage: template.styles?.backgroundImage ?? "",
-            themeColor:
-              selectedBrand?.colors?.light?.primary ??
-              template.styles?.themeColor ??
-              "#000000",
-            themeColorHover:
-              selectedBrand?.colors?.light?.primaryHover ??
-              template.styles?.themeColorHover ??
-              "#333333",
-            fontFamily:
-              selectedBrand?.typography?.fontFamilyBody ??
-              template.styles?.fontFamily ??
-              "Roboto",
-            customCss: template.styles?.customCss ?? "",
+            ...template.styles,
+            ...(selectedBrand ? {
+              themeColor: selectedBrand.colors.light.primary,
+              themeColorHover: selectedBrand.colors.light.primaryHover,
+              fontFamily: selectedBrand.typography.customFontNameBody || selectedBrand.typography.fontFamilyBody,
+            } : {})
           },
-          components: newComponents,
-          cookieBanner: template.cookieBanner, // Keep original cookie banner from template
+          components: newComponents.map(comp => {
+            if (selectedBrand) {
+                if (comp.type === 'Header') {
+                    comp.props.logoUrl = selectedBrand.logos.horizontalLight;
+                } else if (comp.type === 'Footer') {
+                     comp.props.footerText1 = `© ${new Date().getFullYear()} ${selectedBrand.name}. Todos os direitos reservados.`;
+                }
+            }
+            return comp;
+          }),
+          cookieBanner: template.cookieBanner, 
           meta: {
+            ...template.meta,
             title: `${selectedBrand?.name || 'Marca'} - ${newPageName}`,
-            faviconUrl:
-              selectedBrand?.logos?.favicon ?? template.meta?.faviconUrl ?? "",
-            loaderImageUrl:
-              selectedBrand?.logos?.iconLight ??
-              template.meta?.loaderImageUrl ??
-              "",
-            redirectUrl: template.meta?.redirectUrl ?? "https://www.google.com",
+            faviconUrl: selectedBrand?.logos?.favicon || template.meta?.faviconUrl || "",
+            loaderImageUrl: selectedBrand?.logos?.iconLight || template.meta?.loaderImageUrl || "",
             dataExtensionKey: template.meta?.dataExtensionKey ?? "CHANGE-ME",
-            metaDescription:
-              template.meta?.metaDescription ??
-              `Página de campanha para ${newPageName}.`,
-            metaKeywords:
-              template.meta?.metaKeywords ??
-              `campanha, ${newPageName.toLowerCase()}`,
-            tracking: {
-              ga4: { enabled: false },
-              meta: { enabled: false },
-              linkedin: { enabled: false },
-            },
+            redirectUrl: template.meta?.redirectUrl ?? "https://www.google.com",
+            tracking: { ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
           },
         });
       }

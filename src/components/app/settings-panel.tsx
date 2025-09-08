@@ -32,7 +32,7 @@ import { Separator } from "../ui/separator";
 import { AddComponentDialog } from './add-component-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { cn } from "@/lib/utils";
-import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
+import { AmpscriptSnippetDialog } from "./how-to-use-dialog";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import {
     AlertDialog,
@@ -138,6 +138,7 @@ const getTagColor = (tag: string) => {
 };
 
 function SortableItem({ component, children }: { component: PageComponent; children: React.ReactNode }) {
+  const isLocked = component.type === 'Header' || component.type === 'Footer';
   const {
     attributes,
     listeners,
@@ -145,7 +146,7 @@ function SortableItem({ component, children }: { component: PageComponent; child
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: component.id, data: { type: 'component', component } });
+  } = useSortable({ id: component.id, data: { type: 'component', component }, disabled: isLocked });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -193,7 +194,6 @@ function ComponentItem({
   setSelectedComponentId,
   moveComponent,
   onDeleteComponent,
-  isDraggable = true,
   dndAttributes,
   dndListeners,
   children,
@@ -203,13 +203,13 @@ function ComponentItem({
   setSelectedComponentId: (id: string | null) => void;
   moveComponent: (id: string, direction: 'up' | 'down') => void;
   onDeleteComponent: (id: string) => void;
-  isDraggable?: boolean;
   dndAttributes?: any;
   dndListeners?: any;
   children?: React.ReactNode;
 }) {
   const Icon = componentIcons[component.type] || Text;
   const isContainer = ['Columns', 'Div', 'PopUp'].includes(component.type);
+  const isLocked = component.type === 'Header' || component.type === 'Footer';
 
   const handleSelect = () => {
     if (selectedComponentId === component.id) {
@@ -225,7 +225,7 @@ function ComponentItem({
         isContainer ? "flex flex-col items-stretch gap-1.5" : "flex items-center gap-1"
       )}>
           <div className="flex items-center min-w-0"> {/* Allow shrinking */}
-            <Button asChild variant="ghost" size="icon" {...(isDraggable ? dndListeners : {})} {...(isDraggable ? dndAttributes : {})} className={cn("h-8 w-8 flex-shrink-0", isDraggable ? "cursor-grab" : "cursor-not-allowed")} aria-label={`Arrastar componente ${component.type}`}>
+            <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className={cn("h-8 w-8 flex-shrink-0", isLocked ? "cursor-not-allowed" : "cursor-grab")} aria-label={`Arrastar componente ${component.type}`}>
                 <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
             </Button>
             <Button
@@ -240,11 +240,11 @@ function ComponentItem({
                 </div>
             </Button>
             <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveComponent(component.id, 'up')}><ArrowUp className="h-4 w-4"/></Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveComponent(component.id, 'down')}><ArrowDown className="h-4 w-4"/></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveComponent(component.id, 'up')} disabled={isLocked}><ArrowUp className="h-4 w-4"/></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveComponent(component.id, 'down')} disabled={isLocked}><ArrowDown className="h-4 w-4"/></Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" disabled={isLocked}><Trash2 className="h-4 w-4"/></Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
@@ -592,8 +592,10 @@ export function SettingsPanel({
                 if (componentIndex === -1) return;
 
                 const component = draft.components[componentIndex];
+                 if (component.type === 'Header' || component.type === 'Footer') return; // Cannot move locked components
+
                 const siblings = draft.components
-                    .filter(c => c.parentId === component.parentId && c.column === component.column)
+                    .filter(c => c.parentId === component.parentId && c.column === component.column && !['Header', 'Footer'].includes(c.type))
                     .sort((a, b) => a.order - b.order);
                 
                 const currentOrderIndex = siblings.findIndex(s => s.id === componentId);
@@ -635,10 +637,9 @@ export function SettingsPanel({
     
             return produce(currentState, draft => {
                 const activeComponent = draft.components.find(c => c.id === activeId);
-                const overComponent = draft.components.find(c => c.id === overId);
-                const overIsDropzone = over.data.current?.isDropzone;
+                if (!activeComponent || ['Header', 'Footer'].includes(activeComponent.type)) return;
 
-                if (!activeComponent) return;
+                const overIsDropzone = over.data.current?.isDropzone;
 
                 if (overIsDropzone) {
                     const newParentId = overId.startsWith('root-dropzone') ? null : overId.split('-')[0];
@@ -646,16 +647,18 @@ export function SettingsPanel({
                     
                     activeComponent.parentId = newParentId;
                     activeComponent.column = newColumnIndex;
-                } else if (overComponent) {
+                } else {
+                    const overComponent = draft.components.find(c => c.id === overId);
+                    if (!overComponent || ['Header', 'Footer'].includes(overComponent.type)) return;
+
                     const sameContainer = activeComponent.parentId === overComponent.parentId;
                     
                     if (sameContainer) {
-                        // Reorder within the same container
                         const parentId = activeComponent.parentId;
                         const column = activeComponent.column;
                         const siblings = draft.components
-                            .filter(c => c.parentId === parentId && c.column === column)
-                            .sort((a,b) => a.order - b.order); // Sort to ensure correct indexing
+                            .filter(c => c.parentId === parentId && c.column === column && !['Header', 'Footer'].includes(c.type))
+                            .sort((a,b) => a.order - b.order); 
                         
                         const oldIndex = siblings.findIndex(c => c.id === activeId);
                         const newIndex = siblings.findIndex(c => c.id === overId);
@@ -672,7 +675,6 @@ export function SettingsPanel({
                             });
                         }
                     } else {
-                        // Reparent to the same container as the element being dropped on
                         activeComponent.parentId = overComponent.parentId;
                         activeComponent.column = overComponent.column;
                     }
@@ -688,14 +690,12 @@ export function SettingsPanel({
                     for(let i = 0; i < numColumns; i++) {
                         const children = draft.components
                           .filter(c => c.parentId === pId && c.column === i)
-                          .sort((a,b) => a.order - b.order); // Ensure we are iterating in a stable order
+                          .sort((a,b) => a.order - b.order);
                         
                         children.forEach((child, index) => {
-                            if (child) {
-                                const componentToUpdate = draft.components.find(c => c.id === child.id);
-                                if (componentToUpdate) {
-                                    componentToUpdate.order = index;
-                                }
+                            const componentToUpdate = draft.components.find(c => c.id === child.id);
+                            if (componentToUpdate) {
+                                componentToUpdate.order = index;
                             }
                         });
                     }
@@ -705,7 +705,7 @@ export function SettingsPanel({
     };
 
     const renderComponentsRecursive = (parentId: string | null, column: number | null = 0): React.ReactNode[] => {
-        if (!pageState || !pageState.components) { // Safety check
+        if (!pageState || !pageState.components) { 
             return [];
         }
         const componentsToRender = pageState.components
@@ -743,7 +743,7 @@ export function SettingsPanel({
     };
     
   
-  const rootComponents = pageState.components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type));
+  const rootComponents = pageState.components.filter(c => c.parentId === null);
 
   const toDatetimeLocal = (date: any) => {
     if (!date) return '';
@@ -1271,3 +1271,4 @@ export function SettingsPanel({
 
     
     
+

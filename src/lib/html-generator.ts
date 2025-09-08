@@ -1072,11 +1072,25 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
-  const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getFormSubmissionScript(pageState) : '';
-  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState) : '';
-  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState) : '';
+  const codeBlocks: string[] = [];
+  const protectCode = (code: string): string => {
+    if (!code.trim()) return '';
+    const placeholder = `__CODE_PLACEHOLDER_${codeBlocks.length}__`;
+    codeBlocks.push(code);
+    return placeholder;
+  }
   
-  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ 
+  const restoreCode = (html: string): string => {
+    return html.replace(/__CODE_PLACEHOLDER_(\d+)__/g, (match, index) => {
+        return codeBlocks[parseInt(index, 10)] || '';
+    });
+  }
+
+  const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? protectCode(getFormSubmissionScript(pageState)) : '';
+  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? protectCode(getPrefillAmpscript(pageState)) : '';
+  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? protectCode(getAmpscriptSecurityBlock(pageState)) : '';
+  
+  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? protectCode(`%%[ 
     VAR @showThanks
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
@@ -1084,10 +1098,10 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     ${securityAmpscript}
     ${meta.customAmpscript || ''}
     ${prefillAmpscript || ''}
-]%%` : '';
+]%%`) : '';
 
 
-  const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
+  const clientSideScripts = protectCode(getClientSideScripts(pageState, isForPreview, editorMode));
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
@@ -1132,14 +1146,14 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     </main>
   `
   : `
-    %%[ IF @isAuthenticated == true THEN ]%%
+    ${protectCode('%%[ IF @isAuthenticated == true THEN ]%%')}
     ${renderLoader(meta, styles.themeColor)}
     <main style="${mainStyle}">
       ${mainContentHtml}
     </main>
-    %%[ ELSE ]%%
+    ${protectCode('%%[ ELSE ]%%')}
     ${getSecurityFormHtml(pageState)}
-    %%[ ENDIF ]%%
+    ${protectCode('%%[ ENDIF ]%%')}
     `;
 
 
@@ -1160,8 +1174,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${shouldHideAmpscript ? '' : ssjsScript}
-${shouldHideAmpscript ? '' : initialAmpscript}
+${ssjsScript}
+${initialAmpscript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -2460,7 +2474,7 @@ ${cookieBannerHtml}
 </body>
 </html>`;
 
-  finalHtml = finalHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  finalHtml = restoreCode(finalHtml);
 
   return finalHtml;
 }

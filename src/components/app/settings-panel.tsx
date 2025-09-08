@@ -139,7 +139,7 @@ const getTagColor = (tag: string) => {
 
 const isComponentLocked = (component?: PageComponent | null) => {
     if (!component) return false;
-    const name = component.layerName?.toLowerCase().trim();
+    const name = (component.layerName || '').toLowerCase().trim();
     return component.type === 'Header' || component.type === 'Footer' || name === 'header' || name === 'footer';
 };
 
@@ -170,7 +170,7 @@ function SortableItem({ component, children }: { component: PageComponent; child
 }
 
 
-function Dropzone({ id, children, className, onAddComponent }: { id: string; children: React.ReactNode; className?: string, onAddComponent: (typeOrBlock: ComponentType | PageComponent[]) => void }) {
+function Dropzone({ id, children, className, onAddComponent, isEmpty }: { id: string; children: React.ReactNode; className?: string, onAddComponent: (typeOrBlock: ComponentType | PageComponent[]) => void, isEmpty: boolean }) {
     const { setNodeRef, isOver } = useSortable({ id, data: { type: 'dropzone', isDropzone: true, accepts: ['component'] } });
 
     return (
@@ -643,16 +643,14 @@ export function SettingsPanel({
 
             return produce(currentState, (draft) => {
                 const activeComponent = draft.components.find(c => c.id === active.id);
-                if (!activeComponent || isComponentLocked(activeComponent)) {
-                    return;
-                }
+                if (!activeComponent || isComponentLocked(activeComponent)) return;
 
-                const overComponent = draft.components.find(c => c.id === over.id);
                 const overIsDropzone = over.data.current?.isDropzone;
+                const overComponent = overIsDropzone ? null : draft.components.find(c => c.id === over.id);
 
-                if (overComponent && !overIsDropzone && activeComponent.parentId === overComponent.parentId && activeComponent.column === overComponent.column) {
-                    // This is a reorder operation among siblings.
-                    const siblings = draft.components
+                // Scenario 1: Reordering within the same container
+                if (overComponent && activeComponent.parentId === overComponent.parentId && activeComponent.column === overComponent.column) {
+                     const siblings = draft.components
                         .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
                         .sort((a, b) => a.order - b.order);
                     
@@ -668,30 +666,17 @@ export function SettingsPanel({
                             if (compToUpdate) compToUpdate.order = index;
                         });
                     }
-                } else if (overIsDropzone) {
-                    // This is a nesting operation.
-                    const newParentId = over.id.startsWith('root-dropzone') ? null : over.id.split('-')[0];
-                    const newColumnIndex = over.id.includes('-') ? parseInt(over.id.split('-')[1], 10) : 0;
+                } 
+                // Scenario 2: Moving into a new container (Dropzone)
+                else if (overIsDropzone) {
+                    const newParentId = over.id.startsWith('root-dropzone') ? null : over.id.split('-col-')[0];
+                    const newColumnIndex = over.id.includes('-col-') ? parseInt(over.id.split('-col-')[1], 10) : 0;
                     
                     activeComponent.parentId = newParentId;
                     activeComponent.column = newColumnIndex;
-                    
-                    // Recalculate order for both old and new siblings
-                    const oldSiblings = draft.components
-                        .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column && c.id !== active.id)
-                        .sort((a, b) => a.order - b.order);
-                    oldSiblings.forEach((sibling, index) => {
-                        const compToUpdate = draft.components.find(c => c.id === sibling.id);
-                        if (compToUpdate) compToUpdate.order = index;
-                    });
-                    
-                    const newSiblings = draft.components
-                        .filter(c => c.parentId === newParentId && c.column === newColumnIndex)
-                        .sort((a, b) => a.order - b.order);
-                    activeComponent.order = newSiblings.length - 1; // It's already in the list
                 }
 
-                // Final re-ordering pass for all containers to ensure data integrity
+                // Final integrity check: Recalculate order for all containers
                 const allParentIds = new Set(draft.components.map(c => c.parentId));
                 allParentIds.forEach(pId => {
                     const container = draft.components.find(c => c.id === pId);
@@ -710,10 +695,50 @@ export function SettingsPanel({
         });
     };
 
-    const renderComponentsRecursive = (parentId: string | null, column: number | null = 0): React.ReactNode[] => {
+    const renderComponentsRecursive = (parentId: string | null): React.ReactNode => {
         if (!pageState || !pageState.components) { 
             return [];
         }
+        // Get direct children of the current parent
+        const children = pageState.components
+            .filter(c => c.parentId === parentId)
+            .sort((a, b) => a.order - b.order);
+        
+        return children.map((component) => (
+            <SortableItem key={component.id} component={component}>
+                <ComponentItem
+                    component={component}
+                    selectedComponentId={selectedComponentId}
+                    setSelectedComponentId={setSelectedComponentId}
+                    moveComponent={moveComponent}
+                    onDeleteComponent={onDeleteComponent}
+                >
+                    {['Columns', 'Div', 'PopUp'].includes(component.type) && (
+                        <div 
+                            className="grid gap-2" 
+                            style={{ gridTemplateColumns: `repeat(${component.props.columnCount || 1}, 1fr)` }}
+                        >
+                            {Array.from({ length: component.props.columnCount || 1 }).map((_, i) => {
+                                const grandchildren = pageState.components.filter(c => c.parentId === component.id && c.column === i);
+                                return (
+                                <Dropzone 
+                                    key={`${component.id}-col-${i}`} 
+                                    id={`${component.id}-col-${i}`}
+                                    onAddComponent={(typeOrBlock) => onAddComponentToContainer(component.id, i, typeOrBlock)}
+                                    isEmpty={grandchildren.length === 0}
+                                >
+                                    {renderComponentsRecursive(component.id, i)}
+                                </Dropzone>
+                            )})}
+                        </div>
+                    )}
+                </ComponentItem>
+            </SortableItem>
+        ));
+    };
+
+    // New entry point for the recursive render
+    const renderNestedComponents = (parentId: string | null, column: number | null = null): React.ReactNode[] => {
         const componentsToRender = pageState.components
             .filter(c => c.parentId === parentId && (column === null || c.column === column))
             .sort((a, b) => a.order - b.order);
@@ -735,10 +760,11 @@ export function SettingsPanel({
                             {Array.from({ length: component.props.columnCount || 1 }).map((_, i) => (
                                 <Dropzone 
                                     key={`${component.id}-col-${i}`} 
-                                    id={`${component.id}-${i}`}
+                                    id={`${component.id}-col-${i}`}
                                     onAddComponent={(typeOrBlock) => onAddComponentToContainer(component.id, i, typeOrBlock)}
+                                    isEmpty={!pageState.components.some(c => c.parentId === component.id && c.column === i)}
                                 >
-                                    {renderComponentsRecursive(component.id, i)}
+                                    {renderNestedComponents(component.id, i)}
                                 </Dropzone>
                             ))}
                         </div>
@@ -748,15 +774,14 @@ export function SettingsPanel({
         ));
     };
     
-  
-  const rootComponents = pageState.components.filter(c => c.parentId === null);
+    const rootComponents = pageState.components.filter(c => c.parentId === null);
 
-  const toDatetimeLocal = (date: any) => {
-    if (!date) return '';
-    const d = date.toDate ? date.toDate() : new Date(date);
-    const pad = (num: number) => num.toString().padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
+    const toDatetimeLocal = (date: any) => {
+        if (!date) return '';
+        const d = date.toDate ? date.toDate() : new Date(date);
+        const pad = (num: number) => num.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
 
     return (
     <div className="flex flex-col h-full bg-card border-r w-full">
@@ -870,8 +895,8 @@ export function SettingsPanel({
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
                           >
-                            <Dropzone id="root-dropzone-0" onAddComponent={(typeOrBlock) => onAddComponentToContainer(null, 0, typeOrBlock)}>
-                                {renderComponentsRecursive(null)}
+                            <Dropzone id="root-dropzone-0" isEmpty={rootComponents.length === 0} onAddComponent={(typeOrBlock) => onAddComponentToContainer(null, 0, typeOrBlock)}>
+                                {renderNestedComponents(null)}
                             </Dropzone>
                            </DndContext>
                       </AccordionContent>

@@ -1095,15 +1095,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState) : '';
   const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState) : '';
   
-  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ 
-    VAR @showThanks
-    IF EMPTY(RequestParameter("__isPost")) THEN
-      SET @showThanks = "false"
-    ENDIF
-    ${securityAmpscript}
-    ${meta.customAmpscript || ''}
-    ${prefillAmpscript || ''}
-]%%` : '';
+  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript} ${meta.customAmpscript || ''} ${prefillAmpscript || ''} ]%%` : '';
 
 
   const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
@@ -1762,7 +1754,6 @@ ${trackingScripts.head}
         padding: 2rem;
         cursor: pointer;
         transition: background-color 0.2s ease, border-color 0.2s ease;
-        margin-bottom: 1rem;
         background-color: hsla(var(--primary), 0.05);
     }
     .de-upload-v2-drop-zone.highlight {

@@ -5,40 +5,22 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
     // Base variables for auth state, always defined for consistency.
-    const baseVars = `VAR @isAuthenticated, @LoginURL\\nSET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))`;
+    const baseVars = `VAR @isAuthenticated, @LoginURL SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))`;
     
     if (!security || security.type === 'none') {
-        return `${baseVars}\\nSET @isAuthenticated = true`;
+        return `${baseVars} SET @isAuthenticated = true`;
     }
 
     if (security.type === 'sso') {
-        return `${baseVars}
-  TRY 
-    SET @IsAuthenticated_Temp = Request.GetUserInfo()
-    SET @isAuthenticated = true
-  CATCH(e) 
-    SET @isAuthenticated = false
-  ENDTRY`;
+        return `${baseVars} TRY SET @IsAuthenticated_Temp = Request.GetUserInfo() SET @isAuthenticated = true CATCH(e) SET @isAuthenticated = false ENDTRY`;
     }
     
     if (security.type === 'password' && security.passwordConfig) {
         const config = security.passwordConfig;
-        return `${baseVars}
-  VAR @submittedPassword, @identifier, @correctPassword
-  SET @isAuthenticated = false
-  SET @submittedPassword = RequestParameter("page_password")
-  SET @identifier = RequestParameter("${config.urlParameter}")
-
-  IF NOT EMPTY(@submittedPassword) && NOT EMPTY(@identifier) THEN
-      SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
-      IF @submittedPassword == @correctPassword THEN
-          SET @isAuthenticated = true
-      ENDIF
-  ENDIF
-`;
+        return `${baseVars} VAR @submittedPassword, @identifier, @correctPassword SET @isAuthenticated = false SET @submittedPassword = RequestParameter("page_password") SET @identifier = RequestParameter("${config.urlParameter}") IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier) IF @submittedPassword == @correctPassword THEN SET @isAuthenticated = true ENDIF ENDIF`;
     }
 
-    return `${baseVars}\\nSET @isAuthenticated = true`;
+    return `${baseVars} SET @isAuthenticated = true`;
 }
 
 export const getSecurityFormHtml = (pageState: CloudPage): string => {

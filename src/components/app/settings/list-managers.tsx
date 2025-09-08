@@ -5,17 +5,19 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Bold, Italic, Underline, Link, Code } from "lucide-react";
+import { Trash2, Plus, Bold, Italic, Underline, Link, Code, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import { produce } from 'immer';
 import { ImageInput } from "./image-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ColorInput } from "./color-input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
+  onSubPropChange: (prop: string, subProp: string, value: any) => void;
   pageState: CloudPage;
 }
 
@@ -34,7 +36,7 @@ export function HeaderLinksManager({ links, onPropChange, pageState }: { links: 
 
     const removeLink = (index: number) => {
         const newLinks = links.filter((_, i) => i !== index);
-        onPropChange('links', newLinks);
+        onLinksChange(newLinks);
     };
 
     return (
@@ -143,8 +145,9 @@ const FormattingToolbar = ({ textareaRef, onContentChange }: { textareaRef: Reac
     );
 };
 
-export function ListManagerSettings({ component, onPropChange }: ComponentSettingsProps) {
+export function ListManagerSettings({ component, onPropChange, onSubPropChange }: ComponentSettingsProps) {
     const items = component.props.items || [];
+    const styles = component.props.styles || {};
     const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   
     const handleItemChange = (itemId: string, field: 'title' | 'content', value: string) => {
@@ -169,54 +172,92 @@ export function ListManagerSettings({ component, onPropChange }: ComponentSettin
         items.filter((item: any) => item.id !== itemId)
       );
     };
+
+    const handleStyleChange = (prop: string, value: any) => {
+        onSubPropChange('styles', prop, value);
+    };
   
     return (
-      <div className="space-y-4">
-        {items.map((item: any, index: number) => {
-          if (!textareaRefs.current[index]) {
-            textareaRefs.current[index] = null;
-          }
-          return (
-          <div key={item.id} className="p-3 border rounded-md space-y-3 relative">
-             <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-1 right-1 h-6 w-6 text-destructive/80 hover:text-destructive"
-                onClick={() => removeItem(item.id)}
-            >
-                <Trash2 className="h-4 w-4" />
-            </Button>
+        <div className="space-y-6">
+            <div className="space-y-4">
+                {items.map((item: any, index: number) => {
+                    if (!textareaRefs.current[index]) {
+                        textareaRefs.current[index] = null;
+                    }
+                    return (
+                        <div key={item.id} className="p-3 border rounded-md space-y-3 relative bg-background">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 text-destructive/80 hover:text-destructive"
+                                onClick={() => removeItem(item.id)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
 
-            <div className="space-y-2">
-              <Label htmlFor={`item-title-${item.id}`}>Título {index + 1}</Label>
-              <Input
-                id={`item-title-${item.id}`}
-                value={item.title}
-                onChange={(e) => handleItemChange(item.id, 'title', e.target.value)}
-              />
+                            <div className="space-y-2">
+                            <Label htmlFor={`item-title-${item.id}`}>Título {index + 1}</Label>
+                            <Input
+                                id={`item-title-${item.id}`}
+                                value={item.title}
+                                onChange={(e) => handleItemChange(item.id, 'title', e.target.value)}
+                            />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor={`item-content-${item.id}`}>Conteúdo {index + 1}</Label>
+                                <div className="border rounded-md">
+                                    <FormattingToolbar
+                                        textareaRef={{ current: textareaRefs.current[index] }}
+                                        onContentChange={(newContent) => handleItemChange(item.id, 'content', newContent)}
+                                    />
+                                    <Textarea
+                                        id={`item-content-${item.id}`}
+                                        ref={(el) => (textareaRefs.current[index] = el)}
+                                        value={item.content}
+                                        onChange={(e) => handleItemChange(item.id, 'content', e.target.value)}
+                                        rows={6}
+                                        className="rounded-t-none border-t-0"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )})}
+                <Button variant="outline" className="w-full" onClick={addItem}>
+                <Plus className="h-4 w-4 mr-2" /> Adicionar Item
+                </Button>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor={`item-content-${item.id}`}>Conteúdo {index + 1}</Label>
-                <div className="border rounded-md">
-                    <FormattingToolbar
-                        textareaRef={{ current: textareaRefs.current[index] }}
-                        onContentChange={(newContent) => handleItemChange(item.id, 'content', newContent)}
-                    />
-                    <Textarea
-                        id={`item-content-${item.id}`}
-                        ref={(el) => (textareaRefs.current[index] = el)}
-                        value={item.content}
-                        onChange={(e) => handleItemChange(item.id, 'content', e.target.value)}
-                        rows={6}
-                        className="rounded-t-none border-t-0"
+             <Separator />
+            <div className="space-y-4">
+                <h4 className="font-semibold text-sm">Estilo do Contêiner</h4>
+                 <div className="space-y-2">
+                    <Label htmlFor="accordion-max-width">Largura Máxima</Label>
+                    <Input
+                        id="accordion-max-width"
+                        value={styles.maxWidth || '100%'}
+                        onChange={(e) => handleStyleChange('maxWidth', e.target.value)}
+                        placeholder="Ex: 700px ou 80%"
                     />
                 </div>
+                 <div className="space-y-2">
+                    <Label>Alinhamento</Label>
+                    <ToggleGroup 
+                        type="single" 
+                        value={styles.align || 'left'} 
+                        onValueChange={(value) => value && handleStyleChange('align', value)}
+                        className="w-full"
+                    >
+                        <ToggleGroupItem value="left" aria-label="Alinhar à esquerda" className="flex-1">
+                            <AlignLeft className="h-4 w-4" />
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="center" aria-label="Centralizar" className="flex-1">
+                            <AlignCenter className="h-4 w-4" />
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="right" aria-label="Alinhar à direita" className="flex-1">
+                            <AlignRight className="h-4 w-4" />
+                        </ToggleGroupItem>
+                    </ToggleGroup>
+                </div>
             </div>
-          </div>
-        )})}
-        <Button variant="outline" className="w-full" onClick={addItem}>
-          <Plus className="h-4 w-4 mr-2" /> Adicionar Item
-        </Button>
       </div>
     );
 }

@@ -3,7 +3,17 @@ import type { PageComponent } from '@/lib/types';
 
 export function renderAccordion(component: PageComponent): string {
     const items = component.props.items || [];
-    const styleString = getStyleString(component.props.styles);
+    const styles = component.props.styles || {};
+    const { maxWidth = '100%', align = 'left' } = styles;
+    
+    let margin = '0';
+    if (align === 'center') {
+        margin = '0 auto';
+    } else if (align === 'right') {
+        margin = '0 0 0 auto';
+    }
+
+    const styleString = `max-width: ${maxWidth}; margin: ${margin};`;
 
     const itemsHtml = items
         .map(
@@ -24,14 +34,4 @@ export function renderAccordion(component: PageComponent): string {
         )
         .join('');
     return `<div class="accordion-container" style="${styleString}">${itemsHtml}</div>`;
-}
-
-function getStyleString(styles: any = {}): string {
-    return Object.entries(styles)
-      .map(([key, value]) => {
-        if (!value) return '';
-        const cssKey = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-        return `${cssKey}: ${value};`;
-      })
-      .join(' ');
 }

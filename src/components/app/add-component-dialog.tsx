@@ -54,32 +54,11 @@ import {
   Megaphone,
   AlertTriangle,
 } from "lucide-react";
-import type { ComponentType, PageComponent } from "@/lib/types";
+import type { ComponentType, PageComponent, BlockType } from "@/lib/types";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
-
-type BlockType = 
-    | 'product-showcase' 
-    | 'simple-gallery' 
-    | 'news-section' 
-    | 'hero-background-image' 
-    | 'hero-split-right' 
-    | 'hero-split-left' 
-    | 'hero-lead-capture' 
-    | 'logo-carousel'
-    | 'header-simple'
-    | 'header-cta'
-    | 'header-centered'
-    | 'header-minimal'
-    | 'footer-simple'
-    | 'footer-columns'
-    | 'footer-newsletter'
-    | 'faq-section'
-    | 'popup-newsletter'
-    | 'popup-coupon'
-    | 'popup-age-gate';
 
 const componentList: {
   category: string;
@@ -343,7 +322,7 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
             componentsToAdd = [
                 {
                     id: parentId, type: 'Div', order: 0, parentId: null, column: 0, props: {
-                        styles: { isFullWidth: true, backgroundType: 'image', backgroundImageUrl: 'https://picsum.photos/1200/800', paddingTop: '8rem', paddingBottom: '8rem', paddingLeft: '2rem', paddingRight: '2rem', overlayEnabled: true, overlayColor: '#000000', overlayOpacity: 0.5 },
+                        styles: { isFullWidth: true, backgroundType: 'image', backgroundImageUrl: 'https://picsum.photos/1200/800', paddingTop: '8rem', paddingBottom: '8rem', overlayEnabled: true, overlayColor: '#000000', overlayOpacity: 0.5 },
                         layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
                     },
                     children: [
@@ -455,29 +434,30 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
              break;
         }
         case 'logo-carousel': {
+            const divId = `div-logos-${baseId}`;
             componentsToAdd = [
                 {
-                    id: `div-logos-${baseId}`,
-                    type: 'Div', order: 0, parentId: null, column: 0,
+                    id: divId, type: 'Div', order: 0, parentId: null, column: 0,
                     props: {
                         styles: { paddingTop: '3rem', paddingBottom: '3rem' },
                         layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '2rem' }
                     },
                     children: [
-                        { id: `title-${baseId}`, type: 'Title', parentId: `div-logos-${baseId}`, column: 0, order: 0, props: { text: 'Confiado por grandes empresas', styles: { textAlign: 'center', fontSize: '1.25rem', color: '#6B7280' } } },
+                        { id: `title-${baseId}`, type: 'Title', parentId: divId, column: 0, order: 0, props: { text: 'Confiado por grandes empresas', styles: { textAlign: 'center', fontSize: '1.25rem', color: '#6B7280' } } },
                         {
-                            id: `div-logo-inner-${baseId}`, type: 'Div', parentId: `div-logos-${baseId}`, column: 0, order: 1,
+                            id: `carousel-${baseId}`, type: 'Carousel', parentId: divId, column: 0, order: 1,
                             props: {
-                                styles: { width: '100%' },
-                                layout: { flexDirection: 'row', horizontalAlign: 'space-around', verticalAlign: 'center', flexWrap: 'wrap', gap: '2rem' }
+                                carouselType: 'logo',
+                                options: { loop: true, align: 'start', autoplay: { delay: 2000 } },
+                                showArrows: false,
+                                images: [
+                                    { id: 'l1', url: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/microsoft_logo_icon_145722.png', alt: 'Microsoft' },
+                                    { id: 'l2', url: 'https://cdn.icon-icons.com/icons2/2429/PNG/512/spotify_logo_icon_147278.png', alt: 'Spotify' },
+                                    { id: 'l3', url: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/slack_logo_icon_145725.png', alt: 'Slack' },
+                                    { id: 'l4', url: 'https://cdn.icon-icons.com/icons2/2429/PNG/512/dropbox_logo_icon_1472_Dropbox.png', alt: 'Dropbox' },
+                                    { id: 'l5', url: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/google_logo_icon_145710.png', alt: 'Google' },
+                                ]
                             },
-                            children: [
-                                { id: `logo1-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 0, props: { src: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/microsoft_logo_icon_145722.png', alt: 'Microsoft', width: '140px', styles: { opacity: '0.6' } } },
-                                { id: `logo2-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 1, props: { src: 'https://cdn.icon-icons.com/icons2/2429/PNG/512/spotify_logo_icon_147278.png', alt: 'Spotify', width: '140px', styles: { opacity: '0.6' } } },
-                                { id: `logo3-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 2, props: { src: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/slack_logo_icon_145725.png', alt: 'Slack', width: '140px', styles: { opacity: '0.6' } } },
-                                { id: `logo4-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 3, props: { src: 'https://cdn.icon-icons.com/icons2/2429/PNG/512/dropbox_logo_icon_1472 Dropbox.png', alt: 'Dropbox', width: '140px', styles: { opacity: '0.6' } } },
-                                { id: `logo5-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 4, props: { src: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/google_logo_icon_145710.png', alt: 'Google', width: '140px', styles: { opacity: '0.6' } } },
-                            ]
                         }
                     ]
                 }
@@ -487,14 +467,16 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'footer-simple':
             componentsToAdd = [
                 {
-                    id: `div-footer-${baseId}`,
-                    type: 'Div',
-                    props: { styles: { paddingTop: '2rem', paddingBottom: '2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' } },
-                    order: 0, parentId: null, column: 0
+                    id: `div-footer-${baseId}`, type: 'Div', order: 0, parentId: null, column: 0, props: {
+                        styles: { paddingTop: '2rem', paddingBottom: '2rem', textAlign: 'center' },
+                        layout: { flexDirection: 'column', gap: '1rem', verticalAlign: 'center', horizontalAlign: 'center' }
+                    },
+                    children: [
+                        { id: `img-footer-${baseId}`, type: 'Image', parentId: `div-footer-${baseId}`, column: 0, order: 0, props: { src: 'https://placehold.co/150x50.png', alt: 'Logo da Empresa' } },
+                        { id: `para-footer-${baseId}`, type: 'Paragraph', parentId: `div-footer-${baseId}`, column: 0, order: 1, props: { text: `© ${new Date().getFullYear()} Sua Empresa. Todos os direitos reservados.`, styles: { fontSize: '0.9rem' } } },
+                        { id: `social-footer-${baseId}`, type: 'SocialIcons', parentId: `div-footer-${baseId}`, column: 0, order: 2, props: { links: { facebook: '#', instagram: '#', twitter: '#' } } },
+                    ]
                 },
-                { id: `img-footer-${baseId}`, type: 'Image', props: { src: 'https://placehold.co/150x50.png', alt: 'Logo da Empresa' }, order: 0, parentId: `div-footer-${baseId}`, column: 0 },
-                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa. Todos os direitos reservados.`, styles: { fontSize: '0.9rem' } }, order: 1, parentId: `div-footer-${baseId}`, column: 0 },
-                { id: `social-footer-${baseId}`, type: 'SocialIcons', props: { links: { facebook: '#', instagram: '#', twitter: '#' } }, order: 2, parentId: `div-footer-${baseId}`, column: 0 },
             ];
             break;
         case 'footer-columns': {
@@ -524,15 +506,17 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'footer-newsletter': {
              componentsToAdd = [
                 {
-                    id: `div-footer-${baseId}`,
-                    type: 'Div',
-                    props: { styles: { paddingTop: '3rem', paddingBottom: '3rem', textAlign: 'center', backgroundColor: '#f9fafb', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' } },
-                    order: 0, parentId: null, column: 0
+                    id: `div-footer-${baseId}`, type: 'Div', order: 0, parentId: null, column: 0, props: {
+                        styles: { paddingTop: '3rem', paddingBottom: '3rem', textAlign: 'center', backgroundColor: '#f9fafb' },
+                        layout: { flexDirection: 'column', alignItems: 'center', gap: '1rem' }
+                    },
+                    children: [
+                         { id: `title-footer-${baseId}`, type: 'Title', parentId: `div-footer-${baseId}`, column: 0, order: 0, props: { text: 'Inscreva-se na nossa Newsletter' } },
+                         { id: `para-footer-${baseId}`, type: 'Paragraph', parentId: `div-footer-${baseId}`, column: 0, order: 1, props: { text: 'Fique por dentro das últimas novidades e ofertas especiais.' } },
+                         { id: `form-footer-${baseId}`, type: 'Form', parentId: `div-footer-${baseId}`, column: 0, order: 2, props: { fields: { email: { enabled: true } }, buttonText: 'Inscrever', buttonAlign: 'center' } },
+                         { id: `copy-footer-${baseId}`, type: 'Paragraph', parentId: `div-footer-${baseId}`, column: 0, order: 3, props: { text: `© ${new Date().getFullYear()} Sua Empresa.`, styles: { fontSize: '0.8rem', marginTop: '2rem' } } },
+                    ]
                 },
-                { id: `title-footer-${baseId}`, type: 'Title', props: { text: 'Inscreva-se na nossa Newsletter' }, order: 0, parentId: `div-footer-${baseId}`, column: 0 },
-                { id: `para-footer-${baseId}`, type: 'Paragraph', props: { text: 'Fique por dentro das últimas novidades e ofertas especiais.' }, order: 1, parentId: `div-footer-${baseId}`, column: 0 },
-                { id: `form-footer-${baseId}`, type: 'Form', props: { fields: { email: { enabled: true } }, buttonText: 'Inscrever', buttonAlign: 'center' }, order: 2, parentId: `div-footer-${baseId}`, column: 0 },
-                { id: `copy-footer-${baseId}`, type: 'Paragraph', props: { text: `© ${new Date().getFullYear()} Sua Empresa.`, styles: { fontSize: '0.8rem', marginTop: '2rem' } }, order: 3, parentId: `div-footer-${baseId}`, column: 0 },
              ];
              break;
         }

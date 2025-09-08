@@ -37,6 +37,28 @@ export type ComponentType =
   | 'PopUp'
   | 'CustomHTML';
 
+export type BlockType = 
+    | 'product-showcase' 
+    | 'simple-gallery' 
+    | 'news-section' 
+    | 'hero-background-image' 
+    | 'hero-split-right' 
+    | 'hero-split-left' 
+    | 'hero-lead-capture' 
+    | 'logo-carousel'
+    | 'header-simple'
+    | 'header-cta'
+    | 'header-centered'
+    | 'header-minimal'
+    | 'footer-simple'
+    | 'footer-columns'
+    | 'footer-newsletter'
+    | 'faq-section'
+    | 'popup-newsletter'
+    | 'popup-coupon'
+    | 'popup-age-gate';
+
+
 export type UserProfileType = 'owner' | 'employee' | 'freelancer';
 
 export type PlanType = 'free' | 'starter' | 'professional' | 'enterprise';

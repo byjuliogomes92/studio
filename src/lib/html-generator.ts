@@ -122,7 +122,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : `id="${componentId}"`;
   
   // Extract only spacing styles for the wrapper
-  const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
+  const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'];
   const wrapperStyles: Record<string, any> = {};
   spacingKeys.forEach(key => {
     if (styles[key]) {
@@ -130,7 +130,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     }
   });
 
-  // Critical fix: Inherit text-align from the child component for the wrapper
+  // Inherit text-align from the child component for the wrapper
   if (styles.textAlign) {
       wrapperStyles['text-align'] = styles.textAlign;
   }
@@ -1080,7 +1080,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const codeBlocks: string[] = [];
   const protectCode = (code: string): string => {
-    if (!code.trim()) return '';
+    if (!code || !code.trim()) return '';
     const placeholder = `__CODE_PLACEHOLDER_${codeBlocks.length}__`;
     codeBlocks.push(code);
     return placeholder;
@@ -1252,14 +1252,14 @@ ${trackingScripts.head}
     }
     
     .component-wrapper {
-      padding-top: var(--padding-top, 20px);
-      padding-bottom: var(--padding-bottom, 20px);
-      padding-left: var(--padding-left, 0);
-      padding-right: var(--padding-right, 0);
       margin-top: var(--margin-top, 0);
       margin-bottom: var(--margin-bottom, 0);
       margin-left: var(--margin-left, auto);
       margin-right: var(--margin-right, auto);
+      padding-top: var(--padding-top, 0);
+      padding-bottom: var(--padding-bottom, 0);
+      padding-left: var(--padding-left, 0);
+      padding-right: var(--padding-right, 0);
       width: 100%;
       max-width: 1200px;
     }
@@ -2484,3 +2484,4 @@ ${cookieBannerHtml}
 
   return finalHtml;
 }
+

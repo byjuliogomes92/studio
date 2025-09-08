@@ -35,7 +35,7 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import { cn, copyToClipboard } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -383,8 +383,11 @@ export default function MediaLibraryPage() {
   }
 
   const handleCopyUrl = (url: string) => {
-    navigator.clipboard.writeText(url);
-    toast({ title: 'URL copiada!' });
+    copyToClipboard(url).then(() => {
+        toast({ title: 'URL copiada!' });
+    }).catch(err => {
+        toast({ variant: 'destructive', title: 'Falha ao copiar' });
+    });
   }
 
   const handleMediaUpdate = async (assetId: string, data: Partial<Pick<MediaAsset, 'fileName' | 'tags'>>) => {

@@ -9,223 +9,122 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Copy, AlertTriangle, ExternalLink } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import type { CloudPage, CustomFormField, CustomFormFieldType } from "@/lib/types";
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
-import { cn } from '@/lib/utils';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Bot } from "lucide-react";
+import { ScrollArea } from '../ui/scroll-area';
+import { snippets, Snippet } from '@/lib/ampscript-snippets';
 
-interface HowToUseDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  pageState: CloudPage;
-  onDataExtensionKeyChange: (newKey: string) => void;
+interface AmpscriptSnippetDialogProps {
+    currentCode: string;
+    onCodeChange: (newCode: string) => void;
+    onClose: () => void;
 }
 
-interface DeField {
-    name: string;
-    type: string;
-    length?: number;
-    primaryKey: boolean;
-    nullable: boolean;
-}
+export function AmpscriptSnippetDialog({ currentCode, onCodeChange, onClose }: AmpscriptSnippetDialogProps) {
+    const [selectedSnippet, setSelectedSnippet] = useState<Snippet | null>(null);
+    const [config, setConfig] = useState<Record<string, string>>({});
 
-const mapCustomFieldTypeToDeType = (type: CustomFormFieldType): { type: string, length?: number } => {
-    switch (type) {
-        case 'text': return { type: 'Text', length: 255 };
-        case 'number': return { type: 'Number' };
-        case 'date': return { type: 'Date' };
-        case 'checkbox': return { type: 'Boolean' };
-        default: return { type: 'Text', length: 255 };
-    }
-}
-
-// Function to generate the required Data Extension fields based on the page state
-const generateDeFields = (page: CloudPage): DeField[] => {
-    const fields: DeField[] = [
-        { name: 'SubscriberKey', type: 'Text', length: 254, primaryKey: true, nullable: false },
-        { name: 'CreatedDate', type: 'Date', primaryKey: false, nullable: true },
-    ];
-    const fieldNames = new Set(fields.map(f => f.name.toUpperCase()));
-
-    const addField = (name: string, type: string, length?: number, pk: boolean = false, nullable: boolean = true) => {
-        if (!fieldNames.has(name.toUpperCase())) {
-            fields.push({ name, type, length, primaryKey: pk, nullable });
-            fieldNames.add(name.toUpperCase());
+     useEffect(() => {
+        // Reset state when a new snippet is not selected, or when dialog is re-opened.
+        if (!selectedSnippet) {
+            setConfig({});
         }
+    }, [selectedSnippet]);
+
+
+    const handleSelectSnippet = (snippet: Snippet) => {
+        setSelectedSnippet(snippet);
+        // Initialize config state with default values from the snippet's config fields
+        const initialConfig: Record<string, string> = {};
+        snippet.configFields?.forEach(field => {
+            initialConfig[field.name] = field.defaultValue || '';
+        });
+        setConfig(initialConfig);
     };
 
-    page.components.forEach(component => {
-        if (component.type === 'Form') {
-            // Standard Fields
-            if (component.props.fields) {
-                if (component.props.fields.name?.enabled) addField('NOME', 'Text', 100);
-                if (component.props.fields.email?.enabled) {
-                    // If email is a field, it's often better as the PK than SubscriberKey
-                    const skIndex = fields.findIndex(f => f.name === 'SubscriberKey');
-                    if (skIndex > -1) fields[skIndex].primaryKey = false;
-                    addField('EMAIL', 'EmailAddress', 254, true, false);
-                }
-                if (component.props.fields.phone?.enabled) addField('TELEFONE', 'Phone');
-                if (component.props.fields.cpf?.enabled) addField('CPF', 'Text', 11);
-                if (component.props.fields.city?.enabled) addField('CIDADE', 'Text', 100);
-                if (component.props.fields.birthdate?.enabled) addField('DATANASCIMENTO', 'Date');
-                if (component.props.fields.optin?.enabled) addField('OPTIN', 'Boolean');
-            }
+    const handleConfigChange = (name: string, value: string) => {
+        setConfig(prev => ({ ...prev, [name]: value }));
+    };
 
-            // Custom Fields
-            if(component.props.customFields) {
-                component.props.customFields.forEach((customField: CustomFormField) => {
-                    const deType = mapCustomFieldTypeToDeType(customField.type);
-                    addField(customField.name, deType.type, deType.length, false, !customField.required);
-                });
-            }
-        }
+    const handleAddSnippet = () => {
+        if (!selectedSnippet) return;
 
-        if (component.type === 'NPS') {
-            addField('NPS_SCORE', 'Number');
-            addField('NPS_DATE', 'Date');
-        }
+        const generatedCode = selectedSnippet.generate(config);
+        const newCode = `${currentCode}\n\n${generatedCode}`;
+        onCodeChange(newCode.trim());
+        
+        // Reset state and close dialog
+        onClose();
+        setSelectedSnippet(null);
+        setConfig({});
+    };
 
-        if (component.abTestEnabled) {
-            addField(`VARIANTE_${component.id.toUpperCase()}`, 'Text', 1);
-        }
-    });
+    return (
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Biblioteca de Automações AMPScript</DialogTitle>
+                <DialogDescription>
+                    Selecione uma automação para adicioná-la e configurá-la facilmente.
+                </DialogDescription>
+            </DialogHeader>
 
-    return fields;
-};
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] py-4">
+                <ScrollArea className="h-[55vh] pr-4">
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium mb-2">Selecione uma Automação</p>
+                        {snippets.map(snippet => (
+                            <Button
+                                key={snippet.id}
+                                variant={selectedSnippet?.id === snippet.id ? "secondary" : "outline"}
+                                className="w-full justify-start text-left h-auto py-2"
+                                onClick={() => handleSelectSnippet(snippet)}
+                            >
+                                <div className="flex flex-col">
+                                    <span className="font-semibold">{snippet.name}</span>
+                                    <span className="text-xs text-muted-foreground">{snippet.description}</span>
+                                </div>
+                            </Button>
+                        ))}
+                    </div>
+                </ScrollArea>
 
-
-export function HowToUseDialog({ isOpen, onOpenChange, pageState, onDataExtensionKeyChange }: HowToUseDialogProps) {
-  const { toast } = useToast();
-  const [pageUrl, setPageUrl] = useState('');
-  const deFields = generateDeFields(pageState);
-  const deKeyIsMissing = !pageState.meta.dataExtensionKey || pageState.meta.dataExtensionKey === 'CHANGE-ME';
-
-  useEffect(() => {
-    // This ensures the URL is constructed only on the client-side where `window.location` is available.
-    if (typeof window !== 'undefined') {
-      const url = `${window.location.origin}/api/pages/${pageState.id}`;
-      setPageUrl(url);
-    }
-  }, [pageState.id]);
-
-  const proxySnippet = `%%=TreatAsContentArea("CONTENT", HTTPGet("${pageUrl}", false, 0, @status))=%%`;
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copiado para a Área de Transferência!",
-    });
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>Como Publicar sua CloudPage (Método Rápido)</DialogTitle>
-          <DialogDescription>
-            Use este método para publicar suas alterações instantaneamente, sem o cache do Marketing Cloud.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex-grow overflow-y-auto pr-6 -mr-6">
-          <div className="space-y-6 py-4">
-
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Como Funciona?</AlertTitle>
-              <AlertDescription>
-                Você colará um pequeno código na sua CloudPage **apenas uma vez**. A partir daí, todas as alterações salvas aqui serão refletidas na sua página publicada instantaneamente, sem precisar editar nada no Marketing Cloud novamente.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Passo 1: Cole este Snippet na sua CloudPage</h3>
-              <p className="text-sm text-muted-foreground">
-                No Content Builder, crie uma CloudPage, selecione o layout em branco e cole o código AMPScript abaixo em um bloco de conteúdo "HTML". **Faça isso apenas uma vez por página.**
-              </p>
-              <div className="relative rounded-lg bg-[#1e1e1e]">
-                  <SyntaxHighlighter language="ampscript" style={vscDarkPlus} customStyle={{ margin: 0, background: 'transparent', padding: '1rem', overflowX: 'auto' }} wrapLongLines={true}>
-                    {proxySnippet}
-                  </SyntaxHighlighter>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="absolute top-2 right-2 h-8"
-                    onClick={() => handleCopy(proxySnippet)}
-                  >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar
-                  </Button>
-              </div>
+                <ScrollArea className="h-[55vh] pr-4">
+                    <div className="space-y-4">
+                        {selectedSnippet ? (
+                            <>
+                                <p className="text-sm font-medium">Configure a Automação</p>
+                                {selectedSnippet.configFields?.map(field => (
+                                    <div key={field.name} className="space-y-2">
+                                        <Label htmlFor={field.name}>{field.label}</Label>
+                                        <Input
+                                            id={field.name}
+                                            value={config[field.name] || ''}
+                                            onChange={(e) => handleConfigChange(field.name, e.target.value)}
+                                            placeholder={field.placeholder}
+                                        />
+                                    </div>
+                                ))}
+                                {selectedSnippet.configFields.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">Esta automação não requer configuração.</p>
+                                )}
+                            </>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-center text-muted-foreground p-4">
+                                <p>Selecione uma automação à esquerda para começar a configuração.</p>
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
             </div>
 
-            <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Passo 2: Configure sua Data Extension</h3>
-                <div className={cn("p-4 rounded-lg space-y-2", deKeyIsMissing ? "bg-yellow-100/50 border border-yellow-300" : "bg-muted/30")}>
-                    <Label htmlFor="de-key-input">Identificador da Data Extension (Nome ou Chave Externa)</Label>
-                    <p className="text-xs text-muted-foreground">Este nome deve ser exatamente igual ao do Marketing Cloud.</p>
-                     <Input 
-                        id="de-key-input"
-                        value={pageState.meta.dataExtensionKey === 'CHANGE-ME' ? '' : pageState.meta.dataExtensionKey}
-                        onChange={(e) => onDataExtensionKeyChange(e.target.value)}
-                        placeholder="Insira o Nome ou Chave da DE aqui"
-                        className={cn(deKeyIsMissing ? "border-yellow-500 bg-white" : "")}
-                     />
-                </div>
-                <p className="text-sm text-muted-foreground mt-4">
-                    Crie uma Data Extension com o Identificador acima e use os seguintes campos para garantir que todos os dados sejam salvos corretamente:
-                </p>
-                 <div className="relative w-full overflow-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nome do Campo</TableHead>
-                                <TableHead>Tipo de Dados</TableHead>
-                                <TableHead>Tamanho</TableHead>
-                                <TableHead>Chave Primária</TableHead>
-                                <TableHead>Anulável</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {deFields.map(field => (
-                                <TableRow key={field.name}>
-                                    <TableCell className="font-mono text-xs whitespace-nowrap">{field.name}</TableCell>
-                                    <TableCell>{field.type}</TableCell>
-                                    <TableCell>{field.length || '-'}</TableCell>
-                                    <TableCell>{field.primaryKey ? 'Sim' : 'Não'}</TableCell>
-                                    <TableCell>{field.nullable ? 'Sim' : 'Não'}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                 </div>
-            </div>
-
-             <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Passo 3: Salve e Publique</h3>
-                <p className="text-sm text-muted-foreground">
-                    Salve e publique sua CloudPage no Marketing Cloud. É isso! A partir de agora, qualquer alteração que você salvar aqui na plataforma aparecerá automaticamente na sua página publicada.
-                </p>
-            </div>
-
-          </div>
-        </div>
-        <DialogFooter className="flex-shrink-0 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={() => window.open(pageUrl, '_blank')}>
-            <ExternalLink className="mr-2 h-4 w-4" />
-            Testar URL da Página
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+            <DialogFooter>
+                <Button variant="outline" onClick={onClose}>Cancelar</Button>
+                <Button onClick={handleAddSnippet} disabled={!selectedSnippet}>Adicionar à Página</Button>
+            </DialogFooter>
+        </DialogContent>
+    );
 }

@@ -56,7 +56,7 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { getProjectWithPages, deletePage, addPage, duplicatePage, getProjectsForUser, movePageToProject, getPageViews, getFormSubmissions, unpublishPage } from "@/lib/firestore";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, subDays, addDays } from 'date-fns';
@@ -147,8 +147,12 @@ function CopyLinkButton({ page }: { page: CloudPage }) {
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!pageUrl) return;
-        navigator.clipboard.writeText(pageUrl);
-        toast({ title: "URL da página copiada!" });
+        copyToClipboard(pageUrl).then(() => {
+            toast({ title: "URL da página copiada!" });
+        }).catch(err => {
+            console.error("Copy failed", err);
+            toast({ variant: 'destructive', title: "Falha ao copiar" });
+        });
     };
 
     if (page.status !== 'published' || !pageUrl) {
@@ -188,8 +192,12 @@ function QuickSnippetPopover({ pageId }: { pageId: string }) {
     const snippet = `%%=TreatAsContent("CONTENT", HTTPGet("${pageUrl}", false, 0, @status))=%%`;
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(snippet);
-        toast({ title: "Snippet copiado!" });
+        copyToClipboard(snippet).then(() => {
+            toast({ title: "Snippet copiado!" });
+        }).catch(err => {
+            console.error("Copy failed", err);
+            toast({ variant: 'destructive', title: "Falha ao copiar" });
+        });
     };
 
     return (

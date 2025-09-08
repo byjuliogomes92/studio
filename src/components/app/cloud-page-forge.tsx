@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -31,6 +30,7 @@ import { EditCodeDialog } from "./edit-code-dialog";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { addPageComment } from "@/lib/firestore";
+import { copyToClipboard } from "@/lib/utils";
 
 
 interface CloudPageForgeProps {
@@ -458,8 +458,12 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   };
   
   const handleCopyUrl = (url: string) => {
-    navigator.clipboard.writeText(url);
-    toast({ title: "URL copiada!" });
+    copyToClipboard(url).then(() => {
+        toast({ title: "URL copiada!" });
+    }).catch(err => {
+        console.error("Copy failed", err);
+        toast({ variant: 'destructive', title: "Falha ao copiar" });
+    });
   };
   
   const handleCodeEdit = (component: PageComponent) => {

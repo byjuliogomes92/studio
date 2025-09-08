@@ -1,5 +1,5 @@
 
-import type { CloudPage, PageComponent, ComponentType, EditorMode } from './types';
+import type { CloudPage, PageComponent, ComponentType, EditorMode, ResponsiveProps } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
@@ -1060,25 +1060,40 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
         }
     });
 
-    if (!mobileStyles) return '';
-
-    return `
-        @media (max-width: 768px) {
-            ${mobileStyles}
-            .hidden-on-mobile {
-                display: none !important;
-            }
-        }
+    let css = `
         @media (min-width: 769px) {
             .hidden-on-desktop {
                 display: none !important;
             }
         }
+        @media (max-width: 768px) {
+            .columns-container {
+                grid-template-columns: 1fr !important;
+            }
+            .footer-section .columns-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .footer-section .columns-container .column {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+             .footer-section .social-icons-container {
+                justify-content: center;
+            }
+            .hidden-on-mobile {
+                display: none !important;
+            }
+            ${mobileStyles}
+        }
     `;
+    
+    return css;
 };
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false, editorMode: EditorMode = 'none'): string {
-    const { styles, components, meta, cookieBanner } = pageState;
+    const { id, slug, styles, components, meta, cookieBanner } = pageState;
 
     const hasForm = components.some(c => c.type === 'Form');
     const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
@@ -1086,7 +1101,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const needsSecurity = meta.security?.type !== 'none';
     const hasCustomAmpscript = !!meta.customAmpscript;
 
-    const processAmpscript = !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload);
+    const needsAmpscript = !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || hasDataExtensionUpload);
 
     const rootComponents = components.filter(c => c.parentId === null).sort((a,b) => a.order - b.order);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
@@ -1106,37 +1121,37 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
     const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
 
-    let initialAmpscript = '';
-    if (processAmpscript) {
-        const securityLogic = getAmpscriptSecurityBlock(pageState);
-        const prefillLogic = getPrefillAmpscript(pageState);
-        const customLogic = hasCustomAmpscript ? `/* --- Custom AMPScript --- */ ${meta.customAmpscript}` : '';
+    let ampscriptBlock = '';
+    if (needsAmpscript) {
+        const securityAmpscript = getAmpscriptSecurityBlock(pageState);
+        const prefillAmpscript = getPrefillAmpscript(pageState);
+        const customAmpscript = meta.customAmpscript || '';
+        
+        const allAmpscript = [
+            `VAR @showThanks,@isAuthenticated,@LoginURL SET @LoginURL=Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=",URLEncode(CloudPagesURL(PageID)))`,
+            `IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks="false" ENDIF`,
+            securityAmpscript,
+            customAmpscript,
+            prefillAmpscript,
+        ].filter(Boolean).join(' ');
 
-        initialAmpscript = `%%[
-/* --- Morfeus AMPscript Block --- */
-/* --- Global Variables --- */
-VAR @showThanks
-IF EMPTY(RequestParameter("__isPost")) THEN
-    SET @showThanks = "false"
-ENDIF
-
-${securityLogic}
-${customLogic}
-${prefillLogic}
-]%%`;
+        ampscriptBlock = `%%[${allAmpscript}]%%`;
     }
 
-    const ssjsBlock = (processAmpscript && hasForm) ? `<script runat="server">${getFormSubmissionScript(pageState)}</script>` : '';
-    
+    const ssjsBlock = (needsAmpscript && hasForm) ? getFormSubmissionScript(pageState) : '';
+
     let bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
-    if (processAmpscript) {
-        bodyContent = `%%[ IF @isAuthenticated == true THEN ]%%
+    if (needsAmpscript && needsSecurity) {
+        bodyContent = `%%[IF @isAuthenticated == true THEN]%%
             ${ssjsBlock}
             ${bodyContent}
-        %%[ ELSE ]%%
+        %%[ELSE]%%
             ${getSecurityFormHtml(pageState)}
-        %%[ ENDIF ]%%`;
+        %%[ENDIF]%%`;
+    } else if (needsAmpscript && hasForm) {
+        bodyContent = `${ssjsBlock}${bodyContent}`;
     }
+
 
     const html = `
 <!DOCTYPE html>
@@ -1156,12 +1171,11 @@ ${prefillLogic}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${initialAmpscript}
+${ampscriptBlock}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
     ${scrollbarStyles}
-    ${responsiveStyles}
     :root {
       --theme-color: ${styles.themeColor || '#000000'};
       --theme-color-hover: ${styles.themeColorHover || '#333333'};
@@ -2464,36 +2478,15 @@ ${trackingScripts.head}
     .cookie-category-header label { font-weight: bold; }
     .cookie-category p { font-size: 0.9em; color: #666; margin-top: 0.25rem; }
     .cookie-category input[type="checkbox"] { transform: scale(1.2); }
-
-
-    @media (max-width: 768px) {
-        .columns-container {
-            grid-template-columns: 1fr !important;
-        }
-        .footer-section .columns-container {
-            grid-template-columns: 1fr;
-            text-align: center;
-        }
-        .footer-section .columns-container .column {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-         .footer-section .social-icons-container {
-            justify-content: center;
-        }
-    }
-
-
     ${styles.customCss || ''}
 </style>
-${clientSideScripts}
 </head>
 <body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
 ${!isForPreview ? trackingScripts.body : ''}
 ${renderLoader(meta, styles.themeColor)}
 ${bodyContent}
 ${cookieBannerHtml}
+${clientSideScripts}
 </body>
 </html>`;
 

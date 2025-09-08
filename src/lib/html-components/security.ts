@@ -17,6 +17,7 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
         script += ' SET @isAuthenticated = true';
     }
 
+    // Return only the logic, without %%[...]%%
     return script;
 }
 

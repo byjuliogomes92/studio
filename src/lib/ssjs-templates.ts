@@ -27,6 +27,7 @@ export function getPrefillAmpscript(pageState: CloudPage): string {
 
     const prefillLines = fieldsToPrefill.map(fieldName => `SET @${fieldName} = QueryParameter("${fieldName.toLowerCase()}")`);
     
+    // Return just the logic, not the full block
     return `/* --- Prefill --- */ ${prefillLines.join(' ')}`;
 }
 
@@ -36,7 +37,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
 
     const standardFields = (formComponent.props.fields as Record<string, FormFieldConfig>) || {};
     const customFields = (formComponent.props.customFields as CustomFormField[]) || [];
-    const abTestComponents = pageState.components.filter(c => c.abTestEnabled);
+    const abTestComponents = pageState.components.filter(c => c.props.abTestEnabled);
 
     const fieldVarDeclarations: string[] = [];
     const fieldCaptureLines: string[] = [];
@@ -80,7 +81,7 @@ export function getFormSubmissionScript(pageState: CloudPage): string {
     
     const deFieldsString = deFields.join(', ');
 
-    return `
+    const ssjsLogic = `
 Platform.Load("Core", "1.1.1");
 var debug = false; 
 try {
@@ -123,4 +124,7 @@ try {
         Write("<br><b>--- SSJS ERROR ---</b><br>" + Stringify(e));
     }
 }`;
+
+    // Return the SSJS logic wrapped in script tags
+    return `<script runat="server">${ssjsLogic}</script>`;
 }

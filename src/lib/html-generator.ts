@@ -1066,6 +1066,19 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
 
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false, editorMode: EditorMode = 'none'): string {
+  let codeBlocks: string[] = [];
+  const protectCode = (code: string): string => {
+    if (!code || !code.trim()) return '';
+    const placeholder = `__CODE_PLACEHOLDER_${codeBlocks.length}__`;
+    codeBlocks.push(code);
+    return placeholder;
+  }
+  const restoreCode = (html: string): string => {
+    return html.replace(/__CODE_PLACEHOLDER_(\d+)__/g, (match, index) => {
+        return codeBlocks[parseInt(index, 10)] || '';
+    });
+  }
+
   const { id, slug, styles, components, meta, cookieBanner } = pageState;
   
   const hasForm = components.some(c => c.type === 'Form');
@@ -1078,25 +1091,11 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
-  const codeBlocks: string[] = [];
-  const protectCode = (code: string): string => {
-    if (!code || !code.trim()) return '';
-    const placeholder = `__CODE_PLACEHOLDER_${codeBlocks.length}__`;
-    codeBlocks.push(code);
-    return placeholder;
-  }
+  const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getFormSubmissionScript(pageState) : '';
+  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState) : '';
+  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState) : '';
   
-  const restoreCode = (html: string): string => {
-    return html.replace(/__CODE_PLACEHOLDER_(\d+)__/g, (match, index) => {
-        return codeBlocks[parseInt(index, 10)] || '';
-    });
-  }
-
-  const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? protectCode(getFormSubmissionScript(pageState)) : '';
-  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? protectCode(getPrefillAmpscript(pageState)) : '';
-  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? protectCode(getAmpscriptSecurityBlock(pageState)) : '';
-  
-  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? protectCode(`%%[ 
+  const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? `%%[ 
     VAR @showThanks
     IF EMPTY(RequestParameter("__isPost")) THEN
       SET @showThanks = "false"
@@ -1104,10 +1103,10 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     ${securityAmpscript}
     ${meta.customAmpscript || ''}
     ${prefillAmpscript || ''}
-]%%`) : '';
+]%%` : '';
 
 
-  const clientSideScripts = protectCode(getClientSideScripts(pageState, isForPreview, editorMode));
+  const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
   
   const trackingScripts = getTrackingScripts(meta.tracking);
   const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
@@ -1152,14 +1151,14 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     </main>
   `
   : `
-    ${protectCode('%%[ IF @isAuthenticated == true THEN ]%%')}
+    %%[ IF @isAuthenticated == true THEN ]%%
     ${renderLoader(meta, styles.themeColor)}
     <main style="${mainStyle}">
       ${mainContentHtml}
     </main>
-    ${protectCode('%%[ ELSE ]%%')}
+    %%[ ELSE ]%%
     ${getSecurityFormHtml(pageState)}
-    ${protectCode('%%[ ENDIF ]%%')}
+    %%[ ENDIF ]%%
     `;
 
 
@@ -1180,8 +1179,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ssjsScript}
-${initialAmpscript}
+${protectCode(ssjsScript)}
+${protectCode(initialAmpscript)}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -1764,10 +1763,11 @@ ${trackingScripts.head}
         cursor: pointer;
         transition: background-color 0.2s ease, border-color 0.2s ease;
         margin-bottom: 1rem;
+        background-color: hsla(var(--primary), 0.05);
     }
     .de-upload-v2-drop-zone.highlight {
-        background-color: #eff6ff;
-        border-color: #3b82f6;
+        background-color: hsla(var(--primary), 0.15);
+        border-color: hsl(var(--primary));
     }
     .de-upload-v2-drop-content .de-upload-v2-icon {
         color: #6b7280;
@@ -1809,6 +1809,47 @@ ${trackingScripts.head}
        border-left-color: var(--theme-color);
     }
     
+    .ftp-upload-container {
+        background-color: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    .ftp-upload-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    .ftp-upload-header h4 { font-size: 1.25rem; font-weight: 600; }
+    .ftp-upload-header p { font-size: 0.875rem; color: #6b7280; margin: 0.25rem 0; }
+    .ftp-upload-drop-area {
+        display: block;
+        border: 2px dashed #d1d5db;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+        background-color: hsla(var(--primary), 0.05);
+    }
+    .ftp-upload-drop-area.active {
+        background-color: hsla(var(--primary), 0.15);
+        border-color: hsl(var(--primary));
+    }
+    .ftp-upload-drop-area input[type="file"] { display: none; }
+    .ftp-upload-icon { color: #6b7280; margin-bottom: 0.75rem; }
+    .ftp-upload-instruction, .ftp-upload-filename { color: #6b7280; }
+    .ftp-upload-progress-wrapper {
+        height: 8px; background-color: #e5e7eb; border-radius: 4px;
+        margin-top: 1rem; display: none; overflow: hidden;
+    }
+    .ftp-upload-progress-bar {
+        height: 100%; width: 0%; background-color: #3b82f6;
+        transition: width 0.3s ease;
+    }
+    .ftp-upload-footer { margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .ftp-upload-status { font-size: 0.875rem; }
+
 
     footer {
         -webkit-font-smoothing: antialiased;
@@ -2471,12 +2512,12 @@ ${trackingScripts.head}
 
     ${styles.customCss || ''}
 </style>
-${clientSideScripts}
+${protectCode(clientSideScripts)}
 </head>
 <body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
-${!isForPreview ? trackingScripts.body : ''}
+${!isForPreview ? protectCode(trackingScripts.body) : ''}
 ${bodyContent}
-${cookieBannerHtml}
+${protectCode(cookieBannerHtml)}
 </body>
 </html>`;
 
@@ -2484,4 +2525,3 @@ ${cookieBannerHtml}
 
   return finalHtml;
 }
-

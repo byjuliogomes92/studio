@@ -101,6 +101,14 @@ export interface BitlyConfig {
   encryptedAccessToken?: string; // Stored in Firestore
 }
 
+export interface SfmcApiConfig {
+    clientId: string;
+    clientSecret?: string; // For updates only
+    encryptedClientSecret?: string; // Stored
+    authBaseUrl: string; // Ex: https://xxx.auth.marketingcloudapis.com/
+}
+
+
 export interface ColorScheme {
   background: string;
   foreground: string;
@@ -147,9 +155,10 @@ export interface Brand {
     };
   };
   // Integrations
-  integrations: {
+  integrations?: {
     ftp?: FtpConfig;
     bitly?: BitlyConfig;
+    sfmcApi?: SfmcApiConfig;
   };
   createdAt: any;
 }

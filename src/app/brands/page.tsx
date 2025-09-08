@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { getBrandsForUser, addBrand, updateBrand, deleteBrand } from "@/lib/firestore";
-import type { Brand, FtpConfig, BitlyConfig } from "@/lib/types";
+import type { Brand, FtpConfig, BitlyConfig, SfmcApiConfig } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
@@ -88,6 +88,7 @@ const initialBrandState: Omit<Brand, "id" | "createdAt"> = {
   integrations: {
     ftp: { host: "", user: "", encryptedPassword: "" },
     bitly: { encryptedAccessToken: "" },
+    sfmcApi: { clientId: "", encryptedClientSecret: "", authBaseUrl: "" },
   },
 };
 
@@ -179,8 +180,10 @@ export default function BrandsPage() {
   const [currentBrand, setCurrentBrand] = useState<Partial<Brand> | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showBitlyToken, setShowBitlyToken] = useState(false);
+  const [showSfmcSecret, setShowSfmcSecret] = useState(false);
   const [ftpPassword, setFtpPassword] = useState("");
   const [bitlyToken, setBitlyToken] = useState("");
+  const [sfmcSecret, setSfmcSecret] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -212,6 +215,7 @@ export default function BrandsPage() {
   const openModal = (brand: Partial<Brand> | null = null) => {
     setFtpPassword("");
     setBitlyToken("");
+    setSfmcSecret("");
     setCurrentBrand(brand ? { ...brand } : { ...initialBrandState });
     setIsModalOpen(true);
   };
@@ -225,30 +229,30 @@ export default function BrandsPage() {
     try {
         const brandData = { ...currentBrand };
         
-        // Ensure workspaceId is set for new brands
         if (!brandData.id) {
             brandData.workspaceId = activeWorkspace.id;
         }
 
-        // Handle secrets
+        if (!brandData.integrations) brandData.integrations = {};
         if (ftpPassword) {
-            if (!brandData.integrations) brandData.integrations = {};
             if (!brandData.integrations.ftp) brandData.integrations.ftp = {} as FtpConfig;
-            (brandData.integrations.ftp as FtpConfig).password = ftpPassword;
+            (brandData.integrations.ftp as any).password = ftpPassword;
         }
         if (bitlyToken) {
-            if (!brandData.integrations) brandData.integrations = {};
             if (!brandData.integrations.bitly) brandData.integrations.bitly = {} as BitlyConfig;
-            (brandData.integrations.bitly as BitlyConfig).accessToken = bitlyToken;
+            (brandData.integrations.bitly as any).accessToken = bitlyToken;
+        }
+        if (sfmcSecret) {
+            if (!brandData.integrations.sfmcApi) brandData.integrations.sfmcApi = {} as SfmcApiConfig;
+            (brandData.integrations.sfmcApi as any).clientSecret = sfmcSecret;
         }
 
+
         if (brandData.id) {
-            // Update existing brand
             await updateBrand(brandData.id, brandData as Brand, user);
             setBrands(brands.map((b) => (b.id === brandData.id ? { ...b, ...brandData } as Brand : b)));
             toast({ title: "Marca atualizada!", description: `A marca "${brandData.name}" foi atualizada.` });
         } else {
-            // Create new brand
             const newBrand = await addBrand(brandData as Omit<Brand, "id" | "createdAt">, user);
             setBrands([newBrand, ...brands]);
             toast({ title: "Marca criada!", description: `A marca "${brandData.name}" foi criada com sucesso.` });
@@ -593,6 +597,28 @@ export default function BrandsPage() {
                         </div>
                     </div>
                 </div>
+
+                <div className="space-y-4 p-4 border rounded-md bg-muted/30">
+                    <h4 className="font-semibold text-lg mb-2">SFMC (API)</h4>
+                    <div className="space-y-2">
+                        <Label htmlFor="sfmc-client-id">Client ID</Label>
+                        <Input id="sfmc-client-id" value={currentBrand.integrations?.sfmcApi?.clientId || ''} onChange={(e) => handleBrandFieldChange('integrations.sfmcApi.clientId', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="sfmc-client-secret">Client Secret</Label>
+                        <div className="relative">
+                        <Input id="sfmc-client-secret" type={showSfmcSecret ? 'text' : 'password'} value={sfmcSecret} onChange={(e) => setSfmcSecret(e.target.value)} placeholder={currentBrand.id ? 'Deixe em branco para não alterar' : ''} />
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowSfmcSecret(!showSfmcSecret)}>
+                            {showSfmcSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="sfmc-auth-url">Authentication Base URL</Label>
+                        <Input id="sfmc-auth-url" value={currentBrand.integrations?.sfmcApi?.authBaseUrl || ''} onChange={(e) => handleBrandFieldChange('integrations.sfmcApi.authBaseUrl', e.target.value)} placeholder="Ex: https://xxx.auth.marketingcloudapis.com/" />
+                    </div>
+                </div>
+
               </TabsContent>
             </Tabs>
             </TooltipProvider>

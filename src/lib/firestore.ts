@@ -2,7 +2,7 @@
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit, arrayUnion } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory, CommunityAsset, PageComment } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory, CommunityAsset, PageComment, SfmcApiConfig } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { UAParser } from 'ua-parser-js';
@@ -617,6 +617,11 @@ export const addBrand = async (brandData: Omit<Brand, 'id' | 'createdAt'>, user:
         brandData.integrations.bitly.encryptedAccessToken = encryptPassword(brandData.integrations.bitly.accessToken);
         delete brandData.integrations.bitly.accessToken;
     }
+    if (brandData.integrations?.sfmcApi?.clientSecret) {
+        brandData.integrations.sfmcApi.encryptedClientSecret = encryptPassword(brandData.integrations.sfmcApi.clientSecret);
+        delete brandData.integrations.sfmcApi.clientSecret;
+    }
+
 
     const dataWithTimestamp = { ...brandData, createdAt: serverTimestamp() };
     const docRef = await addDoc(collection(db, 'brands'), dataWithTimestamp);
@@ -654,6 +659,11 @@ export const updateBrand = async (brandId: string, data: Partial<Brand>, user: U
         data.integrations.bitly.encryptedAccessToken = encryptPassword(data.integrations.bitly.accessToken);
         delete data.integrations.bitly.accessToken;
     }
+    if (data.integrations?.sfmcApi?.clientSecret) {
+        data.integrations.sfmcApi.encryptedClientSecret = encryptPassword(data.integrations.sfmcApi.clientSecret);
+        delete data.integrations.sfmcApi.clientSecret;
+    }
+
 
     await updateDoc(brandRef, data);
     const brandSnap = await getDoc(brandRef);

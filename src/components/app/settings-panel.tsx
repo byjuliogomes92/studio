@@ -653,7 +653,9 @@ export function SettingsPanel({
                         // Reorder within the same container
                         const parentId = activeComponent.parentId;
                         const column = activeComponent.column;
-                        const siblings = draft.components.filter(c => c.parentId === parentId && c.column === column);
+                        const siblings = draft.components
+                            .filter(c => c.parentId === parentId && c.column === column)
+                            .sort((a,b) => a.order - b.order); // Sort to ensure correct indexing
                         
                         const oldIndex = siblings.findIndex(c => c.id === activeId);
                         const newIndex = siblings.findIndex(c => c.id === overId);
@@ -684,10 +686,11 @@ export function SettingsPanel({
                     const numColumns = container?.type === 'Columns' ? (container.props.columnCount || 1) : 1;
                     
                     for(let i = 0; i < numColumns; i++) {
-                        const children = draft.components.filter(c => c.parentId === pId && c.column === i);
-                        const sortedChildren = arrayMove(children, 0, 0); // Just to get a stable sort
+                        const children = draft.components
+                          .filter(c => c.parentId === pId && c.column === i)
+                          .sort((a,b) => a.order - b.order); // Ensure we are iterating in a stable order
                         
-                        sortedChildren.forEach((child, index) => {
+                        children.forEach((child, index) => {
                             if (child) {
                                 const componentToUpdate = draft.components.find(c => c.id === child.id);
                                 if (componentToUpdate) {

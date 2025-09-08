@@ -49,6 +49,7 @@ function getStyleString(styles: any = {}, forbiddenKeys: string[] = []): string 
 
 function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
     return components
+      .sort((a, b) => a.order - b.order) // Sort by order before rendering
       .map((component) => {
         // Pass the full pageState down to individual renderers
         const componentWithState = { ...component, pageState };
@@ -1102,10 +1103,10 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   const fontFaceStyles = getFontFaceStyles(pageState);
   const scrollbarStyles = getScrollbarStyles(pageState.styles.scrollbar);
   const responsiveStyles = getResponsiveStyles(components);
-  const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
+  const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamilyHeadings.replace(/ /g, '+')}:wght@400;700;900&family=${fontFamilyBody.replace(/ /g, '+')}:wght@400;700&display=swap`;
 
   
-  const rootComponents = components.filter(c => c.parentId === null && !['Stripe', 'FloatingImage', 'FloatingButton', 'WhatsApp', 'Footer', 'PopUp'].includes(c.type));
+  const rootComponents = components.filter(c => c.parentId === null).sort((a,b) => a.order - b.order);
   const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, shouldHideAmpscript);
 
   const bodyStyles = `

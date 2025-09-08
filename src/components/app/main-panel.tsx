@@ -17,7 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { HowToUseDialog } from "./how-to-use-dialog";
+import { AmpscriptSnippetDialog } from "./ampscript-snippet-dialog";
 import type { CloudPage, PageComment, EditorMode } from "@/lib/types";
 import { generateHtml } from "@/lib/html-generator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "../ui/dropdown-menu";
@@ -56,7 +56,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
   const { toast } = useToast();
   const [checking, setChecking] = useState(false);
   const [accessibilityIssues, setAccessibilityIssues] = useState<string | null>(null);
-  const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
+  const [isAmpscriptDialogOpen, setIsAmpscriptDialogOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeWrapperRef = useRef<HTMLDivElement>(null);
   const [selectedDevice, setSelectedDevice] = useState<Device>(devices[0]);
@@ -162,7 +162,7 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
             </TooltipProvider>
           </div>
           <div className="flex items-center gap-2">
-               <Button onClick={() => setIsHowToUseOpen(true)} variant="outline">
+               <Button onClick={() => setIsAmpscriptDialogOpen(true)} variant="outline">
                 <Info className="mr-2 h-4 w-4" />
                 Como Publicar
               </Button>
@@ -281,9 +281,9 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
           </TabsContent>
         </div>
       </Tabs>
-      <HowToUseDialog 
-        isOpen={isHowToUseOpen}
-        onOpenChange={setIsHowToUseOpen}
+      <AmpscriptSnippetDialog
+        isOpen={isAmpscriptDialogOpen}
+        onOpenChange={setIsAmpscriptDialogOpen}
         pageState={pageState}
         onDataExtensionKeyChange={onDataExtensionKeyChange}
       />

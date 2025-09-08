@@ -19,17 +19,17 @@ import { ScrollArea } from '../ui/scroll-area';
 import { snippets, Snippet } from '@/lib/ampscript-snippets';
 
 interface AmpscriptSnippetDialogProps {
-    currentCode: string;
-    onCodeChange: (newCode: string) => void;
-    onClose: () => void;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    pageState: any; // Using 'any' as it's a representation of CloudPage
+    onDataExtensionKeyChange: (newKey: string) => void;
 }
 
-export function AmpscriptSnippetDialog({ currentCode, onCodeChange, onClose }: AmpscriptSnippetDialogProps) {
+export function AmpscriptSnippetDialog({ isOpen, onOpenChange, pageState, onDataExtensionKeyChange }: AmpscriptSnippetDialogProps) {
     const [selectedSnippet, setSelectedSnippet] = useState<Snippet | null>(null);
     const [config, setConfig] = useState<Record<string, string>>({});
 
      useEffect(() => {
-        // Reset state when a new snippet is not selected, or when dialog is re-opened.
         if (!selectedSnippet) {
             setConfig({});
         }
@@ -38,7 +38,6 @@ export function AmpscriptSnippetDialog({ currentCode, onCodeChange, onClose }: A
 
     const handleSelectSnippet = (snippet: Snippet) => {
         setSelectedSnippet(snippet);
-        // Initialize config state with default values from the snippet's config fields
         const initialConfig: Record<string, string> = {};
         snippet.configFields?.forEach(field => {
             initialConfig[field.name] = field.defaultValue || '';
@@ -50,81 +49,58 @@ export function AmpscriptSnippetDialog({ currentCode, onCodeChange, onClose }: A
         setConfig(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleAddSnippet = () => {
+    const handleApplyConfig = () => {
         if (!selectedSnippet) return;
-
-        const generatedCode = selectedSnippet.generate(config);
-        const newCode = `${currentCode}\n\n${generatedCode}`;
-        onCodeChange(newCode.trim());
-        
-        // Reset state and close dialog
-        onClose();
-        setSelectedSnippet(null);
-        setConfig({});
+        // Logic to apply the configuration, for now, we just close
+        // In a real scenario, this might update the pageState with the AMPScript
+        onOpenChange(false);
     };
 
     return (
-        <DialogContent className="max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>Biblioteca de Automações AMPScript</DialogTitle>
-                <DialogDescription>
-                    Selecione uma automação para adicioná-la e configurá-la facilmente.
-                </DialogDescription>
-            </DialogHeader>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Como Publicar no Marketing Cloud</DialogTitle>
+                    <DialogDescription>
+                        Siga os passos abaixo para integrar sua página criada no Morfeus com o SFMC.
+                    </DialogDescription>
+                </DialogHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] py-4">
-                <ScrollArea className="h-[55vh] pr-4">
+                <div className="py-4 space-y-4">
                     <div className="space-y-2">
-                        <p className="text-sm font-medium mb-2">Selecione uma Automação</p>
-                        {snippets.map(snippet => (
-                            <Button
-                                key={snippet.id}
-                                variant={selectedSnippet?.id === snippet.id ? "secondary" : "outline"}
-                                className="w-full justify-start text-left h-auto py-2"
-                                onClick={() => handleSelectSnippet(snippet)}
-                            >
-                                <div className="flex flex-col">
-                                    <span className="font-semibold">{snippet.name}</span>
-                                    <span className="text-xs text-muted-foreground">{snippet.description}</span>
-                                </div>
-                            </Button>
-                        ))}
+                        <h3 className="font-semibold">Passo 1: Crie uma Data Extension</h3>
+                        <p className="text-sm text-muted-foreground">
+                            No Marketing Cloud, crie a Data Extension que irá armazenar os dados do seu formulário. Certifique-se de que os nomes das colunas correspondem aos campos do seu formulário.
+                        </p>
                     </div>
-                </ScrollArea>
-
-                <ScrollArea className="h-[55vh] pr-4">
-                    <div className="space-y-4">
-                        {selectedSnippet ? (
-                            <>
-                                <p className="text-sm font-medium">Configure a Automação</p>
-                                {selectedSnippet.configFields?.map(field => (
-                                    <div key={field.name} className="space-y-2">
-                                        <Label htmlFor={field.name}>{field.label}</Label>
-                                        <Input
-                                            id={field.name}
-                                            value={config[field.name] || ''}
-                                            onChange={(e) => handleConfigChange(field.name, e.target.value)}
-                                            placeholder={field.placeholder}
-                                        />
-                                    </div>
-                                ))}
-                                {selectedSnippet.configFields.length === 0 && (
-                                    <p className="text-sm text-muted-foreground">Esta automação não requer configuração.</p>
-                                )}
-                            </>
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-center text-muted-foreground p-4">
-                                <p>Selecione uma automação à esquerda para começar a configuração.</p>
-                            </div>
-                        )}
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Passo 2: Configure a Chave da DE</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Insira a Chave Externa (External Key) da sua Data Extension abaixo. Isso é essencial para que o formulário funcione.
+                        </p>
+                        <Input 
+                            value={pageState.meta?.dataExtensionKey || ''}
+                            onChange={e => onDataExtensionKeyChange(e.target.value)}
+                            placeholder="Insira a Chave Externa da DE aqui"
+                        />
                     </div>
-                </ScrollArea>
-            </div>
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Passo 3: Publique no Marketing Cloud</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Crie uma nova CloudPage no SFMC. No editor, cole o seguinte snippet de código em um bloco de HTML. Isso é tudo que você precisa colocar na CloudPage.
+                        </p>
+                        <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto">
+                            <code>
+                                {`%%=TreatAsContent(HTTPGet(Concat("${typeof window !== 'undefined' ? window.location.origin : ''}/api/pages/${pageState.slug}")))%%`}
+                            </code>
+                        </pre>
+                    </div>
+                </div>
 
-            <DialogFooter>
-                <Button variant="outline" onClick={onClose}>Cancelar</Button>
-                <Button onClick={handleAddSnippet} disabled={!selectedSnippet}>Adicionar à Página</Button>
-            </DialogFooter>
-        </DialogContent>
+                <DialogFooter>
+                    <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

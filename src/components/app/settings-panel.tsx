@@ -384,7 +384,7 @@ export function SettingsPanel({
               (draft.components[componentType] as any)[prop] = value;
           });
   
-          await updateBrand(pageState.brandId, { components: newBrand.components }, user.uid);
+          await updateBrand(pageState.brandId, { components: newBrand.components }, user);
           
           setUserBrands(prevBrands => prevBrands.map(b => b.id === pageState.brandId ? newBrand : b));
   
@@ -631,83 +631,69 @@ export function SettingsPanel({
     };
 
 
-   const handleDragEnd = (event: DragEndEvent) => {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-
-        if (!over) return;
-
-        const activeId = String(active.id);
-        const overId = String(over.id);
-
-        if (activeId === overId) return;
-
+    
+        if (!over || active.id === over.id) return;
+    
         setPageState((currentState) => {
             if (!currentState) return null;
-
+    
             return produce(currentState, (draft) => {
-                const activeComponent = draft.components.find(c => c.id === activeId);
+                const activeComponent = draft.components.find(c => c.id === active.id);
                 if (!activeComponent || isComponentLocked(activeComponent)) return;
-
+    
+                const overComponent = draft.components.find(c => c.id === over.id);
                 const overIsDropzone = over.data.current?.isDropzone;
-
+    
                 if (overIsDropzone) {
-                    const newParentId = overId.startsWith('root-dropzone') ? null : overId.split('-')[0];
-                    const newColumnIndex = overId.includes('-') ? parseInt(overId.split('-')[1], 10) : 0;
+                    // Dropping into a container (Div, Columns, etc.)
+                    const newParentId = over.id.startsWith('root-dropzone') ? null : over.id.split('-')[0];
+                    const newColumnIndex = over.id.includes('-') ? parseInt(over.id.split('-')[1], 10) : 0;
                     
                     activeComponent.parentId = newParentId;
                     activeComponent.column = newColumnIndex;
-                
-                } else { // Dropped on another component
-                    const overComponent = draft.components.find(c => c.id === overId);
-                    if (!overComponent || isComponentLocked(overComponent)) return;
+    
+                } else if (overComponent) {
+                    // Dropping onto another component to reorder
+                    if (isComponentLocked(overComponent)) return;
                     
-                    // Move component to the same container and column as the one it was dropped on
-                    activeComponent.parentId = overComponent.parentId;
-                    activeComponent.column = overComponent.column;
-
-                    const siblings = draft.components
-                        .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
-                        .sort((a, b) => a.order - b.order);
-                    
-                    const oldIndex = siblings.findIndex(c => c.id === activeId);
-                    const newIndex = siblings.findIndex(c => c.id === overId);
-                    
-                    if (oldIndex !== -1 && newIndex !== -1) {
-                        const [movedItem] = siblings.splice(oldIndex, 1);
-                        siblings.splice(newIndex, 0, movedItem);
+                    // Reorder if they are siblings, otherwise do nothing to prevent accidental nesting.
+                    if (activeComponent.parentId === overComponent.parentId && activeComponent.column === overComponent.column) {
+                        const siblings = draft.components
+                            .filter(c => c.parentId === activeComponent.parentId && c.column === activeComponent.column)
+                            .sort((a, b) => a.order - b.order);
                         
-                        // Reassign order based on new sorted array
-                        siblings.forEach((sibling, index) => {
-                            const componentToUpdate = draft.components.find(c => c.id === sibling.id);
-                            if (componentToUpdate) {
-                                componentToUpdate.order = index;
-                            }
-                        });
+                        const oldIndex = siblings.findIndex(s => s.id === active.id);
+                        const newIndex = siblings.findIndex(s => s.id === over.id);
+
+                        if (oldIndex !== -1 && newIndex !== -1) {
+                            const [movedItem] = siblings.splice(oldIndex, 1);
+                            siblings.splice(newIndex, 0, movedItem);
+    
+                            siblings.forEach((sibling, index) => {
+                                const compToUpdate = draft.components.find(c => c.id === sibling.id);
+                                if (compToUpdate) compToUpdate.order = index;
+                            });
+                        }
                     }
                 }
-
-                // --- Final Integrity Check ---
-                // Re-order all components to ensure integrity
-                const parentIds = new Set(draft.components.map(c => c.parentId));
-                parentIds.add(null); 
-                parentIds.forEach(pId => {
+    
+                // Final re-ordering of all components to ensure data integrity
+                const allParentIds = new Set(draft.components.map(c => c.parentId));
+                allParentIds.forEach(pId => {
                     const container = draft.components.find(c => c.id === pId);
-                    const numColumns = container?.type === 'Columns' ? (container.props.columnCount || 1) : 1;
-                    
-                    for(let i = 0; i < numColumns; i++) {
+                    const numCols = (container?.type === 'Columns' && container.props.columnCount) || 1;
+                    for (let colIdx = 0; colIdx < numCols; colIdx++) {
                         const children = draft.components
-                          .filter(c => c.parentId === pId && c.column === i)
-                          .sort((a,b) => a.order - b.order);
-                        
-                        children.forEach((child, index) => {
-                            const componentToUpdate = draft.components.find(c => c.id === child.id);
-                            if (componentToUpdate) {
-                                componentToUpdate.order = index;
-                            }
+                            .filter(c => c.parentId === pId && c.column === colIdx)
+                            .sort((a, b) => a.order - b.order);
+                        children.forEach((child, newOrder) => {
+                            const compToUpdate = draft.components.find(c => c.id === child.id);
+                            if (compToUpdate) compToUpdate.order = newOrder;
                         });
                     }
                 });
-
             });
         });
     };
@@ -1279,6 +1265,7 @@ export function SettingsPanel({
 
     
     
+
 
 
 

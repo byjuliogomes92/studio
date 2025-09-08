@@ -1089,12 +1089,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
-  const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getFormSubmissionScript(pageState) : '';
-  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState) : '';
-  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState) : '';
+  const ssjsScript = (hasForm && !shouldHideAmpscript) ? getFormSubmissionScript(pageState).replace(/\n\s*/g, '') : '';
+  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState).replace(/^%%\[\s*|\s*]%%/g, '').replace(/\n/g, ' ') : '';
+  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState).replace(/\n/g, ' ') : '';
   
   const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) 
-    ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript.replace(/^%%\[\s*|\s*]%%/g, '').replace(/\n/g, ' ')} ${meta.customAmpscript || ''} ${prefillAmpscript.replace(/^%%\[\s*|\s*]%%/g, '').replace(/\n/g, ' ')} ]%%` 
+    ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript} ${meta.customAmpscript || ''} ${prefillAmpscript} ]%%` 
     : '';
 
   const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
@@ -1135,14 +1135,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const bodyContent = `
     ${renderLoader(meta, styles.themeColor)}
-    %%[ IF @isAuthenticated == true THEN ]%%
+    ${shouldHideAmpscript ? '' : '%%[ IF @isAuthenticated == true THEN ]%%'}
     <main style="${mainStyle}">
       ${mainContentHtml}
     </main>
-    ${ssjsScript.replace(/\n\s*/g, ' ')}
-    %%[ ELSE ]%%
-    ${getSecurityFormHtml(pageState)}
-    %%[ ENDIF ]%%
+    ${ssjsScript}
+    ${shouldHideAmpscript ? '' : `%%[ ELSE ]%% ${getSecurityFormHtml(pageState)} %%[ ENDIF ]%%`}
     `;
 
   let finalHtml = `<!DOCTYPE html>
@@ -1162,7 +1160,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${initialAmpscript.replace(/\n\s*/g, ' ')}
+${initialAmpscript}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}
@@ -2497,11 +2495,10 @@ ${clientSideScripts}
 </head>
 <body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
 ${!isForPreview ? trackingScripts.body : ''}
-${shouldHideAmpscript ? mainContentHtml : bodyContent}
+${bodyContent}
 ${cookieBannerHtml}
 </body>
 </html>`;
 
   return finalHtml;
 }
-

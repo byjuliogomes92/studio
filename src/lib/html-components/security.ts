@@ -20,6 +20,7 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
         return `${baseVars} VAR @submittedPassword, @identifier, @correctPassword SET @isAuthenticated = false SET @submittedPassword = RequestParameter("page_password") SET @identifier = RequestParameter("${config.urlParameter}") IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier) IF @submittedPassword == @correctPassword THEN SET @isAuthenticated = true ENDIF ENDIF`;
     }
 
+    // Default to authenticated if security config is invalid for some reason
     return `${baseVars} SET @isAuthenticated = true`;
 }
 
@@ -48,3 +49,4 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
 </div>
 `;
 }
+

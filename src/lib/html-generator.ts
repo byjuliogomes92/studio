@@ -1089,9 +1089,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
   
   const shouldHideAmpscript = isForPreview && hideAmpscript;
 
-  const ssjsScript = (hasForm && !shouldHideAmpscript) ? getFormSubmissionScript(pageState).replace(/\n\s*/g, '') : '';
-  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState).replace(/^%%\[\s*|\s*]%%/g, '').replace(/\n/g, ' ') : '';
-  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState).replace(/\n/g, ' ') : '';
+  const ssjsScript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getFormSubmissionScript(pageState).replace(/\n\s*/g, ' ') : '';
+  const prefillAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getPrefillAmpscript(pageState).replace(/\n\s*/g, ' ') : '';
+  const securityAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) ? getAmpscriptSecurityBlock(pageState).replace(/\n\s*/g, '') : '';
   
   const initialAmpscript = (ampscriptIsNeeded && !shouldHideAmpscript) 
     ? `%%[ VAR @showThanks IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks = "false" ENDIF ${securityAmpscript} ${meta.customAmpscript || ''} ${prefillAmpscript} ]%%` 
@@ -1135,12 +1135,14 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
   const bodyContent = `
     ${renderLoader(meta, styles.themeColor)}
-    ${shouldHideAmpscript ? '' : '%%[ IF @isAuthenticated == true THEN ]%%'}
+    %%[ IF @isAuthenticated == true THEN ]%%
+    ${ssjsScript}
     <main style="${mainStyle}">
       ${mainContentHtml}
     </main>
-    ${ssjsScript}
-    ${shouldHideAmpscript ? '' : `%%[ ELSE ]%% ${getSecurityFormHtml(pageState)} %%[ ENDIF ]%%`}
+    %%[ ELSE ]%%
+    ${getSecurityFormHtml(pageState)}
+    %%[ ENDIF ]%%
     `;
 
   let finalHtml = `<!DOCTYPE html>
@@ -1231,14 +1233,14 @@ ${trackingScripts.head}
     }
     
     .component-wrapper {
-      margin-top: var(--margin-top, 0);
-      margin-bottom: var(--margin-bottom, 0);
-      margin-left: var(--margin-left, auto);
-      margin-right: var(--margin-right, auto);
       padding-top: var(--padding-top, 0);
       padding-bottom: var(--padding-bottom, 0);
       padding-left: var(--padding-left, 0);
       padding-right: var(--padding-right, 0);
+      margin-top: var(--margin-top, 0);
+      margin-bottom: var(--margin-bottom, 0);
+      margin-left: var(--margin-left, auto);
+      margin-right: var(--margin-right, auto);
       width: 100%;
       max-width: 1200px;
     }
@@ -2495,10 +2497,12 @@ ${clientSideScripts}
 </head>
 <body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
 ${!isForPreview ? trackingScripts.body : ''}
-${bodyContent}
+${shouldHideAmpscript ? mainContentHtml : bodyContent}
 ${cookieBannerHtml}
 </body>
 </html>`;
 
   return finalHtml;
 }
+
+

@@ -17,6 +17,15 @@ export function renderTitle(component: PageComponent, isForPreview: boolean, hid
         }
     }
     
+    // Apply gradient if defined
+    if (styles.gradient) {
+        finalStyles.background = `linear-gradient(to right, ${styles.gradient.from || '#FFFFFF'}, ${styles.gradient.to || '#a0a0a0'})`;
+        finalStyles['-webkit-background-clip'] = 'text';
+        finalStyles['-webkit-text-fill-color'] = 'transparent';
+        delete finalStyles.gradient;
+        delete finalStyles.color; // Remove solid color if gradient is active
+    }
+
     const styleString = getStyleString(finalStyles);
     const editableAttrs = isForPreview ? `contenteditable="true" data-component-id="${component.id}" data-prop-name="text"` : '';
     const dataBinding = props.dataBinding;

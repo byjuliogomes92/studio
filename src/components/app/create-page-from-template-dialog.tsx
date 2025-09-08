@@ -86,8 +86,7 @@ const platforms = [
     name: "Klaviyo",
     logo: "https://cdn.prod.website-files.com/616f0a7a027baab453433911/657263261463fe4fc816b96e_klaviyo-logo-horizontal-white.svg",
     enabled: false,
-  },
-  { id: "web", name: "Web", Icon: Globe, enabled: false },
+  }, { id: "web", name: "Web", Icon: Globe, enabled: false },
 ];
 
 // Helper function to sanitize data for Firestore (remove undefined values)

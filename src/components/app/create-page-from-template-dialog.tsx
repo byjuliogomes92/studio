@@ -115,6 +115,49 @@ const sanitizeForFirestore = (obj: any): any => {
   return obj;
 };
 
+// Applies brand styles to a page object
+const applyBrandToPage = (page: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>, brand: Brand): Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> => {
+  return produce(page, draft => {
+      draft.brandId = brand.id;
+      draft.brandName = brand.name;
+      draft.brand = brand;
+      
+      // Apply global styles
+      draft.styles.themeColor = brand.colors.light.primary;
+      draft.styles.themeColorHover = brand.colors.light.primaryHover;
+      draft.styles.fontFamily = brand.typography.customFontNameBody || brand.typography.fontFamilyBody;
+      
+      // Apply meta styles
+      draft.meta.title = `${brand.name} - ${draft.name}`;
+      draft.meta.faviconUrl = brand.logos.favicon;
+      draft.meta.loaderImageUrl = brand.logos.iconLight;
+
+      // Update specific components
+      draft.components.forEach(comp => {
+          if (comp.type === 'Header') {
+              comp.props.logoUrl = brand.logos.horizontalLight;
+          }
+          if (comp.type === 'Footer') {
+              comp.props.footerText1 = `© ${new Date().getFullYear()} ${brand.name}. Todos os direitos reservados.`;
+          }
+          if (comp.type === 'Title' || comp.type === 'Subtitle') {
+             comp.props.styles = {
+                 ...comp.props.styles,
+                 fontFamily: `"${brand.typography.customFontNameHeadings || brand.typography.fontFamilyHeadings}", sans-serif`
+             };
+          }
+           if (comp.type === 'Button' && comp.id === 'btn-hero-1') {
+               comp.props.styles = {
+                   ...comp.props.styles,
+                   backgroundColor: brand.colors.light.primary,
+                   color: brand.colors.light.primaryForeground
+               };
+           }
+      });
+  });
+};
+
+
 const getInitialPage = (
   name: string,
   projectId: string,
@@ -122,21 +165,18 @@ const getInitialPage = (
   brand: Brand | null,
   platform: string
 ): Omit<CloudPage, "id" | "createdAt" | "updatedAt"> => {
-  const brandName = brand?.name ?? "Sem Marca";
-  const brandId = brand?.id ?? "";
-  const faviconUrl = brand?.logos?.favicon ?? "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_icon.svg?alt=media&token=3fcd759a-3975-4285-9c59-98b824674514";
-
-  return sanitizeForFirestore({
+  
+  const basePage: Omit<CloudPage, "id" | "createdAt" | "updatedAt"> = {
     name: name,
     projectId,
     workspaceId,
-    brandId: brandId,
-    brandName: brandName,
+    brandId: "",
+    brandName: "Sem Marca",
     platform,
     tags: [],
     meta: {
       title: name,
-      faviconUrl,
+      faviconUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_icon.svg?alt=media&token=3fcd759a-3975-4285-9c59-98b824674514",
       metaDescription: `Landing page ${name} criada com Morfeus.`,
       loaderType: "image",
       loaderImageUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_icon.svg?alt=media&token=3fcd759a-3975-4285-9c59-98b824674514",
@@ -178,7 +218,13 @@ const getInitialPage = (
       { id: "form-newsletter", type: "Form", parentId: "div-newsletter", column: 0, order: 1, props: { fields: { email: { enabled: true } }, formAlign: 'center', buttonAlign: 'left', buttonText: 'Inscrever', inputStyles: { backgroundColor: '#333333', borderColor: '#555555', color: '#FFFFFF', borderRadius: '0.5rem' }, buttonProps: { bgColor: '#FFFFFF', textColor: '#000000' } } },
       { id: "footer-initial", type: "Footer", parentId: null, column: 0, order: 4, props: { layout: "menus-and-social", logoUrl: "https://firebasestorage.googleapis.com/v0/b/quizkong-mvp.firebasestorage.app/o/morfeus_logo_dark.svg?alt=media&token=717e9359-5b3f-4d4f-b778-9bcf091d054b", footerText1: `© ${new Date().getFullYear()} Morfeus. Todos os direitos reservados.`, linksLeft: [{ id: "f1", text: "Início", url: "#" }, { id: "f2", text: "Preços", url: "#" }], linksRight: [{ id: "f3", text: "Termos", url: "#" }, { id: "f4", text: "Privacidade", url: "#" }], socialLinks: { twitter: "#", github: "#" }, styles: { borderTop: '1px solid #333333', paddingTop: "2rem", paddingBottom: "2rem", backgroundColor: "#111111" } } },
     ],
-  });
+  };
+
+  if (brand) {
+    return applyBrandToPage(basePage, brand);
+  }
+  
+  return sanitizeForFirestore(basePage);
 };
 
 export function CreatePageFromTemplateDialog({
@@ -350,43 +396,31 @@ export function CreatePageFromTemplateDialog({
         });
 
         // Create the page data with safe defaults and apply brand styles
-        newPageData = sanitizeForFirestore({
+        const basePageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'> = {
           name: newPageName,
           workspaceId: activeWorkspace.id,
-          brandId: selectedBrand?.id || '',
-          brandName: selectedBrand?.name || 'Sem Marca',
+          brandId: '',
+          brandName: 'Sem Marca',
           platform: selectedPlatform,
           projectId: selectedProjectId,
           tags: template.tags || [],
-          styles: {
-            ...template.styles,
-            ...(selectedBrand ? {
-              themeColor: selectedBrand.colors.light.primary,
-              themeColorHover: selectedBrand.colors.light.primaryHover,
-              fontFamily: selectedBrand.typography.customFontNameBody || selectedBrand.typography.fontFamilyBody,
-            } : {})
-          },
-          components: newComponents.map(comp => {
-            if (selectedBrand) {
-                if (comp.type === 'Header') {
-                    comp.props.logoUrl = selectedBrand.logos.horizontalLight;
-                } else if (comp.type === 'Footer') {
-                     comp.props.footerText1 = `© ${new Date().getFullYear()} ${selectedBrand.name}. Todos os direitos reservados.`;
-                }
-            }
-            return comp;
-          }),
-          cookieBanner: template.cookieBanner, 
+          styles: { ...template.styles },
+          components: newComponents,
+          cookieBanner: template.cookieBanner,
           meta: {
             ...template.meta,
-            title: `${selectedBrand?.name || 'Marca'} - ${newPageName}`,
-            faviconUrl: selectedBrand?.logos?.favicon || template.meta?.faviconUrl || "",
-            loaderImageUrl: selectedBrand?.logos?.iconLight || template.meta?.loaderImageUrl || "",
+            title: newPageName,
             dataExtensionKey: template.meta?.dataExtensionKey ?? "CHANGE-ME",
             redirectUrl: template.meta?.redirectUrl ?? "https://www.google.com",
-            tracking: { ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
+            tracking: { gtm: { enabled: false }, ga4: { enabled: false }, meta: { enabled: false }, linkedin: { enabled: false } }
           },
-        });
+        };
+        
+        if (selectedBrand) {
+          newPageData = applyBrandToPage(basePageData, selectedBrand);
+        } else {
+          newPageData = basePageData;
+        }
       }
 
       // Ensure cookie banner is fully defined to prevent Firestore errors
@@ -417,13 +451,15 @@ export function CreatePageFromTemplateDialog({
           buttonTextColor: "",
         };
       }
+      
+      const finalPageData = sanitizeForFirestore(newPageData);
 
       console.log(
         "Creating page with data:",
-        JSON.stringify(newPageData, null, 2)
+        JSON.stringify(finalPageData, null, 2)
       );
 
-      const newPageId = await addPage(newPageData, user.uid);
+      const newPageId = await addPage(finalPageData, user.uid);
       toast({
         title: "Página criada!",
         description: `A página "${newPageName}" foi criada com sucesso.`,

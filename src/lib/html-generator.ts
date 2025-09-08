@@ -1459,6 +1459,24 @@ ${trackingScripts.head}
         font-weight: bold;
     }
 
+    pre, code {
+        font-family: 'Courier New', Courier, monospace;
+    }
+
+    pre {
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1em;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .dark pre {
+        background-color: #2d2d2d;
+        border-color: #444;
+    }
+
     .video-container {
         position: relative;
         overflow: hidden;
@@ -1840,7 +1858,6 @@ ${trackingScripts.head}
     }
     .accordion-content > div {
        padding: 1rem;
-       padding-top: 0;
        font-size: 0.95rem;
        color: #374151;
     }

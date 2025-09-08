@@ -1,10 +1,11 @@
 
 import type { PageComponent, HeaderLink, CloudPage, ButtonVariant } from "@/lib/types";
+import React, { useRef } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Bold, Italic, Underline, Link, Code } from "lucide-react";
 import { produce } from 'immer';
 import { ImageInput } from "./image-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -107,8 +108,44 @@ export function HeaderLinksManager({ links, onPropChange, pageState }: { links: 
     );
 }
 
+const FormattingToolbar = ({ textareaRef, onContentChange }: { textareaRef: React.RefObject<HTMLTextAreaElement>, onContentChange: (newContent: string) => void }) => {
+    const wrapSelection = (tag: string, isBlock: boolean = false) => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+        let replacement = '';
+        
+        if (tag === 'a') {
+            const url = prompt('Digite a URL do link:', 'https://');
+            if (!url) return; // User cancelled
+            replacement = `<a href="${url}" target="_blank">${selectedText}</a>`;
+        } else if (tag === 'pre') {
+             replacement = `<pre><code>${selectedText}</code></pre>`;
+        } else {
+            replacement = `<${tag}>${selectedText}</${tag}>`;
+        }
+
+        const newContent = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+        onContentChange(newContent);
+    };
+
+    return (
+        <div className="flex items-center gap-1 border-b p-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection('b')}><Bold className="h-4 w-4"/></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection('i')}><Italic className="h-4 w-4"/></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection('u')}><Underline className="h-4 w-4"/></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection('a')}><Link className="h-4 w-4"/></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection('pre')}><Code className="h-4 w-4"/></Button>
+        </div>
+    );
+};
+
 export function ListManagerSettings({ component, onPropChange }: ComponentSettingsProps) {
     const items = component.props.items || [];
+    const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   
     const handleItemChange = (itemId: string, field: 'title' | 'content', value: string) => {
       const newItems = items.map((item: any) =>
@@ -135,7 +172,11 @@ export function ListManagerSettings({ component, onPropChange }: ComponentSettin
   
     return (
       <div className="space-y-4">
-        {items.map((item: any, index: number) => (
+        {items.map((item: any, index: number) => {
+          if (!textareaRefs.current[index]) {
+            textareaRefs.current[index] = null;
+          }
+          return (
           <div key={item.id} className="p-3 border rounded-md space-y-3 relative">
              <Button
                 variant="ghost"
@@ -155,16 +196,24 @@ export function ListManagerSettings({ component, onPropChange }: ComponentSettin
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`item-content-${item.id}`}>Conteúdo {index + 1}</Label>
-              <Textarea
-                id={`item-content-${item.id}`}
-                value={item.content}
-                onChange={(e) => handleItemChange(item.id, 'content', e.target.value)}
-                rows={4}
-              />
+                <Label htmlFor={`item-content-${item.id}`}>Conteúdo {index + 1}</Label>
+                <div className="border rounded-md">
+                    <FormattingToolbar
+                        textareaRef={{ current: textareaRefs.current[index] }}
+                        onContentChange={(newContent) => handleItemChange(item.id, 'content', newContent)}
+                    />
+                    <Textarea
+                        id={`item-content-${item.id}`}
+                        ref={(el) => (textareaRefs.current[index] = el)}
+                        value={item.content}
+                        onChange={(e) => handleItemChange(item.id, 'content', e.target.value)}
+                        rows={6}
+                        className="rounded-t-none border-t-0"
+                    />
+                </div>
             </div>
           </div>
-        ))}
+        )})}
         <Button variant="outline" className="w-full" onClick={addItem}>
           <Plus className="h-4 w-4 mr-2" /> Adicionar Item
         </Button>

@@ -17,7 +17,7 @@ export function renderAccordion(component: PageComponent): string {
             </h2>
             <div id="content-${item.id}" class="accordion-content-wrapper">
               <div class="accordion-content">
-                  ${item.content}
+                  <div>${item.content}</div>
               </div>
             </div>
         </div>`

@@ -41,7 +41,8 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
         flexDirection,
         verticalAlign,
         horizontalAlign,
-        gap
+        gap,
+        flexWrap
     } = layout;
 
     let styleString = getStyleString(otherContainerStyles);
@@ -70,6 +71,7 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
         justify-content: ${verticalAlign || 'flex-start'};
         align-items: ${horizontalAlign || 'stretch'};
         gap: ${gap || '10px'};
+        flex-wrap: ${flexWrap || 'nowrap'};
         ${styleString}
     `;
 
@@ -80,10 +82,7 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
     const wrapperStyle = isFullWidth ? backgroundStyle : '';
     const innerStyle = isFullWidth ? containerStyle : `${backgroundStyle} ${containerStyle}`;
     
-    // For horizontal layouts, children are rendered directly inside the flex container
-    const finalChildrenHtml = flexDirection === 'row' 
-        ? childrenHtml.replace(/<div class="component-wrapper"[^>]*>([\s\S]*?)<\/div>/gs, '$1')
-        : childrenHtml;
+    const finalChildrenHtml = childrenHtml.replace(/<div class="component-wrapper"[^>]*>([\s\S]*?)<\/div>/gs, '$1');
 
     return `<div class="${wrapperClass}" style="${wrapperStyle}">
                 ${overlayHtml}

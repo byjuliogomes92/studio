@@ -51,6 +51,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../ui/select";
 import Image from 'next/image';
+import { CreatePageFromTemplateDialog } from "./create-page-from-template-dialog";
 
 type SortOption = "createdAt-desc" | "createdAt-asc" | "name-asc" | "name-desc" | "updatedAt-desc" | "updatedAt-asc";
 type ViewMode = "grid" | "list";
@@ -490,9 +491,13 @@ export function ProjectDashboard() {
             <Library className="mr-2 h-4 w-4" />
             Templates
           </Button>
-          <Button onClick={openCreateModal}>
-              <Plus className="mr-2 h-4 w-4" /> Criar Projeto
-          </Button>
+          <CreatePageFromTemplateDialog
+                trigger={
+                   <Button>
+                      <Plus className="mr-2 h-4 w-4" /> Criar Página
+                   </Button>
+                }
+            />
           <Separator orientation="vertical" className="h-6 mx-2" />
           <div className="flex items-center gap-2">
             <DropdownMenu>
@@ -832,7 +837,7 @@ export function ProjectDashboard() {
             ))}
           </div>
         ) : (
-          <div className="border rounded-lg">
+          <div className="border rounded-lg bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

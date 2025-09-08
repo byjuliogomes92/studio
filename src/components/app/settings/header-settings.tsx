@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { produce } from 'immer';
+import { produce } from "immer";
 import { ImageInput } from "./image-input";
 import { HeaderLinksManager } from './list-managers';
 import { ColorInput } from "./color-input";

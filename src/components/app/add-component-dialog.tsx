@@ -92,7 +92,7 @@ const componentList: {
       { name: "Columns", icon: Columns, enabled: true },
       { name: "Banner", icon: Image, enabled: true },
       { name: "PopUp", icon: Megaphone, enabled: true },
-      { name: "Stripe", icon: PanelTop, enabled: true },
+      { name: "Header", icon: AlignStartVertical, enabled: true },
       { name: "Footer", icon: AlignEndVertical, enabled: true },
     ],
   },
@@ -338,22 +338,24 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         case 'header-minimal':
             componentsToAdd = [{ id: `header-${baseId}`, type: 'Header', props: { layout: 'logo-left-button-right', buttonText: 'Fale Conosco', buttonUrl: '#' }, order: 0, parentId: null, column: 0 }];
             break;
-        case 'hero-background-image': {
+       case 'hero-background-image': {
             const parentId = `div-hero-bg-${baseId}`;
             componentsToAdd = [
                 {
                     id: parentId, type: 'Div', order: 0, parentId: null, column: 0, props: {
                         styles: { isFullWidth: true, backgroundType: 'image', backgroundImageUrl: 'https://picsum.photos/1200/800', paddingTop: '8rem', paddingBottom: '8rem', paddingLeft: '2rem', paddingRight: '2rem', overlayEnabled: true, overlayColor: '#000000', overlayOpacity: 0.5 },
                         layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '1rem' }
-                    }
-                },
-                { id: `title-${baseId}`, type: 'Title', parentId, column: 0, order: 0, props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } } },
-                { id: `para-${baseId}`, type: 'Paragraph', parentId, column: 0, order: 1, props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center' } } },
-                { id: `btn-${baseId}`, type: 'Button', parentId, column: 0, order: 2, props: { text: 'Chamada para Ação', href: '#' } },
+                    },
+                    children: [
+                        { id: `title-${baseId}`, type: 'Title', parentId, column: 0, order: 0, props: { text: 'Título Impactante Sobre a Imagem', styles: { fontSize: '3rem', color: '#FFFFFF', textAlign: 'center' } } },
+                        { id: `para-${baseId}`, type: 'Paragraph', parentId, column: 0, order: 1, props: { text: 'Subtítulo que descreve a proposta de valor de forma clara e concisa.', styles: { fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', color: '#FFFFFF', textAlign: 'center' } } },
+                        { id: `btn-${baseId}`, type: 'Button', parentId, column: 0, order: 2, props: { text: 'Chamada para Ação', href: '#' } },
+                    ]
+                }
             ];
             break;
         }
-        case 'hero-split-right':
+       case 'hero-split-right':
         case 'hero-split-left': {
             const parentId = `hero-split-${baseId}`;
             const isImageRight = type === 'hero-split-right';
@@ -363,77 +365,19 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
 
             componentsToAdd = [
                 {
-                    id: parentId,
-                    type: 'Columns',
-                    order: 0,
-                    parentId: null,
-                    column: 0,
-                    props: {
-                        columnCount: 2,
-                        styles: {
-                        alignItems: 'center',
-                        gap: '3rem',
-                        paddingTop: '4rem',
-                        paddingBottom: '4rem',
-                        paddingLeft: '2rem',
-                        paddingRight: '2rem',
-                        },
-                    },
+                    id: parentId, type: 'Columns', order: 0, parentId: null, column: 0,
+                    props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } },
                     children: [
                         {
-                            id: textContainerId,
-                            type: 'Div',
-                            parentId: parentId,
-                            column: textColumn,
-                            order: 0,
-                            props: {
-                                layout: {
-                                flexDirection: 'column',
-                                verticalAlign: 'center',
-                                horizontalAlign: 'flex-start',
-                                gap: '1rem',
-                                },
-                            },
+                            id: textContainerId, type: 'Div', parentId: parentId, column: textColumn, order: 0,
+                            props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } },
                             children: [
-                                {
-                                id: `title-${baseId}`,
-                                type: 'Title',
-                                parentId: textContainerId,
-                                column: 0,
-                                order: 0,
-                                props: {
-                                    text: 'Resolva um Problema Real',
-                                    styles: { fontSize: '2.5rem' },
-                                },
-                                },
-                                {
-                                id: `para-${baseId}`,
-                                type: 'Paragraph',
-                                parentId: textContainerId,
-                                column: 0,
-                                order: 1,
-                                props: {
-                                    text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.',
-                                },
-                                },
-                                {
-                                id: `btn-${baseId}`,
-                                type: 'Button',
-                                parentId: textContainerId,
-                                column: 0,
-                                order: 2,
-                                props: { text: 'Saiba Mais', href: '#', align: 'left' },
-                                },
+                                { id: `title-${baseId}`, type: 'Title', parentId: textContainerId, column: 0, order: 0, props: { text: 'Resolva um Problema Real', styles: { fontSize: '2.5rem' } } },
+                                { id: `para-${baseId}`, type: 'Paragraph', parentId: textContainerId, column: 0, order: 1, props: { text: 'Descreva como seu produto ou serviço é a solução que o cliente precisa, destacando os principais benefícios.' } },
+                                { id: `btn-${baseId}`, type: 'Button', parentId: textContainerId, column: 0, order: 2, props: { text: 'Saiba Mais', href: '#', align: 'left' } },
                             ],
                         },
-                        {
-                            id: `img-${baseId}`,
-                            type: 'Image',
-                            parentId: parentId,
-                            column: imageColumn,
-                            order: 0,
-                            props: { src: 'https://picsum.photos/600/500' },
-                        },
+                        { id: `img-${baseId}`, type: 'Image', parentId: parentId, column: imageColumn, order: 0, props: { src: 'https://picsum.photos/600/500' } },
                     ],
                 },
             ];
@@ -445,84 +389,19 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
 
             componentsToAdd = [
                 {
-                    id: parentId,
-                    type: 'Columns',
-                    props: {
-                        columnCount: 2,
-                        styles: {
-                        alignItems: 'center',
-                        gap: '3rem',
-                        paddingTop: '4rem',
-                        paddingBottom: '4rem',
-                        paddingLeft: '2rem',
-                        paddingRight: '2rem',
-                        },
-                    },
-                    order: 0,
-                    parentId: null,
-                    column: 0,
+                    id: parentId, type: 'Columns', order: 0, parentId: null, column: 0,
+                    props: { columnCount: 2, styles: { alignItems: 'center', gap: '3rem', paddingTop: '4rem', paddingBottom: '4rem', paddingLeft: '2rem', paddingRight: '2rem' } },
                     children: [
                         {
-                        id: textContainerId,
-                        type: 'Div',
-                        parentId: parentId,
-                        column: 0,
-                        order: 0,
-                        props: {
-                            layout: {
-                            flexDirection: 'column',
-                            verticalAlign: 'center',
-                            horizontalAlign: 'flex-start',
-                            gap: '1rem',
-                            },
+                            id: textContainerId, type: 'Div', parentId: parentId, column: 0, order: 0,
+                            props: { layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'flex-start', gap: '1rem' } },
+                            children: [
+                                { id: `title-${baseId}`, type: 'Title', parentId: textContainerId, column: 0, order: 0, props: { text: 'Receba a Oferta Exclusiva', styles: { fontSize: '2.5rem' } } },
+                                { id: `para-${baseId}`, type: 'Paragraph', parentId: textContainerId, column: 0, order: 1, props: { text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.' } },
+                                { id: `form-${baseId}`, type: 'Form', parentId: textContainerId, column: 0, order: 2, props: { fields: { email: { enabled: true } }, placeholders: { email: 'seu@email.com' }, buttonText: 'Enviar', submission: { message: 'Obrigado!' }, formAlign: 'left', buttonAlign: 'left' } },
+                            ],
                         },
-                        children: [
-                            {
-                                id: `title-${baseId}`,
-                                type: 'Title',
-                                parentId: textContainerId,
-                                column: 0,
-                                order: 0,
-                                props: {
-                                text: 'Receba a Oferta Exclusiva',
-                                styles: { fontSize: '2.5rem' },
-                                },
-                            },
-                            {
-                                id: `para-${baseId}`,
-                                type: 'Paragraph',
-                                parentId: textContainerId,
-                                column: 0,
-                                order: 1,
-                                props: {
-                                text: 'Deixe seu e-mail e seja o primeiro a saber sobre nossas novidades e promoções imperdíveis.',
-                                },
-                            },
-                            {
-                                id: `form-${baseId}`,
-                                type: 'Form',
-                                parentId: textContainerId,
-                                column: 0,
-                                order: 2,
-                                props: {
-                                fields: { email: { enabled: true, conditional: null, prefillFromUrl: false } },
-                                placeholders: { email: 'seu@email.com' },
-                                buttonText: 'Enviar',
-                                submission: { message: 'Obrigado!' },
-                                formAlign: 'left',
-                                buttonAlign: 'left',
-                                },
-                            },
-                        ],
-                        },
-                        {
-                        id: `img-${baseId}`,
-                        type: 'Image',
-                        parentId: parentId,
-                        column: 1,
-                        order: 0,
-                        props: { src: 'https://picsum.photos/600/500' },
-                        },
+                        { id: `img-${baseId}`, type: 'Image', parentId: parentId, column: 1, order: 0, props: { src: 'https://picsum.photos/600/500' } },
                     ],
                 },
             ];
@@ -577,39 +456,32 @@ export function AddComponentDialog({ onAddComponent }: AddComponentDialogProps) 
         }
         case 'logo-carousel': {
             componentsToAdd = [
-                { id: `title-${baseId}`, type: 'Title', props: { text: 'Nossos Clientes', styles: { textAlign: 'center', marginBottom: '2rem' } }, order: 0, parentId: null, column: 0 },
                 {
-                    id: `carousel-${baseId}`,
-                    type: 'Carousel',
+                    id: `div-logos-${baseId}`,
+                    type: 'Div', order: 0, parentId: null, column: 0,
                     props: {
-                        carouselType: 'logo',
-                        images: [
-                            { id: '1', url: 'https://logo.clearbit.com/google.com', alt: 'Google' },
-                            { id: '2', url: 'https://logo.clearbit.com/spotify.com', alt: 'Spotify' },
-                            { id: '3', url: 'https://logo.clearbit.com/netflix.com', alt: 'Netflix' },
-                            { id: '4', url: 'https://logo.clearbit.com/airbnb.com', alt: 'Airbnb' },
-                            { id: '5', url: 'https://logo.clearbit.com/microsoft.com', alt: 'Microsoft' },
-                            { id: '6', url: 'https://logo.clearbit.com/amazon.com', alt: 'Amazon' },
-                        ],
-                        showArrows: false,
-                        showDots: false,
-                        options: {
-                            loop: true,
-                            align: 'start',
-                            duration: 50,
-                            slidesPerView: 5,
-                            autoplay: {
-                                delay: 0,
-                                stopOnInteraction: false,
-                                stopOnMouseEnter: true,
-                            },
-                        },
+                        styles: { paddingTop: '3rem', paddingBottom: '3rem' },
+                        layout: { flexDirection: 'column', verticalAlign: 'center', horizontalAlign: 'center', gap: '2rem' }
                     },
-                    order: 1,
-                    parentId: null,
-                    column: 0,
+                    children: [
+                        { id: `title-${baseId}`, type: 'Title', parentId: `div-logos-${baseId}`, column: 0, order: 0, props: { text: 'Confiado por grandes empresas', styles: { textAlign: 'center', fontSize: '1.25rem', color: '#6B7280' } } },
+                        {
+                            id: `div-logo-inner-${baseId}`, type: 'Div', parentId: `div-logos-${baseId}`, column: 0, order: 1,
+                            props: {
+                                styles: { width: '100%' },
+                                layout: { flexDirection: 'row', horizontalAlign: 'space-around', verticalAlign: 'center', flexWrap: 'wrap', gap: '2rem' }
+                            },
+                            children: [
+                                { id: `logo1-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 0, props: { src: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/microsoft_logo_icon_145722.png', alt: 'Microsoft', width: '140px', styles: { opacity: '0.6' } } },
+                                { id: `logo2-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 1, props: { src: 'https://cdn.icon-icons.com/icons2/2429/PNG/512/spotify_logo_icon_147278.png', alt: 'Spotify', width: '140px', styles: { opacity: '0.6' } } },
+                                { id: `logo3-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 2, props: { src: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/slack_logo_icon_145725.png', alt: 'Slack', width: '140px', styles: { opacity: '0.6' } } },
+                                { id: `logo4-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 3, props: { src: 'https://cdn.icon-icons.com/icons2/2429/PNG/512/dropbox_logo_icon_1472 Dropbox.png', alt: 'Dropbox', width: '140px', styles: { opacity: '0.6' } } },
+                                { id: `logo5-${baseId}`, type: 'Image', parentId: `div-logo-inner-${baseId}`, column: 0, order: 4, props: { src: 'https://cdn.icon-icons.com/icons2/2402/PNG/512/google_logo_icon_145710.png', alt: 'Google', width: '140px', styles: { opacity: '0.6' } } },
+                            ]
+                        }
+                    ]
                 }
-            ]
+            ];
             break;
         }
         case 'footer-simple':

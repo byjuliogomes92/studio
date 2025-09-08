@@ -127,7 +127,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange, pageStat
                     </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="layout">
-                    <AccordionTrigger>Layout Interno</AccordionTrigger>
+                    <AccordionTrigger>Layout Interno (Flexbox)</AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
                          <div className="space-y-2">
                             <Label>Direção do Layout (Flex Direction)</Label>
@@ -148,6 +148,7 @@ export function DivSettings({ component, onSubPropChange, onPropChange, pageStat
                                     <SelectItem value="center">Centro</SelectItem>
                                     <SelectItem value="flex-end">Fim</SelectItem>
                                     <SelectItem value="space-between">Distribuído</SelectItem>
+                                     <SelectItem value="space-around">Contornado</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -162,6 +163,10 @@ export function DivSettings({ component, onSubPropChange, onPropChange, pageStat
                                     <SelectItem value="flex-end">Direita</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Quebra de Linha (Flex Wrap)</Label>
+                             <Switch checked={layout.flexWrap === 'wrap'} onCheckedChange={(checked) => handleLayoutChange('flexWrap', checked ? 'wrap' : 'nowrap')} />
                         </div>
                         <div className="space-y-2">
                             <Label>Espaçamento entre Itens (Gap)</Label>

@@ -82,9 +82,6 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
     const wrapperStyle = isFullWidth ? backgroundStyle : '';
     const innerStyle = isFullWidth ? containerStyle : `${backgroundStyle} ${containerStyle}`;
     
-    // This line was the source of the bug and has been removed.
-    // const finalChildrenHtml = childrenHtml.replace(/<div class="component-wrapper"[^>]*>([\s\S]*?)<\/div>/gs, '$1');
-
     return `<div class="${wrapperClass}" style="${wrapperStyle}" id="${idOverride}">
                 ${overlayHtml}
                 <div class="${className}" style="${innerStyle}">${childrenHtml}</div>

@@ -1,5 +1,4 @@
 
-
 import type { PageComponent, HeaderLayout, MobileMenuBehavior, CloudPage, HeaderLink } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";

@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, PageComponent, ComponentType, Action, CookieCategory, ResponsiveProps, EditorMode } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
 import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
@@ -1124,17 +1123,22 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     position: relative; /* Needed for absolute positioned children */
   `;
   
+  const headerComponent = components.find(c => c.type === 'Header');
+  const isHeaderSticky = headerComponent?.props?.isSticky;
+  const mainStyle = isHeaderSticky ? `padding-top: ${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
+
+
   const bodyContent = shouldHideAmpscript
   ? `
     ${renderLoader(meta, styles.themeColor)}
-    <main>
+    <main style="${mainStyle}">
       ${mainContentHtml}
     </main>
   `
   : `
     %%[ IF @isAuthenticated == true THEN ]%%
     ${renderLoader(meta, styles.themeColor)}
-    <main>
+    <main style="${mainStyle}">
       ${mainContentHtml}
     </main>
     %%[ ELSE ]%%

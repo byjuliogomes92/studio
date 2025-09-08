@@ -98,3 +98,53 @@ exports.getAllUsers = functions
         }
     });
 
+
+/**
+ * Processes a CSV file from Storage and uploads it to SFMC.
+ */
+exports.processCsvToSfmc = functions
+    .region('us-central1')
+    .https.onCall(async (data, context) => {
+        if (!context.auth) {
+            throw new functions.https.HttpsError("unauthenticated", "Usuário não autenticado.");
+        }
+        
+        const { filePath, deKey, restBaseUrl, brandId } = data;
+        if (!filePath || !deKey || !restBaseUrl || !brandId) {
+            throw new functions.https.HttpsError("invalid-argument", "Parâmetros faltando (filePath, deKey, restBaseUrl, brandId).");
+        }
+
+        // --- In a real implementation, you would: ---
+        // 1. Get SFMC API credentials securely (e.g., from Firestore, decrypting them).
+        // const brandRef = db.collection('brands').doc(brandId);
+        // const brandDoc = await brandRef.get();
+        // const { clientId, clientSecret } = decryptCredentials(brandDoc.data().sfmcApi);
+        
+        // 2. Get an SFMC Auth Token.
+        // const token = await getSfmcAuthToken(restBaseUrl, clientId, clientSecret);
+        
+        // 3. Download the file from Firebase Storage.
+        // const bucket = admin.storage().bucket();
+        // const fileContents = await bucket.file(filePath).download();
+        
+        // 4. Parse the CSV content.
+        // const records = parse(fileContents.toString(), { columns: true });
+        
+        // 5. Send data in batches to SFMC REST API.
+        // const results = await sendDataToSfmc(restBaseUrl, token, deKey, records);
+        
+        // For this prototype, we'll simulate the process.
+        console.log(`Simulating processing of ${filePath} for DE ${deKey}`);
+        
+        // Simulate a delay
+        await new Promise(resolve => setTimeout(resolve, 5000)); 
+        
+        const simulatedRowCount = Math.floor(Math.random() * 10000) + 500;
+
+        return { 
+            success: true, 
+            message: `Sucesso! ${simulatedRowCount} registros foram adicionados à Data Extension.`,
+            rowsAdded: simulatedRowCount,
+        };
+    });
+

@@ -427,26 +427,23 @@ export function CreatePageFromTemplateDialog({
       }
 
       // Ensure cookie banner is fully defined to prevent Firestore errors
-      if (!pageToCreate.cookieBanner) {
-        pageToCreate.cookieBanner = {
+      pageToCreate.cookieBanner = produce(pageToCreate.cookieBanner || { enabled: false }, draft => {
+        if (!draft) {
+          draft = {
             enabled: false, position: "bottom", layout: "bar",
             title: "", description: "", acceptButtonText: "Aceitar",
             declineButtonText: "Recusar", preferencesButtonText: "Preferências",
             privacyPolicyLink: "", categories: [],
             styles: { backgroundColor: "", textColor: "", buttonBackgroundColor: "", buttonTextColor: "" }
-        };
-      } else if (!pageToCreate.cookieBanner.styles) {
-        pageToCreate.cookieBanner.styles = {
-            backgroundColor: "", textColor: "", buttonBackgroundColor: "", buttonTextColor: ""
-        };
-      }
+          };
+        } else if (!draft.styles) {
+          draft.styles = {
+              backgroundColor: "", textColor: "", buttonBackgroundColor: "", buttonTextColor: ""
+          };
+        }
+      });
       
       const finalPageData = sanitizeForFirestore(pageToCreate);
-
-      console.log(
-        "Creating page with data:",
-        JSON.stringify(finalPageData, null, 2)
-      );
 
       const newPageId = await addPage(finalPageData, user.uid);
       toast({

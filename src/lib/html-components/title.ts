@@ -6,6 +6,7 @@ export function renderTitle(component: PageComponent, isForPreview: boolean, hid
     const { props, pageState } = component as any; // Allow access to pageState if attached
     const styles = props.styles || {};
     const brand = pageState?.brand;
+    const idOverride = props.idOverride;
 
     let finalStyles: any = { ...styles };
 
@@ -35,7 +36,9 @@ export function renderTitle(component: PageComponent, isForPreview: boolean, hid
         text = `%%=v(@${dataBinding})=%%`;
     }
     
-    return `<h1 style="${styleString}" ${editableAttrs}>${text}</h1>`;
+    const idAttr = idOverride ? `id="${idOverride}"` : '';
+
+    return `<h1 style="${styleString}" ${editableAttrs} ${idAttr}>${text}</h1>`;
 }
 
 function getStyleString(styles: any = {}): string {

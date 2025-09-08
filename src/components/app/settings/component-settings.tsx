@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { PageComponent, CloudPage } from "@/lib/types";
@@ -292,7 +291,15 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
             </AccordionItem>
              <AccordionItem value="advanced" className="border-b-0">
                 <AccordionTrigger className="text-sm font-medium py-0">Avançado</AccordionTrigger>
-                <AccordionContent className="pt-4">
+                <AccordionContent className="pt-4 space-y-4">
+                   <div className="space-y-2">
+                        <Label>ID do Elemento (para Âncora)</Label>
+                        <Input value={component.props.idOverride || ''} onChange={e => handlePropChange('idOverride', e.target.value)} placeholder="ID único para âncoras"/>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Classes CSS Customizadas</Label>
+                        <Input value={component.props.customClasses || ''} onChange={e => handlePropChange('customClasses', e.target.value)} placeholder="classe-1 classe-2"/>
+                    </div>
                    <Button variant="outline" className="w-full" onClick={() => onCodeEdit(component)}>
                        <Code className="mr-2 h-4 w-4"/>
                        Editar Código do Componente

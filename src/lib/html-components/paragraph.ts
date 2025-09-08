@@ -6,6 +6,7 @@ export function renderParagraph(component: PageComponent, isForPreview: boolean,
     const { props, pageState } = component as any; // Allow access to pageState if attached
     const styles = props.styles || {};
     const brand = pageState?.brand;
+    const idOverride = props.idOverride;
 
     let finalStyles: any = { ...styles };
 
@@ -26,7 +27,9 @@ export function renderParagraph(component: PageComponent, isForPreview: boolean,
         text = `%%=v(@${dataBinding})=%%`;
     }
     
-    return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs}>${text}</div>`;
+    const idAttr = idOverride ? `id="${idOverride}"` : '';
+
+    return `<div style="white-space: pre-wrap; ${styleString}" ${editableAttrs} ${idAttr}>${text}</div>`;
 }
 
 function getStyleString(styles: any = {}): string {

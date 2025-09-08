@@ -2,7 +2,7 @@
 import type { PageComponent } from '@/lib/types';
 
 export function renderImage(component: PageComponent): string {
-    const { src = 'https://placehold.co/800x200.png', alt = 'Placeholder image', width } = component.props;
+    const { src = 'https://placehold.co/800x200.png', alt = 'Placeholder image', width, idOverride } = component.props;
     const styles = component.props.styles || {};
     const textAlign = styles.textAlign || 'left';
     
@@ -38,7 +38,9 @@ export function renderImage(component: PageComponent): string {
     // Apply additional styles from the settings panel directly to the image
     const customStyleString = getStyleString(styles);
 
-    return `<img src="${src}" alt="${alt}" style="${imageStyleString}${customStyleString}" data-ai-hint="website abstract">`;
+    const idAttr = idOverride ? `id="${idOverride}"` : '';
+
+    return `<img src="${src}" alt="${alt}" style="${imageStyleString}${customStyleString}" data-ai-hint="website abstract" ${idAttr}>`;
 }
 
 function getStyleString(styles: any = {}): string {

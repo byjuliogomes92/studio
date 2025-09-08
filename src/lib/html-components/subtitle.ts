@@ -7,6 +7,7 @@ export function renderSubtitle(component: PageComponent, isForPreview: boolean, 
     const { props, pageState } = component as any; // Allow access to pageState if attached
     const styles = props.styles || {};
     const brand = pageState?.brand;
+    const idOverride = props.idOverride;
 
     let finalStyles: any = { ...styles };
 
@@ -27,7 +28,9 @@ export function renderSubtitle(component: PageComponent, isForPreview: boolean, 
         text = `%%=v(@${dataBinding})=%%`;
     }
     
-    return `<h2 style="${styleString}" ${editableAttrs}>${text}</h2>`;
+    const idAttr = idOverride ? `id="${idOverride}"` : '';
+    
+    return `<h2 style="${styleString}" ${editableAttrs} ${idAttr}>${text}</h2>`;
 }
 
 function getStyleString(styles: any = {}): string {

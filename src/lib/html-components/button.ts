@@ -14,7 +14,7 @@ function getStyleString(styles: any = {}): string {
 
 
 export function renderButton(component: PageComponent, pageState?: CloudPage): string {
-    const { text = 'Clique Aqui', align = 'center', variant = 'default', action } = component.props;
+    const { text = 'Clique Aqui', align = 'center', variant = 'default', action, idOverride } = component.props;
     const styles = component.props.styles || {};
     
     let href = '#';
@@ -41,12 +41,14 @@ export function renderButton(component: PageComponent, pageState?: CloudPage): s
     const buttonStyleString = getStyleString(combinedStyles);
     const className = `custom-button custom-button--${variant}`;
     
+    const idAttr = idOverride ? `id="${idOverride}"` : '';
+
     let element: string;
     if (action?.type === 'CLOSE_POPUP') {
-        element = `<button type="button" class="${className}" style="${buttonStyleString}" onclick="window.closePopup && window.closePopup()">${text}</button>`;
+        element = `<button type="button" class="${className}" style="${buttonStyleString}" onclick="window.closePopup && window.closePopup()" ${idAttr}>${text}</button>`;
     } else {
         const target = href.startsWith('#') ? '' : 'target="_blank"';
-        element = `<a href="${href}" ${target} class="${className}" style="${buttonStyleString}">${text}</a>`;
+        element = `<a href="${href}" ${target} class="${className}" style="${buttonStyleString}" ${idAttr}>${text}</a>`;
     }
 
     return `<div class="button-wrapper" style="${wrapperStyle}">${element}</div>`;

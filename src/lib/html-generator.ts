@@ -118,7 +118,8 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
     ? `data-animation="${entranceAnimation}" data-animation-duration="${animationDuration}s" data-animation-delay="${animationDelay}s"`
     : '';
   
-  const selectableAttrs = isForPreview ? `data-component-id="${component.id}"` : '';
+  const componentId = component.props.idOverride || component.id;
+  const selectableAttrs = isForPreview ? `data-component-id="${component.id}" id="${componentId}"` : `id="${componentId}"`;
   
   // Extract only spacing styles for the wrapper
   const spacingKeys = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'];

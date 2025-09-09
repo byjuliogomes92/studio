@@ -59,7 +59,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
     return `
-      <div id="${componentId}" class="de-upload-v2-container" style="--container-bg: ${styles.containerBackgroundColor || 'transparent'}; --text-color: ${styles.textColor || 'inherit'};">
+      <div id="${componentId}" class="de-upload-v2-container">
           <h4>${title}</h4>
           
           <div class="de-upload-v2-instructions">
@@ -73,7 +73,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             <div id="de-info-table-wrapper-${component.id}" class="de-info-table-wrapper"></div>
           </div>
           
-          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="--drop-bg: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'}; --drop-bg-hover: ${styles.dropZoneBgHover || 'hsla(var(--primary-hsl), 0.15)'}; --drop-border: ${styles.dropZoneBorder || '#d1d5db'}; --drop-border-hover: ${styles.dropZoneBorderHover || 'hsl(var(--primary))'};">
+          <label for="file-input-${component.id}" id="drop-zone-${component.id}" class="de-upload-v2-drop-zone">
               <div class="de-upload-v2-drop-content initial">
                   <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || '#6b7280'};">${iconUpload}</div>
                   <p>${instructionText}</p>
@@ -82,10 +82,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   <div class="de-upload-v2-icon" style="color: ${styles.iconColor || '#6b7280'};">${iconFile}</div>
                   <p><strong>Arquivo selecionado:</strong> <span id="filename-display-${component.id}"></span></p>
               </div>
-          </div>
+          </label>
           <input type="file" id="file-input-${component.id}" accept=".csv" style="display:none;" />
           
-          <div id="file-info-${component.id}" class="de-upload-v2-file-info" style="display:none;">
+          <div id="file-info-${component.id}" class="de-upload-v2-file-info">
             <div class="info-grid">
                 <div class="info-item"><span class="info-label">Registros</span><span class="info-value" id="record-count-${component.id}">-</span></div>
                 <div class="info-item"><span class="info-label">Colunas</span><span class="info-value" id="column-count-${component.id}">-</span></div>

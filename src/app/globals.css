@@ -189,7 +189,6 @@
 
   /* Data Extension Upload V2 Styles */
   .de-upload-v2-container {
-    background-color: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 0.75rem;
     padding: 1.5rem;
@@ -199,7 +198,6 @@
     margin: auto;
   }
   .dark .de-upload-v2-container {
-    background-color: hsl(var(--card));
     border-color: hsl(var(--border));
   }
   .de-upload-v2-container h4 {
@@ -274,20 +272,18 @@
     transition: background-color 0.2s ease, border-color 0.2s ease;
     text-align: center;
   }
-
-  .de-upload-v2-drop-zone.highlight,
-  .de-upload-v2-drop-zone:hover {
-     background-color: hsla(var(--primary-hsl), 0.15) !important;
-     border-color: hsl(var(--primary-hsl)) !important;
-  }
-
-  .de-upload-v2-drop-zone:hover .animation-hover--shake { animation: shake 0.5s; }
-  .de-upload-v2-drop-zone:hover .animation-hover--scale-up { transform: scale(1.1); }
-
   .de-upload-v2-icon {
     margin: 0 auto 0.75rem auto;
     transition: transform 0.2s ease-in-out;
   }
+  .animation-loop--pulse { animation: pulse 2s infinite; }
+  .animation-loop--bounce { animation: bounce 2s infinite; }
+  .animation-loop--floating { animation: floating 3s ease-in-out; }
+  .animation-hover--shake { animation: shake 0.5s; }
+  .animation-hover--scale-up { transform: scale(1.1); }
+  .de-upload-v2-drop-zone:hover .animation-hover--shake { animation: shake 0.5s; }
+  .de-upload-v2-drop-zone:hover .animation-hover--scale-up { transform: scale(1.1); }
+
   .de-upload-v2-drop-content p {
     margin: 0;
   }
@@ -314,6 +310,10 @@
       min-height: 1.25rem;
   }
 
+  .de-upload-v2-footer {
+    margin-top: 1rem;
+  }
+  
   .de-upload-v2-container .custom-button {
     width: 100%;
     margin-top: 1rem;

@@ -1098,22 +1098,64 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
 };
 
 export function generateHtml(pageState: CloudPage, isForPreview: boolean = false, baseUrl: string = '', hideAmpscript: boolean = false, editorMode: EditorMode = 'none'): string {
-    const { id, slug, styles, components, meta, cookieBanner } = pageState;
+    const { components, meta, styles } = pageState;
 
     const hasForm = components.some(c => c.type === 'Form');
-    const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
-    const hasDataBinding = components.some(c => !!c.props.dataBinding);
-    const needsSecurity = meta.security && ['sso', 'password'].includes(meta.security.type);
-    const hasCustomAmpscript = !!meta.customAmpscript;
-    const needsPrefill = components.some(c => c.type === 'Form' && Object.values(c.props.fields || {}).some((field: any) => field.prefillFromUrl));
-
-    const needsAmpscript = !isForPreview && !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || needsPrefill);
+    const needsSecurity = meta.security && meta.security.type !== 'none';
     
-    // Generate content first
+    // Determine se o AMPScript é necessário.
+    const needsAmpscript = !isForPreview && !hideAmpscript;
+
+    // Gerar conteúdo principal primeiro
     const rootComponents = components.filter(c => c.parentId === null);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
 
-    // Style generation
+    // --- Início: Construção do Bloco AMPScript Principal ---
+    let initialAmpscript = '';
+    if (needsAmpscript) {
+        const securityLogic = getAmpscriptSecurityBlock(pageState);
+        const prefillLogic = getPrefillAmpscript(pageState);
+        const customLogic = (meta.customAmpscript || '').replace(/%%\[|\]%%/g, '').trim();
+
+        // Lista de variáveis a serem declaradas
+        const varList = new Set<string>();
+        varList.add('@showThanks');
+        varList.add('@isAuthenticated');
+
+        if(securityLogic) {
+            varList.add('@submittedPassword');
+            varList.add('@identifier');
+            varList.add('@correctPassword');
+            varList.add('@loginError');
+        }
+
+        if(prefillLogic) {
+            // Extrai variáveis do prefillLogic
+            const prefillVars = prefillLogic.match(/SET @\w+/g) || [];
+            prefillVars.forEach(v => varList.add(v.replace('SET ', '')));
+        }
+        
+        // Unifica a declaração de variáveis
+        const varDeclarations = `VAR ${Array.from(varList).join(',')}`;
+        
+        let logicParts = [
+            varDeclarations,
+            'SET @showThanks = "false"',
+            'IF RequestParameter("form-submitted") == "true" THEN SET @showThanks = "true" ENDIF',
+            needsSecurity ? `SET @isAuthenticated = false` : `SET @isAuthenticated = true`,
+            securityLogic,
+            // Adiciona lógica de erro para login
+            needsSecurity ? `IF RequestParameter("page_password") != "" AND @isAuthenticated == false THEN SET @loginError = "Credenciais incorretas." ELSE SET @loginError = "" ENDIF` : '',
+            prefillLogic,
+            customLogic,
+        ];
+        
+        initialAmpscript = `%%[ ${logicParts.filter(Boolean).join(' ')} ]%%`;
+    }
+    // --- Fim: Construção do Bloco AMPScript Principal ---
+
+
+    // --- Início: Construção do Corpo e Estilos ---
     const { typography } = pageState.brand || {};
     const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
     const fontFamilyBody = typography?.customFontNameBody || typography?.fontFamilyBody || 'Roboto';
@@ -1139,48 +1181,26 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const headerComponent = components.find(c => c.type === 'Header');
     const isHeaderSticky = headerComponent?.props?.isSticky;
     const mainStyle = isHeaderSticky ? `padding-top: ${headerComponent?.props?.logoHeight ? headerComponent.props.logoHeight + 32 : 72}px;` : '';
-
+    
     const trackingScripts = getTrackingScripts(meta.tracking);
-    const cookieBannerHtml = getCookieBannerHtml(cookieBanner);
+    const cookieBannerHtml = getCookieBannerHtml(pageState.cookieBanner);
     const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
 
-    let initialAmpscript = '';
-    let ssjsScript = '';
-    let bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
+    let bodyContent = '';
+    const ssjsScript = (needsAmpscript && hasForm) ? `<script runat="server">${getFormSubmissionScript(pageState)}</script>` : '';
 
-    if (needsAmpscript) {
-        const securityBlock = getAmpscriptSecurityBlock(pageState);
-        const prefillBlock = getPrefillAmpscript(pageState);
-        const customBlock = meta.customAmpscript || '';
-        
-        const ampscriptLogic = [
-            'VAR @showThanks,@isAuthenticated', 
-            'SET @showThanks = "false"',
-            'IF RequestParameter("form-submitted") == "true" THEN SET @showThanks = "true" ENDIF',
-            securityBlock,
-            prefillBlock,
-            customBlock.replace(/%%\[|\]%%/g, '') // remove delimiters if user adds them
-        ].filter(Boolean).join(' ');
-
-        initialAmpscript = `%%[${ampscriptLogic}]%%`;
-
-        if (hasForm) {
-            ssjsScript = `<script runat="server">${getFormSubmissionScript(pageState)}</script>`;
-        }
-        
-        if (needsSecurity) {
-            bodyContent = `%%[IF @isAuthenticated == true THEN]%%
+    if (needsAmpscript && needsSecurity) {
+        bodyContent = `%%[IF @isAuthenticated == true THEN]%%
             ${ssjsScript}
             <main style="${mainStyle}">${mainContentHtml}</main>
-            %%[ELSE]%%
+        %%[ELSE]%%
             ${getSecurityFormHtml(pageState)}
-            %%[ENDIF]%%`;
-        } else {
-            bodyContent = `${ssjsScript}${bodyContent}`;
-        }
+        %%[ENDIF]%%`;
+    } else {
+        bodyContent = `${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
-    
-    const firebaseConfigScript = isForPreview && hasDataExtensionUpload 
+
+    const firebaseConfigScript = isForPreview && (pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload'))
         ? `<script>
              var firebaseConfig = {
                 apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
@@ -1195,7 +1215,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
              }
            </script>`
         : '';
+    // --- Fim: Construção do Corpo e Estilos ---
 
+    // --- Início: Construção do HTML Final ---
     const html = `<!DOCTYPE html>
 <html>
 <head>

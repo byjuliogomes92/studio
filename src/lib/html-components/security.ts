@@ -1,31 +1,29 @@
 
-
 import type { CloudPage } from '../types';
 
 export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
-    // Return empty string if no security is needed or misconfigured
-    if (!security || security.type === 'none') {
-        return 'SET @isAuthenticated = true';
-    } 
-    
-    let script = '';
-
-    if (security.type === 'sso') {
-        script = 'TRY SET @IsAuthenticated_Temp = Request.GetUserInfo() SET @isAuthenticated = true CATCH(e) SET @isAuthenticated = false ENDTRY';
-    } else if (security.type === 'password' && security.passwordConfig) {
-        const config = security.passwordConfig;
-        if (!config.dataExtensionKey || !config.identifierColumn || !config.passwordColumn) {
-            return 'SET @isAuthenticated = true /* Invalid Password Config */'; // Fail open if config is bad
-        }
-        script = `VAR @submittedPassword, @identifier, @correctPassword SET @isAuthenticated = false SET @submittedPassword = RequestParameter("page_password") SET @identifier = RequestParameter("page_identifier") IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier) IF @submittedPassword == @correctPassword THEN SET @isAuthenticated = true ENDIF ENDIF`;
-    } else {
-        // Fallback for misconfigured security
-        script += 'SET @isAuthenticated = true';
+    if (!security || security.type !== 'password' || !security.passwordConfig) {
+        return ''; 
     }
-
-    return script.replace(/\s+/g, ' '); // Compact the string
+    
+    const config = security.passwordConfig;
+    if (!config.dataExtensionKey || !config.identifierColumn || !config.passwordColumn) {
+        return '/* Invalid Password Config */'; 
+    }
+    
+    // Retorna apenas a lógica, sem VAR ou IF/ELSE. Isso será tratado no gerador principal.
+    return `
+        SET @submittedPassword = RequestParameter("page_password")
+        SET @identifier = RequestParameter("page_identifier")
+        IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN
+            SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
+            IF @submittedPassword == @correctPassword THEN
+                SET @isAuthenticated = true
+            ENDIF
+        ENDIF
+    `;
 }
 
 export const getSecurityFormHtml = (pageState: CloudPage): string => {
@@ -39,6 +37,7 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
         return '';
     }
 
+    // A lógica de erro agora está no bloco principal de AMPScript, então o IF aqui foi removido.
     return `
 <div class="password-protection-container">
     <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
@@ -47,11 +46,8 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
         <input type="text" name="page_identifier" placeholder="Seu Identificador" required>
         <input type="password" name="page_password" placeholder="Sua senha" required>
         <button type="submit">Acessar</button>
-        %%[ IF RequestParameter("page_password") != "" OR RequestParameter("page_identifier") != "" THEN ]%%
-            <p class="error-message">Credenciais incorretas. Tente novamente.</p>
-        %%[ ENDIF ]%%
+        <p class="error-message">%%=v(@loginError)=%%</p>
     </form>
 </div>
 `;
 }
-

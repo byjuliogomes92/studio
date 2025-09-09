@@ -125,6 +125,6 @@ try {
     }
 }`;
 
-    // Return the SSJS logic wrapped in script tags, with newlines removed to prevent issues.
-    return `<script runat="server">${ssjsLogic.replace(/\n/g, ' ')}</script>`;
+    // Return the SSJS logic only, without script tags.
+    return ssjsLogic;
 }

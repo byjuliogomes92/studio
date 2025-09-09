@@ -61,7 +61,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
       <script>
       (function() {
           const container = document.querySelector('.de-upload-v2-container');
-          if (!container) return; 
+          if (!container || container.dataset.initialized) return; 
+          container.dataset.initialized = 'true';
 
           const campaignSelect = document.getElementById('campaign-select-${component.id}');
           const dropZone = document.getElementById('drop-zone-${component.id}');
@@ -81,7 +82,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           let selectedFile = null;
 
           function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
+            if (!bytes || bytes === 0) return '0 Bytes';
             const k = 1024;
             const dm = decimals < 0 ? 0 : decimals;
             const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -110,7 +111,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
 
           function handleFileSelect(file) {
-              if (file && file.type === 'text/csv') {
+              if (file && (file.type === 'text/csv' || file.name.endsWith('.csv'))) {
                   selectedFile = file;
                   filenameDisplay.textContent = file.name;
                   filesizeDisplay.textContent = formatBytes(file.size);
@@ -164,6 +165,25 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               handleFileSelect(e.dataTransfer.files[0]);
           });
           
+          async function processFile(file, deKey, brandId) {
+            // In a real scenario, this would be a fetch to a Firebase Function
+            // For the prototype, we simulate the process
+            return new Promise((resolve, reject) => {
+              showStatus('Arquivo recebido. Processando no servidor...', 'info');
+              setProgress(75);
+              
+              setTimeout(() => {
+                  // Simulate success or error
+                  if (Math.random() > 0.1) { // 90% success rate
+                      const randomRows = Math.floor(Math.random() * 10000) + 500;
+                      resolve({ success: true, message: `Sucesso! ${randomRows} registros foram adicionados à Data Extension.` });
+                  } else {
+                      reject(new Error('Falha simulada no processamento do servidor.'));
+                  }
+              }, 4000); // Simulate network and processing delay
+            });
+          }
+
           uploadBtn.addEventListener('click', async () => {
               if (!selectedFile) return;
               const selectedDeKey = campaignSelect ? campaignSelect.value : '${campaigns.length > 0 ? campaigns[0].deKey : ''}';
@@ -172,32 +192,18 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   return;
               }
 
-
               uploadBtn.disabled = true;
               submitBtnText.style.display = 'none';
               submitBtnLoader.style.display = 'inline-block';
               showStatus('Iniciando...', 'info');
               progressContainer.style.display = 'block';
-              setProgress(5);
+              setProgress(50); // Simulate instant "upload"
 
               try {
-                  showStatus('Enviando arquivo para o servidor...', 'info');
-                  setProgress(25);
-                  
-                  // This is the placeholder for the real Firebase Function call.
-                  setTimeout(() => {
-                      showStatus('Arquivo recebido. Processando no servidor...', 'info');
-                      setProgress(75);
-                      
-                      setTimeout(() => {
-                          const randomRows = Math.floor(Math.random() * 10000) + 500;
-                          showStatus('Sucesso! ' + randomRows + ' registros foram adicionados à Data Extension.', 'success');
-                          setProgress(100);
-                          resetState();
-                      }, 4000);
-
-                  }, 2000);
-
+                  const result = await processFile(selectedFile, selectedDeKey, '${brandId}');
+                  showStatus(result.message, 'success');
+                  setProgress(100);
+                  resetState();
               } catch (err) {
                   showStatus('Erro: ' + (err.message || 'Falha no processamento.'), 'error');
                   uploadBtn.disabled = false;

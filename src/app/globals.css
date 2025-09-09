@@ -303,50 +303,52 @@
   .de-upload-v2-drop-content p {
     margin: 0;
   }
-   .de-upload-v2-file-info {
+  .de-upload-v2-file-info {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1rem; /* Espaçamento entre a grade e a lista de colunas */
     text-align: left;
-  }
-  .de-upload-v2-file-info .info-grid {
+    width: 100%;
+}
+
+.de-upload-v2-file-info .info-grid {
     display: grid;
+    /* Garante 3 colunas em telas maiores e quebra para menos colunas em telas menores */
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
-  }
-  .de-upload-v2-file-info .info-item {
+    gap: 1rem; /* Espaçamento entre os cartões de informação */
+}
+
+.de-upload-v2-file-info .info-item,
+.de-upload-v2-file-info .info-item-full {
     background-color: hsl(var(--muted));
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
     border: 1px solid hsl(var(--border));
-  }
-  .de-upload-v2-file-info .info-label {
-    display: block;
+    display: flex; /* Garante alinhamento interno */
+    flex-direction: column; /* Coloca o label em cima do valor */
+    gap: 0.25rem; /* Pequeno espaço entre label e valor */
+}
+
+.de-upload-v2-file-info .info-label {
     font-weight: 500;
     color: hsl(var(--muted-foreground));
     font-size: 0.75rem;
-    margin-bottom: 0.25rem;
-  }
-  .de-upload-v2-file-info .info-value {
+}
+
+.de-upload-v2-file-info .info-value {
     font-weight: 600;
     font-size: 1.25rem;
     color: hsl(var(--foreground));
-  }
-  .de-upload-v2-file-info .info-item-full {
-    background-color: hsl(var(--muted));
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid hsl(var(--border));
-  }
-  .de-upload-v2-column-tags-container {
-    overflow-x: auto;
-    white-space: nowrap;
-    padding-bottom: 0.5rem;
+}
+
+.de-upload-v2-column-tags-container {
     display: flex;
     gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-  .de-upload-v2-column-tag {
+    overflow-x: auto;
+    padding-bottom: 0.5rem; /* Espaço para a barra de rolagem não cortar as tags */
+}
+
+.de-upload-v2-column-tag {
     display: inline-block;
     background-color: hsl(var(--background));
     border: 1px solid hsl(var(--border));
@@ -354,7 +356,8 @@
     border-radius: 0.375rem;
     font-family: monospace;
     font-size: 0.8rem;
-  }
+    white-space: nowrap; /* Impede que o nome da coluna quebre a linha */
+}
 
   .de-upload-v2-footer {
     display: flex;

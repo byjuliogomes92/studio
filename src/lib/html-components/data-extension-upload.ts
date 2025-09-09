@@ -21,7 +21,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         bgColor: buttonBgColor = "var(--theme-color)",
         textColor: buttonTextColor = "#FFFFFF",
     } = buttonProps;
-
+    
     const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
         `<option value="${campaign.deKey}">${campaign.name}</option>`
     ).join('');

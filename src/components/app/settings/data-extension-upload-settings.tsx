@@ -154,7 +154,7 @@ function HelpDialog() {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={e => e.stopPropagation()}>
                     <HelpCircle className="h-4 w-4" />
                 </Button>
             </DialogTrigger>

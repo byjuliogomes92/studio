@@ -33,6 +33,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     ` : '';
     
     // Inline styles for direct application
+    const containerStyle = styles.containerBackgroundColor ? `background-color: ${styles.containerBackgroundColor};` : '';
+
     const dropZoneStyle = `
       background-color: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'};
       border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};
@@ -45,7 +47,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
     return `
-      <div id="${componentId}" class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}'>
+      <div id="${componentId}" class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}' style="${containerStyle}">
           <h4>${title}</h4>
           ${campaignSelectorHtml}
 

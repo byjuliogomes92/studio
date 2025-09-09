@@ -227,9 +227,9 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="campaigns">
-                <div className="flex items-center w-full justify-between pr-4">
+                <div className="flex items-center w-full">
                     <AccordionTrigger className="flex-1">
-                        <span>Campanhas</span>
+                        Campanhas
                     </AccordionTrigger>
                     <HelpDialog />
                 </div>
@@ -243,6 +243,12 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
             <AccordionItem value="style">
                 <AccordionTrigger>Estilo</AccordionTrigger>
                 <AccordionContent className="pt-4 space-y-4">
+                     <div className="space-y-2">
+                        <Label>Cores Gerais</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                           <ColorInput label="Fundo do Componente" value={styles.containerBackgroundColor || ''} onChange={value => handleStyleChange('containerBackgroundColor', value)} brand={pageState.brand} tooltip="Deixe em branco para transparente" />
+                        </div>
+                     </div>
                      <div className="space-y-2">
                         <Label>Cores da Área de Upload</Label>
                         <div className="grid grid-cols-2 gap-4">

@@ -84,7 +84,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           <div class="de-upload-v2-footer">
             <div id="feedback-container-${component.id}" class="de-upload-v2-feedback" style="display:none;">
                 <div id="progress-container-${component.id}" class="de-upload-v2-progress-container">
-                    <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar"></div>
+                    <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar" style="background-color: ${styles.progressBarColor || 'hsl(var(--primary-hsl))'};"></div>
                 </div>
                 <div id="status-message-${component.id}" class="de-upload-v2-status"></div>
             </div>
@@ -122,9 +122,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const allCampaigns = JSON.parse(container.dataset.campaigns || '[]');
           
           let selectedFile = null;
-
-          // Apply dynamic styles from props
-          if (progressBar) progressBar.style.backgroundColor = '${styles.progressBarColor || 'hsl(var(--primary-hsl))'}';
 
           function formatBytes(bytes, decimals = 2) {
             if (!bytes || bytes === 0) return '0 Bytes';

@@ -1,22 +1,25 @@
 
-
 import type { PageComponent, CloudPage, CampaignOption } from '@/lib/types';
 
 export function renderDataExtensionUpload(component: PageComponent, pageState: CloudPage): string {
     const { 
         title = "Upload para Data Extension",
         instructionText = "Arraste e solte o arquivo CSV aqui, ou clique para selecionar.",
-        buttonText = "Processar Arquivo",
         campaigns = [],
         styles = {},
-        animations = {}
+        animations = {},
+        buttonProps = {}
     } = component.props;
     
     const { brandId } = pageState;
     const componentId = `de-upload-v2-${component.id}`;
 
-    const iconUpload = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;
-    const iconFile = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
+    const {
+        text: buttonText = "Processar Arquivo",
+        bgColor: buttonBgColor = "var(--theme-color)",
+        textColor: buttonTextColor = "#FFFFFF",
+        icon: buttonIcon = "none",
+    } = buttonProps;
 
     const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
         `<option value="${campaign.deKey}">${campaign.name}</option>`
@@ -32,17 +35,27 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         </div>
     ` : '';
     
-    // Inline styles for direct application
-    const containerStyle = styles.containerBackgroundColor ? `background-color: ${styles.containerBackgroundColor};` : '';
+    const iconUpload = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;
+    const iconFile = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
 
-    const dropZoneStyle = `
-      background-color: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'};
-      border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};
-    `;
+    const lucideIconSvgs: Record<string, string> = {
+        none: '',
+        send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
+        'arrow-right': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+        'check-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
+        'plus': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+        'download': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
+        'star': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        'zap': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"/></svg>',
+    };
+    
+    const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
+    const buttonContent = `${iconHtml}<span>${buttonText}</span>`;
+    
+    const containerStyle = styles.containerBackgroundColor ? `background-color: ${styles.containerBackgroundColor};` : '';
+    const dropZoneStyle = `background-color: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'}; border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};`;
     const iconStyle = `color: ${styles.iconColor || '#6b7280'};`;
     const textStyle = `color: ${styles.textColor || '#6b7280'};`;
-    const progressBarStyle = `background-color: ${styles.progressBarColor || 'hsl(var(--primary-hsl))'};`;
-
     const iconAnimationClass = animations.loop && animations.loop !== 'none' ? `animation-loop--${animations.loop}` : '';
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
@@ -68,17 +81,19 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           </div>
           <input type="file" id="file-input-${component.id}" accept=".csv" style="display:none;" />
           
-          <div id="feedback-container-${component.id}" class="de-upload-v2-feedback" style="display:none;">
-              <div id="progress-container-${component.id}" class="de-upload-v2-progress-container">
-                  <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar" style="${progressBarStyle}"></div>
-              </div>
-              <div id="status-message-${component.id}" class="de-upload-v2-status"></div>
-          </div>
+          <div class="de-upload-v2-footer">
+            <div id="feedback-container-${component.id}" class="de-upload-v2-feedback" style="display:none;">
+                <div id="progress-container-${component.id}" class="de-upload-v2-progress-container">
+                    <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar"></div>
+                </div>
+                <div id="status-message-${component.id}" class="de-upload-v2-status"></div>
+            </div>
 
-          <button id="upload-btn-${component.id}" class="custom-button" disabled>
-             <span class="button-text">${buttonText}</span>
-             <div class="button-loader"></div>
-          </button>
+            <button id="upload-btn-${component.id}" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};" disabled>
+               <span class="button-text">${buttonContent}</span>
+               <div class="button-loader"></div>
+            </button>
+          </div>
       </div>
 
       <script>
@@ -107,6 +122,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const allCampaigns = JSON.parse(container.dataset.campaigns || '[]');
           
           let selectedFile = null;
+
+          // Apply dynamic styles from props
+          if (progressBar) progressBar.style.backgroundColor = '${styles.progressBarColor || 'hsl(var(--primary-hsl))'}';
 
           function formatBytes(bytes, decimals = 2) {
             if (!bytes || bytes === 0) return '0 Bytes';
@@ -169,7 +187,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               initialContent.style.display = 'block';
               selectedContent.style.display = 'none';
               uploadBtn.disabled = true;
-              submitBtnText.style.display = 'inline-block';
+              submitBtnText.style.display = 'flex';
               submitBtnLoader.style.display = 'none';
               hideStatus();
               setProgress(0);
@@ -287,7 +305,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                     showStatus('Erro: ' + err.message, 'error');
                 } finally {
                     uploadBtn.disabled = false;
-                    submitBtnText.style.display = 'inline-block';
+                    submitBtnText.style.display = 'flex';
                     submitBtnLoader.style.display = 'none';
                 }
               };
@@ -295,7 +313,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               reader.onerror = () => {
                  showStatus('Erro ao ler o arquivo.', 'error');
                  uploadBtn.disabled = false;
-                 submitBtnText.style.display = 'inline-block';
+                 submitBtnText.style.display = 'flex';
                  submitBtnLoader.style.display = 'none';
               };
           });

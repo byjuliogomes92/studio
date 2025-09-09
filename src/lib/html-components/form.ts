@@ -1,5 +1,4 @@
 
-
 import type { CloudPage, CustomFormField, CustomFormFieldType, PageComponent } from '@/lib/types';
 
 const renderField = (
@@ -89,7 +88,7 @@ const renderCityDropdown = (citiesString: string = '', conditionalLogic: any, pr
 };
 
 export function renderForm(component: PageComponent, pageState: CloudPage, isForPreview: boolean = false): string {
-    const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, formAlign, thankYouAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [], inputStyles = {}, buttonStyles = {} } = component.props;
+    const { fields = {}, placeholders = {}, consentText, buttonText, buttonAlign, formAlign, thankYouAlign, submission = {}, thankYouAnimation, buttonProps = {}, customFields = [], inputStyles = {} } = component.props;
     const { meta, brand } = pageState;
     const styleString = getStyleString(component.props.styles);
     
@@ -103,8 +102,7 @@ export function renderForm(component: PageComponent, pageState: CloudPage, isFor
 
     const finalButtonStyles = {
         borderRadius: brand?.components?.button?.borderRadius,
-        ...buttonProps,
-        ...buttonStyles
+        ...buttonProps
     };
     
     const animationUrls = {

@@ -186,6 +186,17 @@ function HelpDialog() {
     )
 }
 
+const lucideIcons = [
+    { value: 'none', label: 'Sem ícone' },
+    { value: 'send', label: 'Enviar' },
+    { value: 'arrow-right', label: 'Seta para a Direita' },
+    { value: 'check-circle', label: 'Círculo de Verificação' },
+    { value: 'plus', label: 'Mais' },
+    { value: 'download', label: 'Download' },
+    { value: 'star', label: 'Estrela' },
+    { value: 'zap', label: 'Raio' },
+];
+
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
@@ -197,6 +208,7 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
     const { props } = component;
     const styles = props.styles || {};
     const animations = props.animations || {};
+    const buttonProps = props.buttonProps || {};
 
     const handleStyleChange = (prop: string, value: string) => {
         onSubPropChange('styles', prop, value);
@@ -205,6 +217,10 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
     const handleAnimationChange = (prop: string, value: string) => {
         onSubPropChange('animations', prop, value);
     };
+
+    const handleButtonPropsChange = (prop: string, value: string) => {
+        onSubPropChange('buttonProps', prop, value);
+    }
 
     return (
         <TooltipProvider>
@@ -219,10 +235,6 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
                     <div className="space-y-2">
                         <Label htmlFor="de-upload-instruction">Texto de Instrução</Label>
                         <Input id="de-upload-instruction" value={props.instructionText || 'Arraste e solte o arquivo CSV aqui'} onChange={e => onPropChange('instructionText', e.target.value)} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="de-upload-button-text">Texto do Botão</Label>
-                        <Input id="de-upload-button-text" value={props.buttonText || "Processar Arquivo"} onChange={e => onPropChange('buttonText', e.target.value)} />
                     </div>
                 </AccordionContent>
             </AccordionItem>
@@ -272,6 +284,27 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
                             <ColorInput label="Sucesso" value={styles.successColor || ''} onChange={value => handleStyleChange('successColor', value)} brand={pageState.brand} />
                             <ColorInput label="Erro" value={styles.errorColor || ''} onChange={value => handleStyleChange('errorColor', value)} brand={pageState.brand} />
                         </div>
+                     </div>
+                     <Separator />
+                      <div className="space-y-4 pt-2">
+                        <h4 className="font-semibold">Estilo do Botão de Envio</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="de-button-text">Texto do Botão</Label>
+                            <Input id="de-button-text" value={buttonProps.text || "Processar Arquivo"} onChange={(e) => handleButtonPropsChange('text', e.target.value)} />
+                        </div>
+                         <div className="grid grid-cols-2 gap-4">
+                            <ColorInput label="Cor de Fundo" value={buttonProps.bgColor || ''} onChange={value => handleButtonPropsChange('bgColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Cor do Texto" value={buttonProps.textColor || ''} onChange={value => handleButtonPropsChange('textColor', value)} brand={pageState.brand} />
+                         </div>
+                         <div className="space-y-2">
+                            <Label>Ícone</Label>
+                            <Select value={buttonProps.icon || 'none'} onValueChange={(value) => handleButtonPropsChange('icon', value)}>
+                                <SelectTrigger><SelectValue placeholder="Sem ícone"/></SelectTrigger>
+                                <SelectContent>
+                                    {lucideIcons.map(icon => <SelectItem key={icon.value} value={icon.value}>{icon.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                         </div>
                      </div>
                 </AccordionContent>
             </AccordionItem>

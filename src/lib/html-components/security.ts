@@ -16,10 +16,10 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
         script = 'TRY SET @IsAuthenticated_Temp = Request.GetUserInfo() SET @isAuthenticated = true CATCH(e) SET @isAuthenticated = false ENDTRY';
     } else if (security.type === 'password' && security.passwordConfig) {
         const config = security.passwordConfig;
-        if (!config.dataExtensionKey || !config.identifierColumn || !config.passwordColumn || !config.urlParameter) {
+        if (!config.dataExtensionKey || !config.identifierColumn || !config.passwordColumn) {
             return 'SET @isAuthenticated = true /* Invalid Password Config */'; // Fail open if config is bad
         }
-        script = `VAR @submittedPassword, @identifier, @correctPassword SET @isAuthenticated = false SET @submittedPassword = RequestParameter("page_password") SET @identifier = RequestParameter("${config.urlParameter}") IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier) IF @submittedPassword == @correctPassword THEN SET @isAuthenticated = true ENDIF ENDIF`;
+        script = `VAR @submittedPassword, @identifier, @correctPassword SET @isAuthenticated = false SET @submittedPassword = RequestParameter("page_password") SET @identifier = RequestParameter("page_identifier") IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier) IF @submittedPassword == @correctPassword THEN SET @isAuthenticated = true ENDIF ENDIF`;
     } else {
         // Fallback for misconfigured security
         script += 'SET @isAuthenticated = true';
@@ -43,13 +43,15 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
 <div class="password-protection-container">
     <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
         <h2>Acesso Restrito</h2>
-        <p>Por favor, insira a senha para continuar.</p>
+        <p>Por favor, insira suas credenciais para continuar.</p>
+        <input type="text" name="page_identifier" placeholder="Seu Identificador" required>
         <input type="password" name="page_password" placeholder="Sua senha" required>
         <button type="submit">Acessar</button>
-        %%[ IF RequestParameter("page_password") != "" THEN ]%%
-            <p class="error-message">Senha incorreta. Tente novamente.</p>
+        %%[ IF RequestParameter("page_password") != "" OR RequestParameter("page_identifier") != "" THEN ]%%
+            <p class="error-message">Credenciais incorretas. Tente novamente.</p>
         %%[ ENDIF ]%%
     </form>
 </div>
 `;
 }
+

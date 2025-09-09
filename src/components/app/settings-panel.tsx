@@ -1106,10 +1106,6 @@ export function SettingsPanel({
                                             <Input id="sec-passcol" value={pageState.meta.security.passwordConfig?.passwordColumn || 'Password'} onChange={e => handlePasswordConfigChange('passwordColumn', e.target.value)} />
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="sec-urlparam" className="text-xs">Parâmetro na URL (Identificador)</Label>
-                                        <Input id="sec-urlparam" value={pageState.meta.security.passwordConfig?.urlParameter || 'id'} onChange={e => handlePasswordConfigChange('urlParameter', e.target.value)} />
-                                    </div>
                                 </div>
                             )}
 

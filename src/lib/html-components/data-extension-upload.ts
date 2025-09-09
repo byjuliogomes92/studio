@@ -8,11 +8,12 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         instructionText = "Arraste e solte o arquivo CSV aqui, ou clique para selecionar.",
         buttonText = "Processar Arquivo",
         campaigns = [],
-        styles = {}
+        styles = {},
+        animations = {}
     } = component.props;
     
     const { brandId } = pageState;
-    const componentId = `de-upload-${component.id}`;
+    const componentId = `de-upload-v2-${component.id}`;
 
     const iconUpload = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;
     const iconFile = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
@@ -31,16 +32,23 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         </div>
     ` : '';
     
-    const dropZoneStyle = `
-      background-color: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'};
-      border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};
+    const styleVariables = `
+      --de-upload-drop-zone-bg: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'};
+      --de-upload-drop-zone-border: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};
+      --de-upload-drop-zone-bg-hover: ${styles.dropZoneBgHover || 'hsla(var(--primary-hsl), 0.15)'};
+      --de-upload-drop-zone-border-hover: ${styles.dropZoneBorderHover || 'hsl(var(--primary-hsl))'};
+      --de-upload-icon-color: ${styles.iconColor || '#6b7280'};
+      --de-upload-text-color: ${styles.textColor || '#6b7280'};
+      --de-upload-progress-bar-color: ${styles.progressBarColor || 'hsl(var(--primary-hsl))'};
+      --de-upload-success-color: ${styles.successColor || '#16a34a'};
+      --de-upload-error-color: ${styles.errorColor || '#dc2626'};
     `;
-    const iconStyle = `color: ${styles.iconColor || '#6b7280'};`;
-    const textStyle = `color: ${styles.textColor || '#6b7280'};`;
 
+    const iconAnimationClass = animations.loop && animations.loop !== 'none' ? `animation-loop--${animations.loop}` : '';
+    const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
     return `
-      <div class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}'>
+      <div id="${componentId}" class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}' style="${styleVariables}">
           <h4>${title}</h4>
           ${campaignSelectorHtml}
 
@@ -49,13 +57,13 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             <div id="de-info-table-wrapper-${component.id}" class="de-info-table-wrapper"></div>
           </div>
           
-          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="${dropZoneStyle}">
+          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone">
               <div class="de-upload-v2-drop-content initial">
-                  <div class="de-upload-v2-icon" style="${iconStyle}">${iconUpload}</div>
-                  <p style="${textStyle}">${instructionText}</p>
+                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}">${iconUpload}</div>
+                  <p>${instructionText}</p>
               </div>
               <div class="de-upload-v2-drop-content selected" style="display:none;">
-                  <div class="de-upload-v2-icon" style="${iconStyle}">${iconFile}</div>
+                  <div class="de-upload-v2-icon">${iconFile}</div>
                   <p><strong id="filename-display-${component.id}"></strong><br><span id="filesize-display-${component.id}"></span></p>
               </div>
           </div>
@@ -63,7 +71,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           
           <div id="feedback-container-${component.id}" class="de-upload-v2-feedback" style="display:none;">
               <div id="progress-container-${component.id}" class="de-upload-v2-progress-container">
-                  <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar" style="background-color: ${styles.progressBarColor || 'hsl(var(--primary-hsl))'};"></div>
+                  <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar"></div>
               </div>
               <div id="status-message-${component.id}" class="de-upload-v2-status"></div>
           </div>
@@ -74,18 +82,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           </button>
       </div>
 
-      <style>
-        #drop-zone-${component.id}:hover {
-            background-color: ${styles.dropZoneBgHover || 'hsla(var(--primary-hsl), 0.15)'};
-            border-color: ${styles.dropZoneBorderHover || 'hsl(var(--primary-hsl))'};
-        }
-        #status-message-${component.id}.success { color: ${styles.successColor || '#16a34a'}; }
-        #status-message-${component.id}.error { color: ${styles.errorColor || '#dc2626'}; }
-      </style>
-
       <script>
       (function() {
-          const container = document.querySelector('#de-upload-${component.id}');
+          const container = document.querySelector('#${componentId}');
           if (!container || container.dataset.initialized) return; 
           container.dataset.initialized = 'true';
 

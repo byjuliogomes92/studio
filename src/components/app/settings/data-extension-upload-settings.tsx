@@ -158,9 +158,14 @@ interface ComponentSettingsProps {
 export function DataExtensionUploadSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
     const styles = props.styles || {};
+    const animations = props.animations || {};
 
     const handleStyleChange = (prop: string, value: string) => {
         onSubPropChange('styles', prop, value);
+    };
+
+    const handleAnimationChange = (prop: string, value: string) => {
+        onSubPropChange('animations', prop, value);
     };
 
     return (
@@ -218,6 +223,34 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
                             <ColorInput label="Erro" value={styles.errorColor} onChange={value => handleStyleChange('errorColor', value)} brand={pageState.brand} />
                         </div>
                      </div>
+                </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="animation">
+                <AccordionTrigger>Animação do Ícone</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="icon-loop-anim">Animação em Loop</Label>
+                        <Select value={animations.loop || 'none'} onValueChange={v => handleAnimationChange('loop', v)}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Nenhuma</SelectItem>
+                                <SelectItem value="pulse">Pulsar</SelectItem>
+                                <SelectItem value="bounce">Pular</SelectItem>
+                                <SelectItem value="floating">Flutuar</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="icon-hover-anim">Animação no Hover</Label>
+                        <Select value={animations.hover || 'none'} onValueChange={v => handleAnimationChange('hover', v)}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Nenhuma</SelectItem>
+                                <SelectItem value="shake">Tremer</SelectItem>
+                                <SelectItem value="scale-up">Aumentar</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </AccordionContent>
             </AccordionItem>
         </Accordion>

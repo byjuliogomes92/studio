@@ -476,7 +476,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     const headerComponent = pageState.components.find(c => c.type === 'Header');
 
     // Add Firebase SDK if needed for components like DataExtensionUpload
-    const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload');
+    const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload');
     const firebaseSdkScript = needsFirebase ? '<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>' : '';
 
 
@@ -1072,7 +1072,7 @@ const getResponsiveStyles = (components: PageComponent[]): string => {
             }
         }
         @media (max-width: 768px) {
-            .columns-container {
+            .columns-container, .div-container .columns-container {
                 grid-template-columns: 1fr !important;
             }
             .footer-section .columns-container {
@@ -1103,15 +1103,17 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const hasForm = components.some(c => c.type === 'Form');
     const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
     const hasDataBinding = components.some(c => !!c.props.dataBinding);
-    const needsSecurity = meta.security && (meta.security.type === 'sso' || meta.security.type === 'password');
+    const needsSecurity = meta.security && ['sso', 'password'].includes(meta.security.type);
     const hasCustomAmpscript = !!meta.customAmpscript;
     const needsPrefill = components.some(c => c.type === 'Form' && Object.values(c.props.fields || {}).some((field: any) => field.prefillFromUrl));
 
     const needsAmpscript = !isForPreview && !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || needsPrefill);
-
+    
+    // Generate content first
     const rootComponents = components.filter(c => c.parentId === null);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
 
+    // Style generation
     const { typography } = pageState.brand || {};
     const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
     const fontFamilyBody = typography?.customFontNameBody || typography?.fontFamilyBody || 'Roboto';
@@ -1144,25 +1146,23 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
     let initialAmpscript = '';
     let ssjsScript = '';
-    let bodyContent = '';
+    let bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
 
     if (needsAmpscript) {
-        const securityAmpscript = getAmpscriptSecurityBlock(pageState);
-        const prefillAmpscript = getPrefillAmpscript(pageState);
-        const customAmpscript = meta.customAmpscript || '';
+        const securityBlock = getAmpscriptSecurityBlock(pageState);
+        const prefillBlock = getPrefillAmpscript(pageState);
+        const customBlock = meta.customAmpscript || '';
         
-        const allAmpscriptLogic = [
-            'VAR @showThanks,@isAuthenticated,@LoginURL',
-            'SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))',
-            'IF EMPTY(RequestParameter("__isPost")) THEN',
-            'SET @showThanks="false"',
-            'ENDIF',
-            securityAmpscript,
-            prefillAmpscript,
-            customAmpscript
-        ].filter(Boolean).join(' ').replace(/\s+/g, ' ');
+        const ampscriptLogic = [
+            'VAR @showThanks,@isAuthenticated', 
+            'SET @showThanks = "false"',
+            'IF RequestParameter("form-submitted") == "true" THEN SET @showThanks = "true" ENDIF',
+            securityBlock,
+            prefillBlock,
+            customBlock.replace(/%%\[|\]%%/g, '') // remove delimiters if user adds them
+        ].filter(Boolean).join(' ');
 
-        initialAmpscript = `%%[${allAmpscriptLogic}]%%`;
+        initialAmpscript = `%%[${ampscriptLogic}]%%`;
 
         if (hasForm) {
             ssjsScript = `<script runat="server">${getFormSubmissionScript(pageState)}</script>`;
@@ -1176,10 +1176,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
             ${getSecurityFormHtml(pageState)}
             %%[ENDIF]%%`;
         } else {
-            bodyContent = `${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>`;
+            bodyContent = `${ssjsScript}${bodyContent}`;
         }
-    } else {
-        bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
     
     const firebaseConfigScript = isForPreview && hasDataExtensionUpload 
@@ -1197,7 +1195,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
              }
            </script>`
         : '';
-
 
     const html = `<!DOCTYPE html>
 <html>
@@ -2524,6 +2521,7 @@ ${trackingScripts.head}
     .cookie-category p { font-size: 0.9em; color: #666; margin-top: 0.25rem; }
     .cookie-category input[type="checkbox"] { transform: scale(1.2); }
     ${styles.customCss || ''}
+    ${responsiveStyles}
 </style>
 </head>
 <body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
@@ -2538,4 +2536,3 @@ ${firebaseConfigScript}
 
     return html;
 }
-

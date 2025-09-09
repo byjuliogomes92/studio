@@ -122,7 +122,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   setProgress(0);
               } else {
                   resetState();
-                  showStatus('Por favor, selecione um arquivo .csv válido.', 'error');
+                  showStatus('Por favor, selecione um arquivo .csv valido.', 'error');
               }
           }
 
@@ -165,24 +165,26 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               handleFileSelect(e.dataTransfer.files[0]);
           });
           
-          async function processFile(file, deKey, brandId) {
-            // In a real scenario, this would be a fetch to a Firebase Function
-            // For the prototype, we simulate the process
-            return new Promise((resolve, reject) => {
-              showStatus('Arquivo recebido. Processando no servidor...', 'info');
-              setProgress(75);
-              
-              setTimeout(() => {
-                  // Simulate success or error
-                  if (Math.random() > 0.1) { // 90% success rate
-                      const randomRows = Math.floor(Math.random() * 10000) + 500;
-                      resolve({ success: true, message: `Sucesso! ${randomRows} registros foram adicionados à Data Extension.` });
-                  } else {
-                      reject(new Error('Falha simulada no processamento do servidor.'));
-                  }
-              }, 4000); // Simulate network and processing delay
-            });
+          async function processFileWithFirebase(deKey, brandId) {
+            // This would be replaced with actual file path from Storage after upload
+            const dummyFilePath = 'simulated/path/to/' + selectedFile.name; 
+            const restBaseUrl = 'https://mc-example.rest.marketingcloudapis.com/'; // This should come from brand settings
+            
+            // This assumes a Firebase Function is set up to be called
+            // For now, we simulate the function directly.
+            // In a real app, this would be: 
+            // const functions = firebase.functions();
+            // const processCsv = functions.httpsCallable('processCsvToSfmc');
+            // return processCsv({ filePath: dummyFilePath, deKey, restBaseUrl, brandId });
+
+             showStatus('Arquivo recebido. Processando no servidor...', 'info');
+             setProgress(75);
+             return new Promise(resolve => setTimeout(() => {
+                  const randomRows = Math.floor(Math.random() * 10000) + 500;
+                  resolve({ data: { success: true, message: 'Sucesso! ' + randomRows + ' registros foram adicionados a Data Extension.' } });
+             }, 4000));
           }
+
 
           uploadBtn.addEventListener('click', async () => {
               if (!selectedFile) return;
@@ -200,8 +202,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               setProgress(50); // Simulate instant "upload"
 
               try {
-                  const result = await processFile(selectedFile, selectedDeKey, '${brandId}');
-                  showStatus(result.message, 'success');
+                  const result = await processFileWithFirebase(selectedDeKey, '${brandId}');
+                  showStatus(result.data.message, 'success');
                   setProgress(100);
                   resetState();
               } catch (err) {

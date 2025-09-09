@@ -266,31 +266,29 @@
     margin-left: 0.5rem;
   }
   .de-upload-v2-drop-zone {
-    border: 2px dashed;
+    border-width: 2px;
+    border-style: dashed;
     border-radius: 0.5rem;
     padding: 2rem;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
     text-align: center;
-    background-color: var(--de-upload-drop-zone-bg);
-    border-color: var(--de-upload-drop-zone-border);
   }
 
+  .de-upload-v2-drop-zone.highlight,
   .de-upload-v2-drop-zone:hover {
-     background-color: var(--de-upload-drop-zone-bg-hover);
-     border-color: var(--de-upload-drop-zone-border-hover);
+     background-color: hsla(var(--primary-hsl), 0.15) !important;
+     border-color: hsl(var(--primary-hsl)) !important;
   }
 
   .de-upload-v2-drop-zone:hover .animation-hover--shake { animation: shake 0.5s; }
   .de-upload-v2-drop-zone:hover .animation-hover--scale-up { transform: scale(1.1); }
 
   .de-upload-v2-icon {
-    color: var(--de-upload-icon-color);
     margin: 0 auto 0.75rem auto;
     transition: transform 0.2s ease-in-out;
   }
   .de-upload-v2-drop-content p {
-    color: var(--de-upload-text-color);
     margin: 0;
   }
    .de-upload-v2-drop-content.selected p strong {
@@ -307,13 +305,14 @@
     margin-bottom: 0.5rem;
   }
   .de-upload-v2-progress-bar {
-    background-color: var(--de-upload-progress-bar-color);
     height: 100%;
     width: 0%;
     transition: width 0.3s ease;
   }
-  .de-upload-v2-status.success { color: var(--de-upload-success-color); }
-  .de-upload-v2-status.error { color: var(--de-upload-error-color); }
+  .de-upload-v2-status {
+      font-size: 0.875rem;
+      min-height: 1.25rem;
+  }
 
   .de-upload-v2-container .custom-button {
     width: 100%;

@@ -28,6 +28,10 @@ interface AmpscriptSnippetDialogProps {
 export function AmpscriptSnippetDialog({ isOpen, onOpenChange, pageState, onDataExtensionKeyChange }: AmpscriptSnippetDialogProps) {
     const [selectedSnippet, setSelectedSnippet] = useState<Snippet | null>(null);
     const [config, setConfig] = useState<Record<string, string>>({});
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cloudpagestudio.vercel.app';
+    const pageUrl = `${baseUrl}/api/pages/${pageState.slug || pageState.id}`;
+    const snippet = `%%=TreatAsContent(HTTPGet(Concat("${pageUrl}")))%%`;
+
 
      useEffect(() => {
         if (!selectedSnippet) {
@@ -91,7 +95,7 @@ export function AmpscriptSnippetDialog({ isOpen, onOpenChange, pageState, onData
                         </p>
                         <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto">
                             <code>
-                                {`%%=TreatAsContent(HTTPGet(Concat("${typeof window !== 'undefined' ? window.location.origin : ''}/api/pages/${pageState.slug}")))%%`}
+                                {snippet}
                             </code>
                         </pre>
                     </div>

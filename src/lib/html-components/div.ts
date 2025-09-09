@@ -1,6 +1,8 @@
 
 
 import type { PageComponent } from '@/lib/types';
+import { generateGradientCss } from '../utils';
+
 
 function hexToRgba(hex: string, alpha: number): string {
     if (!hex || !/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
@@ -29,8 +31,7 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
         backgroundType = 'solid',
         backgroundImageUrl,
         backgroundColor,
-        gradientFrom,
-        gradientTo,
+        gradient,
         overlayEnabled,
         overlayColor,
         overlayOpacity,
@@ -51,7 +52,7 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
     let heroClass = '';
     
     if (backgroundType === 'gradient') {
-        backgroundStyle = `background-image: linear-gradient(to right, ${gradientFrom || '#000000'}, ${gradientTo || '#434343'});`;
+        backgroundStyle = `background-image: ${generateGradientCss(gradient)};`;
     } else if (backgroundType === 'image' && backgroundImageUrl) {
         backgroundStyle = `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center;`;
         heroClass = 'hero-section';
@@ -91,7 +92,7 @@ export function renderDiv(component: PageComponent, childrenHtml: string): strin
 function getStyleString(styles: any = {}): string {
     const forbiddenKeys = [
         'isFullWidth', 'backgroundType', 'backgroundImageUrl', 
-        'backgroundColor', 'gradientFrom', 'gradientTo', 
+        'backgroundColor', 'gradient', 
         'overlayEnabled', 'overlayColor', 'overlayOpacity',
     ];
     return Object.entries(styles)

@@ -1,5 +1,7 @@
 
 import type { PageComponent } from '@/lib/types';
+import { generateGradientCss } from '../utils';
+
 
 export function renderTitle(component: PageComponent, isForPreview: boolean, hideAmpscript: boolean = false): string {
     const { props } = component;
@@ -18,8 +20,8 @@ export function renderTitle(component: PageComponent, isForPreview: boolean, hid
     }
     
     // Apply gradient if defined
-    if (styles.gradient && styles.gradient.from && styles.gradient.to) {
-        finalStyles.background = `linear-gradient(to right, ${styles.gradient.from}, ${styles.gradient.to})`;
+    if (styles.gradient && styles.gradient.colors && styles.gradient.colors.length >= 2) {
+        finalStyles.background = generateGradientCss(styles.gradient);
         finalStyles['-webkit-background-clip'] = 'text';
         finalStyles['-webkit-text-fill-color'] = 'transparent';
         delete finalStyles.gradient;

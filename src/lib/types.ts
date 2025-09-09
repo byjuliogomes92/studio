@@ -117,6 +117,16 @@ export interface ColorScheme {
   primaryForeground: string;
 }
 
+export interface GradientColor {
+  color: string;
+  position: number;
+}
+export interface Gradient {
+  type: 'linear' | 'radial';
+  angle?: number;
+  colors: GradientColor[];
+}
+
 export interface Brand {
   id: string;
   workspaceId: string;

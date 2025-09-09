@@ -1,5 +1,8 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { Gradient } from './types';
+
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -47,4 +50,21 @@ function fallbackCopyToClipboard(text: string, resolve: () => void, reject: (rea
   }
 
   document.body.removeChild(textArea);
+}
+
+export function generateGradientCss(gradient?: Gradient): string {
+    if (!gradient || !gradient.colors || gradient.colors.length < 2) {
+        return 'none';
+    }
+
+    const sortedColors = [...gradient.colors].sort((a, b) => a.position - b.position);
+    const colorStops = sortedColors.map(c => `${c.color} ${c.position}%`).join(', ');
+
+    if (gradient.type === 'radial') {
+        return `radial-gradient(circle, ${colorStops})`;
+    }
+
+    // Default to linear
+    const angle = gradient.angle !== undefined ? `${gradient.angle}deg` : '90deg';
+    return `linear-gradient(${angle}, ${colorStops})`;
 }

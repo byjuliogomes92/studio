@@ -12,27 +12,15 @@ import { Copy, ClipboardPaste } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { ColorInput } from "./color-input";
+import { ImageInput } from "./image-input";
+import { GradientEditor } from "./gradient-editor";
+
 
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
   onSubPropChange: (prop: string, subProp: string, value: any) => void;
   pageState: CloudPage;
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-    if (!hex || !/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
-        return `rgba(0,0,0,${alpha})`; // fallback
-    }
-    let c = hex.substring(1).split('');
-    if (c.length === 3) {
-        c = [c[0], c[0], c[1], c[1], c[2], c[2]];
-    }
-    const i = parseInt(c.join(''), 16);
-    const r = (i >> 16) & 255;
-    const g = (i >> 8) & 255;
-    const b = i & 255;
-    return `rgba(${r},${g},${b},${alpha})`;
 }
 
 export function ColumnsSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
@@ -141,7 +129,13 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange, page
                         </div>
                         {styles.backgroundType === 'image' && (
                            <>
-                           {/* Image Input component here */}
+                            <ImageInput 
+                                label="URL da Imagem de Fundo"
+                                value={styles.backgroundImageUrl || ''}
+                                onPropChange={handleStyleChange}
+                                propName="backgroundImageUrl"
+                                tooltipText="URL para a imagem de fundo da seção."
+                            />
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="div-overlay-enabled">Habilitar Sobreposição</Label>
                                 <Switch
@@ -164,14 +158,10 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange, page
                            </>
                         )}
                         {styles.backgroundType === 'gradient' && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <ColorInput label="Cor Inicial" value={styles.gradientFrom || '#000000'} onChange={value => handleStyleChange('gradientFrom', value)} brand={pageState.brand} />
-                                </div>
-                                <div className="space-y-2">
-                                    <ColorInput label="Cor Final" value={styles.gradientTo || '#434343'} onChange={value => handleStyleChange('gradientTo', value)} brand={pageState.brand} />
-                                </div>
-                            </div>
+                           <GradientEditor
+                                value={styles.gradient}
+                                onChange={value => handleStyleChange('gradient', value)}
+                           />
                         )}
                          {(styles.backgroundType === 'solid' || !styles.backgroundType) && (
                             <div className="space-y-2">

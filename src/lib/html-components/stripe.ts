@@ -1,5 +1,7 @@
 
 import type { PageComponent } from '@/lib/types';
+import { generateGradientCss } from '../utils';
+
 
 export function renderStripe(component: PageComponent): string {
     const { 
@@ -9,8 +11,7 @@ export function renderStripe(component: PageComponent): string {
         textColor, 
         linkUrl,
         backgroundType = 'solid',
-        gradientFrom,
-        gradientTo,
+        gradient,
         backgroundImageUrl,
         icon,
         buttonEnabled,
@@ -27,7 +28,7 @@ export function renderStripe(component: PageComponent): string {
     
     let backgroundStyle = `background-color: ${backgroundColor || '#000000'};`;
     if (backgroundType === 'gradient') {
-        backgroundStyle = `background: linear-gradient(to right, ${gradientFrom || '#000000'}, ${gradientTo || '#434343'});`;
+        backgroundStyle = `background: ${generateGradientCss(gradient)};`;
     } else if (backgroundType === 'image' && backgroundImageUrl) {
         backgroundStyle = `background-image: url('${backgroundImageUrl}'); background-size: cover; background-position: center;`;
     }

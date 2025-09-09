@@ -1,5 +1,6 @@
 
 import type { PageComponent } from '@/lib/types';
+import { generateGradientCss } from '../utils';
 
 function hexToRgba(hex: string, alpha: number): string {
     if (!hex || !/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
@@ -27,8 +28,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
         backgroundType, 
         backgroundImageUrl, 
         backgroundColor, 
-        gradientFrom, 
-        gradientTo, 
+        gradient,
         overlayEnabled,
         overlayColor,
         overlayOpacity,
@@ -44,7 +44,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
 
     switch(backgroundType) {
         case 'gradient':
-            backgroundStyle = `background-image: linear-gradient(to right, ${gradientFrom || '#000000'}, ${gradientTo || '#434343'});`;
+            backgroundStyle = `background-image: ${generateGradientCss(gradient)};`;
             break;
         case 'image':
              if (backgroundImageUrl) {
@@ -110,7 +110,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
 function getStyleString(styles: any = {}): string {
     const forbiddenKeys = [
         'isFullWidth', 'backgroundType', 'backgroundImageUrl', 
-        'backgroundColor', 'gradientFrom', 'gradientTo', 
+        'backgroundColor', 'gradient', 
         'overlayEnabled', 'overlayColor', 'overlayOpacity',
         'alignItems', 'reverseOnMobile'
     ];

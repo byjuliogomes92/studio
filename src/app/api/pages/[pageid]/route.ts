@@ -26,7 +26,8 @@ export async function GET(
 
     if (!pageData || !pageData.projectId || !pageData.workspaceId || pageData.status !== 'published') {
       // If the page doesn't exist, is missing crucial data, or is not published, it's a 404
-      return new NextResponse('Page not found', { status: 404 });
+      // BUT we return a 200 with a user-friendly message for SFMC.
+      return new NextResponse('<!DOCTYPE html><html><head><title>Página não encontrada</title></head><body style="font-family: sans-serif; text-align: center; padding: 40px;"><h1>Página não encontrada</h1><p>A página que você está tentando acessar não existe ou não está mais disponível.</p></body></html>', { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
     const now = new Date();
@@ -36,12 +37,12 @@ export async function GET(
 
     // Check if the current time is before the publish date
     if (publishDate && now < publishDate) {
-      return new NextResponse('Esta página ainda não está disponível.', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      return new NextResponse('<!DOCTYPE html><html><head><title>Página indisponível</title></head><body style="font-family: sans-serif; text-align: center; padding: 40px;"><h1>Página indisponível</h1><p>Esta página ainda não está disponível. Tente novamente mais tarde.</p></body></html>', { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
     // Check if the current time is after the expiry date
     if (expiryDate && now > expiryDate) {
-        return new NextResponse('Esta página expirou.', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        return new NextResponse('<!DOCTYPE html><html><head><title>Página expirada</title></head><body style="font-family: sans-serif; text-align: center; padding: 40px;"><h1>Página Expirada</h1><p>O conteúdo que você está tentando acessar não está mais disponível.</p></body></html>', { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
     // Asynchronously log the page view with extracted headers.
@@ -68,6 +69,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error(`[API Route /api/pages/${pageid}] Internal Server Error:`, error.message, error.stack);
-    return new NextResponse(`Internal Server Error: ${error.message}`, { status: 500 });
+    const errorHtml = `<!DOCTYPE html><html><head><title>Erro no Servidor</title></head><body style="font-family: sans-serif; text-align: center; padding: 40px;"><h1>Erro Interno</h1><p>Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.</p><!-- ${error.message} --></body></html>`;
+    return new NextResponse(errorHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 }

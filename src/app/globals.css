@@ -36,6 +36,10 @@
     --primary-gradient-start: #FFC06F;
     --primary-gradient-mid: #FE631C;
     --primary-gradient-end: #FFC06F;
+
+    /* For converting theme colors to HSL vars for use in hsla() */
+    --primary-hsl: 25 98% 64%;
+    --border-hsl: 45 20% 80%;
   }
  
   .dark {
@@ -69,6 +73,10 @@
     --border: 201 30% 25%;
     --input: 201 30% 25%;
     --ring: 25 98% 64%;
+
+    /* For converting theme colors to HSL vars for use in hsla() */
+    --primary-hsl: 25 98% 64%;
+    --border-hsl: 201 30% 25%;
   }
 }
 
@@ -258,24 +266,25 @@
     margin-left: 0.5rem;
   }
   .de-upload-v2-drop-zone {
-    border: 2px dashed hsl(var(--border));
+    border: 2px dashed var(--de-upload-drop-zone-border, hsl(var(--border-hsl)));
     border-radius: 0.5rem;
     padding: 2rem;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
-    background-color: hsla(var(--primary), 0.05);
+    background-color: var(--de-upload-drop-zone-bg, hsla(var(--primary-hsl), 0.05));
     text-align: center;
   }
+  .de-upload-v2-drop-zone:hover,
   .de-upload-v2-drop-zone.highlight {
-    background-color: hsla(var(--primary), 0.15);
-    border-color: hsl(var(--primary));
+    background-color: var(--de-upload-drop-zone-bg-hover, hsla(var(--primary-hsl), 0.15));
+    border-color: var(--de-upload-drop-zone-border-hover, hsl(var(--primary-hsl)));
   }
   .de-upload-v2-drop-content .de-upload-v2-icon {
-    color: #6b7280;
+    color: var(--de-upload-icon-color, #6b7280);
     margin: 0 auto 0.75rem auto;
   }
   .de-upload-v2-drop-content p {
-    color: #6b7280;
+    color: var(--de-upload-text-color, #6b7280);
     margin: 0;
   }
    .de-upload-v2-drop-content.selected p strong {
@@ -292,7 +301,7 @@
     margin-bottom: 0.5rem;
   }
   .de-upload-v2-progress-bar {
-    background-color: hsl(var(--primary));
+    background-color: var(--de-upload-progress-bar-color, hsl(var(--primary-hsl)));
     height: 100%;
     width: 0%;
     transition: width 0.3s ease;
@@ -301,9 +310,9 @@
     font-size: 0.875rem;
     min-height: 1.25rem;
   }
-  .de-upload-v2-status.info { color: hsl(var(--primary)); }
-  .de-upload-v2-status.success { color: #16a34a; }
-  .de-upload-v2-status.error { color: #dc2626; }
+  .de-upload-v2-status.info { color: var(--de-upload-progress-bar-color, hsl(var(--primary-hsl))); }
+  .de-upload-v2-status.success { color: var(--de-upload-success-color, #16a34a); }
+  .de-upload-v2-status.error { color: var(--de-upload-error-color, #dc2626); }
 
   .de-upload-v2-container .custom-button {
     width: 100%;

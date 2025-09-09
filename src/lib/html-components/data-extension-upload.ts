@@ -8,6 +8,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         instructionText = "Arraste e solte o arquivo CSV aqui, ou clique para selecionar.",
         buttonText = "Processar Arquivo",
         campaigns = [],
+        styles = {}
     } = component.props;
     
     const { brandId } = pageState;
@@ -29,9 +30,21 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             </select>
         </div>
     ` : '';
+    
+    const styleVariables = `
+      --de-upload-drop-zone-bg: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'};
+      --de-upload-drop-zone-border: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};
+      --de-upload-drop-zone-bg-hover: ${styles.dropZoneBgHover || 'hsla(var(--primary-hsl), 0.15)'};
+      --de-upload-drop-zone-border-hover: ${styles.dropZoneBorderHover || 'hsl(var(--primary-hsl))'};
+      --de-upload-icon-color: ${styles.iconColor || '#6b7280'};
+      --de-upload-text-color: ${styles.textColor || '#6b7280'};
+      --de-upload-progress-bar-color: ${styles.progressBarColor || 'hsl(var(--primary-hsl))'};
+      --de-upload-success-color: ${styles.successColor || '#16a34a'};
+      --de-upload-error-color: ${styles.errorColor || '#dc2626'};
+    `;
 
     return `
-      <div class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}'>
+      <div class="de-upload-v2-container" style="${styleVariables}" data-campaigns='${JSON.stringify(campaigns)}'>
           <h4>${title}</h4>
           ${campaignSelectorHtml}
 

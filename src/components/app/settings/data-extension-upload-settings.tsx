@@ -1,6 +1,5 @@
 
-
-import type { PageComponent, DataExtensionColumn, CampaignOption } from "@/lib/types";
+import type { PageComponent, DataExtensionColumn, CampaignOption, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -9,6 +8,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { ColorInput } from './color-input';
+
 
 function ColumnManager({
     columns = [],
@@ -150,29 +151,75 @@ function CampaignManager({
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
+  onSubPropChange: (prop: string, subProp: string, value: any) => void;
+  pageState: CloudPage;
 }
 
-export function DataExtensionUploadSettings({ component, onPropChange }: ComponentSettingsProps) {
+export function DataExtensionUploadSettings({ component, onPropChange, onSubPropChange, pageState }: ComponentSettingsProps) {
     const { props } = component;
+    const styles = props.styles || {};
+
+    const handleStyleChange = (prop: string, value: string) => {
+        onSubPropChange('styles', prop, value);
+    };
+
     return (
-        <div className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="de-upload-title">Título do Bloco</Label>
-                <Input id="de-upload-title" value={props.title || 'Upload para Data Extension'} onChange={e => onPropChange('title', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="de-upload-instruction">Texto de Instrução</Label>
-                <Input id="de-upload-instruction" value={props.instructionText || 'Arraste e solte o arquivo CSV aqui'} onChange={e => onPropChange('instructionText', e.target.value)} />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="de-upload-button-text">Texto do Botão</Label>
-                <Input id="de-upload-button-text" value={props.buttonText || "Processar Arquivo"} onChange={e => onPropChange('buttonText', e.target.value)} />
-            </div>
-            <Separator />
-            <div className="p-3 border rounded-md bg-background">
-                <h4 className="font-semibold text-sm mb-2">Campanhas e Data Extensions de Destino</h4>
-                <CampaignManager campaigns={props.campaigns} onPropChange={onPropChange} />
-            </div>
-        </div>
+        <Accordion type="multiple" defaultValue={['general']} className="w-full">
+            <AccordionItem value="general">
+                <AccordionTrigger>Geral</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="de-upload-title">Título do Bloco</Label>
+                        <Input id="de-upload-title" value={props.title || 'Upload para Data Extension'} onChange={e => onPropChange('title', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="de-upload-instruction">Texto de Instrução</Label>
+                        <Input id="de-upload-instruction" value={props.instructionText || 'Arraste e solte o arquivo CSV aqui'} onChange={e => onPropChange('instructionText', e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="de-upload-button-text">Texto do Botão</Label>
+                        <Input id="de-upload-button-text" value={props.buttonText || "Processar Arquivo"} onChange={e => onPropChange('buttonText', e.target.value)} />
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="campaigns">
+                <AccordionTrigger>Campanhas</AccordionTrigger>
+                <AccordionContent className="pt-2">
+                     <div className="p-3 border rounded-md bg-background">
+                        <h4 className="font-semibold text-sm mb-2">Campanhas e Data Extensions de Destino</h4>
+                        <CampaignManager campaigns={props.campaigns} onPropChange={onPropChange} />
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="style">
+                <AccordionTrigger>Estilo</AccordionTrigger>
+                <AccordionContent className="pt-4 space-y-4">
+                     <div className="space-y-2">
+                        <Label>Cores da Área de Upload</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <ColorInput label="Fundo" value={styles.dropZoneBg} onChange={value => handleStyleChange('dropZoneBg', value)} brand={pageState.brand} />
+                            <ColorInput label="Fundo (Hover)" value={styles.dropZoneBgHover} onChange={value => handleStyleChange('dropZoneBgHover', value)} brand={pageState.brand} />
+                            <ColorInput label="Borda" value={styles.dropZoneBorder} onChange={value => handleStyleChange('dropZoneBorder', value)} brand={pageState.brand} />
+                            <ColorInput label="Borda (Hover)" value={styles.dropZoneBorderHover} onChange={value => handleStyleChange('dropZoneBorderHover', value)} brand={pageState.brand} />
+                        </div>
+                     </div>
+                      <div className="space-y-2">
+                        <Label>Cores do Ícone e Texto</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <ColorInput label="Ícone" value={styles.iconColor} onChange={value => handleStyleChange('iconColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Texto" value={styles.textColor} onChange={value => handleStyleChange('textColor', value)} brand={pageState.brand} />
+                        </div>
+                     </div>
+                      <div className="space-y-2">
+                        <Label>Cores do Feedback</Label>
+                        <div className="grid grid-cols-3 gap-4">
+                            <ColorInput label="Barra de Progresso" value={styles.progressBarColor} onChange={value => handleStyleChange('progressBarColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Sucesso" value={styles.successColor} onChange={value => handleStyleChange('successColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Erro" value={styles.errorColor} onChange={value => handleStyleChange('errorColor', value)} brand={pageState.brand} />
+                        </div>
+                     </div>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
     );
 }

@@ -139,7 +139,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               hideStatus();
               setProgress(0);
           }
-          
+
           if(campaignSelect) {
             campaignSelect.addEventListener('change', checkCanUpload);
           }
@@ -166,25 +166,39 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           });
           
           async function processFileWithFirebase(deKey, brandId) {
-            // This would be replaced with actual file path from Storage after upload
-            const dummyFilePath = 'simulated/path/to/' + selectedFile.name; 
-            const restBaseUrl = 'https://mc-example.rest.marketingcloudapis.com/'; // This should come from brand settings
-            
-            // This assumes a Firebase Function is set up to be called
-            // For now, we simulate the function directly.
-            // In a real app, this would be: 
-            // const functions = firebase.functions();
-            // const processCsv = functions.httpsCallable('processCsvToSfmc');
-            // return processCsv({ filePath: dummyFilePath, deKey, restBaseUrl, brandId });
+             try {
+                // Ensure Firebase is initialized
+                if (typeof firebase === 'undefined' || firebase.apps.length === 0) {
+                   console.error("Firebase not initialized for upload component.");
+                   throw new Error("A configuração do Firebase não foi encontrada.");
+                }
+                const functions = firebase.functions();
+                const processCsv = functions.httpsCallable('processCsvToSfmc');
+                
+                // This is a simplified simulation. A real implementation would upload the file to
+                // Firebase Storage first, get the path, and then call the function.
+                // For this prototype, we'll just call the function with simulated data.
+                const simulatedFilePath = 'uploads/' + selectedFile.name;
+                const restBaseUrl = 'https://mc-example.rest.marketingcloudapis.com/';
+                
+                showStatus('Enviando para o servidor...', 'info');
+                setProgress(50);
+                
+                const result = await processCsv({
+                    filePath: simulatedFilePath,
+                    deKey: deKey,
+                    restBaseUrl: restBaseUrl,
+                    brandId: brandId
+                });
+                
+                setProgress(100);
+                return result;
 
-             showStatus('Arquivo recebido. Processando no servidor...', 'info');
-             setProgress(75);
-             return new Promise(resolve => setTimeout(() => {
-                  const randomRows = Math.floor(Math.random() * 10000) + 500;
-                  resolve({ data: { success: true, message: 'Sucesso! ' + randomRows + ' registros foram adicionados a Data Extension.' } });
-             }, 4000));
+            } catch(error) {
+                console.error("Error calling Firebase Function:", error);
+                throw error;
+            }
           }
-
 
           uploadBtn.addEventListener('click', async () => {
               if (!selectedFile) return;
@@ -197,15 +211,15 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               uploadBtn.disabled = true;
               submitBtnText.style.display = 'none';
               submitBtnLoader.style.display = 'inline-block';
-              showStatus('Iniciando...', 'info');
+              hideStatus();
               progressContainer.style.display = 'block';
-              setProgress(50); // Simulate instant "upload"
+              setProgress(10); 
 
               try {
                   const result = await processFileWithFirebase(selectedDeKey, '${brandId}');
                   showStatus(result.data.message, 'success');
                   setProgress(100);
-                  resetState();
+                  setTimeout(resetState, 3000); // Reset after 3 seconds on success
               } catch (err) {
                   showStatus('Erro: ' + (err.message || 'Falha no processamento.'), 'error');
                   uploadBtn.disabled = false;

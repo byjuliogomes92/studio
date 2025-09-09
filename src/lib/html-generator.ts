@@ -475,6 +475,11 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     const hasCalendly = pageState.components.some(c => c.type === 'Calendly');
     const headerComponent = pageState.components.find(c => c.type === 'Header');
 
+    // Add Firebase SDK if needed for components like DataExtensionUpload
+    const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload');
+    const firebaseSdkScript = needsFirebase ? '<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>' : '';
+
+
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
     const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
     const autoplayPluginScript = hasAutoplayCarousel 
@@ -959,7 +964,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     </script>
     `;
 
-    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}`;
+    return `${firebaseSdkScript}${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}`;
 };
 
 
@@ -1097,10 +1102,13 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
     const hasForm = components.some(c => c.type === 'Form');
     const hasDataBinding = components.some(c => !!c.props.dataBinding);
-    const needsSecurity = meta.security && meta.security.type !== 'none';
+    const needsSecurity = meta.security && (meta.security.type === 'sso' || meta.security.type === 'password');
     const hasCustomAmpscript = !!meta.customAmpscript;
-    const needsAmpscript = !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript);
+    const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
+    const needsPrefill = components.some(c => c.type === 'Form' && Object.values(c.props.fields || {}).some((field: any) => field.prefillFromUrl));
 
+    const processAmpscript = !isForPreview && !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || needsPrefill);
+    
     const rootComponents = components.filter(c => c.parentId === null);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
 
@@ -1135,22 +1143,58 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
 
     let initialAmpscript = '';
-    if (needsAmpscript) {
-        const securityAmpscript = getAmpscriptSecurityBlock(pageState).replace(/%%\[|\]%%/g, '').trim();
-        const prefillAmpscript = getPrefillAmpscript(pageState).replace(/%%\[|\]%%/g, '').trim();
-        const customAmpscript = (meta.customAmpscript || '').replace(/%%\[|\]%%/g, '').trim();
-        const allAmpscriptLogic = `VAR @showThanks,@isAuthenticated,@LoginURL IF EMPTY(RequestParameter("__isPost")) THEN SET @showThanks="false" ENDIF ${securityAmpscript} ${prefillAmpscript} ${customAmpscript}`.replace(/\s+/g, ' ');
+    if (processAmpscript) {
+        const securityAmpscript = getAmpscriptSecurityBlock(pageState);
+        const prefillAmpscript = getPrefillAmpscript(pageState);
+        const customAmpscript = meta.customAmpscript || '';
+        
+        const allAmpscriptLogic = [
+            'VAR @showThanks,@isAuthenticated,@LoginURL',
+            'IF EMPTY(RequestParameter("__isPost")) THEN',
+            'SET @showThanks="false"',
+            'ENDIF',
+            securityAmpscript,
+            prefillAmpscript,
+            customAmpscript
+        ].filter(Boolean).join(' ').replace(/\s+/g, ' ');
+
         initialAmpscript = `%%[${allAmpscriptLogic}]%%`;
     }
 
+    let ssjsScript = '';
+    if (processAmpscript && hasForm) {
+        ssjsScript = `<script runat="server">${getFormSubmissionScript(pageState)}</script>`;
+    }
+    
     let bodyContent = '';
-    const ssjsScript = (needsAmpscript && hasForm) ? getFormSubmissionScript(pageState) : '';
-
-    if (needsAmpscript && needsSecurity) {
-        bodyContent = `%%[IF @isAuthenticated == true THEN]%%${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>%%[ELSE]%%${getSecurityFormHtml(pageState)}%%[ENDIF]%%`;
+    if (processAmpscript && needsSecurity) {
+        bodyContent = `%%[IF @isAuthenticated == true THEN]%%
+        ${ssjsScript}
+        <main style="${mainStyle}">${mainContentHtml}</main>
+        %%[ELSE]%%
+        ${getSecurityFormHtml(pageState)}
+        %%[ENDIF]%%`;
     } else {
         bodyContent = `${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
+    
+    // Inject Firebase SDK config for the preview iframe
+    const firebaseConfigScript = isForPreview && hasDataExtensionUpload 
+        ? `<script>
+             var firebaseConfig = {
+                apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
+                authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}",
+                projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}",
+                storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}",
+                messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
+                appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}"
+             };
+             if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+             }
+           </script>`
+        : '';
+
 
     const html = `<!DOCTYPE html>
 <html>
@@ -2485,7 +2529,7 @@ ${renderLoader(meta, styles.themeColor)}
 ${bodyContent}
 ${cookieBannerHtml}
 ${clientSideScripts}
+${firebaseConfigScript}
 </body>
 </html>`;
 }
-

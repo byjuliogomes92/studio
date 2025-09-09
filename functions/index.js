@@ -9,25 +9,6 @@ const crypto = require('crypto-js');
 admin.initializeApp();
 const db = getFirestore();
 
-
-const getEncryptionKey = () => {
-    // This environment variable is crucial and must be set in the Firebase Functions environment.
-    // e.g., firebase functions:config:set keys.encryption="your-very-long-secret-key"
-    const key = functions.config().keys?.encryption;
-    if (!key) {
-        console.error("FATAL: Encryption key is not defined in Firebase Functions config.");
-        throw new functions.https.HttpsError("internal", "Server is not configured for encryption.");
-    }
-    return key;
-};
-
-const decryptPassword = (encrypted) => {
-    const key = getEncryptionKey();
-    const bytes = crypto.AES.decrypt(encrypted, key);
-    return bytes.toString(crypto.enc.Utf8);
-};
-
-
 /**
  * Sets a custom claim on a user account to make them an admin.
  */

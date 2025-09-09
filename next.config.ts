@@ -57,7 +57,6 @@ const nextConfig: NextConfig = {
   },
   env: {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-    NEXT_PUBLIC_CRYPTO_FALLBACK_KEY: 'default-secret-key-for-dev-only', // Fallback for local dev
     NEXT_PUBLIC_BASE_URL: process.env.VERCEL_URL 
       ? `https://${process.env.VERCEL_URL}` 
       : 'http://localhost:9002',

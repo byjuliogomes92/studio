@@ -127,10 +127,6 @@ exports.getAllUsers = functions
 exports.processCsvToSfmc = functions
     .region('us-central1')
     .https.onCall(async (data, context) => {
-        if (!context.auth) {
-            throw new functions.https.HttpsError("unauthenticated", "Usuário não autenticado.");
-        }
-        
         const { filePath, deKey, brandId } = data;
         if (!filePath || !deKey || !brandId) {
             throw new functions.https.HttpsError("invalid-argument", "Parâmetros faltando (filePath, deKey, brandId).");

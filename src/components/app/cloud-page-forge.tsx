@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -119,8 +120,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   
   // New state for publish modal
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
-  const [pageSlug, setPageSlug] = useState("");
-  const [pageUrl, setPageUrl] = useState("");
   const [useBitly, setUseBitly] = useState(false);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [brand, setBrand] = useState<Brand | null>(null);
@@ -143,6 +142,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const hasBitlyConfig = !!(brand && brand.integrations?.bitly?.encryptedAccessToken);
   
   const selectedComponent = pageState?.components.find(c => c.id === selectedComponentId) || null;
+
+  const pageUrl = pageState ? `${window.location.origin}/api/pages/${pageState.slug || pageState.id}` : '';
 
   const fetchComments = useCallback(async () => {
     if (!pageId || pageId === 'new') return;
@@ -203,7 +204,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             setInitialPageState(cleanPageState);
             setSavedPageState(cleanPageState);
             resetState(cleanPageState);
-            setPageSlug(pageData.slug || pageData.id);
 
             if(pageData.brandId) {
                 const brandData = await getBrand(pageData.brandId);
@@ -239,14 +239,6 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     }
   }, [pageId, router, user, toast, authLoading, searchParams, activeWorkspace, fetchComments]);
   
-  
-  useEffect(() => {
-      // This effect now updates the displayed URL whenever the slug being edited changes.
-      if (typeof window !== 'undefined') {
-          setPageUrl(`${window.location.origin}/api/pages/${pageSlug}`);
-      }
-  }, [pageSlug]);
-
   
   // Keyboard shortcut for Undo
   useEffect(() => {
@@ -333,14 +325,13 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
       if (!pageState || !user) return;
       setIsPublishing(true);
       
-      const stateWithSlug = { ...pageState, slug: pageSlug };
-      const stateToSave = cleanUndefined(stateWithSlug);
+      const stateToSave = cleanUndefined(pageState);
       
       // Reset shortUrl before attempting to publish and generate a new one
       setShortUrl(null);
 
       try {
-          if (hasUnsavedChanges || pageState.slug !== pageSlug) {
+          if (hasUnsavedChanges) {
               await updatePage(pageId, stateToSave);
               setSavedPageState(stateToSave);
               resetState(stateToSave);
@@ -728,17 +719,10 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                 <DialogHeader>
                   <DialogTitle>Publicar Página</DialogTitle>
                   <DialogDescription>
-                    Configure a URL final e confirme a publicação.
+                    Confirme os detalhes e publique sua página.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="page-slug">Slug da URL</Label>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground p-2 rounded-md bg-muted whitespace-nowrap">.../api/pages/</span>
-                            <Input id="page-slug" value={pageSlug} onChange={(e) => setPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} className="min-w-0" />
-                        </div>
-                    </div>
                     {hasBitlyConfig && (
                         <div className="flex items-center space-x-2">
                             <Switch id="use-bitly" checked={useBitly} onCheckedChange={setUseBitly} />
@@ -870,7 +854,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         <SheetTitle className="flex items-center justify-between">
                             <span>Configurar: {selectedComponent.layerName || selectedComponent.type}</span>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => duplicateComponent(selectedComponent.id)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDuplicateComponent(selectedComponent.id)}>
                                     <Copy className="h-4 w-4" />
                                 </Button>
                                 <AlertDialog>
@@ -888,7 +872,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => removeComponent(selectedComponent.id)}>Excluir</AlertDialogAction>
+                                            <AlertDialogAction onClick={() => onDeleteComponent(selectedComponent.id)}>Excluir</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -904,8 +888,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 onCodeEdit={handleCodeEdit}
                                 projectPages={projectPages}
                                 pageState={pageState}
-                                onDuplicate={duplicateComponent}
-                                onDelete={removeComponent}
+                                onDuplicate={onDuplicateComponent}
+                                onDelete={onDeleteComponent}
                             />
                         </div>
                     </ScrollArea>
@@ -928,3 +912,5 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
     </>
   );
 }
+
+    

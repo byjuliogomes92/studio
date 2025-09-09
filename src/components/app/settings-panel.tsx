@@ -408,6 +408,15 @@ export function SettingsPanel({
     });
   };
 
+  const handleSlugChange = (newSlug: string) => {
+    setPageState((prev) => {
+      if (!prev) return null;
+      return produce(prev, draft => {
+          draft.slug = newSlug.toLowerCase().replace(/[^a-z0-9-]/g, '');
+      });
+    });
+  };
+
   const handleScheduleChange = (prop: 'publishDate' | 'expiryDate', value: string) => {
     setPageState(prev => {
         if (!prev) return null;
@@ -988,6 +997,13 @@ export function SettingsPanel({
                             <Label htmlFor="meta-title">Título da Aba do Navegador</Label>
                             <Input id="meta-title" value={pageState.meta.title || ''} onChange={e => handleMetaChange('title', e.target.value)} />
                          </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="page-slug">Slug da URL</Label>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground p-2 rounded-md bg-muted whitespace-nowrap">.../api/pages/</span>
+                                <Input id="page-slug" value={pageState.slug} onChange={(e) => handleSlugChange(e.target.value)} className="min-w-0" />
+                            </div>
+                        </div>
                           <div className="space-y-2">
                             <Label htmlFor="meta-description">Descrição da Página (para buscadores)</Label>
                             <Textarea id="meta-description" value={pageState.meta.metaDescription || ''} onChange={e => handleMetaChange('metaDescription', e.target.value)} rows={3} />
@@ -1295,3 +1311,5 @@ export function SettingsPanel({
     </div>
     );
 }
+
+    

@@ -16,8 +16,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     const {
         text: buttonText = "Processar Arquivo",
-        bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
-        textColor: buttonTextColor = "#FFFFFF",
         icon: buttonIcon = "none",
     } = buttonProps;
 
@@ -28,7 +26,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const campaignSelectorHtml = campaigns.length > 1 ? `
         <div class="de-upload-v2-campaign-selector">
             <label for="campaign-select-${component.id}">Selecione a campanha de destino:</label>
-            <select id="campaign-select-${component.id}">
+            <select id="campaign-select-${component.id}" style="border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'}; background-color: ${styles.dropZoneBg || 'hsl(var(--background))'}; color: ${styles.textColor || 'hsl(var(--foreground))'};">
                 <option value="" disabled selected>-- Escolha uma opção --</option>
                 ${campaignOptionsHtml}
             </select>
@@ -57,7 +55,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     return `
       <div id="${componentId}" class="de-upload-v2-container" style="background-color: ${styles.containerBackgroundColor || 'transparent'};">
-          <h4>${title}</h4>
+          <h4 style="color: ${styles.textColor || 'hsl(var(--foreground))'};">${title}</h4>
           
           <div class="de-upload-v2-instructions">
             <p><strong>Como funciona:</strong> Este componente faz o upload de um arquivo CSV para uma Data Extension no Marketing Cloud. Certifique-se de que a <strong>primeira linha (cabeçalho) do seu arquivo CSV</strong> contenha os nomes das colunas que correspondem exatamente aos campos da sua Data Extension de destino.</p>
@@ -70,14 +68,14 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             <div id="de-info-table-wrapper-${component.id}" class="de-info-table-wrapper"></div>
           </div>
           
-          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="background-color: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'}; border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};">
+          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="background-color: ${styles.dropZoneBg || 'transparent'}; border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};">
               <div class="de-upload-v2-drop-content initial">
-                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || '#6b7280'};">${iconUpload}</div>
-                  <p style="color: ${styles.textColor || '#6b7280'};">${instructionText}</p>
+                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || 'hsl(var(--muted-foreground))'};">${iconUpload}</div>
+                  <p style="color: ${styles.textColor || 'hsl(var(--muted-foreground))'};">${instructionText}</p>
               </div>
               <div class="de-upload-v2-drop-content selected" style="display:none;">
-                  <div class="de-upload-v2-icon" style="color: ${styles.iconColor || '#6b7280'};">${iconFile}</div>
-                  <p><strong id="filename-display-${component.id}"></strong></p>
+                  <div class="de-upload-v2-icon" style="color: ${styles.iconColor || 'hsl(var(--muted-foreground))'};">${iconFile}</div>
+                  <p><strong id="filename-display-${component.id}" style="color: ${styles.textColor || 'hsl(var(--foreground))'};"></strong></p>
               </div>
           </div>
           <input type="file" id="file-input-${component.id}" accept=".csv" style="display:none;" />
@@ -107,12 +105,12 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           <div class="de-upload-v2-footer">
             <div id="feedback-container-${component.id}" class="de-upload-v2-feedback" style="display:none;">
                 <div id="progress-container-${component.id}" class="de-upload-v2-progress-container">
-                    <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar" style="background-color: ${styles.progressBarColor || 'hsl(var(--primary-hsl))'};"></div>
+                    <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar" style="background-color: ${styles.progressBarColor || 'var(--theme-color)'};"></div>
                 </div>
                 <div id="status-message-${component.id}" class="de-upload-v2-status"></div>
             </div>
 
-            <button id="upload-btn-${component.id}" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};" disabled>
+            <button id="upload-btn-${component.id}" class="custom-button" style="background-color: ${buttonProps.bgColor || 'var(--theme-color)'}; color: ${buttonProps.textColor || '#FFFFFF'};" disabled>
                <span class="button-text">${buttonContent}</span>
                <div class="button-loader"></div>
             </button>
@@ -146,7 +144,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const deInfoContainer = document.getElementById('de-info-${component.id}');
           const deInfoTableWrapper = document.getElementById('de-info-table-wrapper-${component.id}');
           
-          const allCampaigns = JSON.parse(container.dataset.campaigns || '[]');
+          const allCampaigns = JSON.parse('${JSON.stringify(campaigns)}');
           
           let selectedFile = null;
 
@@ -182,7 +180,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
           
           function checkCanUpload() {
-              const campaignSelected = campaignSelect ? campaignSelect.value !== '' : (allCampaigns.length === 0 ? true : false);
+              const campaignSelected = campaignSelect ? campaignSelect.value !== '' : (allCampaigns.length === 1);
               uploadBtn.disabled = !(selectedFile && campaignSelected);
           }
 
@@ -190,7 +188,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               const reader = new FileReader();
               reader.onload = function(e) {
                   const text = e.target.result;
-                  const lines = text.split(/\\r\\n|\\n/).filter(line => line.trim() !== '');
+                  const lines = text.split(/[\\r\\n]+/).filter(line => line.trim() !== '');
                   const recordCount = lines.length > 0 ? lines.length - 1 : 0;
                   const header = lines[0] || '';
                   const columns = header.split(',').map(h => h.trim());
@@ -198,7 +196,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   recordCountDisplay.textContent = recordCount;
                   columnCountDisplay.textContent = columns.length;
                   columnNamesDisplay.innerHTML = columns.map(c => \`<span class="de-upload-v2-column-tag">\${c}</span>\`).join('');
-                  fileInfoContainer.style.display = 'block';
+                  fileInfoContainer.style.display = 'flex';
               };
               reader.onerror = function() {
                   showStatus('Erro ao ler o arquivo para análise.', 'error');
@@ -278,6 +276,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                 displayDeInfo(campaignSelect.value);
             });
           }
+          
+          if (!campaignSelect && allCampaigns.length === 1) {
+              displayDeInfo(allCampaigns[0].deKey);
+          }
+          
           dropZone.addEventListener('click', () => fileInput.click());
           fileInput.addEventListener('change', () => handleFileSelect(fileInput.files[0]));
           
@@ -288,18 +291,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               });
           });
           
-          dropZone.addEventListener('dragenter', (e) => {
-              dropZone.style.backgroundColor = '${styles.dropZoneBgHover || 'hsla(var(--primary-hsl), 0.15)'}';
-              dropZone.style.borderColor = '${styles.dropZoneBorderHover || 'hsl(var(--primary-hsl))'}';
-          });
-
-          dropZone.addEventListener('dragleave', (e) => {
-              dropZone.style.backgroundColor = '${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'}';
-              dropZone.style.borderColor = '${styles.dropZoneBorder || 'hsl(var(--border-hsl))'}';
-          });
+          dropZone.addEventListener('dragenter', (e) => dropZone.classList.add('active'));
+          dropZone.addEventListener('dragover', (e) => dropZone.classList.add('active'));
+          dropZone.addEventListener('dragleave', (e) => dropZone.classList.remove('active'));
           dropZone.addEventListener('drop', (e) => {
-              dropZone.style.backgroundColor = '${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'}';
-              dropZone.style.borderColor = '${styles.dropZoneBorder || 'hsl(var(--border-hsl))'}';
+              dropZone.classList.remove('active');
               handleFileSelect(e.dataTransfer.files[0]);
           });
 
@@ -313,7 +309,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
               uploadBtn.disabled = true;
               submitBtnText.style.display = 'none';
-              submitBtnLoader.style.display = 'inline-block';
+              submitBtnLoader.style.display = 'block';
               hideStatus();
               setProgress(10); 
               

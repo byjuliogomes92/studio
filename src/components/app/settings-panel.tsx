@@ -727,7 +727,7 @@ export function SettingsPanel({
                                     onAddComponent={(typeOrBlock) => onAddComponentToContainer(component.id, i, typeOrBlock)}
                                     isEmpty={grandchildren.length === 0}
                                 >
-                                    {renderComponentsRecursive(component.id, i)}
+                                    {renderNestedComponents(component.id, i)}
                                 </Dropzone>
                             )})}
                         </div>
@@ -1093,12 +1093,12 @@ export function SettingsPanel({
                             {pageState.meta.security?.type === 'password' && (
                                 <div className="p-3 border rounded-md space-y-3 bg-muted/40">
                                     <div className="space-y-2">
-                                        <Label htmlFor="sec-dekey" className="text-xs">DE da Senha</Label>
+                                        <Label htmlFor="sec-dekey" className="text-xs">DE da Senha (Chave Externa)</Label>
                                         <Input id="sec-dekey" value={pageState.meta.security.passwordConfig?.dataExtensionKey || ''} onChange={e => handlePasswordConfigChange('dataExtensionKey', e.target.value)} />
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                          <div className="space-y-2">
-                                            <Label htmlFor="sec-idcol" className="text-xs">Coluna ID</Label>
+                                            <Label htmlFor="sec-idcol" className="text-xs">Coluna Identificador</Label>
                                             <Input id="sec-idcol" value={pageState.meta.security.passwordConfig?.identifierColumn || 'SubscriberKey'} onChange={e => handlePasswordConfigChange('identifierColumn', e.target.value)} />
                                         </div>
                                          <div className="space-y-2">
@@ -1107,7 +1107,7 @@ export function SettingsPanel({
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="sec-urlparam" className="text-xs">Parâmetro na URL</Label>
+                                        <Label htmlFor="sec-urlparam" className="text-xs">Parâmetro na URL (Identificador)</Label>
                                         <Input id="sec-urlparam" value={pageState.meta.security.passwordConfig?.urlParameter || 'id'} onChange={e => handlePasswordConfigChange('urlParameter', e.target.value)} />
                                     </div>
                                 </div>

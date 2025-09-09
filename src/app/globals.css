@@ -203,8 +203,20 @@
   .de-upload-v2-container h4 {
     font-size: 1.25rem;
     font-weight: 600;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
     text-align: center;
+  }
+  .de-upload-v2-instructions {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    background-color: hsl(var(--muted));
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+  }
+  .de-upload-v2-instructions strong {
+    color: hsl(var(--foreground));
   }
   .de-upload-v2-campaign-selector {
     margin-bottom: 1.5rem;
@@ -274,6 +286,7 @@
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
     text-align: center;
+    margin-top: 1.5rem;
   }
   .de-upload-v2-drop-zone:hover {
     background-color: hsla(var(--primary-hsl), 0.15) !important;
@@ -298,25 +311,25 @@
     margin: 0;
   }
    .de-upload-v2-file-info {
-    margin-top: 1rem;
-    padding: 1rem;
-    border: 1px solid hsl(var(--border));
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
     text-align: left;
-    background-color: hsl(var(--muted));
   }
   .de-upload-v2-file-info .info-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
   }
   .de-upload-v2-file-info .info-item {
-    display: flex;
-    flex-direction: column;
+    background-color: hsl(var(--muted));
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid hsl(var(--border));
   }
   .de-upload-v2-file-info .info-label {
+    display: block;
     font-weight: 500;
     color: hsl(var(--muted-foreground));
     font-size: 0.75rem;
@@ -324,17 +337,28 @@
   }
   .de-upload-v2-file-info .info-value {
     font-weight: 600;
+    font-size: 1.25rem;
     color: hsl(var(--foreground));
   }
   .de-upload-v2-file-info .info-item-full {
-    display: flex;
-    flex-direction: column;
+    background-color: hsl(var(--muted));
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid hsl(var(--border));
   }
   .de-upload-v2-file-info .info-value-cols {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .de-upload-v2-column-tag {
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
     font-family: monospace;
     font-size: 0.8rem;
-    color: hsl(var(--muted-foreground));
-    word-break: break-all;
   }
 
   .de-upload-v2-footer {
@@ -388,5 +412,6 @@
     }
   }
 }
+
 
 

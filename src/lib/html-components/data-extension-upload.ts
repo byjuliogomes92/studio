@@ -56,8 +56,13 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
     return `
-      <div id="${componentId}" class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}' style="background-color: ${styles.containerBackgroundColor || 'transparent'};">
+      <div id="${componentId}" class="de-upload-v2-container" style="background-color: ${styles.containerBackgroundColor || 'transparent'};">
           <h4>${title}</h4>
+          
+          <div class="de-upload-v2-instructions">
+            <p><strong>Como funciona:</strong> Este componente faz o upload de um arquivo CSV para uma Data Extension no Marketing Cloud. Certifique-se de que a <strong>primeira linha (cabeçalho) do seu arquivo CSV</strong> contenha os nomes das colunas que correspondem exatamente aos campos da sua Data Extension de destino.</p>
+          </div>
+
           ${campaignSelectorHtml}
 
           <div id="de-info-${component.id}" class="de-upload-v2-info" style="display:none;">
@@ -84,13 +89,17 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                 <span class="info-value" id="record-count-${component.id}">-</span>
               </div>
               <div class="info-item">
+                <span class="info-label">Colunas</span>
+                <span class="info-value" id="column-count-${component.id}">-</span>
+              </div>
+              <div class="info-item">
                 <span class="info-label">Tamanho</span>
                 <span class="info-value" id="filesize-display-${component.id}">-</span>
               </div>
             </div>
             <div class="info-item-full">
-              <span class="info-label">Colunas (<span id="column-count-${component.id}">-</span>)</span>
-              <span class="info-value-cols" id="column-names-${component.id}">-</span>
+              <span class="info-label">Nomes das Colunas</span>
+              <div class="info-value-cols" id="column-names-${component.id}"></div>
             </div>
           </div>
 
@@ -188,7 +197,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   
                   recordCountDisplay.textContent = recordCount;
                   columnCountDisplay.textContent = columns.length;
-                  columnNamesDisplay.textContent = columns.join(', ');
+                  columnNamesDisplay.innerHTML = columns.map(c => \`<span class="de-upload-v2-column-tag">\${c}</span>\`).join('');
                   fileInfoContainer.style.display = 'block';
               };
               reader.onerror = function() {

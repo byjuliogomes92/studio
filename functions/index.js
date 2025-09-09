@@ -2,9 +2,31 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore");
+const axios = require("axios");
+const { parse } = require("csv-parse/sync");
+const crypto = require('crypto-js');
 
 admin.initializeApp();
 const db = getFirestore();
+
+
+const getEncryptionKey = () => {
+    // É crucial que esta variável de ambiente seja configurada no ambiente do Firebase Functions.
+    // firebase functions:config:set keys.encryption="sua-chave-secreta-muito-longa"
+    const key = functions.config().keys?.encryption;
+    if (!key) {
+        console.error("FATAL: A chave de criptografia não está definida nas configurações do Firebase Functions.");
+        throw new functions.https.HttpsError("internal", "O servidor não está configurado para criptografia.");
+    }
+    return key;
+};
+
+const decryptPassword = (encrypted) => {
+    const key = getEncryptionKey();
+    const bytes = crypto.AES.decrypt(encrypted, key);
+    return bytes.toString(crypto.enc.Utf8);
+};
+
 
 /**
  * Sets a custom claim on a user account to make them an admin.
@@ -109,42 +131,78 @@ exports.processCsvToSfmc = functions
             throw new functions.https.HttpsError("unauthenticated", "Usuário não autenticado.");
         }
         
-        const { filePath, deKey, restBaseUrl, brandId } = data;
-        if (!filePath || !deKey || !restBaseUrl || !brandId) {
-            throw new functions.https.HttpsError("invalid-argument", "Parâmetros faltando (filePath, deKey, restBaseUrl, brandId).");
+        const { filePath, deKey, brandId } = data;
+        if (!filePath || !deKey || !brandId) {
+            throw new functions.https.HttpsError("invalid-argument", "Parâmetros faltando (filePath, deKey, brandId).");
         }
 
-        // --- In a real implementation, you would: ---
-        // 1. Get SFMC API credentials securely (e.g., from Firestore, decrypting them).
-        // const brandRef = db.collection('brands').doc(brandId);
-        // const brandDoc = await brandRef.get();
-        // const { clientId, clientSecret } = decryptCredentials(brandDoc.data().sfmcApi);
-        
-        // 2. Get an SFMC Auth Token.
-        // const token = await getSfmcAuthToken(restBaseUrl, clientId, clientSecret);
-        
-        // 3. Download the file from Firebase Storage.
-        // const bucket = admin.storage().bucket();
-        // const fileContents = await bucket.file(filePath).download();
-        
-        // 4. Parse the CSV content.
-        // const records = parse(fileContents.toString(), { columns: true });
-        
-        // 5. Send data in batches to SFMC REST API.
-        // const results = await sendDataToSfmc(restBaseUrl, token, deKey, records);
-        
-        // For this prototype, we'll simulate the process.
-        console.log(`Simulating processing of ${filePath} for DE ${deKey}`);
-        
-        // Simulate a delay
-        await new Promise(resolve => setTimeout(resolve, 5000)); 
-        
-        const simulatedRowCount = Math.floor(Math.random() * 10000) + 500;
+        try {
+            // 1. Get brand credentials from Firestore
+            const brandRef = db.collection('brands').doc(brandId);
+            const brandDoc = await brandRef.get();
+            if (!brandDoc.exists || !brandDoc.data().integrations?.sfmcApi) {
+                throw new functions.https.HttpsError("not-found", "Configurações da API do SFMC não encontradas para esta marca.");
+            }
+            const { clientId, encryptedClientSecret, authBaseUrl } = brandDoc.data().integrations.sfmcApi;
+            if (!clientId || !encryptedClientSecret || !authBaseUrl) {
+                 throw new functions.https.HttpsError("not-found", "Credenciais da API do SFMC incompletas.");
+            }
+            
+            const clientSecret = decryptPassword(encryptedClientSecret);
 
-        return { 
-            success: true, 
-            message: `Sucesso! ${simulatedRowCount} registros foram adicionados à Data Extension.`,
-            rowsAdded: simulatedRowCount,
-        };
+            // 2. Get an SFMC Auth Token
+            const tokenResponse = await axios.post(`${authBaseUrl}v2/token`, {
+                grant_type: "client_credentials",
+                client_id: clientId,
+                client_secret: clientSecret,
+            });
+            const accessToken = tokenResponse.data.access_token;
+            const restBaseUrl = tokenResponse.data.rest_instance_url;
+
+            // 3. Download the file from Firebase Storage
+            const bucket = admin.storage().bucket();
+            const fileContents = await bucket.file(filePath).download();
+            const csvData = fileContents[0].toString('utf8');
+
+            // 4. Parse the CSV content
+            const records = parse(csvData, { 
+                columns: true,
+                skip_empty_lines: true,
+                trim: true,
+            });
+
+            if (records.length === 0) {
+                return { success: true, message: 'Arquivo CSV vazio ou sem dados. Nada foi adicionado.' };
+            }
+
+            // 5. Prepare data for SFMC API (add ContactKey if missing)
+            // This assumes the DE is sendable and uses a specific field as the Subscriber Key.
+            // For simplicity, we'll use a field named 'ContactKey'.
+            const sfmcPayload = records.map(record => ({
+                keys: { ContactKey: record.ContactKey || record.EmailAddress || record.CPF }, // Adjust key logic as needed
+                values: record,
+            }));
+
+            // 6. Send data in batches to SFMC REST API
+            const sfmcApiUrl = `${restBaseUrl}hub/v1/dataevents/key:${deKey}/rowset`;
+            const results = await axios.post(sfmcApiUrl, sfmcPayload, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            return { 
+                success: true, 
+                message: `Sucesso! ${records.length} registros foram adicionados/atualizados na Data Extension.`,
+                rowsProcessed: records.length,
+            };
+
+        } catch (error) {
+            console.error("SFMC Process Error:", error.response?.data || error.message);
+            const errorMessage = error.response?.data?.message || error.message || 'Ocorreu um erro desconhecido.';
+             throw new functions.https.HttpsError("internal", `Falha no processamento para o SFMC: ${errorMessage}`);
+        }
     });
 
+```

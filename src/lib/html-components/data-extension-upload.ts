@@ -291,8 +291,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               });
           });
           
-          dropZone.addEventListener('dragenter', (e) => dropZone.classList.add('active'));
-          dropZone.addEventListener('dragover', (e) => dropZone.classList.add('active'));
+          dropZone.addEventListener('mouseover', (e) => dropZone.classList.add('active'));
           dropZone.addEventListener('dragleave', (e) => dropZone.classList.remove('active'));
           dropZone.addEventListener('drop', (e) => {
               dropZone.classList.remove('active');

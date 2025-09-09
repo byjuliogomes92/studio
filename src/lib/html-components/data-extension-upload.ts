@@ -51,7 +51,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     };
     
     const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
-    const buttonContent = buttonIconPosition === 'right'
+    const buttonContent = iconPosition === 'right'
         ? `<span>${buttonText}</span>${iconHtml}`
         : `${iconHtml}<span>${buttonText}</span>`;
     

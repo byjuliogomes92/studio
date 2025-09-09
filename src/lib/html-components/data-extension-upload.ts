@@ -213,35 +213,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           dropZone.addEventListener('drop', e => {
               handleFileSelect(e.dataTransfer.files[0]);
           });
-          
-          async function processFile(deKey) {
-             try {
-                // Ensure Firebase is initialized
-                if (typeof firebase === 'undefined' || !firebase.apps.length) {
-                   console.error("Firebase not initialized for upload component.");
-                   throw new Error("A configuração do Firebase não foi encontrada.");
-                }
-                const functions = firebase.functions();
-                const processCsv = functions.httpsCallable('processCsvToSfmc');
-                
-                showStatus('Processando o arquivo no servidor...', 'info');
-                setProgress(50);
-                
-                const result = await processCsv({
-                    filePath: 'simulated/path/' + selectedFile.name, // Path is simulated
-                    deKey: deKey,
-                    restBaseUrl: 'https://mc-example.rest.marketingcloudapis.com/', // URL is simulated
-                    brandId: '${brandId}'
-                });
-                
-                setProgress(100);
-                return result;
-
-            } catch(error) {
-                console.error("Error calling Firebase Function:", error);
-                throw error;
-            }
-          }
 
           uploadBtn.addEventListener('click', async () => {
               if (!selectedFile) return;
@@ -256,18 +227,52 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               submitBtnLoader.style.display = 'inline-block';
               hideStatus();
               setProgress(10); 
+              
+              const reader = new FileReader();
+              reader.readAsText(selectedFile);
 
-              try {
-                  const result = await processFile(selectedDeKey);
-                  showStatus(result.data.message, 'success');
+              reader.onload = async () => {
+                try {
+                  const csvData = reader.result;
+                  setProgress(30);
+                  const response = await fetch('/api/sfmc-upload', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      csvData: csvData,
+                      deKey: selectedDeKey,
+                      brandId: '${brandId}'
+                    }),
+                  });
+                  
+                  setProgress(70);
+                  const result = await response.json();
+
+                  if (!response.ok) {
+                    throw new Error(result.message || 'Erro desconhecido no servidor.');
+                  }
+                  
                   setProgress(100);
+                  showStatus(result.message, 'success');
                   setTimeout(resetState, 5000);
-              } catch (err) {
-                  showStatus('Erro: ' + (err.message || 'Falha no processamento.'), 'error');
-                  uploadBtn.disabled = false;
-                  submitBtnText.style.display = 'inline-block';
-                  submitBtnLoader.style.display = 'none';
-              }
+
+                } catch (err) {
+                    showStatus('Erro: ' + err.message, 'error');
+                } finally {
+                    uploadBtn.disabled = false;
+                    submitBtnText.style.display = 'inline-block';
+                    submitBtnLoader.style.display = 'none';
+                }
+              };
+
+              reader.onerror = () => {
+                 showStatus('Erro ao ler o arquivo.', 'error');
+                 uploadBtn.disabled = false;
+                 submitBtnText.style.display = 'inline-block';
+                 submitBtnLoader.style.display = 'none';
+              };
           });
       })();
       </script>

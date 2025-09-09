@@ -1101,14 +1101,14 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const { id, slug, styles, components, meta, cookieBanner } = pageState;
 
     const hasForm = components.some(c => c.type === 'Form');
+    const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
     const hasDataBinding = components.some(c => !!c.props.dataBinding);
     const needsSecurity = meta.security && (meta.security.type === 'sso' || meta.security.type === 'password');
     const hasCustomAmpscript = !!meta.customAmpscript;
-    const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
     const needsPrefill = components.some(c => c.type === 'Form' && Object.values(c.props.fields || {}).some((field: any) => field.prefillFromUrl));
 
-    const processAmpscript = !isForPreview && !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || needsPrefill);
-    
+    const needsAmpscript = !isForPreview && !hideAmpscript && (hasForm || hasDataBinding || needsSecurity || hasCustomAmpscript || needsPrefill);
+
     const rootComponents = components.filter(c => c.parentId === null);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
 
@@ -1143,13 +1143,17 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
 
     let initialAmpscript = '';
-    if (processAmpscript) {
+    let ssjsScript = '';
+    let bodyContent = '';
+
+    if (needsAmpscript) {
         const securityAmpscript = getAmpscriptSecurityBlock(pageState);
         const prefillAmpscript = getPrefillAmpscript(pageState);
         const customAmpscript = meta.customAmpscript || '';
         
         const allAmpscriptLogic = [
             'VAR @showThanks,@isAuthenticated,@LoginURL',
+            'SET @LoginURL = Concat("https://mc.login.exacttarget.com/hub/auth?returnUrl=", URLEncode(CloudPagesURL(PageID)))',
             'IF EMPTY(RequestParameter("__isPost")) THEN',
             'SET @showThanks="false"',
             'ENDIF',
@@ -1159,26 +1163,25 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         ].filter(Boolean).join(' ').replace(/\s+/g, ' ');
 
         initialAmpscript = `%%[${allAmpscriptLogic}]%%`;
-    }
 
-    let ssjsScript = '';
-    if (processAmpscript && hasForm) {
-        ssjsScript = `<script runat="server">${getFormSubmissionScript(pageState)}</script>`;
-    }
-    
-    let bodyContent = '';
-    if (processAmpscript && needsSecurity) {
-        bodyContent = `%%[IF @isAuthenticated == true THEN]%%
-        ${ssjsScript}
-        <main style="${mainStyle}">${mainContentHtml}</main>
-        %%[ELSE]%%
-        ${getSecurityFormHtml(pageState)}
-        %%[ENDIF]%%`;
+        if (hasForm) {
+            ssjsScript = `<script runat="server">${getFormSubmissionScript(pageState)}</script>`;
+        }
+        
+        if (needsSecurity) {
+            bodyContent = `%%[IF @isAuthenticated == true THEN]%%
+            ${ssjsScript}
+            <main style="${mainStyle}">${mainContentHtml}</main>
+            %%[ELSE]%%
+            ${getSecurityFormHtml(pageState)}
+            %%[ENDIF]%%`;
+        } else {
+            bodyContent = `${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>`;
+        }
     } else {
-        bodyContent = `${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>`;
+        bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
     
-    // Inject Firebase SDK config for the preview iframe
     const firebaseConfigScript = isForPreview && hasDataExtensionUpload 
         ? `<script>
              var firebaseConfig = {
@@ -1189,7 +1192,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
                 messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
                 appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}"
              };
-             if (!firebase.apps.length) {
+             if (typeof firebase !== 'undefined' && !firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
              }
            </script>`
@@ -2532,4 +2535,7 @@ ${clientSideScripts}
 ${firebaseConfigScript}
 </body>
 </html>`;
+
+    return html;
 }
+

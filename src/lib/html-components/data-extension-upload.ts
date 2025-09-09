@@ -51,7 +51,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     };
     
     const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
-    const buttonContent = iconPosition === 'right'
+    const buttonContent = buttonIconPosition === 'right'
         ? `<span>${buttonText}</span>${iconHtml}`
         : `${iconHtml}<span>${buttonText}</span>`;
     
@@ -59,7 +59,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
     return `
-      <div id="${componentId}" class="de-upload-v2-container" style="background-color: ${styles.containerBackgroundColor || 'transparent'}; color: ${styles.textColor || 'inherit'};">
+      <div id="${componentId}" class="de-upload-v2-container" style="--container-bg: ${styles.containerBackgroundColor || 'transparent'}; --text-color: ${styles.textColor || 'inherit'};">
           <h4>${title}</h4>
           
           <div class="de-upload-v2-instructions">
@@ -73,13 +73,13 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             <div id="de-info-table-wrapper-${component.id}" class="de-info-table-wrapper"></div>
           </div>
           
-          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="background-color: ${styles.dropZoneBg || ''}; border-color: ${styles.dropZoneBorder || ''};">
+          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="--drop-bg: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'}; --drop-bg-hover: ${styles.dropZoneBgHover || 'hsla(var(--primary-hsl), 0.15)'}; --drop-border: ${styles.dropZoneBorder || '#d1d5db'}; --drop-border-hover: ${styles.dropZoneBorderHover || 'hsl(var(--primary))'};">
               <div class="de-upload-v2-drop-content initial">
-                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || ''};">${iconUpload}</div>
+                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || '#6b7280'};">${iconUpload}</div>
                   <p>${instructionText}</p>
               </div>
               <div class="de-upload-v2-drop-content selected" style="display:none;">
-                  <div class="de-upload-v2-icon" style="color: ${styles.iconColor || ''};">${iconFile}</div>
+                  <div class="de-upload-v2-icon" style="color: ${styles.iconColor || '#6b7280'};">${iconFile}</div>
                   <p><strong>Arquivo selecionado:</strong> <span id="filename-display-${component.id}"></span></p>
               </div>
           </div>
@@ -91,12 +91,16 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                 <div class="info-item"><span class="info-label">Colunas</span><span class="info-value" id="column-count-${component.id}">-</span></div>
                 <div class="info-item"><span class="info-label">Tamanho</span><span class="info-value" id="filesize-display-${component.id}">-</span></div>
             </div>
-            <div class="de-upload-v2-column-info">
-                <span class="info-label">Nomes das Colunas</span>
-                <div class="de-upload-v2-column-tags-container" id="column-names-${component.id}"></div>
+            <div class="info-item-full">
+              <span class="info-label">Nomes das Colunas do Arquivo</span>
+              <div class="de-column-table-wrapper">
+                 <table id="column-names-table-${component.id}">
+                    <thead><tr><th>Nome da Coluna</th></tr></thead>
+                    <tbody></tbody>
+                 </table>
+              </div>
             </div>
           </div>
-
 
           <div class="de-upload-v2-footer">
             <div id="feedback-container-${component.id}" class="de-upload-v2-feedback-container">
@@ -126,7 +130,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const filesizeDisplay = document.getElementById('filesize-display-${component.id}');
           const recordCountDisplay = document.getElementById('record-count-${component.id}');
           const columnCountDisplay = document.getElementById('column-count-${component.id}');
-          const columnNamesDisplay = document.getElementById('column-names-${component.id}');
+          const columnTableBody = document.querySelector(\`#column-names-table-${component.id} tbody\`);
           const fileInfoContainer = document.getElementById('file-info-${component.id}');
           const uploadBtn = document.getElementById('upload-btn-${component.id}');
           const feedbackContainer = document.getElementById('feedback-container-${component.id}');
@@ -161,7 +165,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               } else if (type === 'error') {
                 statusMessage.style.color = '${styles.errorColor || '#dc2626'}';
               } else {
-                statusMessage.style.color = '${styles.textColor || 'inherit'}';
+                statusMessage.style.color = 'var(--text-color)';
               }
           }
           
@@ -187,11 +191,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   const lines = text.split(/[\\r\\n]+/).filter(line => line.trim() !== '');
                   const recordCount = lines.length > 0 ? lines.length - 1 : 0;
                   const header = lines[0] || '';
-                  const columns = header.split(',').map(h => h.trim());
+                  const columns = header.split(',').map(h => h.trim().replace(/"/g, ''));
                   
                   recordCountDisplay.textContent = recordCount;
                   columnCountDisplay.textContent = columns.length;
-                  columnNamesDisplay.innerHTML = columns.map(c => \`<span class="de-upload-v2-column-tag">\${c}</span>\`).join('');
+                  columnTableBody.innerHTML = columns.map(c => \`<tr><td>\${c}</td></tr>\`).join('');
                   fileInfoContainer.style.display = 'flex';
               };
               reader.onerror = function() {
@@ -280,17 +284,14 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           dropZone.addEventListener('click', () => fileInput.click());
           fileInput.addEventListener('change', () => handleFileSelect(fileInput.files[0]));
           
-          ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-              dropZone.addEventListener(eventName, e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-              });
+          ['dragenter', 'dragover'].forEach(eventName => {
+              dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('active'); });
+          });
+          ['dragleave', 'drop'].forEach(eventName => {
+              dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('active'); });
           });
           
-          dropZone.addEventListener('dragenter', (e) => dropZone.classList.add('active'));
-          dropZone.addEventListener('dragleave', (e) => dropZone.classList.remove('active'));
           dropZone.addEventListener('drop', (e) => {
-              dropZone.classList.remove('active');
               handleFileSelect(e.dataTransfer.files[0]);
           });
 

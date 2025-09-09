@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
@@ -18,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowLeft, Trash2, PlusCircle, Plus, Megaphone, Library, ArrowUp, ArrowDown } from "lucide-react";
+import { GripVertical, HelpCircle, Text, Heading1, Heading2, Minus, Image, Film, Timer, MousePointerClick, StretchHorizontal, Cookie, Layers, PanelTop, Vote, Smile, MapPin, AlignStartVertical, AlignEndVertical, Star, Code, Share2, Columns, Lock, Zap, Bot, CalendarClock, Settings, LayoutGrid, Palette, Globe, Download, X, Copy, View, Sparkles, UploadCloud, Layers3, Hand, Circle, Square, ArrowLeft, Trash2, PlusCircle, Plus, Megaphone, Library, ArrowUp, ArrowDown, ChevronRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -54,6 +53,7 @@ import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { ColorInput } from "./settings/color-input";
 import { ComponentSettings } from './settings/component-settings';
 import { ImageInput } from "./settings/image-input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 
 interface SettingsPanelProps {
@@ -201,6 +201,8 @@ function ComponentItem({
   setSelectedComponentId,
   moveComponent,
   onDeleteComponent,
+  collapsedItems,
+  toggleCollapse,
   dndAttributes,
   dndListeners,
   children,
@@ -210,12 +212,16 @@ function ComponentItem({
   setSelectedComponentId: (id: string | null) => void;
   moveComponent: (id: string, direction: 'up' | 'down') => void;
   onDeleteComponent: (id: string) => void;
+  collapsedItems: Set<string>;
+  toggleCollapse: (id: string) => void;
   dndAttributes?: any;
   dndListeners?: any;
   children?: React.ReactNode;
 }) {
   const Icon = componentIcons[component.type] || Text;
   const isContainer = ['Columns', 'Div', 'PopUp'].includes(component.type);
+  const isCollapsed = collapsedItems.has(component.id);
+  const hasChildren = (children as React.ReactNode[])?.length > 0;
   const isLocked = isComponentLocked(component);
 
   const handleSelect = () => {
@@ -231,10 +237,15 @@ function ComponentItem({
         "group bg-card p-1 rounded-md border",
         isContainer ? "flex flex-col items-stretch gap-1.5" : "flex items-center gap-1"
       )}>
-          <div className="flex items-center min-w-0"> {/* Allow shrinking */}
+          <div className="flex items-center min-w-0">
             <Button asChild variant="ghost" size="icon" {...dndListeners} {...dndAttributes} className={cn("h-8 w-8 flex-shrink-0", isLocked ? "cursor-not-allowed" : "cursor-grab")} aria-label={`Arrastar componente ${component.type}`}>
                 <span><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
             </Button>
+            {isContainer && (
+                <Button variant="ghost" size="icon" onClick={() => toggleCollapse(component.id)} className="h-8 w-8 flex-shrink-0">
+                    <ChevronRight className={cn("h-4 w-4 transition-transform", !isCollapsed && "rotate-90")} />
+                </Button>
+            )}
             <Button
                 variant={selectedComponentId === component.id ? "secondary" : "ghost"}
                 className="flex-grow justify-start h-8 min-w-0 px-2"
@@ -243,6 +254,7 @@ function ComponentItem({
                 <div className="flex items-center gap-2 truncate">
                   <Icon className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate">{component.layerName || component.type}</span>
+                  {isContainer && isCollapsed && hasChildren && <Layers className="h-3 w-3 text-muted-foreground" />}
                   {component.abTestEnabled && <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />}
                 </div>
             </Button>
@@ -268,7 +280,7 @@ function ComponentItem({
                 </AlertDialog>
             </div>
           </div>
-          {isContainer && children && (
+          {isContainer && !isCollapsed && children && (
             <div className="pl-4 pr-1 pb-1">
                 {children}
             </div>
@@ -300,6 +312,19 @@ export function SettingsPanel({
   const [isSchedulingEnabled, setIsSchedulingEnabled] = useState(!!pageState?.publishDate || !!pageState?.expiryDate);
   const [tagInput, setTagInput] = useState('');
   const [userBrands, setUserBrands] = useState<Brand[]>([]);
+  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
+
+  const toggleCollapse = (id: string) => {
+    setCollapsedItems(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        return newSet;
+    });
+  };
 
   useEffect(() => {
     if (!pageState) return;
@@ -721,6 +746,8 @@ export function SettingsPanel({
                     setSelectedComponentId={setSelectedComponentId}
                     moveComponent={moveComponent}
                     onDeleteComponent={onDeleteComponent}
+                    collapsedItems={collapsedItems}
+                    toggleCollapse={toggleCollapse}
                 >
                     {['Columns', 'Div', 'PopUp'].includes(component.type) && (
                         <div 
@@ -760,6 +787,8 @@ export function SettingsPanel({
                     setSelectedComponentId={setSelectedComponentId}
                     moveComponent={moveComponent}
                     onDeleteComponent={onDeleteComponent}
+                    collapsedItems={collapsedItems}
+                    toggleCollapse={toggleCollapse}
                 >
                     {['Columns', 'Div', 'PopUp'].includes(component.type) && (
                         <div 

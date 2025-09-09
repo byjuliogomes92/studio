@@ -25,7 +25,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         `<option value="${campaign.deKey}">${campaign.name}</option>`
     ).join('');
 
-    const campaignSelectorHtml = campaigns.length > 0 ? `
+    const campaignSelectorHtml = campaigns.length > 1 ? `
         <div class="de-upload-v2-campaign-selector">
             <label for="campaign-select-${component.id}">Selecione a campanha de destino:</label>
             <select id="campaign-select-${component.id}">
@@ -76,11 +76,17 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               </div>
               <div class="de-upload-v2-drop-content selected" style="display:none;">
                   <div class="de-upload-v2-icon" style="${iconStyle}">${iconFile}</div>
-                  <p><strong id="filename-display-${component.id}"></strong><br><span id="filesize-display-${component.id}"></span></p>
+                  <p><strong id="filename-display-${component.id}"></strong></p>
               </div>
           </div>
           <input type="file" id="file-input-${component.id}" accept=".csv" style="display:none;" />
           
+          <div id="file-info-${component.id}" class="de-upload-v2-file-info" style="display:none;">
+              <div class="info-item"><strong>Registros:</strong> <span id="record-count-${component.id}"></span></div>
+              <div class="info-item"><strong>Tamanho:</strong> <span id="filesize-display-${component.id}"></span></div>
+              <div class="info-item"><strong>Colunas (<span id="column-count-${component.id}"></span>):</strong> <span id="column-names-${component.id}"></span></div>
+          </div>
+
           <div class="de-upload-v2-footer">
             <div id="feedback-container-${component.id}" class="de-upload-v2-feedback" style="display:none;">
                 <div id="progress-container-${component.id}" class="de-upload-v2-progress-container">
@@ -107,6 +113,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const fileInput = document.getElementById('file-input-${component.id}');
           const filenameDisplay = document.getElementById('filename-display-${component.id}');
           const filesizeDisplay = document.getElementById('filesize-display-${component.id}');
+          const recordCountDisplay = document.getElementById('record-count-${component.id}');
+          const columnCountDisplay = document.getElementById('column-count-${component.id}');
+          const columnNamesDisplay = document.getElementById('column-names-${component.id}');
+          const fileInfoContainer = document.getElementById('file-info-${component.id}');
           const uploadBtn = document.getElementById('upload-btn-${component.id}');
           const feedbackContainer = document.getElementById('feedback-container-${component.id}');
           const progressContainer = document.getElementById('progress-container-${component.id}');
@@ -155,8 +165,29 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
           
           function checkCanUpload() {
-              const campaignSelected = campaignSelect ? campaignSelect.value !== '' : true;
+              const campaignSelected = campaignSelect ? campaignSelect.value !== '' : (allCampaigns.length === 0 ? true : false);
               uploadBtn.disabled = !(selectedFile && campaignSelected);
+          }
+
+          function analyzeFile(file) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                  const text = e.target.result;
+                  const lines = text.split('\\n').filter(line => line.trim() !== '');
+                  const recordCount = lines.length > 0 ? lines.length - 1 : 0;
+                  const header = lines[0] || '';
+                  const columns = header.split(',').map(h => h.trim());
+                  
+                  recordCountDisplay.textContent = recordCount;
+                  columnCountDisplay.textContent = columns.length;
+                  columnNamesDisplay.textContent = columns.join(', ');
+                  fileInfoContainer.style.display = 'block';
+              };
+              reader.onerror = function() {
+                  showStatus('Erro ao ler o arquivo para análise.', 'error');
+                  fileInfoContainer.style.display = 'none';
+              };
+              reader.readAsText(file);
           }
 
           function handleFileSelect(file) {
@@ -166,6 +197,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   filesizeDisplay.textContent = formatBytes(file.size);
                   initialContent.style.display = 'none';
                   selectedContent.style.display = 'block';
+                  analyzeFile(file);
                   checkCanUpload();
                   hideStatus();
                   setProgress(0);
@@ -178,11 +210,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
           function resetState() {
               selectedFile = null;
-              fileInput.value = ''; // Reset file input
+              fileInput.value = '';
               filenameDisplay.textContent = '';
-              filesizeDisplay.textContent = '';
               initialContent.style.display = 'block';
               selectedContent.style.display = 'none';
+              fileInfoContainer.style.display = 'none';
               uploadBtn.disabled = true;
               submitBtnText.style.display = 'flex';
               submitBtnLoader.style.display = 'none';

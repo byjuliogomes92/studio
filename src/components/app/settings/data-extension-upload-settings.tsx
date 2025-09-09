@@ -227,12 +227,12 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="campaigns">
-                <AccordionTrigger>
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center w-full justify-between pr-4">
+                    <AccordionTrigger className="flex-1">
                         <span>Campanhas</span>
-                        <HelpDialog />
-                    </div>
-                </AccordionTrigger>
+                    </AccordionTrigger>
+                    <HelpDialog />
+                </div>
                 <AccordionContent className="pt-2">
                      <div className="p-3 border rounded-md bg-background">
                         <h4 className="font-semibold text-sm mb-2">Campanhas e Data Extensions de Destino</h4>

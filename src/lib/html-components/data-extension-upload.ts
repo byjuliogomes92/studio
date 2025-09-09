@@ -113,6 +113,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
           
           function setProgress(percentage) {
+              progressContainer.style.display = 'block';
               progressBar.style.width = percentage + '%';
           }
           
@@ -131,6 +132,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   checkCanUpload();
                   hideStatus();
                   setProgress(0);
+                  feedbackContainer.style.display = 'none';
               } else {
                   resetState();
                   showStatus('Por favor, selecione um arquivo .csv válido.', 'error');
@@ -149,6 +151,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               submitBtnLoader.style.display = 'none';
               hideStatus();
               setProgress(0);
+              progressContainer.style.display = 'none';
           }
 
           function displayDeInfo(deKey) {
@@ -211,23 +214,23 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               handleFileSelect(e.dataTransfer.files[0]);
           });
           
-          async function processFileWithFirebase(deKey) {
+          async function processFile(deKey) {
              try {
                 // Ensure Firebase is initialized
-                if (typeof firebase === 'undefined' || firebase.apps.length === 0) {
+                if (typeof firebase === 'undefined' || !firebase.apps.length) {
                    console.error("Firebase not initialized for upload component.");
                    throw new Error("A configuração do Firebase não foi encontrada.");
                 }
                 const functions = firebase.functions();
                 const processCsv = functions.httpsCallable('processCsvToSfmc');
                 
-                showStatus('Enviando para o servidor...', 'info');
+                showStatus('Processando o arquivo no servidor...', 'info');
                 setProgress(50);
                 
                 const result = await processCsv({
-                    filePath: 'uploads/' + selectedFile.name, // Simulated path
+                    filePath: 'simulated/path/' + selectedFile.name, // Path is simulated
                     deKey: deKey,
-                    restBaseUrl: 'https://mc-example.rest.marketingcloudapis.com/', // Simulated URL
+                    restBaseUrl: 'https://mc-example.rest.marketingcloudapis.com/', // URL is simulated
                     brandId: '${brandId}'
                 });
                 
@@ -242,7 +245,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
           uploadBtn.addEventListener('click', async () => {
               if (!selectedFile) return;
-              const selectedDeKey = campaignSelect ? campaignSelect.value : '${campaigns.length > 0 ? campaigns[0].deKey : ''}';
+              const selectedDeKey = campaignSelect ? campaignSelect.value : (allCampaigns.length > 0 ? allCampaigns[0].deKey : '');
               if (!selectedDeKey) {
                   showStatus('Por favor, selecione uma campanha de destino.', 'error');
                   return;
@@ -252,14 +255,13 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               submitBtnText.style.display = 'none';
               submitBtnLoader.style.display = 'inline-block';
               hideStatus();
-              progressContainer.style.display = 'block';
               setProgress(10); 
 
               try {
-                  const result = await processFileWithFirebase(selectedDeKey);
+                  const result = await processFile(selectedDeKey);
                   showStatus(result.data.message, 'success');
                   setProgress(100);
-                  setTimeout(resetState, 3000);
+                  setTimeout(resetState, 5000);
               } catch (err) {
                   showStatus('Erro: ' + (err.message || 'Falha no processamento.'), 'error');
                   uploadBtn.disabled = false;

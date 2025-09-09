@@ -30,7 +30,7 @@ export function AmpscriptSnippetDialog({ isOpen, onOpenChange, pageState, onData
     const [config, setConfig] = useState<Record<string, string>>({});
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cloudpagestudio.vercel.app';
     const pageUrl = `${baseUrl}/api/pages/${pageState.slug || pageState.id}`;
-    const snippet = `%%=TreatAsContent(HTTPGet(Concat("${pageUrl}")))%%`;
+    const snippet = `%%=TreatAsContentArea("CONTENT", HTTPGet("${pageUrl}", false, 0, @status))=%%`;
 
 
      useEffect(() => {

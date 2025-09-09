@@ -33,6 +33,7 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
         overlayColor,
         overlayOpacity,
         alignItems,
+        reverseOnMobile,
         ...otherStyles 
     } = styles;
     
@@ -69,7 +70,8 @@ export function renderColumns(component: PageComponent, childrenHtml: string): s
         `;
     }
 
-    const className = `columns-container ${heroClass} ${customClasses}`;
+    const reverseClass = reverseOnMobile ? 'reverse-on-mobile' : '';
+    const className = `columns-container ${heroClass} ${customClasses} ${reverseClass}`;
 
     // Handle column widths
     const columnCount = props.columnCount || 2;
@@ -110,7 +112,7 @@ function getStyleString(styles: any = {}): string {
         'isFullWidth', 'backgroundType', 'backgroundImageUrl', 
         'backgroundColor', 'gradientFrom', 'gradientTo', 
         'overlayEnabled', 'overlayColor', 'overlayOpacity',
-        'alignItems'
+        'alignItems', 'reverseOnMobile'
     ];
     return Object.entries(styles)
       .map(([key, value]) => {

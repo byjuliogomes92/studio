@@ -107,6 +107,14 @@ export function ColumnsSettings({ component, onPropChange, onSubPropChange, page
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="reverse-on-mobile">Inverter ordem no mobile</Label>
+                            <Switch
+                                id="reverse-on-mobile"
+                                checked={styles.reverseOnMobile || false}
+                                onCheckedChange={(checked) => handleStyleChange('reverseOnMobile', checked)}
+                            />
+                        </div>
                     </AccordionContent>
                 </AccordionItem>
                  <AccordionItem value="background">

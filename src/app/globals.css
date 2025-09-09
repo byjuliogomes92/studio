@@ -324,4 +324,10 @@
     background-color: hsla(var(--primary), 0.15);
     border-color: hsl(var(--primary));
   }
+
+  @media (max-width: 768px) {
+    .columns-container.reverse-on-mobile {
+      flex-direction: column-reverse;
+    }
+  }
 }

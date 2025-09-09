@@ -59,7 +59,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
     return `
-      <div id="${componentId}" class="de-upload-v2-container" style="background-color: ${styles.containerBackgroundColor || 'transparent'}; color: ${styles.textColor || 'hsl(var(--foreground))'};">
+      <div id="${componentId}" class="de-upload-v2-container" style="background-color: ${styles.containerBackgroundColor || 'transparent'}; color: ${styles.textColor || 'inherit'};">
           <h4>${title}</h4>
           
           <div class="de-upload-v2-instructions">
@@ -73,13 +73,13 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             <div id="de-info-table-wrapper-${component.id}" class="de-info-table-wrapper"></div>
           </div>
           
-          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="background-color: ${styles.dropZoneBg || 'transparent'}; border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};">
+          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="background-color: ${styles.dropZoneBg || ''}; border-color: ${styles.dropZoneBorder || ''};">
               <div class="de-upload-v2-drop-content initial">
-                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || 'hsl(var(--muted-foreground))'};">${iconUpload}</div>
+                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || ''};">${iconUpload}</div>
                   <p>${instructionText}</p>
               </div>
               <div class="de-upload-v2-drop-content selected" style="display:none;">
-                  <div class="de-upload-v2-icon" style="color: ${styles.iconColor || 'hsl(var(--muted-foreground))'};">${iconFile}</div>
+                  <div class="de-upload-v2-icon" style="color: ${styles.iconColor || ''};">${iconFile}</div>
                   <p><strong>Arquivo selecionado:</strong> <span id="filename-display-${component.id}"></span></p>
               </div>
           </div>
@@ -87,28 +87,19 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           
           <div id="file-info-${component.id}" class="de-upload-v2-file-info" style="display:none;">
             <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">Registros</span>
-                <span class="info-value" id="record-count-${component.id}">-</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Colunas</span>
-                <span class="info-value" id="column-count-${component.id}">-</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Tamanho</span>
-                <span class="info-value" id="filesize-display-${component.id}">-</span>
-              </div>
+                <div class="info-item"><span class="info-label">Registros</span><span class="info-value" id="record-count-${component.id}">-</span></div>
+                <div class="info-item"><span class="info-label">Colunas</span><span class="info-value" id="column-count-${component.id}">-</span></div>
+                <div class="info-item"><span class="info-label">Tamanho</span><span class="info-value" id="filesize-display-${component.id}">-</span></div>
             </div>
             <div class="de-upload-v2-column-info">
-              <span class="info-label">Nomes das Colunas</span>
-              <div class="de-upload-v2-column-tags-container" id="column-names-${component.id}"></div>
+                <span class="info-label">Nomes das Colunas</span>
+                <div class="de-upload-v2-column-tags-container" id="column-names-${component.id}"></div>
             </div>
           </div>
 
 
           <div class="de-upload-v2-footer">
-            <div id="feedback-container-${component.id}" style="display:none;">
+            <div id="feedback-container-${component.id}" class="de-upload-v2-feedback-container">
                 <div id="progress-container-${component.id}" class="de-upload-v2-progress-container">
                     <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar" style="background-color: ${styles.progressBarColor || 'var(--theme-color)'};"></div>
                 </div>
@@ -170,7 +161,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               } else if (type === 'error') {
                 statusMessage.style.color = '${styles.errorColor || '#dc2626'}';
               } else {
-                statusMessage.style.color = '${styles.textColor || 'hsl(var(--muted-foreground))'}';
+                statusMessage.style.color = '${styles.textColor || 'inherit'}';
               }
           }
           

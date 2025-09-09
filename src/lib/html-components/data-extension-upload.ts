@@ -16,7 +16,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     const {
         text: buttonText = "Processar Arquivo",
-        bgColor: buttonBgColor = "var(--theme-color)",
+        bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
         textColor: buttonTextColor = "#FFFFFF",
         icon: buttonIcon = "none",
     } = buttonProps;
@@ -52,15 +52,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
     const buttonContent = `${iconHtml}<span>${buttonText}</span>`;
     
-    const containerStyle = styles.containerBackgroundColor ? `background-color: ${styles.containerBackgroundColor};` : '';
-    const dropZoneStyle = `background-color: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'}; border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};`;
-    const iconStyle = `color: ${styles.iconColor || '#6b7280'};`;
-    const textStyle = `color: ${styles.textColor || '#6b7280'};`;
     const iconAnimationClass = animations.loop && animations.loop !== 'none' ? `animation-loop--${animations.loop}` : '';
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
     return `
-      <div id="${componentId}" class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}' style="${containerStyle}">
+      <div id="${componentId}" class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}' style="background-color: ${styles.containerBackgroundColor || 'transparent'};">
           <h4>${title}</h4>
           ${campaignSelectorHtml}
 
@@ -69,23 +65,35 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             <div id="de-info-table-wrapper-${component.id}" class="de-info-table-wrapper"></div>
           </div>
           
-          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="${dropZoneStyle}">
+          <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="background-color: ${styles.dropZoneBg || 'hsla(var(--primary-hsl), 0.05)'}; border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};">
               <div class="de-upload-v2-drop-content initial">
-                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="${iconStyle}">${iconUpload}</div>
-                  <p style="${textStyle}">${instructionText}</p>
+                  <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || '#6b7280'};">${iconUpload}</div>
+                  <p style="color: ${styles.textColor || '#6b7280'};">${instructionText}</p>
               </div>
               <div class="de-upload-v2-drop-content selected" style="display:none;">
-                  <div class="de-upload-v2-icon" style="${iconStyle}">${iconFile}</div>
+                  <div class="de-upload-v2-icon" style="color: ${styles.iconColor || '#6b7280'};">${iconFile}</div>
                   <p><strong id="filename-display-${component.id}"></strong></p>
               </div>
           </div>
           <input type="file" id="file-input-${component.id}" accept=".csv" style="display:none;" />
           
           <div id="file-info-${component.id}" class="de-upload-v2-file-info" style="display:none;">
-              <div class="info-item"><strong>Registros:</strong> <span id="record-count-${component.id}"></span></div>
-              <div class="info-item"><strong>Tamanho:</strong> <span id="filesize-display-${component.id}"></span></div>
-              <div class="info-item"><strong>Colunas (<span id="column-count-${component.id}"></span>):</strong> <span id="column-names-${component.id}"></span></div>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Registros</span>
+                <span class="info-value" id="record-count-${component.id}">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Tamanho</span>
+                <span class="info-value" id="filesize-display-${component.id}">-</span>
+              </div>
+            </div>
+            <div class="info-item-full">
+              <span class="info-label">Colunas (<span id="column-count-${component.id}">-</span>)</span>
+              <span class="info-value-cols" id="column-names-${component.id}">-</span>
+            </div>
           </div>
+
 
           <div class="de-upload-v2-footer">
             <div id="feedback-container-${component.id}" class="de-upload-v2-feedback" style="display:none;">
@@ -173,7 +181,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               const reader = new FileReader();
               reader.onload = function(e) {
                   const text = e.target.result;
-                  const lines = text.split('\\n').filter(line => line.trim() !== '');
+                  const lines = text.split(/\\r\\n|\\n/).filter(line => line.trim() !== '');
                   const recordCount = lines.length > 0 ? lines.length - 1 : 0;
                   const header = lines[0] || '';
                   const columns = header.split(',').map(h => h.trim());

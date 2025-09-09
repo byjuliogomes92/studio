@@ -189,7 +189,7 @@
 
   /* Data Extension Upload V2 Styles */
   .de-upload-v2-container {
-    border: 1px solid #e5e7eb;
+    border: 1px solid hsl(var(--border));
     border-radius: 0.75rem;
     padding: 1.5rem;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -246,10 +246,13 @@
   .de-upload-v2-info th, .de-upload-v2-info td {
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid hsl(var(--border));
+    text-align: left;
   }
   .de-upload-v2-info th {
     background-color: hsl(var(--muted));
     font-weight: 500;
+    position: sticky;
+    top: 0;
   }
    .de-upload-v2-info tr:last-child td {
     border-bottom: none;
@@ -273,8 +276,11 @@
     text-align: center;
   }
   .de-upload-v2-drop-zone:hover {
-    background-color: var(--de-upload-drop-zone-bg-hover, hsla(var(--primary-hsl), 0.15));
-    border-color: var(--de-upload-drop-zone-border-hover, hsl(var(--primary-hsl)));
+    background-color: hsla(var(--primary-hsl), 0.15) !important;
+    border-color: hsl(var(--primary-hsl)) !important;
+  }
+  .de-upload-v2-drop-content.selected strong {
+    color: hsl(var(--foreground));
   }
   .de-upload-v2-icon {
     margin: 0 auto 0.75rem auto;
@@ -291,33 +297,52 @@
   .de-upload-v2-drop-content p {
     margin: 0;
   }
-   .de-upload-v2-drop-content.selected p strong {
-    color: hsl(var(--foreground));
-  }
-  .de-upload-v2-file-info {
+   .de-upload-v2-file-info {
     margin-top: 1rem;
-    padding: 0.75rem;
+    padding: 1rem;
     border: 1px solid hsl(var(--border));
     border-radius: 0.5rem;
     font-size: 0.875rem;
     text-align: left;
     background-color: hsl(var(--muted));
   }
+  .de-upload-v2-file-info .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
   .de-upload-v2-file-info .info-item {
+    display: flex;
+    flex-direction: column;
+  }
+  .de-upload-v2-file-info .info-label {
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.75rem;
     margin-bottom: 0.25rem;
   }
-  .de-upload-v2-file-info .info-item:last-child {
-    margin-bottom: 0;
-  }
-  .de-upload-v2-file-info .info-item strong {
+  .de-upload-v2-file-info .info-value {
+    font-weight: 600;
     color: hsl(var(--foreground));
   }
-  .de-upload-v2-file-info span {
+  .de-upload-v2-file-info .info-item-full {
+    display: flex;
+    flex-direction: column;
+  }
+  .de-upload-v2-file-info .info-value-cols {
+    font-family: monospace;
+    font-size: 0.8rem;
     color: hsl(var(--muted-foreground));
+    word-break: break-all;
+  }
+
+  .de-upload-v2-footer {
+    margin-top: 1.5rem;
   }
 
   .de-upload-v2-feedback {
-    margin: 1rem 0;
+    margin-bottom: 1rem;
   }
   .de-upload-v2-progress-container {
     background-color: hsl(var(--muted));
@@ -334,11 +359,9 @@
   .de-upload-v2-status {
       font-size: 0.875rem;
       min-height: 1.25rem;
+      text-align: center;
   }
 
-  .de-upload-v2-footer {
-    margin-top: 1.5rem;
-  }
   
   .de-upload-v2-container .custom-button {
     width: 100%;
@@ -346,8 +369,8 @@
   }
 
   .de-upload-v2-container .custom-button .button-loader {
-     border-top: 3px solid var(--theme-color-hover);
-     border-left-color: var(--theme-color-hover);
+     border-top: 3px solid var(--theme-color, #3b82f6);
+     border-left-color: var(--theme-color, #3b82f6);
   }
 
   .ftp-upload-drop-area {
@@ -365,4 +388,5 @@
     }
   }
 }
+
 

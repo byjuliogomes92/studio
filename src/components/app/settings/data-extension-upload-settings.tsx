@@ -1,15 +1,88 @@
 
-import type { PageComponent } from "@/lib/types";
+
+import type { PageComponent, DataExtensionColumn, CampaignOption } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
-interface CampaignOption {
-  id: string;
-  name: string;
-  deKey: string;
+function ColumnManager({
+    columns = [],
+    onColumnsChange,
+}: {
+    columns: DataExtensionColumn[];
+    onColumnsChange: (columns: DataExtensionColumn[]) => void;
+}) {
+    const handleColumnChange = (id: string, field: keyof DataExtensionColumn, value: any) => {
+        const newColumns = columns.map(col =>
+            col.id === id ? { ...col, [field]: value } : col
+        );
+        onColumnsChange(newColumns);
+    };
+
+    const addColumn = () => {
+        const newColumn: DataExtensionColumn = {
+            id: `col-${Date.now()}`,
+            name: '',
+            dataType: 'Text',
+            isNullable: true,
+            isPrimaryKey: false
+        };
+        onColumnsChange([...(columns || []), newColumn]);
+    };
+
+    const removeColumn = (id: string) => {
+        onColumnsChange(columns.filter(col => col.id !== id));
+    };
+
+    return (
+        <div className="space-y-3">
+            {columns.map(col => (
+                <div key={col.id} className="p-2 border rounded-md space-y-2 bg-muted/20 relative">
+                     <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-7 w-7 text-destructive" onClick={() => removeColumn(col.id)}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                            <Label htmlFor={`col-name-${col.id}`} className="text-xs">Nome da Coluna</Label>
+                            <Input id={`col-name-${col.id}`} value={col.name} onChange={e => handleColumnChange(col.id, 'name', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                             <Label htmlFor={`col-type-${col.id}`} className="text-xs">Tipo de Dado</Label>
+                             <Select value={col.dataType} onValueChange={(value) => handleColumnChange(col.id, 'dataType', value)}>
+                                <SelectTrigger id={`col-type-${col.id}`}><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Text">Text</SelectItem>
+                                    <SelectItem value="Number">Number</SelectItem>
+                                    <SelectItem value="Date">Date</SelectItem>
+                                    <SelectItem value="Boolean">Boolean</SelectItem>
+                                    <SelectItem value="EmailAddress">EmailAddress</SelectItem>
+                                    <SelectItem value="Phone">Phone</SelectItem>
+                                </SelectContent>
+                             </Select>
+                        </div>
+                    </div>
+                     <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-2">
+                             <Switch id={`col-nullable-${col.id}`} checked={col.isNullable} onCheckedChange={(checked) => handleColumnChange(col.id, 'isNullable', checked)} />
+                            <Label htmlFor={`col-nullable-${col.id}`} className="text-xs">Pode ser Nulo</Label>
+                        </div>
+                         <div className="flex items-center gap-2">
+                             <Switch id={`col-pk-${col.id}`} checked={col.isPrimaryKey} onCheckedChange={(checked) => handleColumnChange(col.id, 'isPrimaryKey', checked)} />
+                            <Label htmlFor={`col-pk-${col.id}`} className="text-xs">Chave Primária</Label>
+                        </div>
+                    </div>
+                </div>
+            ))}
+            <Button variant="outline" size="sm" className="w-full" onClick={addColumn}>
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Coluna
+            </Button>
+        </div>
+    )
 }
 
 function CampaignManager({
@@ -19,7 +92,7 @@ function CampaignManager({
     campaigns: CampaignOption[];
     onPropChange: (prop: string, value: any) => void;
 }) {
-    const handleCampaignChange = (id: string, field: 'name' | 'deKey', value: string) => {
+    const handleCampaignChange = (id: string, field: 'name' | 'deKey' | 'columns', value: any) => {
         const newCampaigns = campaigns.map((c) =>
             c.id === id ? { ...c, [field]: value } : c
         );
@@ -31,6 +104,7 @@ function CampaignManager({
             id: `campaign-${Date.now()}`,
             name: 'Nova Campanha',
             deKey: '',
+            columns: []
         };
         onPropChange('campaigns', [...(campaigns || []), newCampaign]);
     };
@@ -41,34 +115,31 @@ function CampaignManager({
 
     return (
         <div className="space-y-3">
-            {campaigns.map((campaign) => (
-                <div key={campaign.id} className="p-3 border rounded-md space-y-3 bg-muted/40 relative">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-1 right-1 h-7 w-7 text-destructive"
-                        onClick={() => removeCampaign(campaign.id)}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-1">
-                        <Label htmlFor={`campaign-name-${campaign.id}`} className="text-xs">Nome da Campanha (visível para o usuário)</Label>
-                        <Input
-                            id={`campaign-name-${campaign.id}`}
-                            value={campaign.name}
-                            onChange={(e) => handleCampaignChange(campaign.id, 'name', e.target.value)}
-                        />
-                    </div>
-                     <div className="space-y-1">
-                        <Label htmlFor={`campaign-dekey-${campaign.id}`} className="text-xs">Chave Externa da Data Extension</Label>
-                        <Input
-                            id={`campaign-dekey-${campaign.id}`}
-                            value={campaign.deKey}
-                            onChange={(e) => handleCampaignChange(campaign.id, 'deKey', e.target.value)}
-                        />
-                    </div>
-                </div>
-            ))}
+             <Accordion type="multiple" className="w-full space-y-3">
+                {campaigns.map((campaign) => (
+                    <AccordionItem key={campaign.id} value={campaign.id} className="p-3 border rounded-md space-y-3 bg-muted/40 relative">
+                        <div className="flex items-center justify-between">
+                            <AccordionTrigger className="p-0 text-base font-semibold">{campaign.name || 'Nova Campanha'}</AccordionTrigger>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeCampaign(campaign.id)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <AccordionContent className="pt-2 space-y-3">
+                            <div className="space-y-1">
+                                <Label htmlFor={`campaign-name-${campaign.id}`} className="text-xs">Nome da Campanha (visível para o usuário)</Label>
+                                <Input id={`campaign-name-${campaign.id}`} value={campaign.name} onChange={(e) => handleCampaignChange(campaign.id, 'name', e.target.value)} />
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor={`campaign-dekey-${campaign.id}`} className="text-xs">Chave Externa da Data Extension</Label>
+                                <Input id={`campaign-dekey-${campaign.id}`} value={campaign.deKey} onChange={(e) => handleCampaignChange(campaign.id, 'deKey', e.target.value)} />
+                            </div>
+                            <Separator />
+                            <h5 className="font-medium text-sm pt-2">Estrutura de Colunas</h5>
+                            <ColumnManager columns={campaign.columns} onColumnsChange={(cols) => handleCampaignChange(campaign.id, 'columns', cols)} />
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
             <Button variant="outline" className="w-full" onClick={addCampaign}>
                 <Plus className="mr-2 h-4 w-4" /> Adicionar Campanha
             </Button>
@@ -98,7 +169,7 @@ export function DataExtensionUploadSettings({ component, onPropChange }: Compone
                 <Input id="de-upload-button-text" value={props.buttonText || "Processar Arquivo"} onChange={e => onPropChange('buttonText', e.target.value)} />
             </div>
             <Separator />
-            <div className="p-3 border rounded-md bg-muted/40">
+            <div className="p-3 border rounded-md bg-background">
                 <h4 className="font-semibold text-sm mb-2">Campanhas e Data Extensions de Destino</h4>
                 <CampaignManager campaigns={props.campaigns} onPropChange={onPropChange} />
             </div>

@@ -1,12 +1,13 @@
 
-import type { PageComponent, CloudPage } from '@/lib/types';
+
+import type { PageComponent, CloudPage, CampaignOption } from '@/lib/types';
 
 export function renderDataExtensionUpload(component: PageComponent, pageState: CloudPage): string {
     const { 
         title = "Upload para Data Extension",
         instructionText = "Arraste e solte o arquivo CSV aqui, ou clique para selecionar.",
         buttonText = "Processar Arquivo",
-        campaigns = [], // Now an array of campaigns
+        campaigns = [],
     } = component.props;
     
     const { brandId } = pageState;
@@ -15,7 +16,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const iconUpload = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;
     const iconFile = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
 
-    const campaignOptionsHtml = campaigns.map((campaign: { deKey: string, name: string }) => 
+    const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
         `<option value="${campaign.deKey}">${campaign.name}</option>`
     ).join('');
 
@@ -30,9 +31,15 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     ` : '';
 
     return `
-      <div class="de-upload-v2-container">
+      <div class="de-upload-v2-container" data-campaigns='${JSON.stringify(campaigns)}'>
           <h4>${title}</h4>
           ${campaignSelectorHtml}
+
+          <div id="de-info-${component.id}" class="de-upload-v2-info" style="display:none;">
+            <h5>Estrutura da Data Extension:</h5>
+            <div id="de-info-table-wrapper-${component.id}" class="de-info-table-wrapper"></div>
+          </div>
+          
           <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone">
               <div class="de-upload-v2-drop-content initial">
                   <div class="de-upload-v2-icon">${iconUpload}</div>
@@ -78,6 +85,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const selectedContent = dropZone.querySelector('.de-upload-v2-drop-content.selected');
           const submitBtnText = uploadBtn.querySelector('.button-text');
           const submitBtnLoader = uploadBtn.querySelector('.button-loader');
+          const deInfoContainer = document.getElementById('de-info-${component.id}');
+          const deInfoTableWrapper = document.getElementById('de-info-table-wrapper-${component.id}');
+          
+          const allCampaigns = JSON.parse(container.dataset.campaigns || '[]');
           
           let selectedFile = null;
 
@@ -122,7 +133,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   setProgress(0);
               } else {
                   resetState();
-                  showStatus('Por favor, selecione um arquivo .csv valido.', 'error');
+                  showStatus('Por favor, selecione um arquivo .csv válido.', 'error');
               }
           }
 
@@ -140,8 +151,43 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               setProgress(0);
           }
 
+          function displayDeInfo(deKey) {
+            const campaign = allCampaigns.find(c => c.deKey === deKey);
+            if (!campaign || !campaign.columns || campaign.columns.length === 0) {
+              deInfoContainer.style.display = 'none';
+              return;
+            }
+
+            const tableRows = campaign.columns.map(col => \`
+              <tr>
+                <td>\${col.name} \${col.isPrimaryKey ? '<span class="pk-badge">PK</span>' : ''}</td>
+                <td>\${col.dataType}</td>
+                <td>\${col.isNullable ? 'Sim' : 'Não'}</td>
+              </tr>
+            \`).join('');
+
+            deInfoTableWrapper.innerHTML = \`
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome da Coluna</th>
+                    <th>Tipo de Dado</th>
+                    <th>Pode ser Nulo?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${tableRows}
+                </tbody>
+              </table>
+            \`;
+            deInfoContainer.style.display = 'block';
+          }
+
           if(campaignSelect) {
-            campaignSelect.addEventListener('change', checkCanUpload);
+            campaignSelect.addEventListener('change', () => {
+                checkCanUpload();
+                displayDeInfo(campaignSelect.value);
+            });
           }
           dropZone.addEventListener('click', () => fileInput.click());
           fileInput.addEventListener('change', () => handleFileSelect(fileInput.files[0]));
@@ -165,7 +211,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               handleFileSelect(e.dataTransfer.files[0]);
           });
           
-          async function processFileWithFirebase(deKey, brandId) {
+          async function processFileWithFirebase(deKey) {
              try {
                 // Ensure Firebase is initialized
                 if (typeof firebase === 'undefined' || firebase.apps.length === 0) {
@@ -175,20 +221,14 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                 const functions = firebase.functions();
                 const processCsv = functions.httpsCallable('processCsvToSfmc');
                 
-                // This is a simplified simulation. A real implementation would upload the file to
-                // Firebase Storage first, get the path, and then call the function.
-                // For this prototype, we'll just call the function with simulated data.
-                const simulatedFilePath = 'uploads/' + selectedFile.name;
-                const restBaseUrl = 'https://mc-example.rest.marketingcloudapis.com/';
-                
                 showStatus('Enviando para o servidor...', 'info');
                 setProgress(50);
                 
                 const result = await processCsv({
-                    filePath: simulatedFilePath,
+                    filePath: 'uploads/' + selectedFile.name, // Simulated path
                     deKey: deKey,
-                    restBaseUrl: restBaseUrl,
-                    brandId: brandId
+                    restBaseUrl: 'https://mc-example.rest.marketingcloudapis.com/', // Simulated URL
+                    brandId: '${brandId}'
                 });
                 
                 setProgress(100);
@@ -216,10 +256,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               setProgress(10); 
 
               try {
-                  const result = await processFileWithFirebase(selectedDeKey, '${brandId}');
+                  const result = await processFileWithFirebase(selectedDeKey);
                   showStatus(result.data.message, 'success');
                   setProgress(100);
-                  setTimeout(resetState, 3000); // Reset after 3 seconds on success
+                  setTimeout(resetState, 3000);
               } catch (err) {
                   showStatus('Erro: ' + (err.message || 'Falha no processamento.'), 'error');
                   uploadBtn.disabled = false;

@@ -227,6 +227,21 @@ export interface ResponsiveProps {
   mobileStyles?: { [key: string]: any };
 }
 
+export interface DataExtensionColumn {
+    id: string;
+    name: string;
+    dataType: 'Text' | 'Number' | 'Date' | 'Boolean' | 'EmailAddress' | 'Phone';
+    isNullable: boolean;
+    isPrimaryKey: boolean;
+}
+
+export interface CampaignOption {
+    id: string;
+    name: string;
+    deKey: string;
+    columns: DataExtensionColumn[];
+}
+
 export interface PageComponent {
   id: string;
   type: ComponentType;

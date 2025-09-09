@@ -854,7 +854,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                         <SheetTitle className="flex items-center justify-between">
                             <span>Configurar: {selectedComponent.layerName || selectedComponent.type}</span>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDuplicateComponent(selectedComponent.id)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => duplicateComponent(selectedComponent.id)}>
                                     <Copy className="h-4 w-4" />
                                 </Button>
                                 <AlertDialog>
@@ -872,7 +872,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => onDeleteComponent(selectedComponent.id)}>Excluir</AlertDialogAction>
+                                            <AlertDialogAction onClick={() => removeComponent(selectedComponent.id)}>Excluir</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -888,8 +888,8 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
                                 onCodeEdit={handleCodeEdit}
                                 projectPages={projectPages}
                                 pageState={pageState}
-                                onDuplicate={onDuplicateComponent}
-                                onDelete={onDeleteComponent}
+                                onDuplicate={duplicateComponent}
+                                onDelete={removeComponent}
                             />
                         </div>
                     </ScrollArea>

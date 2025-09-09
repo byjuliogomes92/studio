@@ -27,6 +27,7 @@ import { ToastAction } from "../ui/toast";
 import { Switch } from "../ui/switch";
 import { shortenUrl } from "@/ai/flows/shorten-url-flow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { EditCodeDialog } from "./edit-code-dialog";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -146,17 +147,19 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   const pageUrl = pageState ? `${window.location.origin}/api/pages/${pageState.slug || pageState.id}` : '';
 
   const fetchComments = useCallback(async () => {
-    if (!pageId || pageId === 'new') return;
-    setIsLoadingComments(true);
-    try {
-        const pageComments = await getCommentsForPage(pageId);
-        setComments(pageComments);
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os comentários.' });
-    } finally {
-        setIsLoadingComments(false);
-    }
-  }, [pageId, toast]);
+    // Comments disabled for now
+    return;
+    // if (!pageId || pageId === 'new') return;
+    // setIsLoadingComments(true);
+    // try {
+    //     const pageComments = await getCommentsForPage(pageId);
+    //     setComments(pageComments);
+    // } catch (error) {
+    //     toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os comentários.' });
+    // } finally {
+    //     setIsLoadingComments(false);
+    // }
+  }, []);
 
 
   useEffect(() => {
@@ -682,7 +685,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
   }
 
   return (
-    <>
+    <TooltipProvider>
     <div className="flex flex-col h-screen bg-muted/40">
       <header className="flex items-center justify-between h-14 px-4 border-b flex-shrink-0 bg-card">
         <div className="flex items-center gap-2">
@@ -698,9 +701,16 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant={editorMode === 'comment' ? "secondary" : "outline"} size="icon" onClick={() => handleModeToggle('comment')} aria-label="Modo de Comentário">
-                <MessageSquare className="h-5 w-5" />
-            </Button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" disabled>
+                        <MessageSquare className="h-5 w-5" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Comentários (em breve)</p>
+                </TooltipContent>
+            </Tooltip>
             <Button variant={editorMode === 'selection' ? 'secondary' : 'outline'} size="icon" onClick={() => handleModeToggle('selection')} aria-label="Modo de Seleção">
                 <Hand className="h-5 w-5"/>
             </Button>
@@ -909,7 +919,7 @@ export function CloudPageForge({ pageId }: CloudPageForgeProps) {
             />
         )}
     </div>
-    </>
+    </TooltipProvider>
   );
 }
 

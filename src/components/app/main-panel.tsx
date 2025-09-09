@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -224,9 +225,10 @@ export function MainPanel({ pageState, setPageState, onDataExtensionKeyChange, o
                           "border-8 border-background shadow-2xl rounded-lg bg-white w-full h-full"
                       )}
                   />
-                  {comments.map(comment => (
+                  {/* Comments disabled for now */}
+                  {/* {comments.map(comment => (
                         <CommentPin key={comment.id} comment={comment} onUpdate={onRefreshComments} />
-                    ))}
+                    ))} */}
               </div>
             </div>
           </TabsContent>

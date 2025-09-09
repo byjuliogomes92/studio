@@ -2,9 +2,9 @@
 import type { PageComponent } from '@/lib/types';
 
 export function renderTitle(component: PageComponent, isForPreview: boolean, hideAmpscript: boolean = false): string {
-    const { props, pageState } = component as any; // Allow access to pageState if attached
+    const { props } = component;
     const styles = props.styles || {};
-    const brand = pageState?.brand;
+    const brand = (component as any).brand;
     const idOverride = props.idOverride;
 
     let finalStyles: any = { ...styles };

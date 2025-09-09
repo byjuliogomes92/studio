@@ -26,7 +26,7 @@ export function renderButton(component: PageComponent, pageState?: CloudPage): s
         href = action.anchorId;
     }
 
-    const brandStyles = pageState?.brand?.components?.button;
+    const brandStyles = (component as any).brand?.components?.button;
 
     // The wrapper div only controls horizontal alignment.
     const wrapperStyle = `text-align: ${align};`;

@@ -51,7 +51,10 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
       .sort((a, b) => a.order - b.order) // Sort by order before rendering
       .map((component) => {
         // Pass the full pageState down to individual renderers
-        const componentWithState = { ...component, pageState };
+        const componentWithState = { 
+            ...component, 
+            brand: pageState.brand // Directly attach brand info to component for render functions
+        };
         
         // Use component.children if it exists, otherwise find children via parentId
         const children = component.children || allComponents.filter(c => c.parentId === component.id);

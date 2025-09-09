@@ -4,11 +4,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, HelpCircle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ColorInput } from './color-input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 function ColumnManager({
@@ -148,6 +150,42 @@ function CampaignManager({
     );
 }
 
+function HelpDialog() {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                    <HelpCircle className="h-4 w-4" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Como Usar o Upload para Data Extension</DialogTitle>
+                    <DialogDescription>
+                        Este componente permite que usuários com acesso à página enviem um arquivo CSV para ser importado em uma Data Extension específica no Marketing Cloud.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4 text-sm">
+                    <p><strong>Passo 1: Configure as Campanhas</strong></p>
+                    <p>Na seção "Campanhas", adicione uma ou mais opções. Cada opção representa uma Data Extension de destino. Para cada uma, você deve fornecer:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li><strong>Nome da Campanha:</strong> O nome que o usuário verá no seletor da página.</li>
+                        <li><strong>Chave Externa da DE:</strong> O "External Key" exato da sua Data Extension no SFMC.</li>
+                    </ul>
+                     <p><strong>Passo 2: Defina as Colunas (Opcional, mas recomendado)</strong></p>
+                     <p>Para cada campanha, você pode pré-definir as colunas da Data Extension. Isso serve como um guia visual na página, mostrando ao usuário qual a estrutura esperada do arquivo CSV.</p>
+
+                    <p><strong>Passo 3: Preparação do Arquivo CSV</strong></p>
+                    <p>O arquivo CSV que o usuário enviar deve seguir uma regra crucial: <strong>a primeira linha (cabeçalho) do CSV deve conter os nomes das colunas que correspondem exatamente aos nomes dos campos na sua Data Extension.</strong></p>
+
+                     <p><strong>Passo 4: Funcionalidade na Página</strong></p>
+                     <p>Na página publicada, o usuário selecionará a campanha desejada (se houver mais de uma), escolherá o arquivo CSV e o componente fará o upload dos dados para a Data Extension correspondente.</p>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 interface ComponentSettingsProps {
   component: PageComponent;
   onPropChange: (prop: string, value: any) => void;
@@ -169,6 +207,7 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
     };
 
     return (
+        <TooltipProvider>
         <Accordion type="multiple" defaultValue={['general']} className="w-full">
             <AccordionItem value="general">
                 <AccordionTrigger>Geral</AccordionTrigger>
@@ -188,7 +227,12 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="campaigns">
-                <AccordionTrigger>Campanhas</AccordionTrigger>
+                <AccordionTrigger>
+                    <div className="flex items-center gap-2">
+                        <span>Campanhas</span>
+                        <HelpDialog />
+                    </div>
+                </AccordionTrigger>
                 <AccordionContent className="pt-2">
                      <div className="p-3 border rounded-md bg-background">
                         <h4 className="font-semibold text-sm mb-2">Campanhas e Data Extensions de Destino</h4>
@@ -202,25 +246,25 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
                      <div className="space-y-2">
                         <Label>Cores da Área de Upload</Label>
                         <div className="grid grid-cols-2 gap-4">
-                            <ColorInput label="Fundo" value={styles.dropZoneBg} onChange={value => handleStyleChange('dropZoneBg', value)} brand={pageState.brand} />
-                            <ColorInput label="Fundo (Hover)" value={styles.dropZoneBgHover} onChange={value => handleStyleChange('dropZoneBgHover', value)} brand={pageState.brand} />
-                            <ColorInput label="Borda" value={styles.dropZoneBorder} onChange={value => handleStyleChange('dropZoneBorder', value)} brand={pageState.brand} />
-                            <ColorInput label="Borda (Hover)" value={styles.dropZoneBorderHover} onChange={value => handleStyleChange('dropZoneBorderHover', value)} brand={pageState.brand} />
+                            <ColorInput label="Fundo" value={styles.dropZoneBg || ''} onChange={value => handleStyleChange('dropZoneBg', value)} brand={pageState.brand} />
+                            <ColorInput label="Fundo (Hover)" value={styles.dropZoneBgHover || ''} onChange={value => handleStyleChange('dropZoneBgHover', value)} brand={pageState.brand} />
+                            <ColorInput label="Borda" value={styles.dropZoneBorder || ''} onChange={value => handleStyleChange('dropZoneBorder', value)} brand={pageState.brand} />
+                            <ColorInput label="Borda (Hover)" value={styles.dropZoneBorderHover || ''} onChange={value => handleStyleChange('dropZoneBorderHover', value)} brand={pageState.brand} />
                         </div>
                      </div>
                       <div className="space-y-2">
                         <Label>Cores do Ícone e Texto</Label>
                         <div className="grid grid-cols-2 gap-4">
-                            <ColorInput label="Ícone" value={styles.iconColor} onChange={value => handleStyleChange('iconColor', value)} brand={pageState.brand} />
-                            <ColorInput label="Texto" value={styles.textColor} onChange={value => handleStyleChange('textColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Ícone" value={styles.iconColor || ''} onChange={value => handleStyleChange('iconColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Texto" value={styles.textColor || ''} onChange={value => handleStyleChange('textColor', value)} brand={pageState.brand} />
                         </div>
                      </div>
                       <div className="space-y-2">
                         <Label>Cores do Feedback</Label>
                         <div className="grid grid-cols-3 gap-4">
-                            <ColorInput label="Barra de Progresso" value={styles.progressBarColor} onChange={value => handleStyleChange('progressBarColor', value)} brand={pageState.brand} />
-                            <ColorInput label="Sucesso" value={styles.successColor} onChange={value => handleStyleChange('successColor', value)} brand={pageState.brand} />
-                            <ColorInput label="Erro" value={styles.errorColor} onChange={value => handleStyleChange('errorColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Progresso" value={styles.progressBarColor || ''} onChange={value => handleStyleChange('progressBarColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Sucesso" value={styles.successColor || ''} onChange={value => handleStyleChange('successColor', value)} brand={pageState.brand} />
+                            <ColorInput label="Erro" value={styles.errorColor || ''} onChange={value => handleStyleChange('errorColor', value)} brand={pageState.brand} />
                         </div>
                      </div>
                 </AccordionContent>
@@ -254,5 +298,6 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
+        </TooltipProvider>
     );
 }

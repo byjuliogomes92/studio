@@ -11,12 +11,12 @@ const db = getFirestore();
 
 
 const getEncryptionKey = () => {
-    // É crucial que esta variável de ambiente seja configurada no ambiente do Firebase Functions.
-    // firebase functions:config:set keys.encryption="sua-chave-secreta-muito-longa"
+    // This environment variable is crucial and must be set in the Firebase Functions environment.
+    // e.g., firebase functions:config:set keys.encryption="your-very-long-secret-key"
     const key = functions.config().keys?.encryption;
     if (!key) {
-        console.error("FATAL: A chave de criptografia não está definida nas configurações do Firebase Functions.");
-        throw new functions.https.HttpsError("internal", "O servidor não está configurado para criptografia.");
+        console.error("FATAL: Encryption key is not defined in Firebase Functions config.");
+        throw new functions.https.HttpsError("internal", "Server is not configured for encryption.");
     }
     return key;
 };
@@ -205,4 +205,3 @@ exports.processCsvToSfmc = functions
         }
     });
 
-```

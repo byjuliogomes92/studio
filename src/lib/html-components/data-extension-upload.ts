@@ -17,6 +17,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const {
         text: buttonText = "Processar Arquivo",
         icon: buttonIcon = "none",
+        iconPosition = "left",
+        bgColor: buttonBgColor = "var(--theme-color)",
+        textColor: buttonTextColor = "#FFFFFF",
     } = buttonProps;
 
     const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
@@ -48,7 +51,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     };
     
     const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
-    const buttonContent = `${iconHtml}<span>${buttonText}</span>`;
+    const buttonContent = iconPosition === 'right'
+        ? `<span>${buttonText}</span>${iconHtml}`
+        : `${iconHtml}<span>${buttonText}</span>`;
     
     const iconAnimationClass = animations.loop && animations.loop !== 'none' ? `animation-loop--${animations.loop}` : '';
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
@@ -97,7 +102,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             </div>
             <div class="info-item-full">
               <span class="info-label">Nomes das Colunas</span>
-              <div class="info-value-cols" id="column-names-${component.id}"></div>
+              <div class="de-upload-v2-column-tags-container" id="column-names-${component.id}"></div>
             </div>
           </div>
 
@@ -110,7 +115,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                 <div id="status-message-${component.id}" class="de-upload-v2-status"></div>
             </div>
 
-            <button id="upload-btn-${component.id}" class="custom-button" style="background-color: ${buttonProps.bgColor || 'var(--theme-color)'}; color: ${buttonProps.textColor || '#FFFFFF'};" disabled>
+            <button id="upload-btn-${component.id}" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};" disabled>
                <span class="button-text">${buttonContent}</span>
                <div class="button-loader"></div>
             </button>
@@ -158,7 +163,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
 
           function showStatus(message, type) {
-              feedbackContainer.style.display = 'block';
+              feedbackContainer.style.display = 'flex';
               statusMessage.textContent = message;
               if (type === 'success') {
                 statusMessage.style.color = '${styles.successColor || '#16a34a'}';
@@ -291,7 +296,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               });
           });
           
-          dropZone.addEventListener('mouseover', (e) => dropZone.classList.add('active'));
+          dropZone.addEventListener('dragenter', (e) => dropZone.classList.add('active'));
           dropZone.addEventListener('dragleave', (e) => dropZone.classList.remove('active'));
           dropZone.addEventListener('drop', (e) => {
               dropZone.classList.remove('active');

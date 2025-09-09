@@ -29,7 +29,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const campaignSelectorHtml = campaigns.length > 1 ? `
         <div class="de-upload-v2-campaign-selector">
             <label for="campaign-select-${component.id}">Selecione a campanha de destino:</label>
-            <select id="campaign-select-${component.id}" style="border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'}; background-color: ${styles.dropZoneBg || 'hsl(var(--background))'}; color: ${styles.textColor || 'hsl(var(--foreground))'};">
+            <select id="campaign-select-${component.id}">
                 <option value="" disabled selected>-- Escolha uma opção --</option>
                 ${campaignOptionsHtml}
             </select>
@@ -59,8 +59,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const iconHoverAnimationClass = animations.hover && animations.hover !== 'none' ? `animation-hover--${animations.hover}` : '';
 
     return `
-      <div id="${componentId}" class="de-upload-v2-container" style="background-color: ${styles.containerBackgroundColor || 'transparent'};">
-          <h4 style="color: ${styles.textColor || 'hsl(var(--foreground))'};">${title}</h4>
+      <div id="${componentId}" class="de-upload-v2-container" style="background-color: ${styles.containerBackgroundColor || 'transparent'}; color: ${styles.textColor || 'hsl(var(--foreground))'};">
+          <h4>${title}</h4>
           
           <div class="de-upload-v2-instructions">
             <p><strong>Como funciona:</strong> Este componente faz o upload de um arquivo CSV para uma Data Extension no Marketing Cloud. Certifique-se de que a <strong>primeira linha (cabeçalho) do seu arquivo CSV</strong> contenha os nomes das colunas que correspondem exatamente aos campos da sua Data Extension de destino.</p>
@@ -76,11 +76,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           <div id="drop-zone-${component.id}" class="de-upload-v2-drop-zone" style="background-color: ${styles.dropZoneBg || 'transparent'}; border-color: ${styles.dropZoneBorder || 'hsl(var(--border-hsl))'};">
               <div class="de-upload-v2-drop-content initial">
                   <div class="de-upload-v2-icon ${iconAnimationClass} ${iconHoverAnimationClass}" style="color: ${styles.iconColor || 'hsl(var(--muted-foreground))'};">${iconUpload}</div>
-                  <p style="color: ${styles.textColor || 'hsl(var(--muted-foreground))'};">${instructionText}</p>
+                  <p>${instructionText}</p>
               </div>
               <div class="de-upload-v2-drop-content selected" style="display:none;">
                   <div class="de-upload-v2-icon" style="color: ${styles.iconColor || 'hsl(var(--muted-foreground))'};">${iconFile}</div>
-                  <p><strong id="filename-display-${component.id}" style="color: ${styles.textColor || 'hsl(var(--foreground))'};"></strong></p>
+                  <p><strong>Arquivo selecionado:</strong> <span id="filename-display-${component.id}"></span></p>
               </div>
           </div>
           <input type="file" id="file-input-${component.id}" accept=".csv" style="display:none;" />
@@ -100,7 +100,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                 <span class="info-value" id="filesize-display-${component.id}">-</span>
               </div>
             </div>
-            <div class="info-item-full">
+            <div class="de-upload-v2-column-info">
               <span class="info-label">Nomes das Colunas</span>
               <div class="de-upload-v2-column-tags-container" id="column-names-${component.id}"></div>
             </div>
@@ -108,7 +108,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
 
           <div class="de-upload-v2-footer">
-            <div id="feedback-container-${component.id}" class="de-upload-v2-feedback" style="display:none;">
+            <div id="feedback-container-${component.id}" style="display:none;">
                 <div id="progress-container-${component.id}" class="de-upload-v2-progress-container">
                     <div id="progress-bar-${component.id}" class="de-upload-v2-progress-bar" style="background-color: ${styles.progressBarColor || 'var(--theme-color)'};"></div>
                 </div>
@@ -163,14 +163,14 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
 
           function showStatus(message, type) {
-              feedbackContainer.style.display = 'flex';
+              feedbackContainer.style.display = 'block';
               statusMessage.textContent = message;
               if (type === 'success') {
                 statusMessage.style.color = '${styles.successColor || '#16a34a'}';
               } else if (type === 'error') {
                 statusMessage.style.color = '${styles.errorColor || '#dc2626'}';
               } else {
-                statusMessage.style.color = '${styles.textColor || '#6b7280'}';
+                statusMessage.style.color = '${styles.textColor || 'hsl(var(--muted-foreground))'}';
               }
           }
           

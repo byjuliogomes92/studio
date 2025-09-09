@@ -266,25 +266,24 @@
     margin-left: 0.5rem;
   }
   .de-upload-v2-drop-zone {
-    border: 2px dashed var(--de-upload-drop-zone-border, hsl(var(--border-hsl)));
+    border: 2px dashed; /* color set by inline style */
     border-radius: 0.5rem;
     padding: 2rem;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
-    background-color: var(--de-upload-drop-zone-bg, hsla(var(--primary-hsl), 0.05));
     text-align: center;
   }
-  .de-upload-v2-drop-zone:hover,
+
   .de-upload-v2-drop-zone.highlight {
-    background-color: var(--de-upload-drop-zone-bg-hover, hsla(var(--primary-hsl), 0.15));
-    border-color: var(--de-upload-drop-zone-border-hover, hsl(var(--primary-hsl)));
+    /* Hover styles are now handled via inline <style> tag */
   }
+
   .de-upload-v2-drop-content .de-upload-v2-icon {
-    color: var(--de-upload-icon-color, #6b7280);
+    /* color set by inline style */
     margin: 0 auto 0.75rem auto;
   }
   .de-upload-v2-drop-content p {
-    color: var(--de-upload-text-color, #6b7280);
+    /* color set by inline style */
     margin: 0;
   }
    .de-upload-v2-drop-content.selected p strong {
@@ -301,7 +300,7 @@
     margin-bottom: 0.5rem;
   }
   .de-upload-v2-progress-bar {
-    background-color: var(--de-upload-progress-bar-color, hsl(var(--primary-hsl)));
+    /* background-color set by inline style */
     height: 100%;
     width: 0%;
     transition: width 0.3s ease;
@@ -310,9 +309,6 @@
     font-size: 0.875rem;
     min-height: 1.25rem;
   }
-  .de-upload-v2-status.info { color: var(--de-upload-progress-bar-color, hsl(var(--primary-hsl))); }
-  .de-upload-v2-status.success { color: var(--de-upload-success-color, #16a34a); }
-  .de-upload-v2-status.error { color: var(--de-upload-error-color, #dc2626); }
 
   .de-upload-v2-container .custom-button {
     width: 100%;

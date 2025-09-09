@@ -13,7 +13,10 @@ export async function GET(
   const { pageid } = params;
 
   if (!pageid) {
-    return new NextResponse('Page ID or Slug is required', { status: 400 });
+    return new NextResponse('Page ID or Slug is required', { 
+        status: 400,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+     });
   }
 
   try {
@@ -27,7 +30,10 @@ export async function GET(
     // A single, robust check to see if the page is valid for viewing.
     if (!pageData || pageData.status !== 'published') {
       const notFoundHtml = `<!DOCTYPE html><html><head><title>Página não encontrada</title></head><body style="font-family: sans-serif; text-align: center; padding: 40px;"><h1>Página não encontrada</h1><p>A página que você está tentando acessar não existe ou não está mais disponível.</p></body></html>`;
-      return new NextResponse(notFoundHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      return new NextResponse(notFoundHtml, { 
+        status: 200, 
+        headers: { 'Content-Type': 'text/html; charset=utf-8' } 
+      });
     }
 
     const now = new Date();
@@ -44,11 +50,17 @@ export async function GET(
     // Check scheduling dates
     if (publishDate && now < publishDate) {
       const unavailableHtml = `<!DOCTYPE html><html><head><title>Página indisponível</title></head><body style="font-family: sans-serif; text-align: center; padding: 40px;"><h1>Página indisponível</h1><p>Esta página ainda não está disponível. Tente novamente mais tarde.</p></body></html>`;
-      return new NextResponse(unavailableHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      return new NextResponse(unavailableHtml, { 
+          status: 200, 
+          headers: { 'Content-Type': 'text/html; charset=utf-8' } 
+      });
     }
     if (expiryDate && now > expiryDate) {
       const expiredHtml = `<!DOCTYPE html><html><head><title>Página expirada</title></head><body style="font-family: sans-serif; text-align: center; padding: 40px;"><h1>Página Expirada</h1><p>O conteúdo que você está tentando acessar não está mais disponível.</p></body></html>`;
-      return new NextResponse(expiredHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      return new NextResponse(expiredHtml, { 
+          status: 200, 
+          headers: { 'Content-Type': 'text/html; charset=utf-8' } 
+      });
     }
     
     // Asynchronously log the page view. We don't wait for it to complete.
@@ -78,6 +90,9 @@ export async function GET(
     console.error(`[API Route /api/pages/${pageid}] Internal Server Error:`, error.message, error.stack);
     // Return a generic error page with a 200 status so SFMC can render it.
     const errorHtml = `<!DOCTYPE html><html><head><title>Erro no Servidor</title></head><body style="font-family: sans-serif; text-align: center; padding: 40px;"><h1>Erro Interno</h1><p>Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.</p><!-- ${error.message} --></body></html>`;
-    return new NextResponse(errorHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new NextResponse(errorHtml, { 
+        status: 200, 
+        headers: { 'Content-Type': 'text/html; charset=utf-8' } 
+    });
   }
 }

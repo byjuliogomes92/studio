@@ -1,7 +1,5 @@
 
 import type { PageComponent } from '@/lib/types';
-import { CloudPage } from '../types';
-
 
 export function renderSubtitle(component: PageComponent, isForPreview: boolean, hideAmpscript: boolean = false): string {
     const { props, pageState } = component as any; // Allow access to pageState if attached

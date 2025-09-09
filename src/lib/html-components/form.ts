@@ -161,7 +161,7 @@ export function renderForm(component: PageComponent, pageState: CloudPage, isFor
                  </div>
                  
                  <div class="custom-fields-wrapper">
-                  ${customFields.map(field => renderCustomField(field, finalInputStyles)).join('\n')}
+                  ${customFields.map((field: CustomFormField) => renderCustomField(field, finalInputStyles)).join('\n')}
                  </div>
            
                 ${fields.optin?.enabled ? `

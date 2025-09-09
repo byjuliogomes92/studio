@@ -1,6 +1,5 @@
 
 import type { PageComponent } from '@/lib/types';
-import { CloudPage } from '../types';
 
 export function renderParagraph(component: PageComponent, isForPreview: boolean, hideAmpscript: boolean = false): string {
     const { props, pageState } = component as any; // Allow access to pageState if attached

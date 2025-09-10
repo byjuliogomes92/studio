@@ -5,36 +5,42 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
     if (!security || security.type !== 'password' || !security.passwordConfig) {
-        return ''; 
+        return '%%[ /* Bloco de segurança desativado. */ ]%%'; 
     }
     
     const config = security.passwordConfig;
-    if (!config.dataExtensionKey || !config.identifierColumn || !config.passwordColumn || !config.urlParameter) {
-        return '/* Invalid Password Config: Missing required fields. */'; 
-    }
-    
-    // This block now handles both the initial load (from URL param) and the form submission.
+
+    // Bloco de teste isolado para a função Lookup()
     return `
-        SET @page_identifier_param = AttributeValue("${config.urlParameter}") /* From URL */
-        SET @page_identifier_form = RequestParameter("page_identifier") /* From Form */
+%%[
+    /* --- INÍCIO: TESTE ISOLADO DA FUNÇÃO LOOKUP() --- */
+    VAR @lookupValue, @correctPassword, @identifier
+    
+    /* Passo 1: Edite o valor abaixo para um NOME que exista na sua DE de teste. */
+    SET @identifier = "JULIO" 
+    
+    /* Passo 2: A função Lookup() é executada com os dados exatos da sua DE. */
+    SET @correctPassword = Lookup("D3D99DF5-EA8D-4729-8056-93633F476699", "SENHA", "NOME", @identifier)
 
-        /* Determine the correct identifier to use */
-        IF NOT EMPTY(@page_identifier_form) THEN
-            SET @identifier = @page_identifier_form
-        ELSE
-            SET @identifier = @page_identifier_param
-        ENDIF
+    /* Passo 3: O resultado é impresso em um comentário HTML visível no código-fonte. */
+]%%
 
-        SET @submittedPassword = RequestParameter("page_password")
+<!-- 
+    ================================================================
+    RESULTADO DO TESTE (Verifique o código-fonte da sua CloudPage):
+    
+    A senha encontrada para o identificador '%%=v(@identifier)=%%' foi: '%%=v(@correctPassword)=%%'
+    
+    - Se uma senha aparecer aqui, o Lookup() está funcionando e o problema está na lógica anterior.
+    - Se a página ainda der erro 500, o problema está na própria função Lookup() (verifique permissões da DE, etc).
+    - Se a senha ficar em branco, o identificador '%%=v(@identifier)=%%' não foi encontrado na DE.
+    ================================================================
+-->
 
-        IF NOT EMPTY(@submittedPassword) AND NOT EMPTY(@identifier) THEN
-            SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
-            IF @submittedPassword == @correctPassword THEN
-                SET @isAuthenticated = true
-            ELSE
-                SET @loginError = "Credenciais incorretas. Por favor, tente novamente."
-            ENDIF
-        ENDIF
+%%[ 
+    /* Lógica de autenticação desativada para o teste. A página sempre será exibida. */
+    SET @isAuthenticated = true 
+]%%
     `;
 }
 
@@ -49,13 +55,14 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
         return '';
     }
     
+    const urlParam = security.passwordConfig.urlParameter || 'id';
 
     return `
 <div class="password-protection-container">
     <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
         <h2>Acesso Restrito</h2>
         <p>Por favor, insira suas credenciais para continuar.</p>
-        <input type="hidden" name="${urlParam}" value="%%=v(@identifier)=%%">
+        <input type="hidden" name="page_identifier_param" value="%%=v(@page_identifier_param)=%%">
         <input type="text" name="page_identifier" placeholder="Seu Identificador" value="%%=v(@identifier)=%%" required>
         <input type="password" name="page_password" placeholder="Sua senha" required>
         <button type="submit">Acessar</button>

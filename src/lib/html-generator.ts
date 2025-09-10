@@ -1124,12 +1124,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         const varList = new Set<string>();
         varList.add('@showThanks');
         varList.add('@isAuthenticated');
+        varList.add('@loginError'); // Initialize always for safety
 
         if(securityLogic) {
             varList.add('@submittedPassword');
             varList.add('@identifier');
             varList.add('@correctPassword');
-            varList.add('@loginError');
         }
 
         if(prefillLogic) {
@@ -1146,9 +1146,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
             'SET @showThanks = "false"',
             'IF RequestParameter("form-submitted") == "true" THEN SET @showThanks = "true" ENDIF',
             needsSecurity ? `SET @isAuthenticated = false` : `SET @isAuthenticated = true`,
+            `SET @loginError = ""`, // Always initialize to empty
             securityLogic,
-            // Adiciona lógica de erro para login
-            needsSecurity ? `IF RequestParameter("page_password") != "" AND @isAuthenticated == false THEN SET @loginError = "Credenciais incorretas." ELSE SET @loginError = "" ENDIF` : '',
             prefillLogic,
             customLogic,
         ];

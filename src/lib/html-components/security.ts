@@ -13,7 +13,6 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
         return '/* Invalid Password Config */'; 
     }
     
-    // Retorna apenas a lógica, sem VAR ou IF/ELSE. Isso será tratado no gerador principal.
     return `
         SET @submittedPassword = RequestParameter("page_password")
         SET @identifier = RequestParameter("page_identifier")
@@ -21,6 +20,8 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
             SET @correctPassword = Lookup("${config.dataExtensionKey}", "${config.passwordColumn}", "${config.identifierColumn}", @identifier)
             IF @submittedPassword == @correctPassword THEN
                 SET @isAuthenticated = true
+            ELSE
+                SET @loginError = "Credenciais incorretas. Por favor, tente novamente."
             ENDIF
         ENDIF
     `;
@@ -37,7 +38,6 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
         return '';
     }
 
-    // A lógica de erro agora está no bloco principal de AMPScript, então o IF aqui foi removido.
     return `
 <div class="password-protection-container">
     <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">

@@ -1,64 +1,88 @@
 
 import type { CloudPage } from '../types';
 
-export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
+export const getSSJSSecurityBlock = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
-    if (!security || security.type === 'none') {
+    if (security?.type !== 'password' || !security.passwordConfig) {
         return '';
     }
 
-    if (security.type === 'sso') {
-        return `
-            SET @Id = QueryParameter("id")
-            SET @jobid = QueryParameter("jobid")
-            SET @listid = QueryParameter("listid")
-            SET @batchid = QueryAparameter("batchid")
-            SET @EnterpriseID = 'ENT_ID' /* <-- Substitua pelo seu Enterprise ID */
-            SET @RedirectURL = CloudPagesURL(PAGE_ID_HERE) /* <-- Substitua pelo ID da sua CloudPage */
-            SET @LoginURL = CONCAT("https://", @EnterpriseID, ".login.exacttarget.com/hub-sso.aspx?sso_id=", @Id, "&sso_jobid=", @jobid, "&sso_listid=", @listid, "&sso_batchid=", @batchid, "&sso_redirect=", URLEncode(@RedirectURL))
-            SET @IsAuthorized = IIF(IsEmailAddress(QueryParameter("sso_email")),true,false)
-            IF NOT @IsAuthorized THEN
-                Redirect(@LoginURL)
-            ENDIF
-            SET @isAuthenticated = @IsAuthorized
-        `;
-    }
-    
-    if (security.type === 'password' && security.passwordConfig) {
-        const { dataExtensionKey, identifierColumn, passwordColumn, urlParameter } = security.passwordConfig;
+    const { 
+        dataExtensionKey, 
+        identifierColumn, 
+        passwordColumn, 
+        urlParameter 
+    } = security.passwordConfig;
 
-        return `
-            /* --- Logic for Password Protection --- */
-            SET @identifier_from_url = QueryParameter("${urlParameter}")
-            SET @identifier_from_post = RequestParameter("page_identifier")
-            SET @submittedPassword = RequestParameter("page_password")
+    // Return the SSJS block as a string, ready to be inserted into a <script> tag.
+    return `
+Platform.Load("core", "1");
 
-            IF NOT EMPTY(@identifier_from_post) THEN
-                SET @identifier = @identifier_from_post
-            ELSE
-                SET @identifier = @identifier_from_url
-            ENDIF
-            
-            IF Request.Method == "POST" AND NOT EMPTY(@submittedPassword) THEN
-                IF NOT EMPTY(@identifier) THEN
-                    SET @correctPassword = Lookup("${dataExtensionKey}", "${passwordColumn}", "${identifierColumn}", @identifier)
-                    IF @submittedPassword == @correctPassword THEN
-                        SET @isAuthenticated = true
-                    ELSE
-                        SET @loginError = "Senha ou identificador inválido."
-                        SET @isAuthenticated = false
-                    ENDIF
-                ELSE
-                    SET @loginError = "Identificador não fornecido."
-                    SET @isAuthenticated = false
-                ENDIF
-            ELSE
-                 SET @isAuthenticated = false
-            ENDIF
-        `;
+try {
+    // ==============================
+    // CONFIGURAÇÕES
+    // ==============================
+    var deKey = "${dataExtensionKey}";
+    var identifierColumn = "${identifierColumn}";
+    var passwordColumn = "${passwordColumn}";
+    var urlParam = "${urlParameter}";
+
+    var identifier = "";
+    var password = "";
+    var isAuthenticated = false;
+    var errorMessage = "";
+
+    // ==============================
+    // CAPTURA PARÂMETROS
+    // ==============================
+    if (Request.GetFormField("page_identifier")) {
+        identifier = Request.GetFormField("page_identifier");
+    } else if (Request.GetQueryStringParameter(urlParam)) {
+        identifier = Request.GetQueryStringParameter(urlParam);
     }
-    
-    return '';
+
+    if (Request.GetFormField("page_password")) {
+        password = Request.GetFormField("page_password");
+    }
+
+    // ==============================
+    // VALIDA LOGIN
+    // ==============================
+    if (password && identifier) {
+        try {
+            var de = DataExtension.Init(deKey);
+            var data = de.Rows.Lookup([identifierColumn], [identifier]);
+
+            if (data && data.length > 0) {
+                var correctPassword = data[0][passwordColumn];
+
+                if (password == correctPassword) {
+                    isAuthenticated = true;
+                } else {
+                    errorMessage = "Senha ou identificador incorreto.";
+                }
+            } else {
+                errorMessage = "Usuário não encontrado.";
+            }
+        } catch(ex) {
+            errorMessage = "Erro ao validar credenciais: " + ex.message;
+        }
+    } else if (Request.Method == "POST" && !password) {
+        errorMessage = "A senha é obrigatória.";
+    }
+
+    // ==============================
+    // PASSA VARIÁVEIS PARA O AMPScript
+    // ==============================
+    Variable.SetValue("@identifier", identifier);
+    Variable.SetValue("@isAuthenticated", isAuthenticated);
+    Variable.SetValue("@errorMessage", errorMessage);
+
+} catch(ex) {
+    Variable.SetValue("@errorMessage", "Erro geral do servidor: " + ex.message);
+    Variable.SetValue("@isAuthenticated", false);
+}
+`;
 }
 
 
@@ -66,7 +90,23 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
     if (security?.type === 'sso') {
-        return `<div class="sso-redirect-container"><h1>Redirecionando para o login...</h1><script>window.location.href = "%%=v(@LoginURL)=%%";</script></div>`;
+        // This part remains unchanged as it uses AMPScript which is fine.
+        return `
+            %%[
+                SET @Id = QueryParameter("id")
+                SET @jobid = QueryParameter("jobid")
+                SET @listid = QueryParameter("listid")
+                SET @batchid = QueryParameter("batchid")
+                SET @EnterpriseID = 'ENT_ID' /* <-- Substitua pelo seu Enterprise ID */
+                SET @RedirectURL = CloudPagesURL(PAGE_ID_HERE) /* <-- Substitua pelo ID da sua CloudPage */
+                SET @LoginURL = CONCAT("https://", @EnterpriseID, ".login.exacttarget.com/hub-sso.aspx?sso_id=", @Id, "&sso_jobid=", @jobid, "&sso_listid=", @listid, "&sso_batchid=", @batchid, "&sso_redirect=", URLEncode(@RedirectURL))
+                SET @IsAuthorized = IIF(IsEmailAddress(QueryParameter("sso_email")),true,false)
+                IF NOT @IsAuthorized THEN
+                    Redirect(@LoginURL)
+                ENDIF
+                SET @isAuthenticated = @IsAuthorized
+            ]%%
+        `;
     }
     
     if (security?.type === 'password') {
@@ -74,11 +114,15 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
             <div class="password-protection-container">
                 <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
                     <h2>Acesso Restrito</h2>
-                    <p>Por favor, insira sua senha para continuar.</p>
+                    <p>Por favor, insira suas credenciais para continuar.</p>
                     <input type="text" name="page_identifier" placeholder="Seu Identificador" value="%%=v(@identifier)=%%" required>
                     <input type="password" name="page_password" placeholder="Senha" required>
-                    <div class="error-message" style="display: %%=IIF(EMPTY(@loginError), 'none', 'block')=%%;">%%=v(@loginError)=%%</div>
                     <button type="submit">Acessar</button>
+                    %%[ IF NOT Empty(@errorMessage) THEN ]%%
+                        <div class="error-message" style="display:block; color: red; margin-top: 10px;">
+                            %%=v(@errorMessage)=%%
+                        </div>
+                    %%[ ENDIF ]%%
                 </form>
             </div>
         `;

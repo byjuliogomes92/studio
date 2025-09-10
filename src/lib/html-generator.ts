@@ -1,7 +1,7 @@
 
 import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
 import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
-import { getAmpscriptSecurityBlock, getSecurityFormHtml } from './html-components/security';
+import { getSSJSSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';
 import { renderTitle } from './html-components/title';
@@ -1110,42 +1110,21 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 
     const rootComponents = components.filter(c => c.parentId === null);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
-
-    let initialAmpscript = '';
-    if (needsAmpscript) {
-        const securityLogic = getAmpscriptSecurityBlock(pageState);
-        const prefillLogic = getPrefillAmpscript(pageState);
-        const customLogic = (meta.customAmpscript || '').replace(/%%\[|\]%%/g, '').trim();
-
-        const allLogicBlocks = [securityLogic, prefillLogic, customLogic];
-        
-        const allVars = new Set<string>();
-        allLogicBlocks.forEach(block => {
-            const matches = block.match(/@\w+/g) || [];
-            matches.forEach(match => allVars.add(match));
-        });
-
-        // Add standard variables that might be used
-        ['showThanks', 'isAuthenticated', 'loginError', 'identifier', 'identifier_from_url', 'identifier_from_post', 'submittedPassword', 'correctPassword'].forEach(v => allVars.add(`@${v}`));
-        // Add form fields from prefill
-        (prefillLogic.match(/@\w+/g) || []).forEach(match => allVars.add(match));
-
-
-        const varDeclarations = allVars.size > 0 ? `VAR ${Array.from(allVars).join(', ')}` : '';
-        
-        const logicParts = [
-            varDeclarations,
-            'SET @showThanks = "false"',
-            'IF RequestParameter("form-submitted") == "true" THEN SET @showThanks = "true" ENDIF',
-            needsSecurity ? `SET @isAuthenticated = false` : `SET @isAuthenticated = true`,
-            `SET @loginError = ""`,
-            securityLogic,
-            prefillLogic,
-            customLogic,
-        ];
-        
-        initialAmpscript = `%%[ \n${logicParts.filter(Boolean).join('\n')} \n]%%`;
+    
+    // Unify all script logic
+    let serverLogic = '';
+    if(needsAmpscript) {
+        if(hasForm) {
+            serverLogic += getFormSubmissionScript(pageState);
+        }
+        if(needsSecurity) {
+            serverLogic += getSSJSSecurityBlock(pageState);
+        }
     }
+    
+    const serverScriptBlock = serverLogic ? `<script runat="server">${serverLogic}</script>` : '';
+
+    const amspcriptBlock = `%%[ ${getPrefillAmpscript(pageState)} ]%%`;
 
     const { typography } = pageState.brand || {};
     const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
@@ -1178,17 +1157,15 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
 
     let bodyContent = '';
-    const ssjsScript = (needsAmpscript && hasForm) ? `<script runat="server">${getFormSubmissionScript(pageState)}</script>` : '';
 
     if (needsAmpscript && needsSecurity) {
-        bodyContent = `%%[IF @isAuthenticated == true THEN]%%
-            ${ssjsScript}
+        bodyContent = `%%[ IF @isAuthenticated == true THEN ]%%
             <main style="${mainStyle}">${mainContentHtml}</main>
-        %%[ELSE]%%
+        %%[ ELSE ]%%
             ${getSecurityFormHtml(pageState)}
-        %%[ENDIF]%%`;
+        %%[ ENDIF ]%%`;
     } else {
-        bodyContent = `${ssjsScript}<main style="${mainStyle}">${mainContentHtml}</main>`;
+        bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
 
     const firebaseConfigScript = isForPreview && (pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload'))
@@ -1224,7 +1201,8 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${initialAmpscript}
+${serverScriptBlock}
+${amspcriptBlock}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}

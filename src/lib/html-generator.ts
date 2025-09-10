@@ -46,7 +46,7 @@ function getStyleString(styles: any = {}, forbiddenKeys: string[] = []): string 
 }
 
 
-function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, hideAmpscript: boolean = false): string {
+function renderComponents(components: PageComponent[], allComponents: PageComponent[], pageState: CloudPage, isForPreview: boolean, baseUrl: string, hideAmpscript: boolean = false): string {
     return components
       .sort((a, b) => a.order - b.order) // Sort by order before rendering
       .map((component) => {
@@ -67,14 +67,14 @@ function renderComponents(components: PageComponent[], allComponents: PageCompon
                 let columnsContent = '';
                 for (let i = 0; i < columnCount; i++) {
                     const columnComponents = sortedChildren.filter(c => c.column === i);
-                    columnsContent += `<div class="column" style="${getColumnStyle(component.props.columnStyles, i)}">${renderComponents(columnComponents, allComponents, pageState, isForPreview, hideAmpscript)}</div>`;
+                    columnsContent += `<div class="column" style="${getColumnStyle(component.props.columnStyles, i)}">${renderComponents(columnComponents, allComponents, pageState, isForPreview, baseUrl, hideAmpscript)}</div>`;
                 }
                 childrenHtml = columnsContent;
             } else {
-                 childrenHtml = renderComponents(sortedChildren, allComponents, pageState, isForPreview, hideAmpscript);
+                 childrenHtml = renderComponents(sortedChildren, allComponents, pageState, isForPreview, baseUrl, hideAmpscript);
             }
         }
-        return renderComponent(componentWithState, pageState, isForPreview, childrenHtml, hideAmpscript);
+        return renderComponent(componentWithState, pageState, isForPreview, childrenHtml, baseUrl, hideAmpscript);
       }).join('\n');
 }
 
@@ -90,7 +90,7 @@ const getColumnStyle = (columnStyles: any[] = [], index: number): string => {
 }
 
 
-const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string, hideAmpscript: boolean = false): string => {
+const renderComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string, baseUrl: string, hideAmpscript: boolean = false): string => {
   const styles = component.props.styles || {};
   const responsive = component.props.responsive || {};
   const {
@@ -144,7 +144,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
   const wrapperStyleString = getStyleString(wrapperStyles);
   
   // Render the component's HTML
-  const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, hideAmpscript);
+  const renderedComponent = renderSingleComponent(component, pageState, isForPreview, childrenHtml, baseUrl, hideAmpscript);
   
   // These components render their own wrappers or are positioned absolutely
   if (['FloatingImage', 'FloatingButton', 'WhatsApp', 'Stripe', 'Footer', 'PopUp', 'Header', 'Columns', 'Div'].includes(component.type)) {
@@ -163,7 +163,7 @@ const renderComponent = (component: PageComponent, pageState: CloudPage, isForPr
 };
 
 
-export const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = '', hideAmpscript: boolean = false): string => {
+export const renderSingleComponent = (component: PageComponent, pageState: CloudPage, isForPreview: boolean, childrenHtml: string = '', baseUrl: string, hideAmpscript: boolean = false): string => {
   switch (component.type) {
     case 'Header': return renderHeader(component);
     case 'Banner': return renderBanner(component);
@@ -190,7 +190,7 @@ export const renderSingleComponent = (component: PageComponent, pageState: Cloud
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState, isForPreview);
     case 'FTPUpload': return renderFTPUpload(component, pageState);
-    case 'DataExtensionUpload': return renderDataExtensionUpload(component, pageState);
+    case 'DataExtensionUpload': return renderDataExtensionUpload(component, pageState, baseUrl);
     case 'FloatingImage': return renderFloatingImage(component);
     case 'FloatingButton': return renderFloatingButton(component);
     case 'Calendly': return renderCalendly(component);
@@ -1109,7 +1109,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const needsAmpscript = !isForPreview && !hideAmpscript;
 
     const rootComponents = components.filter(c => c.parentId === null);
-    const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
+    const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, baseUrl, hideAmpscript);
     
     // Unify all script logic
     let serverLogic = '';
@@ -2521,7 +2521,4 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 ${firebaseConfigScript}
 </body>
-</html>`;
-
-    return html;
-}
+</html>

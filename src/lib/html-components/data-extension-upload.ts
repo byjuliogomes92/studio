@@ -1,7 +1,7 @@
 
 import type { PageComponent, CloudPage, CampaignGroup, UploadTarget } from '@/lib/types';
 
-export function renderDataExtensionUpload(component: PageComponent, pageState: CloudPage): string {
+export function renderDataExtensionUpload(component: PageComponent, pageState: CloudPage, baseUrl: string): string {
     const { 
         title = "Upload para Data Extension",
         instructionText = "Arraste e solte o arquivo CSV aqui, ou clique para selecionar.",
@@ -41,7 +41,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             <label for="upload-target-select-${componentId}">1. Selecione o destino do arquivo:</label>
             <select id="upload-target-select-${componentId}" class="de-upload-v2-select">
                 <option value="" disabled selected>-- Escolha uma opção --</option>
-                ${campaignGroups[0].uploadTargets.map((target: UploadTarget) => `<option value="${target.deKey}">${target.name}</option>`).join('')}
+                ${campaignGroups[0].uploadTargets.map((target: UploadTarget) => `<option value="${target.id}">${target.name}</option>`).join('')}
             </select>
         </div>
     ` : '');
@@ -103,6 +103,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const form = document.getElementById('${formId}');
           if (!form) return;
           const componentId = '${componentId}';
+          const brandId = '${brandId}';
+          const apiBaseUrl = '${baseUrl}';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
 
           const step1 = form.querySelector('#step1-' + componentId);
@@ -150,6 +152,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   }
               });
           } else if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length > 1) {
+              // Directly populate if only one group with multiple targets
               updateTargetOptions(campaignGroupsData[0].uploadTargets);
           }
 
@@ -185,12 +188,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
           function getSelectedTarget() {
               let selectedTargetId;
-              if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length > 1) {
+              if (targetSelect) {
                  selectedTargetId = targetSelect.value;
-              } else if (groupSelect) {
-                 selectedTargetId = targetSelect.value;
-              } else {
-                 selectedTargetId = campaignGroupsData[0]?.uploadTargets[0]?.id;
+              } else if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length === 1) {
+                 selectedTargetId = campaignGroupsData[0].uploadTargets[0].id;
               }
 
               for(const group of campaignGroupsData) {
@@ -291,7 +292,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
               
               const columnMapping = {};
-              let hasPrimaryKeyMapping = false;
               
               if (mappingTable) {
                   mappingTable.querySelectorAll('select').forEach(select => {
@@ -327,13 +327,13 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   progressBar.style.width = '50%';
                   const csvData = reader.result;
                   
-                  const response = await fetch('/api/sfmc-upload', {
+                  const response = await fetch(apiBaseUrl + '/api/sfmc-upload', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         csvData, 
                         deKey: selectedTarget.deKey, 
-                        brandId: '${brandId}',
+                        brandId: brandId,
                         columnMapping: columnMapping
                     }),
                   });

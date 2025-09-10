@@ -1,11 +1,11 @@
 
-import type { PageComponent, CloudPage, CampaignOption } from '@/lib/types';
+import type { PageComponent, CloudPage, CampaignGroup, UploadTarget } from '@/lib/types';
 
 export function renderDataExtensionUpload(component: PageComponent, pageState: CloudPage): string {
     const { 
         title = "Upload para Data Extension",
         instructionText = "Arraste e solte o arquivo CSV aqui, ou clique para selecionar.",
-        campaigns = [],
+        campaignGroups = [],
         buttonProps = {}
     } = component.props;
     
@@ -20,19 +20,31 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         icon: buttonIcon = "send"
     } = buttonProps;
     
-    const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
-        `<option value="${campaign.deKey}">${campaign.name}</option>`
+    const campaignGroupOptionsHtml = campaignGroups.map((group: CampaignGroup) => 
+        `<option value="${group.id}">${group.name}</option>`
     ).join('');
 
-    const campaignSelectorHtml = campaigns.length > 1 ? `
+    const campaignSelectorHtml = campaignGroups.length > 1 ? `
         <div class="de-upload-v2-campaign-selector">
-            <label for="campaign-select-${componentId}">1. Selecione a campanha de destino:</label>
-            <select id="campaign-select-${componentId}" class="de-upload-v2-select">
+            <label for="campaign-group-select-${componentId}">1. Selecione a campanha:</label>
+            <select id="campaign-group-select-${componentId}" class="de-upload-v2-select">
                 <option value="" disabled selected>-- Escolha uma opção --</option>
-                ${campaignOptionsHtml}
+                ${campaignGroupOptionsHtml}
             </select>
         </div>
-    ` : '';
+        <div class="de-upload-v2-campaign-selector" id="upload-target-container-${componentId}" style="display: none;">
+            <label for="upload-target-select-${componentId}">2. Selecione o destino do arquivo:</label>
+            <select id="upload-target-select-${componentId}" class="de-upload-v2-select"></select>
+        </div>
+    ` : (campaignGroups.length === 1 && campaignGroups[0].uploadTargets.length > 1 ? `
+        <div class="de-upload-v2-campaign-selector">
+            <label for="upload-target-select-${componentId}">1. Selecione o destino do arquivo:</label>
+            <select id="upload-target-select-${componentId}" class="de-upload-v2-select">
+                <option value="" disabled selected>-- Escolha uma opção --</option>
+                ${campaignGroups[0].uploadTargets.map((target: UploadTarget) => `<option value="${target.deKey}">${target.name}</option>`).join('')}
+            </select>
+        </div>
+    ` : '');
     
     const lucideIconSvgs: Record<string, string> = {
         none: '',
@@ -91,6 +103,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const form = document.getElementById('${formId}');
           if (!form) return;
           const componentId = '${componentId}';
+          const campaignGroupsData = ${JSON.stringify(campaignGroups)};
 
           const step1 = form.querySelector('#step1-' + componentId);
           const step2 = form.querySelector('#step2-' + componentId);
@@ -99,7 +112,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const dropZone = form.querySelector('.de-upload-v2-drop-zone');
           const fileInput = form.querySelector('#file-input-' + componentId);
           const cancelBtn = form.querySelector('#cancel-btn-' + componentId);
-          const campaignSelect = form.querySelector('#campaign-select-' + componentId);
+          const groupSelect = form.querySelector('#campaign-group-select-' + componentId);
+          const targetSelect = form.querySelector('#upload-target-select-' + componentId);
+          const targetContainer = form.querySelector('#upload-target-container-' + componentId);
 
           let currentFile;
 
@@ -110,6 +125,25 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             step.style.display = 'block';
           };
           
+          if (groupSelect && targetContainer) {
+              groupSelect.addEventListener('change', () => {
+                  const selectedGroupId = groupSelect.value;
+                  const selectedGroup = campaignGroupsData.find(g => g.id === selectedGroupId);
+                  if (selectedGroup && selectedGroup.uploadTargets) {
+                      targetSelect.innerHTML = '<option value="" disabled selected>-- Escolha um destino --</option>';
+                      selectedGroup.uploadTargets.forEach(target => {
+                          const option = document.createElement('option');
+                          option.value = target.deKey;
+                          option.textContent = target.name;
+                          targetSelect.appendChild(option);
+                      });
+                      targetContainer.style.display = 'block';
+                  } else {
+                       targetContainer.style.display = 'none';
+                  }
+              });
+          }
+
           dropZone.addEventListener('click', () => fileInput.click());
           dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('highlight'); });
           dropZone.addEventListener('dragleave', () => dropZone.classList.remove('highlight'));
@@ -162,10 +196,15 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           form.addEventListener('submit', async function(e) {
               e.preventDefault();
               
-              const selectedDeKey = campaignSelect ? campaignSelect.value : ('${campaigns.length > 0 ? campaigns[0].deKey : ''}');
+              let selectedDeKey;
+              if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length === 1) {
+                  selectedDeKey = campaignGroupsData[0].uploadTargets[0].deKey;
+              } else {
+                  selectedDeKey = targetSelect.value;
+              }
 
               if (!selectedDeKey) {
-                  alert('Por favor, selecione uma campanha.');
+                  alert('Por favor, selecione um destino para o arquivo.');
                   return;
               }
               if (!currentFile) {

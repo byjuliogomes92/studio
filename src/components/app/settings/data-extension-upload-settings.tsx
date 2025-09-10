@@ -1,5 +1,5 @@
 
-import type { PageComponent, DataExtensionColumn, CampaignOption, CloudPage } from "@/lib/types";
+import type { PageComponent, DataExtensionColumn, CampaignGroup, UploadTarget, CloudPage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -82,69 +82,126 @@ function ColumnManager({
                 </div>
             ))}
             <Button variant="outline" size="sm" className="w-full" onClick={addColumn}>
-                <Plus className="mr-2 h-4 w-4" /> Adicionar Coluna
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Coluna Guia
             </Button>
         </div>
     )
 }
 
-function CampaignManager({
-    campaigns = [],
-    onPropChange,
+function UploadTargetManager({
+    targets = [],
+    onTargetsChange,
 }: {
-    campaigns: CampaignOption[];
-    onPropChange: (prop: string, value: any) => void;
+    targets: UploadTarget[];
+    onTargetsChange: (targets: UploadTarget[]) => void;
 }) {
-    const handleCampaignChange = (id: string, field: 'name' | 'deKey' | 'columns', value: any) => {
-        const newCampaigns = campaigns.map((c) =>
-            c.id === id ? { ...c, [field]: value } : c
+    const handleTargetChange = (id: string, field: 'name' | 'deKey' | 'columns', value: any) => {
+        const newTargets = targets.map((t) =>
+            t.id === id ? { ...t, [field]: value } : t
         );
-        onPropChange('campaigns', newCampaigns);
+        onTargetsChange(newTargets);
     };
 
-    const addCampaign = () => {
-        const newCampaign: CampaignOption = {
-            id: `campaign-${Date.now()}`,
-            name: 'Nova Campanha',
+    const addTarget = () => {
+        const newTarget: UploadTarget = {
+            id: `target-${Date.now()}`,
+            name: 'Nova DE',
             deKey: '',
             columns: []
         };
-        onPropChange('campaigns', [...(campaigns || []), newCampaign]);
+        onTargetsChange([...(targets || []), newTarget]);
     };
 
-    const removeCampaign = (id: string) => {
-        onPropChange('campaigns', campaigns.filter((c) => c.id !== id));
+    const removeTarget = (id: string) => {
+        onTargetsChange(targets.filter((t) => t.id !== id));
     };
-
+    
     return (
         <div className="space-y-3">
              <Accordion type="multiple" className="w-full space-y-3">
-                {campaigns.map((campaign) => (
-                    <AccordionItem key={campaign.id} value={campaign.id} className="p-3 border rounded-md space-y-3 bg-muted/40 relative">
+                {targets.map((target) => (
+                    <AccordionItem key={target.id} value={target.id} className="p-3 border rounded-md space-y-3 bg-background relative">
                         <div className="flex items-center justify-between">
-                            <AccordionTrigger className="p-0 text-base font-semibold">{campaign.name || 'Nova Campanha'}</AccordionTrigger>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeCampaign(campaign.id)}>
+                            <AccordionTrigger className="p-0 text-base font-semibold">{target.name || 'Novo Destino'}</AccordionTrigger>
+                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeTarget(target.id)}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
                         <AccordionContent className="pt-2 space-y-3">
                             <div className="space-y-1">
-                                <Label htmlFor={`campaign-name-${campaign.id}`} className="text-xs">Nome da Campanha (visível para o usuário)</Label>
-                                <Input id={`campaign-name-${campaign.id}`} value={campaign.name} onChange={(e) => handleCampaignChange(campaign.id, 'name', e.target.value)} />
+                                <Label htmlFor={`target-name-${target.id}`} className="text-xs">Nome do Destino (visível para o usuário)</Label>
+                                <Input id={`target-name-${target.id}`} value={target.name} onChange={(e) => handleTargetChange(target.id, 'name', e.target.value)} />
                             </div>
                             <div className="space-y-1">
-                                <Label htmlFor={`campaign-dekey-${campaign.id}`} className="text-xs">Chave Externa da Data Extension</Label>
-                                <Input id={`campaign-dekey-${campaign.id}`} value={campaign.deKey} onChange={(e) => handleCampaignChange(campaign.id, 'deKey', e.target.value)} />
+                                <Label htmlFor={`target-dekey-${target.id}`} className="text-xs">Chave Externa da Data Extension</Label>
+                                <Input id={`target-dekey-${target.id}`} value={target.deKey} onChange={(e) => handleTargetChange(target.id, 'deKey', e.target.value)} />
                             </div>
                             <Separator />
-                            <h5 className="font-medium text-sm pt-2">Estrutura de Colunas</h5>
-                            <ColumnManager columns={campaign.columns} onColumnsChange={(cols) => handleCampaignChange(campaign.id, 'columns', cols)} />
+                            <h5 className="font-medium text-sm pt-2">Colunas Guias (Opcional)</h5>
+                             <ColumnManager columns={target.columns} onColumnsChange={(cols) => handleTargetChange(target.id, 'columns', cols)} />
                         </AccordionContent>
                     </AccordionItem>
                 ))}
             </Accordion>
-            <Button variant="outline" className="w-full" onClick={addCampaign}>
-                <Plus className="mr-2 h-4 w-4" /> Adicionar Campanha
+            <Button variant="outline" className="w-full" onClick={addTarget}>
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Destino de Upload
+            </Button>
+        </div>
+    );
+}
+
+function CampaignGroupManager({
+    campaignGroups = [],
+    onPropChange,
+}: {
+    campaignGroups: CampaignGroup[];
+    onPropChange: (prop: string, value: any) => void;
+}) {
+    const handleGroupChange = (id: string, field: 'name' | 'uploadTargets', value: any) => {
+        const newGroups = campaignGroups.map(g => 
+            g.id === id ? { ...g, [field]: value } : g
+        );
+        onPropChange('campaignGroups', newGroups);
+    };
+    
+    const addGroup = () => {
+        const newGroup: CampaignGroup = {
+            id: `group-${Date.now()}`,
+            name: 'Nova Campanha',
+            uploadTargets: [],
+        };
+        onPropChange('campaignGroups', [...(campaignGroups || []), newGroup]);
+    };
+
+    const removeGroup = (id: string) => {
+        onPropChange('campaignGroups', campaignGroups.filter(g => g.id !== id));
+    };
+
+    return (
+        <div className="space-y-3">
+             <Accordion type="multiple" className="w-full space-y-3">
+                {campaignGroups.map((group) => (
+                    <AccordionItem key={group.id} value={group.id} className="p-3 border rounded-md space-y-3 bg-muted/40 relative">
+                        <div className="flex items-center justify-between">
+                            <AccordionTrigger className="p-0 text-base font-semibold">{group.name || 'Novo Grupo'}</AccordionTrigger>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeGroup(group.id)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <AccordionContent className="pt-2 space-y-3">
+                            <div className="space-y-1">
+                                <Label htmlFor={`group-name-${group.id}`} className="text-xs">Nome do Grupo de Campanhas</Label>
+                                <Input id={`group-name-${group.id}`} value={group.name} onChange={(e) => handleGroupChange(group.id, 'name', e.target.value)} />
+                            </div>
+                            <Separator />
+                            <h5 className="font-medium text-sm pt-2">Destinos de Upload</h5>
+                            <UploadTargetManager targets={group.uploadTargets} onTargetsChange={(targets) => handleGroupChange(group.id, 'uploadTargets', targets)} />
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+            <Button variant="outline" className="w-full" onClick={addGroup}>
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Grupo de Campanha
             </Button>
         </div>
     );
@@ -166,20 +223,20 @@ function HelpDialog() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4 text-sm">
-                    <p><strong>Passo 1: Configure as Campanhas</strong></p>
-                    <p>Na seção "Campanhas", adicione uma ou mais opções. Cada opção representa uma Data Extension de destino. Para cada uma, você deve fornecer:</p>
+                    <p><strong>Passo 1: Configure os Grupos e Destinos</strong></p>
+                    <p>Use esta seção para organizar seus uploads:</p>
                     <ul className="list-disc pl-5 space-y-1">
-                        <li><strong>Nome da Campanha:</strong> O nome que o usuário verá no seletor da página.</li>
-                        <li><strong>Chave Externa da DE:</strong> O "External Key" exato da sua Data Extension no SFMC.</li>
+                        <li><strong>Grupo de Campanha:</strong> É uma pasta para organizar seus uploads. Ex: "Campanhas 2024".</li>
+                        <li><strong>Destino de Upload:</strong> Representa a Data Extension final. Para cada destino, você deve fornecer um nome amigável (Ex: "Novos Leads") e a Chave Externa (Customer Key) exata da sua DE no SFMC.</li>
                     </ul>
                      <p><strong>Passo 2: Defina as Colunas (Opcional, mas recomendado)</strong></p>
-                     <p>Para cada campanha, você pode pré-definir as colunas da Data Extension. Isso serve como um guia visual na página, mostrando ao usuário qual a estrutura esperada do arquivo CSV.</p>
+                     <p>Para cada destino, você pode pré-definir as colunas da Data Extension. Isso serve como um guia visual na página, mostrando ao usuário qual a estrutura esperada do arquivo CSV.</p>
 
                     <p><strong>Passo 3: Preparação do Arquivo CSV</strong></p>
                     <p>O arquivo CSV que o usuário enviar deve seguir uma regra crucial: <strong>a primeira linha (cabeçalho) do CSV deve conter os nomes das colunas que correspondem exatamente aos nomes dos campos na sua Data Extension.</strong></p>
 
                      <p><strong>Passo 4: Funcionalidade na Página</strong></p>
-                     <p>Na página publicada, o usuário selecionará a campanha desejada (se houver mais de uma), escolherá o arquivo CSV e o componente fará o upload dos dados para a Data Extension correspondente.</p>
+                     <p>Na página publicada, o usuário selecionará o grupo e o destino (se houver mais de um), escolherá o arquivo CSV e o componente fará o upload dos dados para a Data Extension correspondente.</p>
                 </div>
             </DialogContent>
         </Dialog>
@@ -241,14 +298,13 @@ export function DataExtensionUploadSettings({ component, onPropChange, onSubProp
             <AccordionItem value="campaigns">
                 <div className="flex items-center w-full">
                     <AccordionTrigger className="flex-1">
-                        Campanhas
+                        Campanhas e Destinos
                     </AccordionTrigger>
                     <HelpDialog />
                 </div>
                 <AccordionContent className="pt-2">
                      <div className="p-3 border rounded-md bg-background">
-                        <h4 className="font-semibold text-sm mb-2">Campanhas e Data Extensions de Destino</h4>
-                        <CampaignManager campaigns={props.campaigns} onPropChange={onPropChange} />
+                        <CampaignGroupManager campaignGroups={props.campaignGroups} onPropChange={onPropChange} />
                     </div>
                 </AccordionContent>
             </AccordionItem>

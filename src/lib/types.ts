@@ -244,12 +244,19 @@ export interface DataExtensionColumn {
     isPrimaryKey: boolean;
 }
 
-export interface CampaignOption {
+export interface UploadTarget {
     id: string;
     name: string;
     deKey: string;
     columns: DataExtensionColumn[];
 }
+
+export interface CampaignGroup {
+    id: string;
+    name: string;
+    uploadTargets: UploadTarget[];
+}
+
 
 export interface PageComponent {
   id: string;

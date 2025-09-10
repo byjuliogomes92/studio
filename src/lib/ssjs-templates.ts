@@ -27,8 +27,7 @@ export function getPrefillAmpscript(pageState: CloudPage): string {
 
     const prefillLines = fieldsToPrefill.map(fieldName => `SET @${fieldName} = QueryParameter("${fieldName.toLowerCase()}")`);
     
-    // Return just the logic, not the full block, and without newlines.
-    return `/* --- Prefill --- */ ${prefillLines.join(' ')}`;
+    return `/* --- Prefill --- */\n${prefillLines.join('\n')}`;
 }
 
 export function getFormSubmissionScript(pageState: CloudPage): string {

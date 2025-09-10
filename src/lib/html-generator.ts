@@ -1120,42 +1120,33 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         const prefillLogic = getPrefillAmpscript(pageState);
         const customLogic = (meta.customAmpscript || '').replace(/%%\[|\]%%/g, '').trim();
 
-        // Lista de variáveis a serem declaradas
-        const varList = new Set<string>();
-        varList.add('@showThanks');
-        varList.add('@isAuthenticated');
-        varList.add('@loginError'); // Initialize always for safety
+        const allLogic = [securityLogic, prefillLogic, customLogic].filter(Boolean).join('\n\n');
 
-        if(securityLogic) {
-            varList.add('@submittedPassword');
-            varList.add('@identifier');
-            varList.add('@correctPassword');
-        }
+        // This is a simple way to collect all unique VAR declarations.
+        // A more robust solution would parse the AMPScript, but this works for now.
+        const declaredVars = new Set((allLogic.match(/VAR @\w+/g) || []).map(v => v.replace('VAR ', '')));
+        // Add variables that might be set without declaration
+        (allLogic.match(/SET @\w+/g) || []).map(v => v.replace('SET ', '')).forEach(v => declaredVars.add(v));
+        // Add standard variables
+        ['showThanks', 'isAuthenticated', 'loginError'].forEach(v => declaredVars.add(`@${v}`));
 
-        if(prefillLogic) {
-            // Extrai variáveis do prefillLogic
-            const prefillVars = prefillLogic.match(/SET @\w+/g) || [];
-            prefillVars.forEach(v => varList.add(v.replace('SET ', '')));
-        }
-        
-        // Unifica a declaração de variáveis
-        const varDeclarations = `VAR ${Array.from(varList).join(',')}`;
-        
+        const varDeclarations = declaredVars.size > 0 ? `VAR ${Array.from(declaredVars).join(', ')}` : '';
+
+        // Now, remove individual VAR declarations from the logic parts
+        const logicWithoutDeclarations = allLogic.replace(/VAR @\w+(, @\w+)*/g, '');
+
         let logicParts = [
             varDeclarations,
             'SET @showThanks = "false"',
             'IF RequestParameter("form-submitted") == "true" THEN SET @showThanks = "true" ENDIF',
             needsSecurity ? `SET @isAuthenticated = false` : `SET @isAuthenticated = true`,
-            `SET @loginError = ""`, // Always initialize to empty
-            securityLogic,
-            prefillLogic,
-            customLogic,
+            `SET @loginError = ""`,
+            logicWithoutDeclarations,
         ];
         
-        initialAmpscript = `%%[ ${logicParts.filter(Boolean).join(' ')} ]%%`;
+        initialAmpscript = `%%[ \n${logicParts.filter(Boolean).join('\n')} \n]%%`;
     }
     // --- Fim: Construção do Bloco AMPScript Principal ---
-
 
     // --- Início: Construção do Corpo e Estilos ---
     const { typography } = pageState.brand || {};

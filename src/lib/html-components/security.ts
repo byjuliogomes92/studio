@@ -11,10 +11,10 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
     /* 
      * Passo 1: Altere o valor "SEU_NOME_DE_TESTE" abaixo para um valor EXATO 
      * que exista na coluna "NOME" da sua Data Extension.
-     * Exemplo: SET @senhaEncontrada = Lookup("D3D99DF5-EA8D-4729-8056-93633F476699", "SENHA", "NOME", "Julio")
+     * Exemplo: SET @senhaEncontrada = Lookup("D3D99DF5-EA8D-4729-8056-93633F476699", "SENHA", "NOME", "julio")
      */
 
-    SET @senhaEncontrada = Lookup("D3D99DF5-EA8D-4729-8056-93633F476699", "SENHA", "NOME", "SEU_NOME_DE_TESTE")
+    SET @senhaEncontrada = Lookup("D3D99DF5-EA8D-4729-8056-93633F476699", "SENHA", "NOME", "julio")
 
 ]%%
 <!-- 

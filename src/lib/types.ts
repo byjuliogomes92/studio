@@ -247,8 +247,12 @@ export interface DataExtensionColumn {
 export interface UploadTarget {
     id: string;
     name: string;
-    deKey: string;
-    columns: DataExtensionColumn[];
+    // For DataExtensionUpload
+    deKey?: string;
+    columns?: DataExtensionColumn[];
+    // For FTPUpload
+    destinationPath?: string;
+    destinationFilename?: string;
 }
 
 export interface CampaignGroup {

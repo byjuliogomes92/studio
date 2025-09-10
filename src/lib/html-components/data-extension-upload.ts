@@ -18,7 +18,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
         textColor: buttonTextColor = "#FFFFFF",
         icon: buttonIcon = "send",
-        iconPosition = "left"
+        iconPosition: buttonIconPosition = "left"
     } = buttonProps;
     
     const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
@@ -76,7 +76,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   </div>
                   <div class="de-upload-v2-actions">
                       <button type="button" id="cancel-btn-${componentId}" class="custom-button custom-button--outline">Trocar Arquivo</button>
-                      <button type="submit" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">${iconHtml}<span>${buttonText}</span></button>
+                      <button type="submit" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">${buttonContent}</button>
                   </div>
               </div>
 

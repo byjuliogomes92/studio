@@ -201,7 +201,7 @@
     .ftp-upload-form {
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 1rem;
     }
     .ftp-upload-header {
         text-align: center;
@@ -288,6 +288,11 @@
         width: 0%;
         background-color: hsl(var(--primary));
         transition: width 0.3s ease;
+    }
+    .ftp-upload-container .custom-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     .ftp-upload-container .custom-button .lucide-icon {
         width: 1.2em;
@@ -407,6 +412,7 @@
     border-radius: 9999px;
     font-size: 0.875rem;
     font-weight: 500;
+    border: 1px solid hsl(var(--border));
 }
 .de-upload-v2-actions {
     display: flex;
@@ -453,3 +459,5 @@
     flex-direction: column-reverse;
   }
 }
+
+    

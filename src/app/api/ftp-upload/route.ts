@@ -3,6 +3,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { uploadToFtp } from '@/lib/ftp-service';
 import { getBrand } from '@/lib/firestore';
 
+// Headers para permitir requisições de qualquer origem (CORS)
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handler para a requisição preflight OPTIONS
+export async function OPTIONS(request: NextRequest) {
+    return new NextResponse(null, { headers: corsHeaders });
+}
+
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -12,16 +25,16 @@ export async function POST(request: NextRequest) {
     const brandId = formData.get('brandId') as string | null;
 
     if (!file) {
-      return NextResponse.json({ success: false, message: 'Nenhum arquivo encontrado.' }, { status: 400 });
+      return new NextResponse(JSON.stringify({ success: false, message: 'Nenhum arquivo encontrado.' }), { status: 400, headers: corsHeaders });
     }
     if (!path || !filename || !brandId) {
-      return NextResponse.json({ success: false, message: 'Caminho, nome do arquivo ou ID da marca faltando.' }, { status: 400 });
+      return new NextResponse(JSON.stringify({ success: false, message: 'Caminho, nome do arquivo ou ID da marca faltando.' }), { status: 400, headers: corsHeaders });
     }
 
     // Fetch brand details to get FTP credentials
     const brand = await getBrand(brandId);
     if (!brand || !brand.integrations?.ftp || !brand.integrations.ftp.host || !brand.integrations.ftp.user || !brand.integrations.ftp.encryptedPassword) {
-        return NextResponse.json({ success: false, message: 'Configurações de FTP não encontradas para esta marca.' }, { status: 400 });
+        return new NextResponse(JSON.stringify({ success: false, message: 'Configurações de FTP não encontradas para esta marca.' }), { status: 400, headers: corsHeaders });
     }
     
     // Convert file to buffer
@@ -30,9 +43,9 @@ export async function POST(request: NextRequest) {
     // Upload to FTP using brand-specific credentials
     await uploadToFtp(fileBuffer, path, filename, brand.integrations.ftp);
 
-    return NextResponse.json({ success: true, message: 'Arquivo enviado com sucesso!' });
+    return new NextResponse(JSON.stringify({ success: true, message: 'Arquivo enviado com sucesso!' }), { headers: corsHeaders });
   } catch (error: any) {
     console.error('FTP Upload Error:', error);
-    return NextResponse.json({ success: false, message: `Erro no servidor: ${error.message}` }, { status: 500 });
+    return new NextResponse(JSON.stringify({ success: false, message: `Erro no servidor: ${error.message}` }), { status: 500, headers: corsHeaders });
   }
 }

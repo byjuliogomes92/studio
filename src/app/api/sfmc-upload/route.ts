@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getBrand } from '@/lib/firestore';
 import { decryptPassword } from '@/lib/crypto';
@@ -68,8 +69,20 @@ export async function POST(request: NextRequest) {
         }, { status: 200 });
 
     } catch (error: any) {
+        // Enhanced error handling
         console.error("SFMC Process Error:", error.response?.data || error.message);
-        const errorMessage = error.response?.data?.message || 'Ocorreu um erro desconhecido.';
-        return NextResponse.json({ success: false, message: `Falha no processamento para o SFMC: ${errorMessage}` }, { status: 500 });
+        
+        let errorMessage = 'Ocorreu um erro desconhecido durante o processamento.';
+        if (error.response?.data?.message) {
+            // Attempt to get a more specific error message from the SFMC API response
+            errorMessage = error.response.data.message;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        return NextResponse.json({ 
+            success: false, 
+            message: `Falha no processamento para o SFMC: ${errorMessage}` 
+        }, { status: 500 });
     }
 }

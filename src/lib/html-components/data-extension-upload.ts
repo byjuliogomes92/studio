@@ -18,6 +18,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
         textColor: buttonTextColor = "#FFFFFF",
         icon: buttonIcon = "send",
+        iconPosition = "left"
     } = buttonProps;
     
     const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
@@ -33,8 +34,16 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             </select>
         </div>
     ` : '';
-
-    const iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>';
+    
+    const lucideIconSvgs: Record<string, string> = {
+        none: '',
+        send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
+    };
+    
+    const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
+    const buttonContent = buttonIconPosition === 'right' 
+        ? `<span>${buttonText}</span>${iconHtml}`
+        : `${iconHtml}<span>${buttonText}</span>`;
 
     return `
       <div class="de-upload-v2-container">

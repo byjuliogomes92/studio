@@ -165,9 +165,15 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               fileInput.value = '';
               showStep(step1);
           });
+          
+          function detectDelimiter(header) {
+              const commaCount = (header.match(/,/g) || []).length;
+              const semicolonCount = (header.match(/;/g) || []).length;
+              return semicolonCount > commaCount ? ';' : ',';
+          }
 
           function handleFileSelect(file) {
-              if (!file || file.type !== 'text/csv') {
+              if (!file || !file.type.match('text/csv')) {
                   alert('Por favor, selecione um arquivo CSV.');
                   return;
               }
@@ -178,7 +184,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   const text = e.target.result;
                   const lines = text.split('\\n').filter(l => l.trim() !== '');
                   const rowCount = lines.length > 0 ? lines.length - 1 : 0;
-                  const headers = lines[0] ? lines[0].split(',').map(h => h.trim().replace(/"/g, '')) : [];
+                  
+                  const headerLine = lines[0] || '';
+                  const delimiter = detectDelimiter(headerLine);
+                  const headers = headerLine.split(delimiter).map(h => h.trim().replace(/"/g, ''));
                   
                   form.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
                   form.querySelector('#stat-rows-' + componentId).textContent = rowCount;
@@ -200,7 +209,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length === 1) {
                   selectedDeKey = campaignGroupsData[0].uploadTargets[0].deKey;
               } else {
-                  selectedDeKey = targetSelect.value;
+                  selectedDeKey = targetSelect ? targetSelect.value : null;
               }
 
               if (!selectedDeKey) {

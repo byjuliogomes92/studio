@@ -4,74 +4,50 @@ import { decryptPassword } from '@/lib/crypto';
 import axios from 'axios';
 import { parse } from 'csv-parse/sync';
 
-// Função para configurar headers CORS
-function corsHeaders() {
-    return {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-        'Access-Control-Allow-Credentials': 'true',
-    };
-}
-
-// Handle preflight OPTIONS request
-export async function OPTIONS(request: NextRequest) {
-    return new NextResponse(null, {
-        status: 200,
-        headers: corsHeaders(),
-    });
-}
-
 export async function POST(request: NextRequest) {
     try {
         const { csvData, deKey, brandId, columnMapping } = await request.json();
 
         if (!csvData || !deKey || !brandId) {
-            return new NextResponse(JSON.stringify({ success: false, message: 'Parâmetros faltando (csvData, deKey, brandId).' }), { 
-                status: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...corsHeaders(),
-                }
-            });
+            return NextResponse.json({ 
+                success: false, 
+                message: 'Parâmetros faltando (csvData, deKey, brandId).' 
+            }, { status: 400 });
         }
 
         // 1. Get brand credentials from Firestore
         const brand = await getBrand(brandId);
         if (!brand || !brand.integrations?.sfmcApi) {
-            return new NextResponse(JSON.stringify({ success: false, message: 'Configurações da API do SFMC não encontradas para esta marca.' }), { 
-                status: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...corsHeaders(),
-                }
-            });
+            return NextResponse.json({ 
+                success: false, 
+                message: 'Configurações da API do SFMC não encontradas para esta marca.' 
+            }, { status: 400 });
         }
         
         const { clientId, encryptedClientSecret, authBaseUrl } = brand.integrations.sfmcApi;
         if (!clientId || !encryptedClientSecret || !authBaseUrl) {
-            return new NextResponse(JSON.stringify({ success: false, message: 'Credenciais da API do SFMC incompletas.' }), { 
-                status: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...corsHeaders(),
-                }
-            });
+            return NextResponse.json({ 
+                success: false, 
+                message: 'Credenciais da API do SFMC incompletas.' 
+            }, { status: 400 });
         }
         
         const clientSecret = decryptPassword(encryptedClientSecret);
 
         // 2. Get an SFMC Auth Token
+        console.log('🔑 Obtendo token de acesso do SFMC...');
         const tokenResponse = await axios.post(`${authBaseUrl}v2/token`, {
             grant_type: "client_credentials",
             client_id: clientId,
             client_secret: clientSecret,
         }, {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 30000
         });
         
         const accessToken = tokenResponse.data.access_token;
         const restBaseUrl = tokenResponse.data.rest_instance_url;
+        console.log('✅ Token obtido com sucesso');
         
         const detectDelimiter = (header: string) => {
             const commaCount = (header.match(/,/g) || []).length;
@@ -80,6 +56,7 @@ export async function POST(request: NextRequest) {
         };
 
         // 3. Parse the CSV content
+        console.log('📊 Fazendo parse do CSV...');
         const records = parse(csvData, { 
             columns: true,
             skip_empty_lines: true,
@@ -88,14 +65,13 @@ export async function POST(request: NextRequest) {
         });
 
         if (records.length === 0) {
-            return new NextResponse(JSON.stringify({ success: true, message: 'Arquivo CSV vazio ou sem dados. Nada foi adicionado.' }), { 
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...corsHeaders(),
-                }
-            });
+            return NextResponse.json({ 
+                success: true, 
+                message: 'Arquivo CSV vazio ou sem dados. Nada foi adicionado.' 
+            }, { status: 200 });
         }
+        
+        console.log(`📋 ${records.length} registros encontrados no CSV`);
         
         // 4. Apply column mapping if provided
         const mappedRecords = (columnMapping && Object.keys(columnMapping).length > 0)
@@ -107,7 +83,8 @@ export async function POST(request: NextRequest) {
                         newRecord[deColumn] = record[csvColumn];
                     }
                 }
-                // Always carry over ContactKey if it exists and wasn't mapped, as it's crucial.
+                
+                // Always carry over ContactKey if it exists and wasn't mapped
                 const keyCandidates = ['ContactKey', 'contactkey', 'Contact Key', 'contact key', 'SubscriberKey', 'subscriberkey'];
                 const contactKeyColumn = keyCandidates.find(k => Object.keys(columnMapping).find(deCol => columnMapping[deCol] === k));
                 const contactKeyValue = keyCandidates.find(k => record[k] !== undefined);
@@ -120,9 +97,17 @@ export async function POST(request: NextRequest) {
               })
             : records;
 
-        // 5. Prepare data for SFMC API (assuming ContactKey is used as primary key)
+        // 5. Prepare data for SFMC API
         const sfmcPayload = mappedRecords.map((record: any) => ({
-            keys: { ContactKey: record.ContactKey || record.SubscriberKey || record.EMAIL || record.EmailAddress || record.CPF || record.ID },
+            keys: { 
+                ContactKey: record.ContactKey || 
+                           record.SubscriberKey || 
+                           record.EMAIL || 
+                           record.EmailAddress || 
+                           record.CPF || 
+                           record.ID ||
+                           `temp_${Math.random().toString(36).substr(2, 9)}`
+            },
             values: record,
         }));
 
@@ -137,34 +122,42 @@ export async function POST(request: NextRequest) {
         let totalProcessed = 0;
         const sfmcApiUrl = `${restBaseUrl}hub/v1/dataevents/key:${deKey}/rowset`;
         
+        console.log(`🚀 Enviando ${batches.length} lote(s) para o SFMC...`);
+        
         // Process each batch
-        for (const batch of batches) {
+        for (let i = 0; i < batches.length; i++) {
+            const batch = batches[i];
+            console.log(`📤 Processando lote ${i + 1}/${batches.length} (${batch.length} registros)`);
+            
             await axios.post(sfmcApiUrl, batch, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                 },
-                timeout: 60000, // 60 seconds timeout
+                timeout: 120000, // 2 minutes timeout
             });
+            
             totalProcessed += batch.length;
+            console.log(`✅ Lote ${i + 1} processado com sucesso`);
         }
 
-        return new NextResponse(JSON.stringify({ 
+        console.log(`🎉 Processamento concluído: ${totalProcessed} registros`);
+
+        return NextResponse.json({ 
             success: true, 
             message: `Sucesso! ${totalProcessed} registros foram adicionados/atualizados na Data Extension.`,
             rowsProcessed: totalProcessed,
             batchesProcessed: batches.length,
-        }), { 
-            status: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                ...corsHeaders(),
-            }
-        });
+        }, { status: 200 });
 
     } catch (error: any) {
-        // Enhanced error handling
-        console.error("SFMC Process Error:", error.response?.data || error.message);
+        console.error("❌ SFMC Process Error:", {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+            url: error.config?.url,
+            stack: error.stack
+        });
         
         let errorMessage = 'Ocorreu um erro desconhecido durante o processamento.';
         let statusCode = 500;
@@ -178,22 +171,22 @@ export async function POST(request: NextRequest) {
         } else if (error.response?.status === 400) {
             errorMessage = `Dados inválidos: ${error.response.data?.message || 'Verifique o formato dos dados.'}`;
             statusCode = 400;
+        } else if (error.code === 'ECONNABORTED') {
+            errorMessage = 'Timeout na conexão com SFMC. Tente novamente.';
+            statusCode = 408;
         } else if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
         } else if (error.message) {
             errorMessage = error.message;
         }
         
-        return new NextResponse(JSON.stringify({ 
+        return NextResponse.json({ 
             success: false, 
-            message: `Falha no processamento para o SFMC: ${errorMessage}`,
-            error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-        }), { 
-            status: statusCode,
-            headers: {
-                'Content-Type': 'application/json',
-                ...corsHeaders(),
-            }
-        });
+            message: `Falha no processamento: ${errorMessage}`,
+            error: process.env.NODE_ENV === 'development' ? {
+                stack: error.stack,
+                response: error.response?.data
+            } : undefined,
+        }, { status: statusCode });
     }
 }

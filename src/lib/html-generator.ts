@@ -1184,7 +1184,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
            </script>`
         : '';
 
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -2522,3 +2522,5 @@ ${clientSideScripts}
 ${firebaseConfigScript}
 </body>
 </html>
+`;
+}

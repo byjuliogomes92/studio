@@ -7,7 +7,7 @@ import { parse } from 'csv-parse/sync';
 
 export async function POST(request: NextRequest) {
     try {
-        const { csvData, deKey, brandId } = await request.json();
+        const { csvData, deKey, brandId, columnMapping } = await request.json();
 
         if (!csvData || !deKey || !brandId) {
             return NextResponse.json({ success: false, message: 'Parâmetros faltando (csvData, deKey, brandId).' }, { status: 400 });
@@ -35,25 +35,54 @@ export async function POST(request: NextRequest) {
         });
         const accessToken = tokenResponse.data.access_token;
         const restBaseUrl = tokenResponse.data.rest_instance_url;
+        
+        const detectDelimiter = (header: string) => {
+            const commaCount = (header.match(/,/g) || []).length;
+            const semicolonCount = (header.match(/;/g) || []).length;
+            return semicolonCount > commaCount ? ';' : ',';
+        };
 
         // 3. Parse the CSV content
         const records = parse(csvData, { 
             columns: true,
             skip_empty_lines: true,
             trim: true,
+            delimiter: detectDelimiter(csvData.split('\n')[0]),
         });
 
         if (records.length === 0) {
             return NextResponse.json({ success: true, message: 'Arquivo CSV vazio ou sem dados. Nada foi adicionado.' }, { status: 200 });
         }
+        
+        // 4. Apply column mapping if provided
+        const mappedRecords = (columnMapping && Object.keys(columnMapping).length > 0)
+            ? records.map((record: any) => {
+                const newRecord: { [key: string]: any } = {};
+                for (const deColumn in columnMapping) {
+                    const csvColumn = columnMapping[deColumn];
+                    if (record[csvColumn] !== undefined) {
+                        newRecord[deColumn] = record[csvColumn];
+                    }
+                }
+                // Always carry over ContactKey if it exists and wasn't mapped, as it's crucial.
+                const keyCandidates = ['ContactKey', 'contactkey', 'Contact Key', 'contact key'];
+                const contactKey = keyCandidates.find(k => record[k] !== undefined);
+                if (contactKey && !Object.keys(newRecord).some(k => k.toLowerCase() === 'contactkey')) {
+                    newRecord.ContactKey = record[contactKey];
+                }
+                
+                return newRecord;
+              })
+            : records;
 
-        // 4. Prepare data for SFMC API (assuming ContactKey is used)
-        const sfmcPayload = records.map((record: any) => ({
-            keys: { ContactKey: record.ContactKey || record.EmailAddress || record.CPF || record.ID },
+
+        // 5. Prepare data for SFMC API (assuming ContactKey is used as primary key)
+        const sfmcPayload = mappedRecords.map((record: any) => ({
+            keys: { ContactKey: record.ContactKey || record.SubscriberKey || record.EMAIL || record.EmailAddress || record.CPF || record.ID },
             values: record,
         }));
 
-        // 5. Send data in batches to SFMC REST API
+        // 6. Send data in batches to SFMC REST API
         const sfmcApiUrl = `${restBaseUrl}hub/v1/dataevents/key:${deKey}/rowset`;
         await axios.post(sfmcApiUrl, sfmcPayload, {
             headers: {

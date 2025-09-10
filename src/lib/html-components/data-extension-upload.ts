@@ -79,9 +79,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                       <div class="de-upload-v2-stat-card"><h5>Colunas</h5><p id="stat-cols-${componentId}">-</p></div>
                       <div class="de-upload-v2-stat-card"><h5>Tamanho</h5><p id="stat-size-${componentId}">-</p></div>
                   </div>
-                  <div class="de-upload-v2-columns-container">
-                      <h5>Colunas Detectadas:</h5>
-                      <div class="de-upload-v2-columns-list" id="columns-list-${componentId}"></div>
+                  <div class="de-upload-v2-columns-container" id="mapping-container-${componentId}">
+                      <h5>Mapeamento de Colunas</h5>
+                      <div id="mapping-table-${componentId}"></div>
                   </div>
                   <div class="de-upload-v2-actions">
                       <button type="button" id="cancel-btn-${componentId}" class="custom-button custom-button--outline">Trocar Arquivo</button>
@@ -115,8 +115,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const groupSelect = form.querySelector('#campaign-group-select-' + componentId);
           const targetSelect = form.querySelector('#upload-target-select-' + componentId);
           const targetContainer = form.querySelector('#upload-target-container-' + componentId);
+          const mappingContainer = form.querySelector('#mapping-container-' + componentId);
+          const mappingTable = form.querySelector('#mapping-table-' + componentId);
 
           let currentFile;
+          let csvHeaders = [];
 
           const showStep = (step) => {
             step1.style.display = 'none';
@@ -125,24 +128,31 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             step.style.display = 'block';
           };
           
-          if (groupSelect && targetContainer) {
+          function updateTargetOptions(targets) {
+              targetSelect.innerHTML = '<option value="" disabled selected>-- Escolha um destino --</option>';
+              targets.forEach(target => {
+                  const option = document.createElement('option');
+                  option.value = target.id; // Use target ID to find config later
+                  option.textContent = target.name;
+                  targetSelect.appendChild(option);
+              });
+              targetContainer.style.display = 'block';
+          }
+          
+          if (groupSelect) {
               groupSelect.addEventListener('change', () => {
                   const selectedGroupId = groupSelect.value;
                   const selectedGroup = campaignGroupsData.find(g => g.id === selectedGroupId);
                   if (selectedGroup && selectedGroup.uploadTargets) {
-                      targetSelect.innerHTML = '<option value="" disabled selected>-- Escolha um destino --</option>';
-                      selectedGroup.uploadTargets.forEach(target => {
-                          const option = document.createElement('option');
-                          option.value = target.deKey;
-                          option.textContent = target.name;
-                          targetSelect.appendChild(option);
-                      });
-                      targetContainer.style.display = 'block';
+                      updateTargetOptions(selectedGroup.uploadTargets);
                   } else {
                        targetContainer.style.display = 'none';
                   }
               });
+          } else if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length > 1) {
+              updateTargetOptions(campaignGroupsData[0].uploadTargets);
           }
+
 
           dropZone.addEventListener('click', () => fileInput.click());
           dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('highlight'); });
@@ -162,6 +172,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
           cancelBtn.addEventListener('click', () => {
               currentFile = null;
+              csvHeaders = [];
               fileInput.value = '';
               showStep(step1);
           });
@@ -170,6 +181,62 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               const commaCount = (header.match(/,/g) || []).length;
               const semicolonCount = (header.match(/;/g) || []).length;
               return semicolonCount > commaCount ? ';' : ',';
+          }
+
+          function getSelectedTarget() {
+              let selectedTargetId;
+              if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length > 1) {
+                 selectedTargetId = targetSelect.value;
+              } else if (groupSelect) {
+                 selectedTargetId = targetSelect.value;
+              } else {
+                 selectedTargetId = campaignGroupsData[0]?.uploadTargets[0]?.id;
+              }
+
+              for(const group of campaignGroupsData) {
+                  const found = group.uploadTargets.find(t => t.id === selectedTargetId);
+                  if (found) return found;
+              }
+              return null;
+          }
+
+          function renderMappingUI(target) {
+              if (!target || !target.columns || target.columns.length === 0) {
+                  mappingContainer.style.display = 'none';
+                  return;
+              }
+              mappingContainer.style.display = 'block';
+
+              const optionsHtml = csvHeaders.map(h => \`<option value="\${h}">\${h}</option>\`).join('');
+              
+              mappingTable.innerHTML = \`
+                <table class="de-upload-v2-mapping-table">
+                    <thead>
+                        <tr><th>Coluna na Data Extension</th><th>Coluna no seu Arquivo</th></tr>
+                    </thead>
+                    <tbody>
+                        \${target.columns.map(col => \`
+                            <tr>
+                                <td>\${col.name} \${col.isPrimaryKey ? '<strong>(PK)</strong>' : ''}</td>
+                                <td>
+                                    <select class="de-upload-v2-select" data-de-column="\${col.name}">
+                                        <option value="">-- Ignorar --</option>
+                                        \${optionsHtml}
+                                    </select>
+                                </td>
+                            </tr>
+                        \`).join('')}
+                    </tbody>
+                </table>
+              \`;
+
+              // Auto-select matching columns
+              target.columns.forEach(col => {
+                  const select = mappingTable.querySelector(\`select[data-de-column="\${col.name}"]\`);
+                  if (select && csvHeaders.includes(col.name)) {
+                      select.value = col.name;
+                  }
+              });
           }
 
           function handleFileSelect(file) {
@@ -187,32 +254,34 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   
                   const headerLine = lines[0] || '';
                   const delimiter = detectDelimiter(headerLine);
-                  const headers = headerLine.split(delimiter).map(h => h.trim().replace(/"/g, ''));
+                  csvHeaders = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
                   
                   form.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
                   form.querySelector('#stat-rows-' + componentId).textContent = rowCount;
-                  form.querySelector('#stat-cols-' + componentId).textContent = headers.length;
+                  form.querySelector('#stat-cols-' + componentId).textContent = csvHeaders.length;
                   form.querySelector('#stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
                   
-                  const columnsList = form.querySelector('#columns-list-' + componentId);
-                  columnsList.innerHTML = headers.map(h => \`<span class="de-upload-v2-column-tag">\${h}</span>\`).join('');
-
+                  const selectedTarget = getSelectedTarget();
+                  renderMappingUI(selectedTarget);
+                  
                   showStep(step2);
               };
               reader.readAsText(file);
+          }
+          
+          if(targetSelect) {
+              targetSelect.addEventListener('change', () => {
+                  const selectedTarget = getSelectedTarget();
+                  renderMappingUI(selectedTarget);
+              });
           }
 
           form.addEventListener('submit', async function(e) {
               e.preventDefault();
               
-              let selectedDeKey;
-              if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length === 1) {
-                  selectedDeKey = campaignGroupsData[0].uploadTargets[0].deKey;
-              } else {
-                  selectedDeKey = targetSelect ? targetSelect.value : null;
-              }
+              const selectedTarget = getSelectedTarget();
 
-              if (!selectedDeKey) {
+              if (!selectedTarget || !selectedTarget.deKey) {
                   alert('Por favor, selecione um destino para o arquivo.');
                   return;
               }
@@ -221,6 +290,25 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   return;
               }
               
+              const columnMapping = {};
+              let hasPrimaryKeyMapping = false;
+              
+              if (mappingTable) {
+                  mappingTable.querySelectorAll('select').forEach(select => {
+                      if (select.value) {
+                          columnMapping[select.dataset.deColumn] = select.value;
+                      }
+                  });
+              }
+              
+              if (selectedTarget.columns) {
+                  const pkColumn = selectedTarget.columns.find(c => c.isPrimaryKey);
+                  if (pkColumn && !columnMapping[pkColumn.name]) {
+                      alert('A coluna de chave primária ('+ pkColumn.name +') precisa ser mapeada.');
+                      return;
+                  }
+              }
+
               showStep(step3);
               const statusEl = form.querySelector('.de-upload-v2-status');
               const progressBar = form.querySelector('.de-upload-v2-progress-bar');
@@ -238,10 +326,16 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   statusEl.textContent = 'Enviando dados...';
                   progressBar.style.width = '50%';
                   const csvData = reader.result;
+                  
                   const response = await fetch('/api/sfmc-upload', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ csvData, deKey: selectedDeKey, brandId: '${brandId}' }),
+                    body: JSON.stringify({ 
+                        csvData, 
+                        deKey: selectedTarget.deKey, 
+                        brandId: '${brandId}',
+                        columnMapping: columnMapping
+                    }),
                   });
                   
                   const result = await response.json();

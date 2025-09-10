@@ -5,35 +5,22 @@ import { decryptPassword } from '@/lib/crypto';
 import axios from 'axios';
 import { parse } from 'csv-parse/sync';
 
-// Headers para permitir requisições de qualquer origem (CORS)
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
-
-// Handler para a requisição preflight OPTIONS
-export async function OPTIONS(request: NextRequest) {
-    return new NextResponse(null, { headers: corsHeaders });
-}
-
-
 export async function POST(request: NextRequest) {
     try {
         const { csvData, deKey, brandId, columnMapping } = await request.json();
 
         if (!csvData || !deKey || !brandId) {
-            return new NextResponse(JSON.stringify({ success: false, message: 'Parâmetros faltando (csvData, deKey, brandId).' }), { status: 400, headers: corsHeaders });
+            return new NextResponse(JSON.stringify({ success: false, message: 'Parâmetros faltando (csvData, deKey, brandId).' }), { status: 400 });
         }
 
         // 1. Get brand credentials from Firestore
         const brand = await getBrand(brandId);
         if (!brand || !brand.integrations?.sfmcApi) {
-            return new NextResponse(JSON.stringify({ success: false, message: 'Configurações da API do SFMC não encontradas para esta marca.' }), { status: 400, headers: corsHeaders });
+            return new NextResponse(JSON.stringify({ success: false, message: 'Configurações da API do SFMC não encontradas para esta marca.' }), { status: 400 });
         }
         const { clientId, encryptedClientSecret, authBaseUrl } = brand.integrations.sfmcApi;
         if (!clientId || !encryptedClientSecret || !authBaseUrl) {
-            return new NextResponse(JSON.stringify({ success: false, message: 'Credenciais da API do SFMC incompletas.' }), { status_400, headers: corsHeaders });
+            return new NextResponse(JSON.stringify({ success: false, message: 'Credenciais da API do SFMC incompletas.' }), { status: 400 });
         }
         
         const clientSecret = decryptPassword(encryptedClientSecret);
@@ -64,7 +51,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (records.length === 0) {
-            return new NextResponse(JSON.stringify({ success: true, message: 'Arquivo CSV vazio ou sem dados. Nada foi adicionado.' }), { status: 200, headers: corsHeaders });
+            return new NextResponse(JSON.stringify({ success: true, message: 'Arquivo CSV vazio ou sem dados. Nada foi adicionado.' }), { status: 200 });
         }
         
         // 4. Apply column mapping if provided
@@ -110,7 +97,7 @@ export async function POST(request: NextRequest) {
             success: true, 
             message: `Sucesso! ${records.length} registros foram adicionados/atualizados na Data Extension.`,
             rowsProcessed: records.length,
-        }), { status: 200, headers: corsHeaders });
+        }), { status: 200 });
 
     } catch (error: any) {
         // Enhanced error handling
@@ -127,6 +114,6 @@ export async function POST(request: NextRequest) {
         return new NextResponse(JSON.stringify({ 
             success: false, 
             message: `Falha no processamento para o SFMC: ${errorMessage}` 
-        }), { status: 500, headers: corsHeaders });
+        }), { status: 500 });
     }
 }

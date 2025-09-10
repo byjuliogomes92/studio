@@ -1,3 +1,4 @@
+
 import type { PageComponent, CloudPage, CampaignOption } from '@/lib/types';
 
 export function renderDataExtensionUpload(component: PageComponent, pageState: CloudPage): string {
@@ -16,7 +17,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
         textColor: buttonTextColor = "#FFFFFF",
         icon: buttonIcon = "send",
-        iconPosition = "left"
+        iconPosition: buttonIconPosition = "left"
     } = buttonProps;
     
     const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 

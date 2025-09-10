@@ -17,8 +17,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         text: buttonText = "Processar Arquivo",
         bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
         textColor: buttonTextColor = "#FFFFFF",
-        icon: buttonIcon = "send",
-        iconPosition: buttonIconPosition = "left"
+        icon: buttonIcon = "send"
     } = buttonProps;
     
     const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
@@ -28,7 +27,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const campaignSelectorHtml = campaigns.length > 1 ? `
         <div class="de-upload-v2-campaign-selector">
             <label for="campaign-select-${componentId}">1. Selecione a campanha de destino:</label>
-            <select id="campaign-select-${componentId}">
+            <select id="campaign-select-${componentId}" class="de-upload-v2-select">
                 <option value="" disabled selected>-- Escolha uma opção --</option>
                 ${campaignOptionsHtml}
             </select>
@@ -41,9 +40,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     };
     
     const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
-    const buttonContent = buttonIconPosition === 'right' 
-        ? `<span>${buttonText}</span>${iconHtml}`
-        : `${iconHtml}<span>${buttonText}</span>`;
+    const buttonContent = `${iconHtml}<span>${buttonText}</span>`;
 
     return `
       <div class="de-upload-v2-container">
@@ -217,7 +214,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                     statusEl.className = 'de-upload-v2-status error';
                     statusEl.textContent = 'Erro: ' + error.message;
                     submitBtn.disabled = false; // Allow retry
-                    // Option to go back to step 2 might be good here
                 }
               };
 

@@ -10,14 +10,14 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     } = component.props;
     
     const { brandId } = pageState;
-    const formId = `ftp-upload-form-${component.id}`; // Reusing ftp class names for style consistency
+    const componentId = component.id;
+    const formId = `de-upload-form-${componentId}`;
 
     const {
         text: buttonText = "Processar Arquivo",
         bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
         textColor: buttonTextColor = "#FFFFFF",
         icon: buttonIcon = "send",
-        iconPosition: buttonIconPosition = "left"
     } = buttonProps;
     
     const campaignOptionsHtml = campaigns.map((campaign: CampaignOption) => 
@@ -25,53 +25,58 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     ).join('');
 
     const campaignSelectorHtml = campaigns.length > 1 ? `
-        <div class="ftp-upload-group">
-            <label for="campaign-select-${component.id}">Selecione a campanha de destino:</label>
-            <select id="campaign-select-${component.id}" class="ftp-upload-select">
+        <div class="de-upload-v2-campaign-selector">
+            <label for="campaign-select-${componentId}">1. Selecione a campanha de destino:</label>
+            <select id="campaign-select-${componentId}">
                 <option value="" disabled selected>-- Escolha uma opção --</option>
                 ${campaignOptionsHtml}
             </select>
         </div>
     ` : '';
 
-    const lucideIconSvgs: Record<string, string> = {
-        none: '',
-        send: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
-    };
-    
-    const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
-    const buttonContent = buttonIconPosition === 'right'
-        ? `<span>${buttonText}</span>${iconHtml}`
-        : `${iconHtml}<span>${buttonText}</span>`;
+    const iconHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>';
 
     return `
-      <div class="ftp-upload-container">
-          <form id="${formId}" class="ftp-upload-form">
-              <div class="ftp-upload-header">
+      <div class="de-upload-v2-container">
+          <form id="${formId}">
+              <div class="de-upload-v2-step" id="step1-${componentId}">
                   <h4>${title}</h4>
-              </div>
-              
-              ${campaignSelectorHtml}
-
-              <div class="ftp-upload-group">
-                <label for="file-input-${component.id}" class="ftp-upload-drop-area">
-                    <div class="ftp-upload-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                    </div>
-                    <p class="ftp-upload-instruction">${instructionText}</p>
-                    <input type="file" id="file-input-${component.id}" name="file" accept=".csv, text/csv" required>
-                    <span class="ftp-upload-filename"></span>
-                </label>
+                  ${campaignSelectorHtml}
+                  <div class="de-upload-v2-drop-zone">
+                      <input type="file" id="file-input-${componentId}" accept=".csv, text/csv" required style="display: none;">
+                      <div class="de-upload-v2-drop-content">
+                          <div class="de-upload-v2-icon">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                          </div>
+                          <p>${instructionText}</p>
+                      </div>
+                  </div>
               </div>
 
-              <div class="ftp-upload-footer">
-                  <div class="ftp-upload-status"></div>
-                   <div class="ftp-upload-progress-wrapper">
-                        <div class="ftp-upload-progress-bar"></div>
-                    </div>
-                  <button type="submit" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">
-                      ${buttonContent}
-                  </button>
+              <div class="de-upload-v2-step" id="step2-${componentId}" style="display: none;">
+                  <h4>Confirmar Arquivo</h4>
+                  <p class="de-upload-v2-filename-confirm"></p>
+                  <div class="de-upload-v2-stats-grid">
+                      <div class="de-upload-v2-stat-card"><h5>Registros</h5><p id="stat-rows-${componentId}">-</p></div>
+                      <div class="de-upload-v2-stat-card"><h5>Colunas</h5><p id="stat-cols-${componentId}">-</p></div>
+                      <div class="de-upload-v2-stat-card"><h5>Tamanho</h5><p id="stat-size-${componentId}">-</p></div>
+                  </div>
+                  <div class="de-upload-v2-columns-container">
+                      <h5>Colunas Detectadas:</h5>
+                      <div class="de-upload-v2-columns-list" id="columns-list-${componentId}"></div>
+                  </div>
+                  <div class="de-upload-v2-actions">
+                      <button type="button" id="cancel-btn-${componentId}" class="custom-button custom-button--outline">Trocar Arquivo</button>
+                      <button type="submit" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">${iconHtml}<span>${buttonText}</span></button>
+                  </div>
+              </div>
+
+              <div class="de-upload-v2-step" id="step3-${componentId}" style="display: none;">
+                   <h4>Processando</h4>
+                   <div class="de-upload-v2-feedback">
+                       <div class="de-upload-v2-progress-container"><div class="de-upload-v2-progress-bar"></div></div>
+                       <p class="de-upload-v2-status info">Aguarde, estamos processando seu arquivo...</p>
+                   </div>
               </div>
           </form>
       </div>
@@ -79,68 +84,105 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
       (function() {
           const form = document.getElementById('${formId}');
           if (!form) return;
+          const componentId = '${componentId}';
 
-          const dropArea = form.querySelector('.ftp-upload-drop-area');
-          const fileInput = form.querySelector('#file-input-${component.id}');
-          const fileNameDisplay = form.querySelector('.ftp-upload-filename');
-          const statusEl = form.querySelector('.ftp-upload-status');
-          const progressWrapper = form.querySelector('.ftp-upload-progress-wrapper');
-          const progressBar = form.querySelector('.ftp-upload-progress-bar');
-          const submitBtn = form.querySelector('button[type="submit"]');
-          const campaignSelect = form.querySelector('#campaign-select-${component.id}');
+          const step1 = form.querySelector('#step1-' + componentId);
+          const step2 = form.querySelector('#step2-' + componentId);
+          const step3 = form.querySelector('#step3-' + componentId);
+          
+          const dropZone = form.querySelector('.de-upload-v2-drop-zone');
+          const fileInput = form.querySelector('#file-input-' + componentId);
+          const cancelBtn = form.querySelector('#cancel-btn-' + componentId);
+          const campaignSelect = form.querySelector('#campaign-select-' + componentId);
 
-          const setActive = (active) => dropArea.classList.toggle('active', active);
-          dropArea.addEventListener('dragenter', (e) => { e.preventDefault(); setActive(true); });
-          dropArea.addEventListener('dragover', (e) => { e.preventDefault(); setActive(true); });
-          dropArea.addEventListener('dragleave', (e) => { e.preventDefault(); setActive(false); });
-          dropArea.addEventListener('drop', (e) => {
+          let currentFile;
+
+          const showStep = (step) => {
+            step1.style.display = 'none';
+            step2.style.display = 'none';
+            step3.style.display = 'none';
+            step.style.display = 'block';
+          };
+          
+          dropZone.addEventListener('click', () => fileInput.click());
+          dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('highlight'); });
+          dropZone.addEventListener('dragleave', () => dropZone.classList.remove('highlight'));
+          dropZone.addEventListener('drop', (e) => {
               e.preventDefault();
-              setActive(false);
+              dropZone.classList.remove('highlight');
               if (e.dataTransfer.files.length) {
-                  fileInput.files = e.dataTransfer.files;
-                  updateFileName(fileInput.files[0]);
+                  handleFileSelect(e.dataTransfer.files[0]);
               }
           });
-
           fileInput.addEventListener('change', () => {
               if (fileInput.files.length) {
-                  updateFileName(fileInput.files[0]);
+                  handleFileSelect(fileInput.files[0]);
               }
           });
 
-          function updateFileName(file) {
-              if (file) {
-                  fileNameDisplay.textContent = file.name;
+          cancelBtn.addEventListener('click', () => {
+              currentFile = null;
+              fileInput.value = '';
+              showStep(step1);
+          });
+
+          function handleFileSelect(file) {
+              if (!file || file.type !== 'text/csv') {
+                  alert('Por favor, selecione um arquivo CSV.');
+                  return;
               }
+              currentFile = file;
+              
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                  const text = e.target.result;
+                  const lines = text.split('\\n').filter(l => l.trim() !== '');
+                  const rowCount = lines.length > 0 ? lines.length - 1 : 0;
+                  const headers = lines[0] ? lines[0].split(',').map(h => h.trim().replace(/"/g, '')) : [];
+                  
+                  form.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
+                  form.querySelector('#stat-rows-' + componentId).textContent = rowCount;
+                  form.querySelector('#stat-cols-' + componentId).textContent = headers.length;
+                  form.querySelector('#stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
+                  
+                  const columnsList = form.querySelector('#columns-list-' + componentId);
+                  columnsList.innerHTML = headers.map(h => \`<span class="de-upload-v2-column-tag">\${h}</span>\`).join('');
+
+                  showStep(step2);
+              };
+              reader.readAsText(file);
           }
 
           form.addEventListener('submit', async function(e) {
               e.preventDefault();
-
+              
               const selectedDeKey = campaignSelect ? campaignSelect.value : ('${campaigns.length > 0 ? campaigns[0].deKey : ''}');
 
               if (!selectedDeKey) {
-                  statusEl.textContent = 'Por favor, selecione uma campanha.';
-                  statusEl.style.color = 'red';
+                  alert('Por favor, selecione uma campanha.');
                   return;
               }
-              if (!fileInput.files || fileInput.files.length === 0) {
-                  statusEl.textContent = 'Por favor, selecione um arquivo.';
-                  statusEl.style.color = 'red';
+              if (!currentFile) {
+                  alert('Por favor, selecione um arquivo.');
                   return;
               }
-
-              statusEl.textContent = 'Enviando...';
-              statusEl.style.color = 'inherit';
+              
+              showStep(step3);
+              const statusEl = form.querySelector('.de-upload-v2-status');
+              const progressBar = form.querySelector('.de-upload-v2-progress-bar');
+              const submitBtn = step2.querySelector('button[type="submit"]');
               submitBtn.disabled = true;
-              progressWrapper.style.display = 'block';
-              progressBar.style.width = '0%';
+
+              statusEl.className = 'de-upload-v2-status info';
+              statusEl.textContent = 'Lendo arquivo...';
 
               const reader = new FileReader();
-              reader.readAsText(fileInput.files[0]);
+              reader.readAsText(currentFile);
 
               reader.onload = async () => {
                 try {
+                  statusEl.textContent = 'Enviando dados...';
+                  progressBar.style.width = '50%';
                   const csvData = reader.result;
                   const response = await fetch('/api/sfmc-upload', {
                     method: 'POST',
@@ -152,21 +194,27 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   if (!response.ok) throw new Error(result.message || 'Erro no servidor.');
 
                   progressBar.style.width = '100%';
+                  statusEl.className = 'de-upload-v2-status success';
                   statusEl.textContent = result.message || 'Sucesso!';
-                  statusEl.style.color = 'green';
-                  form.reset();
-                  fileNameDisplay.textContent = '';
+
+                  setTimeout(() => {
+                      showStep(step1);
+                      submitBtn.disabled = false;
+                      currentFile = null;
+                      fileInput.value = '';
+                  }, 3000);
                 
                 } catch (error) {
+                    statusEl.className = 'de-upload-v2-status error';
                     statusEl.textContent = 'Erro: ' + error.message;
-                    statusEl.style.color = 'red';
-                } finally {
-                    submitBtn.disabled = false;
+                    submitBtn.disabled = false; // Allow retry
+                    // Option to go back to step 2 might be good here
                 }
               };
+
                reader.onerror = () => {
+                 statusEl.className = 'de-upload-v2-status error';
                  statusEl.textContent = 'Erro ao ler o arquivo.';
-                 statusEl.style.color = 'red';
                  submitBtn.disabled = false;
               };
           });

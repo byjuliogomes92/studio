@@ -49,7 +49,6 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
         return '';
     }
     
-    const urlParam = security.passwordConfig.urlParameter;
 
     return `
 <div class="password-protection-container">

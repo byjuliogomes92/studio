@@ -2,47 +2,44 @@
 import type { CloudPage } from '../types';
 
 export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
-    const security = pageState.meta.security;
-    
-    if (!security || security.type !== 'password' || !security.passwordConfig) {
-        return '%%[ /* Bloco de segurança desativado. */ ]%%'; 
-    }
-    
-    const config = security.passwordConfig;
-
-    // Bloco de teste isolado para a função Lookup()
+    // Retornar um bloco de teste ultra-simplificado para depuração.
     return `
 %%[
-    /* --- INÍCIO: TESTE ISOLADO DA FUNÇÃO LOOKUP() --- */
-    VAR @lookupValue, @correctPassword, @identifier
-    
-    /* Passo 1: Edite o valor abaixo para um NOME que exista na sua DE de teste. */
-    SET @identifier = "JULIO" 
-    
-    /* Passo 2: A função Lookup() é executada com os dados exatos da sua DE. */
-    SET @correctPassword = Lookup("D3D99DF5-EA8D-4729-8056-93633F476699", "SENHA", "NOME", @identifier)
+    /* --- INÍCIO: TESTE DE DEPURAÇÃO FINAL LOOKUP() --- */
+    VAR @senhaEncontrada
 
-    /* Passo 3: O resultado é impresso em um comentário HTML visível no código-fonte. */
+    /* 
+     * Passo 1: Altere o valor "SEU_NOME_DE_TESTE" abaixo para um valor EXATO 
+     * que exista na coluna "NOME" da sua Data Extension.
+     * Exemplo: SET @senhaEncontrada = Lookup("D3D99DF5-EA8D-4729-8056-93633F476699", "SENHA", "NOME", "Julio")
+     */
+
+    SET @senhaEncontrada = Lookup("D3D99DF5-EA8D-4729-8056-93633F476699", "SENHA", "NOME", "SEU_NOME_DE_TESTE")
+
 ]%%
-
 <!-- 
     ================================================================
     RESULTADO DO TESTE (Verifique o código-fonte da sua CloudPage):
     
-    A senha encontrada para o identificador '%%=v(@identifier)=%%' foi: '%%=v(@correctPassword)=%%'
+    A senha encontrada foi: '%%=v(@senhaEncontrada)=%%'
     
-    - Se uma senha aparecer aqui, o Lookup() está funcionando e o problema está na lógica anterior.
-    - Se a página ainda der erro 500, o problema está na própria função Lookup() (verifique permissões da DE, etc).
-    - Se a senha ficar em branco, o identificador '%%=v(@identifier)=%%' não foi encontrado na DE.
+    Se esta página AINDA retornar um erro 500, o problema está 100% relacionado
+    à permissão de acesso à Data Extension 'D3D99DF5-EA8D-4729-8056-93633F476699'.
+    Verifique se ela é pública ou se as permissões de leitura estão corretas
+    para o contexto de CloudPage.
+
+    Se a página carregar e a senha aparecer em branco, significa que o 
+    'SEU_NOME_DE_TESTE' não foi encontrado na coluna 'NOME'.
     ================================================================
 -->
 
 %%[ 
-    /* Lógica de autenticação desativada para o teste. A página sempre será exibida. */
+    /* Lógica de autenticação desativada para o teste. */
     SET @isAuthenticated = true 
 ]%%
     `;
 }
+
 
 export const getSecurityFormHtml = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
@@ -51,23 +48,6 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
         return `<div class="sso-redirect-container"><h1>Redirecionando para o login...</h1><script>window.location.href = "%%=v(@LoginURL)=%%";</script></div>`;
     }
     
-    if (!security || security.type !== 'password' || !security.passwordConfig) {
-        return '';
-    }
-    
-    const urlParam = security.passwordConfig.urlParameter || 'id';
-
-    return `
-<div class="password-protection-container">
-    <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
-        <h2>Acesso Restrito</h2>
-        <p>Por favor, insira suas credenciais para continuar.</p>
-        <input type="hidden" name="page_identifier_param" value="%%=v(@page_identifier_param)=%%">
-        <input type="text" name="page_identifier" placeholder="Seu Identificador" value="%%=v(@identifier)=%%" required>
-        <input type="password" name="page_password" placeholder="Sua senha" required>
-        <button type="submit">Acessar</button>
-        <p class="error-message">%%=v(@loginError)=%%</p>
-    </form>
-</div>
-`;
+    // O formulário de login está intencionalmente desativado durante o teste.
+    return '<!-- Formulário de login desativado para o teste de Lookup(). -->';
 }

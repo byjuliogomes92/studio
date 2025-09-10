@@ -1,7 +1,7 @@
 
 import type { PageComponent, CloudPage, CampaignGroup, UploadTarget } from '@/lib/types';
 
-export function renderFTPUpload(component: PageComponent, pageState: CloudPage): string {
+export function renderFTPUpload(component: PageComponent, pageState: CloudPage, baseUrl: string): string {
     const { 
         title = "Upload de Arquivo para FTP",
         instructionText = "Arraste e solte o arquivo ou clique para selecionar.",
@@ -97,6 +97,7 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage):
             if (!form) return;
             const componentId = '${componentId}';
             const brandId = '${brandId}';
+            const apiBaseUrl = '${baseUrl}';
             const campaignGroupsData = ${JSON.stringify(campaignGroups)};
 
             const step1 = form.querySelector('#step1-' + componentId);
@@ -231,7 +232,7 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage):
 
                 try {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/api/ftp-upload', true);
+                    xhr.open('POST', apiBaseUrl + '/api/ftp-upload', true);
                     xhr.upload.onprogress = function(event) { if (event.lengthComputable) { const percent = (event.loaded / event.total) * 100; progressBar.style.width = percent + '%'; } };
                     xhr.onload = function() {
                         const result = JSON.parse(xhr.responseText);

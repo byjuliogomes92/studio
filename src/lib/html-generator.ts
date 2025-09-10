@@ -189,7 +189,7 @@ export const renderSingleComponent = (component: PageComponent, pageState: Cloud
     case 'WhatsApp': return renderWhatsApp(component);
     case 'Carousel': return renderCarousel(component);
     case 'Form': return renderForm(component, pageState, isForPreview);
-    case 'FTPUpload': return renderFTPUpload(component, pageState);
+    case 'FTPUpload': return renderFTPUpload(component, pageState, baseUrl);
     case 'DataExtensionUpload': return renderDataExtensionUpload(component, pageState, baseUrl);
     case 'FloatingImage': return renderFloatingImage(component);
     case 'FloatingButton': return renderFloatingButton(component);
@@ -1568,7 +1568,6 @@ ${trackingScripts.head}
         background-color: transparent !important;
         color: var(--theme-color) !important;
         padding: 0 !important;
-        text-decoration: none !important;
         border-radius: 0 !important;
     }
     .custom-button--link:hover {
@@ -2522,5 +2521,5 @@ ${clientSideScripts}
 ${firebaseConfigScript}
 </body>
 </html>
-`;
+`
 }

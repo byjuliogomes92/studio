@@ -5,7 +5,7 @@ import crypto from 'crypto-js';
 // diretamente no painel do projeto. Esta função garante que, mesmo que
 // a variável de servidor não seja encontrada, usamos um fallback seguro.
 const getEncryptionKey = (): string => {
-    const key = process.env.FTP_ENCRYPTION_KEY || process.env.NEXT_PUBLIC_CRYPTO_FALLBACK_KEY;
+    const key = process.env.SECRET_ENCRYPTION_KEY;
     if (!key) {
         // Este erro não deve acontecer se as variáveis estiverem configuradas corretamente.
         console.error("FATAL: Nenhuma chave de criptografia foi definida no ambiente.");

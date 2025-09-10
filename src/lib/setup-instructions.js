@@ -145,9 +145,9 @@ gsutil cors set cors.json [SEU_BUCKET_URL]
  * 4. Adicione as seguintes variáveis, uma de cada vez:
  *
  *    - **Para a Chave de Criptografia (Obrigatória):**
- *      - **Name:** `FTP_ENCRYPTION_KEY`
+ *      - **Name:** `SECRET_ENCRYPTION_KEY`
  *      - **Value:** Cole o valor que está no arquivo `.env` do seu projeto.
- *        (É uma chave longa e aleatória, como: 2a2b...f56)
+ *        (É uma chave longa e aleatória, como: b9c1...d5d5b)
  *
  *    - **Para a IA Generativa (Opcional):**
  *      - **Name:** `GEMINI_API_KEY`
@@ -162,4 +162,3 @@ gsutil cors set cors.json [SEU_BUCKET_URL]
  *
  * ==================================================================
  */
-```

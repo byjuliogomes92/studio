@@ -16,9 +16,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     const {
         text: buttonText = "Processar Arquivo",
-        icon: buttonIcon = "none",
+        icon: buttonIcon = "send",
         iconPosition = "left",
-        bgColor: buttonBgColor = "var(--theme-color)",
+        bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
         textColor: buttonTextColor = "#FFFFFF",
     } = buttonProps;
     
@@ -51,7 +51,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     };
     
     const iconHtml = buttonIcon && lucideIconSvgs[buttonIcon] ? lucideIconSvgs[buttonIcon] : '';
-    const buttonContent = iconPosition === 'right'
+    const buttonContent = buttonIconPosition === 'right'
         ? `<span>${buttonText}</span>${iconHtml}`
         : `${iconHtml}<span>${buttonText}</span>`;
     

@@ -193,7 +193,7 @@
     margin: auto;
     font-family: inherit;
     color: var(--text-color);
-    background-color: var(--container-bg);
+    background-color: hsl(var(--card));
     display: flex;
     flex-direction: column;
     gap: 1.5rem; 
@@ -293,7 +293,7 @@
   .de-upload-v2-drop-content.selected strong { color: var(--text-color); }
   
   .de-upload-v2-file-info {
-    display: flex;
+    display: none; /* Initially hidden */
     flex-direction: column;
     gap: 1.5rem;
   }
@@ -313,7 +313,7 @@
     text-align: center;
   }
   .info-item-full {
-      background-color: hsl(var(--muted));
+      background-color: hsl(var(--card));
       border-radius: 0.5rem;
       padding: 1rem;
       border: 1px solid hsl(var(--border));
@@ -405,6 +405,7 @@
     }
   }
 }
+
 
 
 

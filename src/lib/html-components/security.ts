@@ -7,21 +7,17 @@ export const getSSJSSecurityBlock = (pageState: CloudPage): string => {
         return '';
     }
 
-    const { 
-        dataExtensionKey, 
-        identifierColumn, 
-        passwordColumn, 
-        urlParameter 
+    const {
+        dataExtensionKey,
+        identifierColumn,
+        passwordColumn,
+        urlParameter
     } = security.passwordConfig;
 
-    // Return the SSJS block as a string, ready to be inserted into a <script> tag.
     return `
 Platform.Load("core", "1");
 
 try {
-    // ==============================
-    // CONFIGURAÇÕES
-    // ==============================
     var deKey = "${dataExtensionKey}";
     var identifierColumn = "${identifierColumn}";
     var passwordColumn = "${passwordColumn}";
@@ -32,9 +28,6 @@ try {
     var isAuthenticated = false;
     var errorMessage = "";
 
-    // ==============================
-    // CAPTURA PARÂMETROS
-    // ==============================
     if (Request.GetFormField("page_identifier")) {
         identifier = Request.GetFormField("page_identifier");
     } else if (Request.GetQueryStringParameter(urlParam)) {
@@ -45,9 +38,6 @@ try {
         password = Request.GetFormField("page_password");
     }
 
-    // ==============================
-    // VALIDA LOGIN
-    // ==============================
     if (password && identifier) {
         try {
             var de = DataExtension.Init(deKey);
@@ -55,7 +45,6 @@ try {
 
             if (data && data.length > 0) {
                 var correctPassword = data[0][passwordColumn];
-
                 if (password == correctPassword) {
                     isAuthenticated = true;
                 } else {
@@ -65,21 +54,18 @@ try {
                 errorMessage = "Usuário não encontrado.";
             }
         } catch(ex) {
-            errorMessage = "Erro ao validar credenciais: " + ex.message;
+            errorMessage = "Erro ao acessar dados: " + ex.message;
         }
     } else if (Request.Method == "POST" && !password) {
         errorMessage = "A senha é obrigatória.";
     }
 
-    // ==============================
-    // PASSA VARIÁVEIS PARA O AMPScript
-    // ==============================
     Variable.SetValue("@identifier", identifier);
     Variable.SetValue("@isAuthenticated", isAuthenticated);
     Variable.SetValue("@errorMessage", errorMessage);
 
 } catch(ex) {
-    Variable.SetValue("@errorMessage", "Erro geral do servidor: " + ex.message);
+    Variable.SetValue("@errorMessage", "Erro geral: " + ex.message);
     Variable.SetValue("@isAuthenticated", false);
 }
 `;
@@ -90,7 +76,6 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
     const security = pageState.meta.security;
     
     if (security?.type === 'sso') {
-        // This part remains unchanged as it uses AMPScript which is fine.
         return `
             %%[
                 SET @Id = QueryParameter("id")
@@ -109,12 +94,54 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
         `;
     }
     
-    if (security?.type === 'password') {
+    if (security?.type === 'password' && security.passwordConfig) {
+        const config = security.passwordConfig;
+        const pageStyle = `
+            background-color: ${config.backgroundColor || '#f0f2f5'};
+            color: ${config.textColor || '#111827'};
+            font-family: sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        `;
+        const formContainerStyle = `
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+        `;
         return `
-            <div class="password-protection-container">
-                <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
-                    <h2>Acesso Restrito</h2>
-                    <p>Por favor, insira suas credenciais para continuar.</p>
+            <style>
+                .password-form input {
+                    width: 100%;
+                    padding: 12px;
+                    margin-top: 15px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    box-sizing: border-box;
+                }
+                .password-form button {
+                    width: 100%;
+                    padding: 12px;
+                    margin-top: 20px;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    background-color: ${config.buttonBackgroundColor || 'var(--theme-color)'};
+                    color: ${config.buttonTextColor || '#ffffff'};
+                }
+            </style>
+            <div class="password-protection-container" style="${pageStyle}">
+                <form method="post" class="password-form" style="${formContainerStyle}">
+                    ${config.logoUrl ? `<img src="${config.logoUrl}" alt="Logo" style="max-width: 150px; margin: 0 auto 20px auto; display: block;">` : ''}
+                    <h2 style="margin-top: 0; color: ${config.textColor || '#111827'};">${config.title || 'Acesso Restrito'}</h2>
+                    <p style="color: ${config.textColor ? `rgba(${parseInt(config.textColor.slice(1, 3), 16)}, ${parseInt(config.textColor.slice(3, 5), 16)}, ${parseInt(config.textColor.slice(5, 7), 16)}, 0.7)` : '#6b7280'};">${config.subtitle || 'Por favor, insira suas credenciais para continuar.'}</p>
                     <input type="text" name="page_identifier" placeholder="Seu Identificador" value="%%=v(@identifier)=%%" required>
                     <input type="password" name="page_password" placeholder="Senha" required>
                     <button type="submit">Acessar</button>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
@@ -487,6 +488,13 @@ export function SettingsPanel({
                     identifierColumn: 'SubscriberKey',
                     passwordColumn: 'Password',
                     urlParameter: 'id',
+                    logoUrl: '',
+                    title: 'Acesso Restrito',
+                    subtitle: 'Por favor, insira suas credenciais para continuar.',
+                    backgroundColor: '#F3F4F6',
+                    textColor: '#1F2937',
+                    buttonBackgroundColor: 'var(--theme-color)',
+                    buttonTextColor: '#FFFFFF'
                  }
             }
         });
@@ -1137,6 +1145,7 @@ export function SettingsPanel({
                             </div>
                             {pageState.meta.security?.type === 'password' && (
                                 <div className="p-3 border rounded-md space-y-3 bg-muted/40">
+                                    <h4 className="font-medium text-sm">Configuração da DE</h4>
                                     <div className="space-y-2">
                                         <Label htmlFor="sec-dekey" className="text-xs">DE da Senha (Chave Externa)</Label>
                                         <Input id="sec-dekey" value={pageState.meta.security.passwordConfig?.dataExtensionKey || ''} onChange={e => handlePasswordConfigChange('dataExtensionKey', e.target.value)} />
@@ -1144,12 +1153,37 @@ export function SettingsPanel({
                                     <div className="grid grid-cols-2 gap-2">
                                          <div className="space-y-2">
                                             <Label htmlFor="sec-idcol" className="text-xs">Coluna Identificador</Label>
-                                            <Input id="sec-idcol" value={pageState.meta.security.passwordConfig?.identifierColumn || 'SubscriberKey'} onChange={e => handlePasswordConfigChange('identifierColumn', e.target.value)} />
+                                            <Input id="sec-idcol" value={pageState.meta.security.passwordConfig?.identifierColumn || ''} onChange={e => handlePasswordConfigChange('identifierColumn', e.target.value)} />
                                         </div>
                                          <div className="space-y-2">
                                             <Label htmlFor="sec-passcol" className="text-xs">Coluna Senha</Label>
-                                            <Input id="sec-passcol" value={pageState.meta.security.passwordConfig?.passwordColumn || 'Password'} onChange={e => handlePasswordConfigChange('passwordColumn', e.target.value)} />
+                                            <Input id="sec-passcol" value={pageState.meta.security.passwordConfig?.passwordColumn || ''} onChange={e => handlePasswordConfigChange('passwordColumn', e.target.value)} />
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="sec-urlparam" className="text-xs">Parâmetro na URL (para Identificador)</Label>
+                                        <Input id="sec-urlparam" value={pageState.meta.security.passwordConfig?.urlParameter || ''} onChange={e => handlePasswordConfigChange('urlParameter', e.target.value)} />
+                                    </div>
+                                    <Separator />
+                                    <h4 className="font-medium text-sm">Estilo da Página de Login</h4>
+                                    <div className="space-y-2">
+                                        <ImageInput label="URL do Logo" value={pageState.meta.security.passwordConfig?.logoUrl || ''} onPropChange={(prop, val) => handlePasswordConfigChange('logoUrl', val)} propName="login-logo"/>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs">Título</Label>
+                                            <Input value={pageState.meta.security.passwordConfig?.title || ''} onChange={e => handlePasswordConfigChange('title', e.target.value)}/>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label className="text-xs">Subtítulo</Label>
+                                            <Input value={pageState.meta.security.passwordConfig?.subtitle || ''} onChange={e => handlePasswordConfigChange('subtitle', e.target.value)}/>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <ColorInput label="Fundo da Página" value={pageState.meta.security.passwordConfig?.backgroundColor || ''} onChange={v => handlePasswordConfigChange('backgroundColor', v)} />
+                                        <ColorInput label="Cor do Texto" value={pageState.meta.security.passwordConfig?.textColor || ''} onChange={v => handlePasswordConfigChange('textColor', v)} />
+                                        <ColorInput label="Fundo do Botão" value={pageState.meta.security.passwordConfig?.buttonBackgroundColor || ''} onChange={v => handlePasswordConfigChange('buttonBackgroundColor', v)} />
+                                        <ColorInput label="Texto do Botão" value={pageState.meta.security.passwordConfig?.buttonTextColor || ''} onChange={v => handlePasswordConfigChange('buttonTextColor', v)} />
                                     </div>
                                 </div>
                             )}
@@ -1342,3 +1376,4 @@ export function SettingsPanel({
 }
 
     
+

@@ -5,11 +5,11 @@
  * ==================================================================
  *
  * Este arquivo contém scripts e instruções para executar tarefas de
- * configuração essenciais diretamente no Google Cloud Shell.
+ * configuração essenciais diretamente no Google Cloud Shell ou na Vercel.
  *
  * --- COMO USAR ---
- * 1. Abra o Console do Firebase do seu projeto.
- * 2. Clique no ícone do Cloud Shell (>_) no canto superior direito.
+ * 1. Para tarefas do Firebase/Google Cloud, abra o Cloud Shell.
+ * 2. Para tarefas da Vercel, acesse o painel do seu projeto.
  * 3. Siga as instruções da tarefa que deseja executar.
  *
  * ==================================================================
@@ -18,7 +18,7 @@
  * Execute este script para conceder permissões de administrador a um
  * usuário, permitindo o acesso ao painel em /admin.
  *
- * --- PASSO A PASSO ---
+ * --- PASSO A PASSO (NO GOOGLE CLOUD SHELL) ---
  *
  * 1. No terminal do Cloud Shell, crie o arquivo do script:
  *    nano setAdmin.js
@@ -81,7 +81,7 @@ setAdminClaim();
  * Execute este procedimento para permitir que sua aplicação envie
  * arquivos para o Firebase Storage sem erros de CORS.
  *
- * --- PASSO A PASSO ---
+ * --- PASSO A PASSO (NO GOOGLE CLOUD SHELL) ---
  * 
  * 1. **(IMPORTANTE!) Ative o Firebase Storage primeiro:**
  *    - No menu lateral do Firebase Console, vá em "Storage".
@@ -124,3 +124,42 @@ gsutil cors set cors.json [SEU_BUCKET_URL]
  *
  * ==================================================================
  */
+ 
+ 
+/**
+ * ==================================================================
+ * TAREFA 3: CONFIGURAR VARIÁVEIS DE AMBIENTE NA VERCEL
+ * ==================================================================
+ * Para que funcionalidades como a IA Generativa e a criptografia de
+ * senhas (FTP, Bitly, SFMC) funcionem no site publicado, você precisa
+ * adicionar as chaves secretas no painel da Vercel.
+ *
+ * --- PASSO A PASSO (NO PAINEL DA VERCEL) ---
+ *
+ * 1. Acesse o dashboard do seu projeto na Vercel.
+ *
+ * 2. Vá para a aba "Settings" (Configurações).
+ *
+ * 3. No menu lateral, clique em "Environment Variables" (Variáveis de Ambiente).
+ *
+ * 4. Adicione as seguintes variáveis, uma de cada vez:
+ *
+ *    - **Para a Chave de Criptografia (Obrigatória):**
+ *      - **Name:** `FTP_ENCRYPTION_KEY`
+ *      - **Value:** Cole o valor que está no arquivo `.env` do seu projeto.
+ *        (É uma chave longa e aleatória, como: 2a2b...f56)
+ *
+ *    - **Para a IA Generativa (Opcional):**
+ *      - **Name:** `GEMINI_API_KEY`
+ *      - **Value:** Cole a sua chave de API do Google AI Studio (Gemini).
+ *
+ * 5. Deixe as outras opções como estão e clique em "Save" (Salvar) para cada uma.
+ *
+ * 6. **IMPORTANTE:** Após salvar as variáveis, você precisa fazer um novo
+ *    "deploy" (publicação) para que as alterações entrem em vigor.
+ *    - Vá para a aba "Deployments".
+ *    - Encontre o último deploy, clique nos três pontinhos (...) e selecione "Redeploy".
+ *
+ * ==================================================================
+ */
+```

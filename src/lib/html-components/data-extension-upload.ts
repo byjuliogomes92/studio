@@ -17,7 +17,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     const {
         text: buttonText = "Processar Arquivo",
         icon: buttonIcon = "send",
-        iconPosition = "left",
+        iconPosition: buttonIconPosition = "left",
         bgColor: buttonBgColor = "var(--theme-color, #3b82f6)",
         textColor: buttonTextColor = "#FFFFFF",
     } = buttonProps;
@@ -295,7 +295,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               handleFileSelect(e.dataTransfer.files[0]);
           });
 
-          uploadBtn.addEventListener('click', async () => {
+          uploadBtn.addEventListener('click', async function(e) {
               if (!selectedFile) return;
               const selectedDeKey = campaignSelect ? campaignSelect.value : (allCampaigns.length > 0 ? allCampaigns[0].deKey : '');
               if (!selectedDeKey) {

@@ -1106,49 +1106,47 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const hasForm = components.some(c => c.type === 'Form');
     const needsSecurity = meta.security && meta.security.type !== 'none';
     
-    // Determine se o AMPScript é necessário.
     const needsAmpscript = !isForPreview && !hideAmpscript;
 
-    // Gerar conteúdo principal primeiro
     const rootComponents = components.filter(c => c.parentId === null);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, hideAmpscript);
 
-    // --- Início: Construção do Bloco AMPScript Principal ---
     let initialAmpscript = '';
     if (needsAmpscript) {
         const securityLogic = getAmpscriptSecurityBlock(pageState);
         const prefillLogic = getPrefillAmpscript(pageState);
         const customLogic = (meta.customAmpscript || '').replace(/%%\[|\]%%/g, '').trim();
 
-        const allLogic = [securityLogic, prefillLogic, customLogic].filter(Boolean).join('\n\n');
+        const allLogicBlocks = [securityLogic, prefillLogic, customLogic];
+        
+        const allVars = new Set<string>();
+        allLogicBlocks.forEach(block => {
+            const matches = block.match(/@\w+/g) || [];
+            matches.forEach(match => allVars.add(match));
+        });
 
-        // This is a simple way to collect all unique VAR declarations.
-        // A more robust solution would parse the AMPScript, but this works for now.
-        const declaredVars = new Set((allLogic.match(/VAR @\w+/g) || []).map(v => v.replace('VAR ', '')));
-        // Add variables that might be set without declaration
-        (allLogic.match(/SET @\w+/g) || []).map(v => v.replace('SET ', '')).forEach(v => declaredVars.add(v));
-        // Add standard variables
-        ['showThanks', 'isAuthenticated', 'loginError'].forEach(v => declaredVars.add(`@${v}`));
+        // Add standard variables that might be used
+        ['showThanks', 'isAuthenticated', 'loginError', 'identifier', 'identifier_from_url', 'identifier_from_post', 'submittedPassword', 'correctPassword'].forEach(v => allVars.add(`@${v}`));
+        // Add form fields from prefill
+        (prefillLogic.match(/@\w+/g) || []).forEach(match => allVars.add(match));
 
-        const varDeclarations = declaredVars.size > 0 ? `VAR ${Array.from(declaredVars).join(', ')}` : '';
 
-        // Now, remove individual VAR declarations from the logic parts
-        const logicWithoutDeclarations = allLogic.replace(/VAR @\w+(, @\w+)*/g, '');
-
-        let logicParts = [
+        const varDeclarations = allVars.size > 0 ? `VAR ${Array.from(allVars).join(', ')}` : '';
+        
+        const logicParts = [
             varDeclarations,
             'SET @showThanks = "false"',
             'IF RequestParameter("form-submitted") == "true" THEN SET @showThanks = "true" ENDIF',
             needsSecurity ? `SET @isAuthenticated = false` : `SET @isAuthenticated = true`,
             `SET @loginError = ""`,
-            logicWithoutDeclarations,
+            securityLogic,
+            prefillLogic,
+            customLogic,
         ];
         
         initialAmpscript = `%%[ \n${logicParts.filter(Boolean).join('\n')} \n]%%`;
     }
-    // --- Fim: Construção do Bloco AMPScript Principal ---
 
-    // --- Início: Construção do Corpo e Estilos ---
     const { typography } = pageState.brand || {};
     const fontFamilyHeadings = typography?.customFontNameHeadings || typography?.fontFamilyHeadings || 'Poppins';
     const fontFamilyBody = typography?.customFontNameBody || typography?.fontFamilyBody || 'Roboto';
@@ -1208,9 +1206,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
              }
            </script>`
         : '';
-    // --- Fim: Construção do Corpo e Estilos ---
 
-    // --- Início: Construção do HTML Final ---
     const html = `<!DOCTYPE html>
 <html>
 <head>

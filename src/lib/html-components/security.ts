@@ -29,18 +29,19 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
 
         return `
             /* --- Logic for Password Protection --- */
-            SET @loginError = ""
-            SET @page_identifier_param = QueryParameter("${urlParameter}")
-            SET @page_identifier = RequestParameter("page_identifier")
+            SET @identifier_from_url = QueryParameter("${urlParameter}")
+            SET @identifier_from_post = RequestParameter("page_identifier")
             SET @submittedPassword = RequestParameter("page_password")
 
-            IF EMPTY(@page_identifier) THEN
-                SET @page_identifier = @page_identifier_param
+            IF NOT EMPTY(@identifier_from_post) THEN
+                SET @identifier = @identifier_from_post
+            ELSE
+                SET @identifier = @identifier_from_url
             ENDIF
             
-            IF NOT EMPTY(@submittedPassword) THEN
-                IF NOT EMPTY(@page_identifier) THEN
-                    SET @correctPassword = Lookup("${dataExtensionKey}", "${passwordColumn}", "${identifierColumn}", @page_identifier)
+            IF Request.Method == "POST" AND NOT EMPTY(@submittedPassword) THEN
+                IF NOT EMPTY(@identifier) THEN
+                    SET @correctPassword = Lookup("${dataExtensionKey}", "${passwordColumn}", "${identifierColumn}", @identifier)
                     IF @submittedPassword == @correctPassword THEN
                         SET @isAuthenticated = true
                     ELSE
@@ -52,14 +53,7 @@ export const getAmpscriptSecurityBlock = (pageState: CloudPage): string => {
                     SET @isAuthenticated = false
                 ENDIF
             ELSE
-                 /* No password submitted yet, check if they can auto-login */
-                 IF NOT EMPTY(@page_identifier) THEN
-                     SET @correctPassword = Lookup("${dataExtensionKey}", "${passwordColumn}", "${identifierColumn}", @page_identifier)
-                     /* This part can be extended for auto-login if needed */
-                     SET @isAuthenticated = false
-                 ELSE
-                     SET @isAuthenticated = false
-                 ENDIF
+                 SET @isAuthenticated = false
             ENDIF
         `;
     }
@@ -76,14 +70,12 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
     }
     
     if (security?.type === 'password') {
-        const { urlParameter } = security.passwordConfig || { urlParameter: 'id' };
         return `
             <div class="password-protection-container">
                 <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form">
                     <h2>Acesso Restrito</h2>
                     <p>Por favor, insira sua senha para continuar.</p>
-                    <input type="hidden" name="page_identifier_param" value="%%=v(@${urlParameter})=%%">
-                    <input type="text" name="page_identifier" placeholder="Seu Identificador" value="%%=v(@page_identifier)=%%" required>
+                    <input type="text" name="page_identifier" placeholder="Seu Identificador" value="%%=v(@identifier)=%%" required>
                     <input type="password" name="page_password" placeholder="Senha" required>
                     <div class="error-message" style="display: %%=IIF(EMPTY(@loginError), 'none', 'block')=%%;">%%=v(@loginError)=%%</div>
                     <button type="submit">Acessar</button>

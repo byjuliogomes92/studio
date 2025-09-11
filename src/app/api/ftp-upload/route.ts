@@ -2,20 +2,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToFtp } from '@/lib/ftp-service';
 import { getBrand } from '@/lib/firestore';
+import cors from 'cors';
 
-// Handler para requisições OPTIONS (preflight) - O middleware.ts já cuida disso, mas manter por segurança pode ser útil em alguns ambientes.
-export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+// Helper to run middleware
+function runMiddleware(req: NextRequest, fn: Function) {
+  return new Promise((resolve, reject) => {
+    fn(req, new Response(), (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
   });
 }
 
+// Initialize cors middleware
+const corsMiddleware = cors({
+  origin: '*', // Allow all origins
+  methods: ['POST', 'OPTIONS'],
+});
+
+
+export async function OPTIONS(request: NextRequest) {
+  await runMiddleware(request, corsMiddleware);
+  return new NextResponse(null, { status: 200 });
+}
+
 export async function POST(request: NextRequest) {
+   await runMiddleware(request, corsMiddleware);
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
@@ -31,16 +46,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Caminho, nome do arquivo ou ID da marca faltando.' }, { status: 400 });
     }
 
-    // Fetch brand details to get FTP credentials
     const brand = await getBrand(brandId);
     if (!brand || !brand.integrations?.ftp || !brand.integrations.ftp.host || !brand.integrations.ftp.user || !brand.integrations.ftp.encryptedPassword) {
       return NextResponse.json({ success: false, message: 'Configurações de FTP não encontradas para esta marca.' }, { status: 400 });
     }
     
-    // Convert file to buffer
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    // Upload to FTP using brand-specific credentials
     await uploadToFtp(fileBuffer, path, filename, brand.integrations.ftp);
 
     return NextResponse.json({ success: true, message: 'Arquivo enviado com sucesso!' });

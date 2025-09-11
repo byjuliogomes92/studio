@@ -1,36 +1,62 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { uploadToFtp } from '@/lib/ftp-service';
+import { getBrand } from '@/lib/firestore';
+import cors from 'cors';
 
-export function middleware(request: NextRequest) {
-    // Handle CORS preflight requests (OPTIONS)
-    if (request.method === 'OPTIONS') {
-        return new NextResponse(null, {
-            status: 200,
-            headers: {
-                'Access-Control-Allow-Origin': 'https://cloud.hello.natura.com',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version',
-                'Access-Control-Allow-Credentials': 'true',
-                'Access-Control-Max-Age': '86400', // 24 hours
-            },
-        });
-    }
-
-    // Continue with the request and add CORS headers to the response
-    const response = NextResponse.next();
-    
-    // Add CORS headers to all API responses
-    response.headers.set('Access-Control-Allow-Origin', 'https://cloud.hello.natura.com');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version');
-    response.headers.set('Access-Control-Allow-Credentials', 'true');
-
-    return response;
+// Helper to run middleware
+function runMiddleware(req: NextRequest, fn: Function) {
+  return new Promise((resolve, reject) => {
+    fn(req, new Response(), (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
 }
 
-// Aplica o middleware apenas para rotas da API
-export const config = {
-    matcher: [
-        '/api/:path*',
-    ],
-};
+// Initialize cors middleware
+const corsMiddleware = cors({
+  origin: '*', // Allow all origins
+  methods: ['POST', 'OPTIONS'],
+});
+
+
+export async function OPTIONS(request: NextRequest) {
+  await runMiddleware(request, corsMiddleware);
+  return new NextResponse(null, { status: 200 });
+}
+
+export async function POST(request: NextRequest) {
+   await runMiddleware(request, corsMiddleware);
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+    const path = formData.get('path') as string | null;
+    const filename = formData.get('filename') as string | null;
+    const brandId = formData.get('brandId') as string | null;
+
+    if (!file) {
+      return NextResponse.json({ success: false, message: 'Nenhum arquivo encontrado.' }, { status: 400 });
+    }
+    
+    if (!path || !filename || !brandId) {
+      return NextResponse.json({ success: false, message: 'Caminho, nome do arquivo ou ID da marca faltando.' }, { status: 400 });
+    }
+
+    const brand = await getBrand(brandId);
+    if (!brand || !brand.integrations?.ftp || !brand.integrations.ftp.host || !brand.integrations.ftp.user || !brand.integrations.ftp.encryptedPassword) {
+      return NextResponse.json({ success: false, message: 'Configurações de FTP não encontradas para esta marca.' }, { status: 400 });
+    }
+    
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    await uploadToFtp(fileBuffer, path, filename, brand.integrations.ftp);
+
+    return NextResponse.json({ success: true, message: 'Arquivo enviado com sucesso!' });
+  } catch (error: any) {
+    console.error('FTP Upload Error:', error);
+    return NextResponse.json({ success: false, message: `Erro no servidor: ${error.message}` }, { status: 500 });
+  }
+}

@@ -107,7 +107,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           if (!form) return;
           const componentId = '${componentId}';
           const brandId = '${brandId}';
-          const apiBaseUrl = '${baseUrl}';
+          const proxyUrl = 'https://us-central1-quizkong-mvp.cloudfunctions.net/proxySfmcUpload';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
           const CHUNK_SIZE = 2000;
 
@@ -319,9 +319,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               let totalProcessed = 0;
               const totalBatches = Math.ceil(allRecords.length / CHUNK_SIZE);
               
-              const functions = firebase.app().functions('us-central1');
-              const proxySfmcUpload = functions.httpsCallable('proxySfmcUpload');
-
               for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
                   const chunk = allRecords.slice(i, i + CHUNK_SIZE);
                   const batchNum = (i / CHUNK_SIZE) + 1;
@@ -330,15 +327,19 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   statusEl.textContent = \`Processando lote \${batchNum} de \${totalBatches} (\${chunk.length} registros)...\`;
                   
                   try {
-                      const result = await proxySfmcUpload({
-                          records: chunk, 
-                          deKey: selectedTarget.deKey, 
-                          brandId: brandId,
-                          columnMapping: columnMapping
+                       const response = await fetch(proxyUrl, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                              records: chunk, 
+                              deKey: selectedTarget.deKey, 
+                              brandId: brandId,
+                              columnMapping: columnMapping
+                          })
                       });
-
-                      if (!result.data.success) {
-                          throw new Error(result.data.message || 'Erro retornado pela API de proxy.');
+                      const result = await response.json();
+                      if (!response.ok) {
+                           throw new Error(result.message || 'Erro na chamada da API de proxy.');
                       }
 
                       totalProcessed += chunk.length;

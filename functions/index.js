@@ -5,6 +5,7 @@ const { getFirestore } = require("firebase-admin/firestore");
 const axios = require("axios");
 const { parse } = require("csv-parse/sync");
 const crypto = require('crypto-js');
+const cors = require('cors')({ origin: true });
 
 admin.initializeApp();
 const db = getFirestore();
@@ -107,34 +108,36 @@ exports.getAllUsers = functions
  */
 exports.proxySfmcUpload = functions
     .region('us-central1')
-    .https.onCall(async (data, context) => {
-        const vercelApiUrl = process.env.NEXT_PUBLIC_BASE_URL 
-            ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/sfmc-upload`
-            : 'http://localhost:9002/api/sfmc-upload';
+    .https.onRequest((req, res) => {
+        cors(req, res, async () => {
+            if (req.method !== 'POST') {
+                return res.status(405).send('Method Not Allowed');
+            }
 
-        try {
-            const response = await axios.post(vercelApiUrl, data, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    // You could add a secret header here for extra security
-                    // 'X-Internal-Proxy-Secret': process.env.PROXY_SECRET
-                }
-            });
-            
-            return response.data;
+            const vercelApiUrl = process.env.NEXT_PUBLIC_BASE_URL 
+                ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/sfmc-upload`
+                : 'http://localhost:9002/api/sfmc-upload';
 
-        } catch (error) {
-            console.error("Proxy Error to Vercel:", {
-                status: error.response?.status,
-                data: error.response?.data,
-                message: error.message
-            });
+            try {
+                const response = await axios.post(vercelApiUrl, req.body, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                return res.status(200).send(response.data);
 
-            // Re-throw an HttpsError to be caught by the client SDK
-            throw new functions.https.HttpsError(
-                'internal',
-                `Erro ao se comunicar com a API de upload: ${error.response?.data?.message || error.message}`
-            );
-        }
+            } catch (error) {
+                console.error("Proxy Error to Vercel:", {
+                    status: error.response?.status,
+                    data: error.response?.data,
+                    message: error.message
+                });
+
+                const statusCode = error.response?.status || 500;
+                const errorMessage = `Erro ao se comunicar com a API de upload: ${error.response?.data?.message || error.message}`;
+                
+                return res.status(statusCode).send({ success: false, message: errorMessage });
+            }
+        });
     });
-

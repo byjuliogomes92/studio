@@ -244,6 +244,7 @@ export interface DataExtensionColumn {
     isPrimaryKey: boolean;
 }
 
+// Unified UploadTarget that can handle both FTP and DE uploads
 export interface UploadTarget {
     id: string;
     name: string;

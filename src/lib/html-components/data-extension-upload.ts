@@ -216,31 +216,31 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
               mappingContainer.style.display = 'block';
 
-              const optionsHtml = csvHeaders.map(h => `<option value="${h}">${h}</option>`).join('');
+              const optionsHtml = csvHeaders.map(h => '<option value="' + h + '">' + h + '</option>').join('');
               
-              mappingTable.innerHTML = \`
+              mappingTable.innerHTML = `
                 <table class="de-upload-v2-mapping-table">
                     <thead>
                         <tr><th>Coluna na Data Extension</th><th>Coluna no seu Arquivo</th></tr>
                     </thead>
                     <tbody>
-                        \${target.columns.map(col => \`
+                        ${target.columns.map(col => `
                             <tr>
-                                <td>\${col.name} \${col.isPrimaryKey ? '<strong>(PK)</strong>' : ''}</td>
+                                <td>${col.name} ${col.isPrimaryKey ? '<strong>(PK)</strong>' : ''}</td>
                                 <td>
-                                    <select class="de-upload-v2-select" data-de-column="\${col.name}">
+                                    <select class="de-upload-v2-select" data-de-column="${col.name}">
                                         <option value="">-- Ignorar --</option>
-                                        \${optionsHtml}
+                                        ${optionsHtml}
                                     </select>
                                 </td>
                             </tr>
-                        \`).join('')}
+                        `).join('')}
                     </tbody>
                 </table>
-              \`;
+              `;
 
               target.columns.forEach(col => {
-                  const select = mappingTable.querySelector(\`select[data-de-column="\${col.name}"]\`);
+                  const select = mappingTable.querySelector(`select[data-de-column="${col.name}"]`);
                   if (select && csvHeaders.includes(col.name)) {
                       select.value = col.name;
                   }
@@ -248,7 +248,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
 
           function parseCsv(text) {
-              const lines = text.split(/\\r\\n|\\n/).filter(l => l.trim() !== '');
+              const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
               if (lines.length < 1) return { headers: [], records: [] };
               
               const delimiter = detectDelimiter(lines[0]);
@@ -324,7 +324,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   const batchNum = (i / CHUNK_SIZE) + 1;
                   
                   statusEl.className = 'de-upload-v2-status info';
-                  statusEl.textContent = \`Enviando lote \${batchNum} de \${totalBatches} (\${chunk.length} registros)...\`;
+                  statusEl.textContent = `Enviando lote ${batchNum} de ${totalBatches} (${chunk.length} registros)...`;
                   
                   try {
                       const payload = {
@@ -359,10 +359,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
               // Since we can't get a final response easily, we assume success after the last loop.
               statusEl.className = 'de-upload-v2-status success';
-              statusEl.textContent = \`Envio concluído! \${totalProcessed} registros foram enviados em \${totalBatches} lotes.\`;
+              statusEl.textContent = `Envio concluído! ${totalProcessed} registros foram enviados em ${totalBatches} lotes.`;
               backToStartBtn.style.display = 'block';
           });
       })();
       </script>
-    `;
-}
+    
+    

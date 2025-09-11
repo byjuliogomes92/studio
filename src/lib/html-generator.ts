@@ -1206,7 +1206,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
 ${serverScriptBlock}
-${amspcriptBlock}
+${needsAmpscript ? amspcriptBlock : ''}
 ${trackingScripts.head}
 <style>
     ${fontFaceStyles}

@@ -7,7 +7,9 @@ import axios from 'axios';
 
 export async function POST(request: NextRequest) {
     try {
-        const { records, deKey, brandId, columnMapping } = await request.json();
+        const body = await request.json();
+        // Correctly destructure from the nested payload
+        const { records, deKey, brandId, columnMapping } = body.payload;
 
         if (!records || !deKey || !brandId) {
             return NextResponse.json({ 

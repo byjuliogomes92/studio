@@ -1,6 +1,6 @@
 
 import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
-import { getFormSubmissionScript, getPrefillAmpscript, getDEUploadSSJS } from './ssjs-templates';
+import { getPrefillAmpscript } from './ssjs-templates';
 import { getSSJSSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';
@@ -480,9 +480,10 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
 
     // Add Firebase SDK if needed for components like DataExtensionUpload
     const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload');
-    const firebaseSdkScript = (needsFirebase || isForPreview)
+    const firebaseSdkScript = (needsFirebase)
         ? `
         <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
         <script>
             var firebaseConfig = {
                apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
@@ -1131,13 +1132,37 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     
     let serverLogic = '';
     if(needsAmpscript) {
-        if(hasForm) {
-            serverLogic += getFormSubmissionScript(pageState);
+        // Correct SSJS block for DE Upload
+        if (hasDEUpload) {
+            serverLogic += `
+                if (Request.Method == "POST" && Request.GetFormField("__is_de_upload") == "true") {
+                    Platform.Load("Core", "1.1.1");
+                    var debug = false;
+                    try {
+                        var payloadStr = Request.GetFormField("__de_upload_payload");
+                        if (payloadStr != "") {
+                             // This is the corrected part
+                            var apiPayload = '{ "payload": ' + payloadStr + ' }';
+                            var url = "${baseUrl}/api/sfmc-upload";
+                            var contentType = "application/json";
+                            
+                            var responseJSON = HTTP.Post(url, contentType, apiPayload);
+                            var responseContent = responseJSON.Content;
+                            
+                            Platform.Response.SetResponseHeader("Content-Type","application/json");
+                            Write(responseContent);
+
+                        } else {
+                            Write('{"success": false, "message": "Payload vazio."}');
+                        }
+                    } catch(e) {
+                         Write('{"success": false, "message": "Erro no servidor SSJS: ' + Stringify(e) + '"}');
+                    }
+                    Platform.Response.Send();
+                }
+            `;
         }
-         if(hasDEUpload) {
-            serverLogic += getDEUploadSSJS(baseUrl);
-        }
-        if(needsSecurity) {
+         if(needsSecurity) {
             serverLogic += getSSJSSecurityBlock(pageState);
         }
     }

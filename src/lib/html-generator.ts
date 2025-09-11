@@ -1,6 +1,6 @@
 
 import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
-import { getFormSubmissionScript, getPrefillAmpscript } from './ssjs-templates';
+import { getFormSubmissionScript, getPrefillAmpscript, getDEUploadSSJS } from './ssjs-templates';
 import { getSSJSSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';
@@ -471,7 +471,7 @@ const getCookieScripts = (config: CloudPage['cookieBanner']): string => {
 };
 
 
-const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, editorMode: EditorMode): string => {
+const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, editorMode: EditorMode, baseUrl: string): string => {
     const hasLottieAnimation = pageState.components.some(c => c.type === 'Form' && c.props.thankYouAnimation && c.props.thankYouAnimation !== 'none');
     const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
     const hasAutoplayCarousel = hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay);
@@ -483,7 +483,6 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     const firebaseSdkScript = needsFirebase
         ? `
         <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
         <script>
             var firebaseConfig = {
                apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
@@ -1122,6 +1121,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const { components, meta, styles } = pageState;
 
     const hasForm = components.some(c => c.type === 'Form');
+    const hasDEUpload = components.some(c => c.type === 'DataExtensionUpload');
     const needsSecurity = meta.security && meta.security.type !== 'none';
     
     const needsAmpscript = !isForPreview && !hideAmpscript;
@@ -1129,11 +1129,13 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const rootComponents = components.filter(c => c.parentId === null);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, baseUrl, hideAmpscript);
     
-    // Unify all script logic
     let serverLogic = '';
     if(needsAmpscript) {
         if(hasForm) {
             serverLogic += getFormSubmissionScript(pageState);
+        }
+         if(hasDEUpload) {
+            serverLogic += getDEUploadSSJS(baseUrl);
         }
         if(needsSecurity) {
             serverLogic += getSSJSSecurityBlock(pageState);
@@ -1172,7 +1174,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     
     const trackingScripts = getTrackingScripts(meta.tracking);
     const cookieBannerHtml = getCookieBannerHtml(pageState.cookieBanner);
-    const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode);
+    const clientSideScripts = getClientSideScripts(pageState, isForPreview, editorMode, baseUrl);
 
     let bodyContent = '';
 

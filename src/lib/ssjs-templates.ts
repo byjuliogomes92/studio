@@ -30,6 +30,24 @@ export function getPrefillAmpscript(pageState: CloudPage): string {
     return `/* --- Prefill --- */\n${prefillLines.join('\n')}`;
 }
 
+export const getDEUploadSSJS = (vercelApiUrl: string): string => {
+    return `
+/* --- DE UPLOAD PROXY --- */
+if (Request.Method == "POST" && Request.GetFormField("__is_de_upload") == "true") {
+    var payloadStr = Request.GetFormField("__de_upload_payload");
+    if (payloadStr != "") {
+        var url = "${vercelApiUrl}/api/sfmc-upload";
+        var contentType = "application/json";
+        var response = HTTP.Post(url, contentType, payloadStr);
+        
+        // This will stop the rest of the page from rendering and return the API response
+        Write(response.Content);
+        Platform.Response.SetResponseHeader("Content-Type","application/json");
+        Platform.Response.Send();
+    }
+}`;
+};
+
 export function getFormSubmissionScript(pageState: CloudPage): string {
     const formComponent = pageState.components.find(c => c.type === 'Form');
     if (!formComponent) return '';

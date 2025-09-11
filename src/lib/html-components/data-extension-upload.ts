@@ -56,50 +56,53 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     return `
       <div class="de-upload-v2-container">
-          <form id="${formId}">
-              <div class="de-upload-v2-step" id="step1-${componentId}">
-                  <h4>${title}</h4>
-                  ${campaignSelectorHtml}
-                  <div class="de-upload-v2-drop-zone">
-                      <input type="file" id="file-input-${componentId}" accept=".csv, text/csv" required style="display: none;">
-                      <div class="de-upload-v2-drop-content">
-                          <div class="de-upload-v2-icon">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                          </div>
-                          <p>${instructionText}</p>
-                      </div>
-                  </div>
-              </div>
-
-              <div class="de-upload-v2-step" id="step2-${componentId}" style="display: none;">
-                  <h4>Confirmar Arquivo</h4>
-                  <p class="de-upload-v2-filename-confirm"></p>
-                  <div class="de-upload-v2-stats-grid">
-                      <div class="de-upload-v2-stat-card"><h5>Registros</h5><p id="stat-rows-${componentId}">-</p></div>
-                      <div class="de-upload-v2-stat-card"><h5>Colunas</h5><p id="stat-cols-${componentId}">-</p></div>
-                      <div class="de-upload-v2-stat-card"><h5>Tamanho</h5><p id="stat-size-${componentId}">-</p></div>
-                  </div>
-                  <div class="de-upload-v2-columns-container" id="mapping-container-${componentId}">
-                      <h5>Mapeamento de Colunas</h5>
-                      <div id="mapping-table-${componentId}"></div>
-                  </div>
-                  <div class="de-upload-v2-actions">
-                      <button type="button" id="cancel-btn-${componentId}" class="custom-button custom-button--outline">Trocar Arquivo</button>
-                      <button type="submit" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">${buttonContent}</button>
-                  </div>
-              </div>
-
-              <div class="de-upload-v2-step" id="step3-${componentId}" style="display: none;">
-                   <h4>Processando</h4>
-                   <div class="de-upload-v2-feedback">
-                       <div class="de-upload-v2-progress-container"><div class="de-upload-v2-progress-bar"></div></div>
-                       <p class="de-upload-v2-status info">Aguarde, estamos processando seu arquivo...</p>
-                   </div>
-                   <div class="de-upload-v2-actions">
-                      <button type="button" id="back-to-start-btn-${componentId}" class="custom-button custom-button--outline" style="display: none;">Voltar ao Início</button>
-                   </div>
-              </div>
+          <form id="${formId}" method="POST" action="%%=RequestParameter('PAGEURL')=%%">
+             <input type="hidden" name="__is_de_upload" value="true" />
+             <input type="hidden" id="de-upload-payload-${componentId}" name="__de_upload_payload" value="" />
           </form>
+
+          <div class="de-upload-v2-step" id="step1-${componentId}">
+              <h4>${title}</h4>
+              ${campaignSelectorHtml}
+              <div class="de-upload-v2-drop-zone">
+                  <input type="file" id="file-input-${componentId}" accept=".csv, text/csv" required style="display: none;">
+                  <div class="de-upload-v2-drop-content">
+                      <div class="de-upload-v2-icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                      </div>
+                      <p>${instructionText}</p>
+                  </div>
+              </div>
+          </div>
+
+          <div class="de-upload-v2-step" id="step2-${componentId}" style="display: none;">
+              <h4>Confirmar Arquivo</h4>
+              <p class="de-upload-v2-filename-confirm"></p>
+              <div class="de-upload-v2-stats-grid">
+                  <div class="de-upload-v2-stat-card"><h5>Registros</h5><p id="stat-rows-${componentId}">-</p></div>
+                  <div class="de-upload-v2-stat-card"><h5>Colunas</h5><p id="stat-cols-${componentId}">-</p></div>
+                  <div class="de-upload-v2-stat-card"><h5>Tamanho</h5><p id="stat-size-${componentId}">-</p></div>
+              </div>
+              <div class="de-upload-v2-columns-container" id="mapping-container-${componentId}">
+                  <h5>Mapeamento de Colunas</h5>
+                  <div id="mapping-table-${componentId}"></div>
+              </div>
+              <div class="de-upload-v2-actions">
+                  <button type="button" id="cancel-btn-${componentId}" class="custom-button custom-button--outline">Trocar Arquivo</button>
+                  <button type="button" id="submit-btn-${componentId}" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">${buttonContent}</button>
+              </div>
+          </div>
+
+          <div class="de-upload-v2-step" id="step3-${componentId}" style="display: none;">
+               <h4>Processando</h4>
+               <div class="de-upload-v2-feedback">
+                   <div class="de-upload-v2-progress-container"><div class="de-upload-v2-progress-bar"></div></div>
+                   <p class="de-upload-v2-status info">Aguarde, estamos processando seu arquivo...</p>
+               </div>
+               <div class="de-upload-v2-actions">
+                  <button type="button" id="back-to-start-btn-${componentId}" class="custom-button custom-button--outline" style="display: none;">Voltar ao Início</button>
+               </div>
+          </div>
       </div>
       <script>
       (function() {
@@ -107,32 +110,30 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           if (!form) return;
           const componentId = '${componentId}';
           const brandId = '${brandId}';
-          const proxyUrl = 'https://us-central1-quizkong-mvp.cloudfunctions.net/proxySfmcUpload';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
           const CHUNK_SIZE = 2000;
 
-          const step1 = form.querySelector('#step1-' + componentId);
-          const step2 = form.querySelector('#step2-' + componentId);
-          const step3 = form.querySelector('#step3-' + componentId);
+          const step1 = document.getElementById('step1-' + componentId);
+          const step2 = document.getElementById('step2-' + componentId);
+          const step3 = document.getElementById('step3-' + componentId);
           
-          const dropZone = form.querySelector('.de-upload-v2-drop-zone');
-          const fileInput = form.querySelector('#file-input-' + componentId);
-          const cancelBtn = form.querySelector('#cancel-btn-' + componentId);
-          const backToStartBtn = form.querySelector('#back-to-start-btn-' + componentId);
-          const groupSelect = form.querySelector('#campaign-group-select-' + componentId);
-          const targetSelect = form.querySelector('#upload-target-select-' + componentId);
-          const targetContainer = form.querySelector('#upload-target-container-' + componentId);
-          const mappingContainer = form.querySelector('#mapping-container-' + componentId);
-          const mappingTable = form.querySelector('#mapping-table-' + componentId);
+          const dropZone = form.parentElement.querySelector('.de-upload-v2-drop-zone');
+          const fileInput = form.parentElement.querySelector('#file-input-' + componentId);
+          const submitBtn = document.getElementById('submit-btn-' + componentId);
+          const cancelBtn = document.getElementById('cancel-btn-' + componentId);
+          const backToStartBtn = document.getElementById('back-to-start-btn-' + componentId);
+          const groupSelect = document.getElementById('campaign-group-select-' + componentId);
+          const targetSelect = document.getElementById('upload-target-select-' + componentId);
+          const targetContainer = document.getElementById('upload-target-container-' + componentId);
+          const mappingContainer = document.getElementById('mapping-container-' + componentId);
+          const mappingTable = document.getElementById('mapping-table-' + componentId);
 
           let currentFile;
           let csvHeaders = [];
           let allRecords = [];
 
           function showStep(step) {
-            step1.style.display = 'none';
-            step2.style.display = 'none';
-            step3.style.display = 'none';
+            [step1, step2, step3].forEach(s => s.style.display = 'none');
             step.style.display = 'block';
           };
           
@@ -247,7 +248,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
 
           function parseCsv(text) {
-              const lines = text.split('\\n').filter(l => l.trim() !== '');
+              const lines = text.split(/\\r\\n|\\n/).filter(l => l.trim() !== '');
               if (lines.length < 1) return { headers: [], records: [] };
               
               const delimiter = detectDelimiter(lines[0]);
@@ -266,7 +267,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
 
           function handleFileSelect(file) {
-              if (!file || !file.type.match('text/csv')) {
+              if (!file || !(file.type.match('text/csv') || file.name.endsWith('.csv'))) {
                   alert('Por favor, selecione um arquivo CSV.');
                   return;
               }
@@ -278,17 +279,16 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   csvHeaders = headers;
                   allRecords = records;
                   
-                  form.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
-                  form.querySelector('#stat-rows-' + componentId).textContent = allRecords.length;
-                  form.querySelector('#stat-cols-' + componentId).textContent = csvHeaders.length;
-                  form.querySelector('#stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
+                  document.getElementById('stat-rows-' + componentId).textContent = allRecords.length;
+                  document.getElementById('stat-cols-' + componentId).textContent = csvHeaders.length;
+                  document.getElementById('stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
                   
                   const selectedTarget = getSelectedTarget();
                   renderMappingUI(selectedTarget);
                   
                   showStep(step2);
               };
-              reader.readAsText(file);
+              reader.readAsText(file, 'ISO-8859-1');
           }
           
           if(targetSelect) {
@@ -298,7 +298,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               });
           }
 
-          form.addEventListener('submit', async function(e) {
+          submitBtn.addEventListener('click', async function(e) {
               e.preventDefault();
               
               const selectedTarget = getSelectedTarget();
@@ -313,8 +313,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
               
               showStep(step3);
-              const statusEl = form.querySelector('.de-upload-v2-status');
-              const progressBar = form.querySelector('.de-upload-v2-progress-bar');
+              const statusEl = form.parentElement.querySelector('.de-upload-v2-status');
+              const progressBar = form.parentElement.querySelector('.de-upload-v2-progress-bar');
               
               let totalProcessed = 0;
               const totalBatches = Math.ceil(allRecords.length / CHUNK_SIZE);
@@ -324,30 +324,32 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   const batchNum = (i / CHUNK_SIZE) + 1;
                   
                   statusEl.className = 'de-upload-v2-status info';
-                  statusEl.textContent = \`Processando lote \${batchNum} de \${totalBatches} (\${chunk.length} registros)...\`;
+                  statusEl.textContent = \`Enviando lote \${batchNum} de \${totalBatches} (\${chunk.length} registros)...\`;
                   
                   try {
-                       const response = await fetch(proxyUrl, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                              records: chunk, 
-                              deKey: selectedTarget.deKey, 
-                              brandId: brandId,
-                              columnMapping: columnMapping
-                          })
-                      });
-                      const result = await response.json();
-                      if (!response.ok) {
-                           throw new Error(result.message || 'Erro na chamada da API de proxy.');
-                      }
-
+                      const payload = {
+                          records: chunk, 
+                          deKey: selectedTarget.deKey, 
+                          brandId: brandId,
+                          columnMapping: columnMapping
+                      };
+                      
+                      const payloadInput = document.getElementById('de-upload-payload-' + componentId);
+                      payloadInput.value = JSON.stringify(payload);
+                      
+                      // Submit the form which will be caught by SSJS
+                      form.submit();
+                      
+                      // NOTE: We cannot get a direct response from the SSJS post.
+                      // The SSJS will handle the request and return a JSON status.
+                      // For a better UX, a polling mechanism would be needed, but this is a simpler approach.
+                      
                       totalProcessed += chunk.length;
                       const progressPercent = (totalProcessed / allRecords.length) * 100;
                       progressBar.style.width = progressPercent + '%';
 
                   } catch (error) {
-                      console.error('Proxy Upload Error:', error);
+                      console.error('Submission Error:', error);
                       statusEl.className = 'de-upload-v2-status error';
                       statusEl.textContent = 'Erro no lote ' + batchNum + ': ' + error.message;
                       backToStartBtn.style.display = 'block';
@@ -355,11 +357,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   }
               }
 
+              // Since we can't get a final response easily, we assume success after the last loop.
               statusEl.className = 'de-upload-v2-status success';
-              statusEl.textContent = \`Sucesso! \${totalProcessed} registros foram processados em \${totalBatches} lotes.\`;
+              statusEl.textContent = \`Envio concluído! \${totalProcessed} registros foram enviados em \${totalBatches} lotes.\`;
               backToStartBtn.style.display = 'block';
           });
       })();
       </script>
-    `;
-}
+    

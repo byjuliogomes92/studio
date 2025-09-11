@@ -84,11 +84,13 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage, 
                         </button>
                     </div>
                 </div>
-
-                <div class="ftp-upload-progress-wrapper" style="display: none;">
-                    <div class="ftp-upload-progress-bar"></div>
+                 <div class="ftp-upload-step" id="step3-${componentId}" style="display: none;">
+                    <h4>Processando</h4>
+                    <div class="ftp-upload-status"></div>
+                     <div class="ftp-upload-footer">
+                         <button type="button" id="back-to-start-btn-${componentId}" class="custom-button custom-button--outline" style="display: none;">Enviar outro arquivo</button>
+                    </div>
                 </div>
-                <div class="ftp-upload-status"></div>
             </form>
         </div>
         <script>
@@ -102,14 +104,13 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage, 
 
             const step1 = form.querySelector('#step1-' + componentId);
             const step2 = form.querySelector('#step2-' + componentId);
+            const step3 = form.querySelector('#step3-' + componentId);
             const dropArea = form.querySelector('.ftp-upload-drop-area');
             const fileInput = form.querySelector('#file-input-' + componentId);
-            const fileNameDisplay = form.querySelector('.ftp-upload-filename');
             const statusEl = form.querySelector('.ftp-upload-status');
-            const progressWrapper = form.querySelector('.ftp-upload-progress-wrapper');
-            const progressBar = form.querySelector('.ftp-upload-progress-bar');
             const submitBtn = form.querySelector('button[type="submit"]');
             const cancelBtn = form.querySelector('#cancel-btn-' + componentId);
+            const backToStartBtn = form.querySelector('#back-to-start-btn-' + componentId);
 
             const groupSelect = form.querySelector('#campaign-group-select-' + componentId);
             const targetSelect = form.querySelector('#upload-target-select-' + componentId);
@@ -118,11 +119,11 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage, 
             
             let currentFile = null;
 
-            function showStep(stepNum) {
+            function showStep(step) {
                 step1.style.display = 'none';
                 step2.style.display = 'none';
-                if (stepNum === 1) step1.style.display = 'block';
-                if (stepNum === 2) step2.style.display = 'block';
+                step3.style.display = 'none';
+                step.style.display = 'block';
             }
 
             function updateDestinationInfo() {
@@ -188,7 +189,17 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage, 
                 currentFile = file;
                 document.getElementById('confirm-filename-' + componentId).textContent = file.name;
                 document.getElementById('confirm-filesize-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
-                showStep(2);
+                showStep(step2);
+            }
+            
+            function resetAll() {
+                currentFile = null;
+                fileInput.value = '';
+                if(groupSelect) groupSelect.value = '';
+                if(targetSelect) targetSelect.innerHTML = '';
+                if(targetContainer) targetContainer.style.display = 'none';
+                backToStartBtn.style.display = 'none';
+                showStep(step1);
             }
 
             dropArea.addEventListener('click', () => fileInput.click());
@@ -204,11 +215,8 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage, 
             });
             fileInput.addEventListener('change', () => { if (fileInput.files.length) { handleFileSelect(fileInput.files[0]); } });
 
-            cancelBtn.addEventListener('click', () => {
-                currentFile = null;
-                fileInput.value = '';
-                showStep(1);
-            });
+            cancelBtn.addEventListener('click', resetAll);
+            backToStartBtn.addEventListener('click', resetAll);
 
 
             form.addEventListener('submit', async function(e) {
@@ -218,9 +226,12 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage, 
                     alert('Por favor, selecione um destino para o upload.'); return;
                 }
                 if (!currentFile) {
-                    statusEl.textContent = 'Por favor, selecione um arquivo.'; statusEl.style.color = 'red'; return;
+                    alert('Por favor, selecione um arquivo.'); return;
                 }
-                statusEl.textContent = 'Enviando...'; statusEl.style.color = 'orange'; submitBtn.disabled = true; progressWrapper.style.display = 'block'; progressBar.style.width = '0%';
+
+                showStep(step3);
+                statusEl.textContent = 'Enviando...'; 
+                statusEl.style.color = 'orange'; 
                 
                 const formData = new FormData();
                 const filename = selectedTarget.destinationFilename.replace('%%Date%%', new Date().toISOString().split('T')[0]);
@@ -231,22 +242,25 @@ export function renderFTPUpload(component: PageComponent, pageState: CloudPage, 
                 formData.append('brandId', brandId);
 
                 try {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', apiBaseUrl + '/api/ftp-upload', true);
-                    xhr.upload.onprogress = function(event) { if (event.lengthComputable) { const percent = (event.loaded / event.total) * 100; progressBar.style.width = percent + '%'; } };
-                    xhr.onload = function() {
-                        const result = JSON.parse(xhr.responseText);
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            statusEl.textContent = result.message || 'Arquivo enviado!'; statusEl.style.color = 'green'; form.reset(); fileNameDisplay.textContent = '';
-                            setTimeout(() => { progressWrapper.style.display = 'none'; progressBar.style.width = '0%'; showStep(1); currentFile = null; }, 3000);
-                        } else { throw new Error(result.message || 'Falha no envio.'); }
-                    };
-                    xhr.onerror = function() { throw new Error('Erro de rede.'); };
-                    xhr.send(formData);
+                    const response = await fetch(apiBaseUrl + '/api/ftp-upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.message || 'Falha no envio.');
+                    }
+                    
+                    statusEl.textContent = result.message || 'Arquivo enviado!'; 
+                    statusEl.style.color = 'green';
                 } catch (error) {
-                    statusEl.textContent = 'Erro: ' + error.message; statusEl.style.color = 'red';
+                    statusEl.textContent = 'Erro: ' + error.message; 
+                    statusEl.style.color = 'red';
+                    console.error('FTP Upload Error:', error);
                 } finally {
-                    submitBtn.disabled = false;
+                    backToStartBtn.style.display = 'block';
                 }
             });
         })();

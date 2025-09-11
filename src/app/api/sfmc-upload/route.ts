@@ -1,17 +1,17 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getBrand } from '@/lib/firestore';
 import { decryptPassword } from '@/lib/crypto';
 import axios from 'axios';
-import { parse } from 'csv-parse/sync';
 
 export async function POST(request: NextRequest) {
     try {
-        const { csvData, deKey, brandId, columnMapping } = await request.json();
+        const { records, deKey, brandId, columnMapping } = await request.json();
 
-        if (!csvData || !deKey || !brandId) {
+        if (!records || !deKey || !brandId) {
             return NextResponse.json({ 
                 success: false, 
-                message: 'Parâmetros faltando (csvData, deKey, brandId).' 
+                message: 'Parâmetros faltando (records, deKey, brandId).' 
             }, { status: 400 });
         }
 
@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
         const clientSecret = decryptPassword(encryptedClientSecret);
 
         // 2. Get an SFMC Auth Token
-        console.log('🔑 Obtendo token de acesso do SFMC...');
         const tokenResponse = await axios.post(`${authBaseUrl}v2/token`, {
             grant_type: "client_credentials",
             client_id: clientId,
@@ -47,31 +46,13 @@ export async function POST(request: NextRequest) {
         
         const accessToken = tokenResponse.data.access_token;
         const restBaseUrl = tokenResponse.data.rest_instance_url;
-        console.log('✅ Token obtido com sucesso');
         
-        const detectDelimiter = (header: string) => {
-            const commaCount = (header.match(/,/g) || []).length;
-            const semicolonCount = (header.match(/;/g) || []).length;
-            return semicolonCount > commaCount ? ';' : ',';
-        };
-
-        // 3. Parse the CSV content
-        console.log('📊 Fazendo parse do CSV...');
-        const records = parse(csvData, { 
-            columns: true,
-            skip_empty_lines: true,
-            trim: true,
-            delimiter: detectDelimiter(csvData.split('\n')[0]),
-        });
-
         if (records.length === 0) {
             return NextResponse.json({ 
                 success: true, 
-                message: 'Arquivo CSV vazio ou sem dados. Nada foi adicionado.' 
+                message: 'Nenhum registro no lote. Nada foi adicionado.' 
             }, { status: 200 });
         }
-        
-        console.log(`📋 ${records.length} registros encontrados no CSV`);
         
         // 4. Apply column mapping if provided
         const mappedRecords = (columnMapping && Object.keys(columnMapping).length > 0)
@@ -85,12 +66,22 @@ export async function POST(request: NextRequest) {
                 }
                 
                 // Always carry over ContactKey if it exists and wasn't mapped
-                const keyCandidates = ['ContactKey', 'contactkey', 'Contact Key', 'contact key', 'SubscriberKey', 'subscriberkey'];
-                const contactKeyColumn = keyCandidates.find(k => Object.keys(columnMapping).find(deCol => columnMapping[deCol] === k));
-                const contactKeyValue = keyCandidates.find(k => record[k] !== undefined);
+                const keyCandidates = ['ContactKey', 'contactkey', 'Contact Key', 'contact key', 'SubscriberKey', 'subscriberkey', 'ID', 'id'];
+                let foundContactKey = false;
+                for (const deCol in columnMapping) {
+                    if (keyCandidates.includes(deCol)) {
+                       foundContactKey = true;
+                       break;
+                    }
+                }
 
-                if (contactKeyValue && !contactKeyColumn) {
-                    newRecord.ContactKey = record[contactKeyValue];
+                if (!foundContactKey) {
+                    for (const key of keyCandidates) {
+                        if(record[key] !== undefined) {
+                            newRecord.ContactKey = record[key];
+                            break;
+                        }
+                    }
                 }
                 
                 return newRecord;
@@ -111,43 +102,20 @@ export async function POST(request: NextRequest) {
             values: record,
         }));
 
-        // 6. Process records in batches for large datasets
-        const BATCH_SIZE = 1000; // SFMC API limit
-        const batches = [];
-        
-        for (let i = 0; i < sfmcPayload.length; i += BATCH_SIZE) {
-            batches.push(sfmcPayload.slice(i, i + BATCH_SIZE));
-        }
-
-        let totalProcessed = 0;
         const sfmcApiUrl = `${restBaseUrl}hub/v1/dataevents/key:${deKey}/rowset`;
         
-        console.log(`🚀 Enviando ${batches.length} lote(s) para o SFMC...`);
-        
-        // Process each batch
-        for (let i = 0; i < batches.length; i++) {
-            const batch = batches[i];
-            console.log(`📤 Processando lote ${i + 1}/${batches.length} (${batch.length} registros)`);
-            
-            await axios.post(sfmcApiUrl, batch, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                timeout: 120000, // 2 minutes timeout
-            });
-            
-            totalProcessed += batch.length;
-            console.log(`✅ Lote ${i + 1} processado com sucesso`);
-        }
-
-        console.log(`🎉 Processamento concluído: ${totalProcessed} registros`);
+        await axios.post(sfmcApiUrl, sfmcPayload, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            timeout: 120000, // 2 minutes timeout
+        });
 
         return NextResponse.json({ 
             success: true, 
-            message: `Sucesso! ${totalProcessed} registros foram adicionados/atualizados na Data Extension.`,
-            rowsProcessed: totalProcessed,
-            batchesProcessed: batches.length,
+            message: `Lote de ${sfmcPayload.length} registros processado com sucesso.`,
+            rowsProcessed: sfmcPayload.length,
         }, { status: 200 });
 
     } catch (error: any) {

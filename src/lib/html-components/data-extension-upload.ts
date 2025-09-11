@@ -95,6 +95,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                        <div class="de-upload-v2-progress-container"><div class="de-upload-v2-progress-bar"></div></div>
                        <p class="de-upload-v2-status info">Aguarde, estamos processando seu arquivo...</p>
                    </div>
+                   <div class="de-upload-v2-actions">
+                      <button type="button" id="back-to-start-btn-${componentId}" class="custom-button custom-button--outline" style="display: none;">Voltar ao Início</button>
+                   </div>
               </div>
           </form>
       </div>
@@ -106,6 +109,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const brandId = '${brandId}';
           const apiBaseUrl = '${baseUrl}';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
+          const CHUNK_SIZE = 2000; // Process 2000 rows at a time
 
           const step1 = form.querySelector('#step1-' + componentId);
           const step2 = form.querySelector('#step2-' + componentId);
@@ -114,6 +118,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const dropZone = form.querySelector('.de-upload-v2-drop-zone');
           const fileInput = form.querySelector('#file-input-' + componentId);
           const cancelBtn = form.querySelector('#cancel-btn-' + componentId);
+          const backToStartBtn = form.querySelector('#back-to-start-btn-' + componentId);
           const groupSelect = form.querySelector('#campaign-group-select-' + componentId);
           const targetSelect = form.querySelector('#upload-target-select-' + componentId);
           const targetContainer = form.querySelector('#upload-target-container-' + componentId);
@@ -122,8 +127,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
           let currentFile;
           let csvHeaders = [];
+          let allRecords = [];
 
-          const showStep = (step) => {
+          function showStep(step) {
             step1.style.display = 'none';
             step2.style.display = 'none';
             step3.style.display = 'none';
@@ -134,7 +140,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               targetSelect.innerHTML = '<option value="" disabled selected>-- Escolha um destino --</option>';
               targets.forEach(target => {
                   const option = document.createElement('option');
-                  option.value = target.id; // Use target ID to find config later
+                  option.value = target.id;
                   option.textContent = target.name;
                   targetSelect.appendChild(option);
               });
@@ -152,10 +158,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   }
               });
           } else if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length > 1) {
-              // Directly populate if only one group with multiple targets
               updateTargetOptions(campaignGroupsData[0].uploadTargets);
           }
-
 
           dropZone.addEventListener('click', () => fileInput.click());
           dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('highlight'); });
@@ -167,18 +171,21 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   handleFileSelect(e.dataTransfer.files[0]);
               }
           });
-          fileInput.addEventListener('change', () => {
-              if (fileInput.files.length) {
-                  handleFileSelect(fileInput.files[0]);
-              }
-          });
+          fileInput.addEventListener('change', () => { if (fileInput.files.length) { handleFileSelect(fileInput.files[0]); } });
 
-          cancelBtn.addEventListener('click', () => {
+          function resetAll() {
               currentFile = null;
               csvHeaders = [];
+              allRecords = [];
               fileInput.value = '';
+              if (groupSelect) groupSelect.value = '';
+              if (targetSelect) targetSelect.innerHTML = '';
+              if (targetContainer) targetContainer.style.display = 'none';
+              backToStartBtn.style.display = 'none';
               showStep(step1);
-          });
+          }
+          cancelBtn.addEventListener('click', resetAll);
+          backToStartBtn.addEventListener('click', resetAll);
           
           function detectDelimiter(header) {
               const commaCount = (header.match(/,/g) || []).length;
@@ -188,10 +195,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
           function getSelectedTarget() {
               let selectedTargetId;
-              if (targetSelect) {
+              if (targetSelect && targetSelect.value) {
                  selectedTargetId = targetSelect.value;
               } else if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length === 1) {
-                 selectedTargetId = campaignGroupsData[0].uploadTargets[0].id;
+                 return campaignGroupsData[0].uploadTargets[0];
               }
 
               for(const group of campaignGroupsData) {
@@ -231,13 +238,31 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                 </table>
               \`;
 
-              // Auto-select matching columns
               target.columns.forEach(col => {
                   const select = mappingTable.querySelector(\`select[data-de-column="\${col.name}"]\`);
                   if (select && csvHeaders.includes(col.name)) {
                       select.value = col.name;
                   }
               });
+          }
+
+          function parseCsv(text) {
+              const lines = text.split('\\n').filter(l => l.trim() !== '');
+              if (lines.length < 1) return { headers: [], records: [] };
+              
+              const delimiter = detectDelimiter(lines[0]);
+              const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+              const records = [];
+
+              for (let i = 1; i < lines.length; i++) {
+                  const values = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+                  const record = {};
+                  headers.forEach((header, index) => {
+                      record[header] = values[index];
+                  });
+                  records.push(record);
+              }
+              return { headers, records };
           }
 
           function handleFileSelect(file) {
@@ -249,16 +274,12 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               
               const reader = new FileReader();
               reader.onload = function(e) {
-                  const text = e.target.result;
-                  const lines = text.split('\\n').filter(l => l.trim() !== '');
-                  const rowCount = lines.length > 0 ? lines.length - 1 : 0;
-                  
-                  const headerLine = lines[0] || '';
-                  const delimiter = detectDelimiter(headerLine);
-                  csvHeaders = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+                  const { headers, records } = parseCsv(e.target.result);
+                  csvHeaders = headers;
+                  allRecords = records;
                   
                   form.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
-                  form.querySelector('#stat-rows-' + componentId).textContent = rowCount;
+                  form.querySelector('#stat-rows-' + componentId).textContent = allRecords.length;
                   form.querySelector('#stat-cols-' + componentId).textContent = csvHeaders.length;
                   form.querySelector('#stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
                   
@@ -281,89 +302,60 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               e.preventDefault();
               
               const selectedTarget = getSelectedTarget();
-
-              if (!selectedTarget || !selectedTarget.deKey) {
-                  alert('Por favor, selecione um destino para o arquivo.');
-                  return;
-              }
-              if (!currentFile) {
-                  alert('Por favor, selecione um arquivo.');
-                  return;
-              }
+              if (!selectedTarget || !selectedTarget.deKey) { alert('Por favor, selecione um destino para o arquivo.'); return; }
+              if (allRecords.length === 0) { alert('O arquivo está vazio ou não pôde ser lido.'); return; }
               
               const columnMapping = {};
-              
-              if (mappingTable) {
+              if (mappingTable && mappingContainer.style.display !== 'none') {
                   mappingTable.querySelectorAll('select').forEach(select => {
-                      if (select.value) {
-                          columnMapping[select.dataset.deColumn] = select.value;
-                      }
+                      if (select.value) columnMapping[select.dataset.deColumn] = select.value;
                   });
               }
               
-              if (selectedTarget.columns) {
-                  const pkColumn = selectedTarget.columns.find(c => c.isPrimaryKey);
-                  if (pkColumn && !columnMapping[pkColumn.name]) {
-                      alert('A coluna de chave primária ('+ pkColumn.name +') precisa ser mapeada.');
-                      return;
-                  }
-              }
-
               showStep(step3);
               const statusEl = form.querySelector('.de-upload-v2-status');
               const progressBar = form.querySelector('.de-upload-v2-progress-bar');
-              const submitBtn = step2.querySelector('button[type="submit"]');
-              submitBtn.disabled = true;
-
-              statusEl.className = 'de-upload-v2-status info';
-              statusEl.textContent = 'Lendo arquivo...';
-
-              const reader = new FileReader();
-              reader.readAsText(currentFile);
-
-              reader.onload = async () => {
-                try {
-                  statusEl.textContent = 'Enviando dados...';
-                  progressBar.style.width = '50%';
-                  const csvData = reader.result;
+              
+              let totalProcessed = 0;
+              const totalBatches = Math.ceil(allRecords.length / CHUNK_SIZE);
+              
+              for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
+                  const chunk = allRecords.slice(i, i + CHUNK_SIZE);
+                  const batchNum = (i / CHUNK_SIZE) + 1;
                   
-                  const response = await fetch(apiBaseUrl + '/api/sfmc-upload', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        csvData, 
-                        deKey: selectedTarget.deKey, 
-                        brandId: brandId,
-                        columnMapping: columnMapping
-                    }),
-                  });
+                  statusEl.className = 'de-upload-v2-status info';
+                  statusEl.textContent = \`Processando lote \${batchNum} de \${totalBatches} (\${chunk.length} registros)...\`;
                   
-                  const result = await response.json();
-                  if (!response.ok) throw new Error(result.message || 'Erro no servidor.');
+                  try {
+                      const response = await fetch(apiBaseUrl + '/api/sfmc-upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            records: chunk, 
+                            deKey: selectedTarget.deKey, 
+                            brandId: brandId,
+                            columnMapping: columnMapping
+                        }),
+                      });
+                      
+                      const result = await response.json();
+                      if (!response.ok) throw new Error(result.message || 'Erro no servidor.');
+                      
+                      totalProcessed += chunk.length;
+                      const progressPercent = (totalProcessed / allRecords.length) * 100;
+                      progressBar.style.width = progressPercent + '%';
 
-                  progressBar.style.width = '100%';
-                  statusEl.className = 'de-upload-v2-status success';
-                  statusEl.textContent = result.message || 'Sucesso!';
+                  } catch (error) {
+                      statusEl.className = 'de-upload-v2-status error';
+                      statusEl.textContent = 'Erro no lote ' + batchNum + ': ' + error.message;
+                      backToStartBtn.style.display = 'block';
+                      return; // Stop processing on error
+                  }
+              }
 
-                  setTimeout(() => {
-                      showStep(step1);
-                      submitBtn.disabled = false;
-                      currentFile = null;
-                      fileInput.value = '';
-                  }, 3000);
-                
-                } catch (error) {
-                    statusEl.className = 'de-upload-v2-status error';
-                    statusEl.textContent = 'Erro: ' + error.message;
-                    submitBtn.disabled = false; // Allow retry
-                }
-              };
-
-               reader.onerror = () => {
-                 statusEl.className = 'de-upload-v2-status error';
-                 statusEl.textContent = 'Erro ao ler o arquivo.';
-                 submitBtn.disabled = false;
-              };
+              statusEl.className = 'de-upload-v2-status success';
+              statusEl.textContent = \`Sucesso! \${totalProcessed} registros foram processados em \${totalBatches} lotes.\`;
+              backToStartBtn.style.display = 'block';
           });
       })();
       </script>

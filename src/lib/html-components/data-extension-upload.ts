@@ -216,39 +216,55 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
               mappingContainer.style.display = 'block';
 
-              const optionsHtml = csvHeaders.map(h => '<option value="' + h + '">' + h + '</option>').join('');
+              const table = document.createElement('table');
+              table.className = 'de-upload-v2-mapping-table';
               
-              mappingTable.innerHTML = `
-                <table class="de-upload-v2-mapping-table">
-                    <thead>
-                        <tr><th>Coluna na Data Extension</th><th>Coluna no seu Arquivo</th></tr>
-                    </thead>
-                    <tbody>
-                        ${target.columns.map(col => `
-                            <tr>
-                                <td>${col.name} ${col.isPrimaryKey ? '<strong>(PK)</strong>' : ''}</td>
-                                <td>
-                                    <select class="de-upload-v2-select" data-de-column="${col.name}">
-                                        <option value="">-- Ignorar --</option>
-                                        ${optionsHtml}
-                                    </select>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-              `;
+              const thead = table.createTHead();
+              const headerRow = thead.insertRow();
+              const th1 = document.createElement('th');
+              th1.textContent = 'Coluna na Data Extension';
+              headerRow.appendChild(th1);
+              const th2 = document.createElement('th');
+              th2.textContent = 'Coluna no seu Arquivo';
+              headerRow.appendChild(th2);
+
+              const tbody = table.createTBody();
 
               target.columns.forEach(col => {
-                  const select = mappingTable.querySelector(`select[data-de-column="${col.name}"]`);
-                  if (select && csvHeaders.includes(col.name)) {
+                  const row = tbody.insertRow();
+                  const cell1 = row.insertCell();
+                  cell1.innerHTML = col.name + (col.isPrimaryKey ? ' <strong>(PK)</strong>' : '');
+
+                  const cell2 = row.insertCell();
+                  const select = document.createElement('select');
+                  select.className = 'de-upload-v2-select';
+                  select.dataset.deColumn = col.name;
+
+                  const defaultOption = document.createElement('option');
+                  defaultOption.value = '';
+                  defaultOption.textContent = '-- Ignorar --';
+                  select.appendChild(defaultOption);
+
+                  csvHeaders.forEach(h => {
+                      const option = document.createElement('option');
+                      option.value = h;
+                      option.textContent = h;
+                      select.appendChild(option);
+                  });
+                  
+                  if (csvHeaders.includes(col.name)) {
                       select.value = col.name;
                   }
+
+                  cell2.appendChild(select);
               });
+              
+              mappingTable.innerHTML = '';
+              mappingTable.appendChild(table);
           }
 
           function parseCsv(text) {
-              const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
+              const lines = text.split(/\\r\\n|\\n/).filter(l => l.trim() !== '');
               if (lines.length < 1) return { headers: [], records: [] };
               
               const delimiter = detectDelimiter(lines[0]);
@@ -324,7 +340,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   const batchNum = (i / CHUNK_SIZE) + 1;
                   
                   statusEl.className = 'de-upload-v2-status info';
-                  statusEl.textContent = `Enviando lote ${batchNum} de ${totalBatches} (${chunk.length} registros)...`;
+                  statusEl.textContent = 'Enviando lote ' + batchNum + ' de ' + totalBatches + ' (' + chunk.length + ' registros)...';
                   
                   try {
                       const payload = {
@@ -337,12 +353,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                       const payloadInput = document.getElementById('de-upload-payload-' + componentId);
                       payloadInput.value = JSON.stringify(payload);
                       
-                      // Submit the form which will be caught by SSJS
                       form.submit();
-                      
-                      // NOTE: We cannot get a direct response from the SSJS post.
-                      // The SSJS will handle the request and return a JSON status.
-                      // For a better UX, a polling mechanism would be needed, but this is a simpler approach.
                       
                       totalProcessed += chunk.length;
                       const progressPercent = (totalProcessed / allRecords.length) * 100;
@@ -357,12 +368,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   }
               }
 
-              // Since we can't get a final response easily, we assume success after the last loop.
               statusEl.className = 'de-upload-v2-status success';
-              statusEl.textContent = `Envio concluído! ${totalProcessed} registros foram enviados em ${totalBatches} lotes.`;
+              statusEl.textContent = 'Envio concluído! ' + totalProcessed + ' registros foram enviados em ' + totalBatches + ' lotes.';
               backToStartBtn.style.display = 'block';
           });
       })();
       </script>
-    
-    
+    `;
+}

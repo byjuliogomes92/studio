@@ -205,60 +205,51 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           }
 
           function renderMappingUI(target) {
-                if (!target || !target.columns || target.columns.length === 0) {
-                    mappingContainer.style.display = 'none';
-                    return;
-                }
-                mappingContainer.style.display = 'block';
+              if (!target || !target.columns || target.columns.length === 0) {
+                  mappingContainer.style.display = 'none';
+                  return;
+              }
+              mappingContainer.style.display = 'block';
 
-                const table = document.createElement('table');
-                table.className = 'de-upload-v2-mapping-table';
-                
-                const thead = table.createTHead();
-                const headerRow = thead.insertRow();
-                ['Coluna na Data Extension', 'Coluna no seu Arquivo'].forEach(text => {
-                    const th = document.createElement('th');
-                    th.textContent = text;
-                    headerRow.appendChild(th);
-                });
-                
-                const tbody = table.createTBody();
+              const table = document.createElement('table');
+              table.className = 'de-upload-v2-mapping-table';
+              
+              const thead = table.createTHead();
+              const headerRow = thead.insertRow();
+              ['Coluna na Data Extension', 'Coluna no seu Arquivo'].forEach(text => {
+                  const th = document.createElement('th');
+                  th.textContent = text;
+                  headerRow.appendChild(th);
+              });
+              
+              const tbody = table.createTBody();
 
-                target.columns.forEach(col => {
-                    const row = tbody.insertRow();
-                    
-                    const cell1 = row.insertCell();
-                    cell1.innerHTML = col.name + (col.isPrimaryKey ? ' <strong>(PK)</strong>' : '');
+              target.columns.forEach(col => {
+                  const row = tbody.insertRow();
+                  
+                  const cell1 = row.insertCell();
+                  cell1.innerHTML = col.name + (col.isPrimaryKey ? ' <strong>(PK)</strong>' : '');
 
-                    const cell2 = row.insertCell();
-                    const select = document.createElement('select');
-                    select.className = 'de-upload-v2-select';
-                    select.dataset.deColumn = col.name;
+                  const cell2 = row.insertCell();
+                  const select = document.createElement('select');
+                  select.className = 'de-upload-v2-select';
+                  select.dataset.deColumn = col.name;
+                  
+                  const optionsHtml = csvHeaders.map(h => '<option value="' + h + '">' + h + '</option>').join('');
+                  select.innerHTML = '<option value="">-- Ignorar --</option>' + optionsHtml;
+                  
+                  // Simple auto-mapping by name
+                  const matchedHeader = csvHeaders.find(h => h.toLowerCase() === col.name.toLowerCase());
+                  if (matchedHeader) {
+                      select.value = matchedHeader;
+                  }
 
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = '-- Ignorar --';
-                    select.appendChild(defaultOption);
-
-                    csvHeaders.forEach(h => {
-                        const option = document.createElement('option');
-                        option.value = h;
-                        option.textContent = h;
-                        select.appendChild(option);
-                    });
-                    
-                    // Simple auto-mapping by name
-                    if (csvHeaders.map(h => h.toLowerCase()).includes(col.name.toLowerCase())) {
-                        const matchedHeader = csvHeaders.find(h => h.toLowerCase() === col.name.toLowerCase());
-                        select.value = matchedHeader;
-                    }
-
-                    cell2.appendChild(select);
-                });
-                
-                mappingTable.innerHTML = '';
-                mappingTable.appendChild(table);
-            }
+                  cell2.appendChild(select);
+              });
+              
+              mappingTable.innerHTML = '';
+              mappingTable.appendChild(table);
+          }
 
           function parseCsv(text) {
               const lines = text.split(/\\r\\n|\\n/).filter(l => l.trim() !== '');
@@ -292,9 +283,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   csvHeaders = headers;
                   allRecords = records;
                   
-                  document.getElementById('stat-rows-' + componentId).textContent = allRecords.length;
-                  document.getElementById('stat-cols-' + componentId).textContent = csvHeaders.length;
-                  document.getElementById('stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
+                  container.querySelector('#stat-rows-' + componentId).textContent = allRecords.length;
+                  container.querySelector('#stat-cols-' + componentId).textContent = csvHeaders.length;
+                  container.querySelector('#stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
+                  container.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
                   
                   const selectedTarget = getSelectedTarget();
                   renderMappingUI(selectedTarget);
@@ -334,57 +326,51 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                 let totalProcessed = 0;
                 const totalBatches = Math.ceil(allRecords.length / CHUNK_SIZE);
                 
-                for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
-                    const chunk = allRecords.slice(i, i + CHUNK_SIZE);
-                    const batchNum = (i / CHUNK_SIZE) + 1;
-                    
-                    statusEl.className = 'de-upload-v2-status info';
-                    statusEl.textContent = 'Enviando lote ' + batchNum + ' de ' + totalBatches + '...';
-
-                    const payload = {
-                        records: chunk, 
-                        deKey: selectedTarget.deKey, 
-                        brandId: brandId,
-                        columnMapping: columnMapping
-                    };
-
-                    const form = document.createElement('form');
-                    form.method = 'post';
-                    form.action = "%%=RequestParameter('PAGEURL')=%%";
-                    form.style.display = 'none';
-
-                    const payloadInput = document.createElement('input');
-                    payloadInput.type = 'hidden';
-                    payloadInput.name = '__de_upload_payload';
-                    payloadInput.value = JSON.stringify(payload);
-                    form.appendChild(payloadInput);
-
-                    document.body.appendChild(form);
-
-                    try {
-                       form.submit();
-                       // Since the page reloads, we just show a final message.
-                       // A more advanced version would use fetch and handle responses.
-                       totalProcessed += chunk.length;
-                       const progressPercent = (totalProcessed / allRecords.length) * 100;
-                       progressBar.style.width = progressPercent + '%';
-
-                    } catch(error) {
-                        console.error('Submission Error:', error);
-                        statusEl.className = 'de-upload-v2-status error';
-                        statusEl.textContent = 'Erro ao enviar lote ' + batchNum + ': ' + error.message;
-                        backToStartBtn.style.display = 'block';
-                        document.body.removeChild(form);
-                        return; // Stop on error
-                    }
-                    
-                    document.body.removeChild(form);
+                if (typeof firebase === 'undefined' || !firebase.apps.length) {
+                    statusEl.className = 'de-upload-v2-status error';
+                    statusEl.textContent = 'Erro: Firebase não está inicializado.';
+                    backToStartBtn.style.display = 'block';
+                    return;
                 }
 
-                 // This part will only be reached if submission logic is changed to be async without reload.
-                 statusEl.className = 'de-upload-v2-status success';
-                 statusEl.textContent = 'Envio concluído! ' + totalProcessed + ' registros foram enviados.';
-                 backToStartBtn.style.display = 'block';
+                try {
+                  const proxySfmcUpload = firebase.functions().httpsCallable('proxySfmcUpload');
+
+                  for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
+                      const chunk = allRecords.slice(i, i + CHUNK_SIZE);
+                      const batchNum = (i / CHUNK_SIZE) + 1;
+                      
+                      statusEl.className = 'de-upload-v2-status info';
+                      statusEl.textContent = 'Enviando lote ' + batchNum + ' de ' + totalBatches + '...';
+
+                      const payload = {
+                          records: chunk, 
+                          deKey: selectedTarget.deKey, 
+                          brandId: brandId,
+                          columnMapping: columnMapping
+                      };
+                      
+                      const result = await proxySfmcUpload(payload);
+                      
+                      if (!result.data.success) {
+                        throw new Error(result.data.message || 'Erro desconhecido no processamento do lote.');
+                      }
+
+                      totalProcessed += chunk.length;
+                      const progressPercent = (totalProcessed / allRecords.length) * 100;
+                      progressBar.style.width = progressPercent + '%';
+                  }
+
+                   statusEl.className = 'de-upload-v2-status success';
+                   statusEl.textContent = 'Envio concluído! ' + totalProcessed + ' registros foram processados com sucesso.';
+
+                } catch(error) {
+                    console.error('Proxy Upload Error:', error);
+                    statusEl.className = 'de-upload-v2-status error';
+                    statusEl.textContent = 'Erro: ' + error.message;
+                } finally {
+                    backToStartBtn.style.display = 'block';
+                }
             });
       })();
       </script>

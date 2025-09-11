@@ -1,4 +1,5 @@
 
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -9,6 +10,51 @@ const cors = require('cors')({ origin: true });
 
 admin.initializeApp();
 const db = getFirestore();
+
+exports.proxySfmcUpload = functions.https.onCall(async (data, context) => {
+    // Note: 'onCall' handles CORS automatically.
+    // It also provides auth context if the user is logged in.
+    
+    // For security, you might want to check for auth:
+    // if (!context.auth) {
+    //     throw new functions.https.HttpsError('unauthenticated', 'Apenas usuários autenticados podem fazer upload.');
+    // }
+
+    try {
+        const vercelApiUrl = functions.config().vercel.api_url;
+        if (!vercelApiUrl) {
+            throw new functions.https.HttpsError('internal', 'A URL da API da Vercel não está configurada nas variáveis de ambiente da função.');
+        }
+
+        const response = await axios.post(
+            `${vercelApiUrl}/api/sfmc-upload`,
+            { payload: data }, // Encapsulate the data in a 'payload' object as the Vercel API expects
+            {
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 300000 // 5 minutes timeout for potentially long processes
+            }
+        );
+
+        // Forward the response from the Vercel API back to the client
+        return response.data;
+
+    } catch (error) {
+        console.error("Erro no proxy para a Vercel API:", error.response ? error.response.data : error.message);
+        
+        if (axios.isAxiosError(error) && error.response) {
+            // Forward the specific error from Vercel API if available
+            throw new functions.https.HttpsError(
+                'internal', 
+                error.response.data.message || 'Erro desconhecido na API da Vercel.',
+                error.response.data
+            );
+        }
+        
+        // Generic error
+        throw new functions.https.HttpsError('internal', 'Ocorreu um erro ao conectar-se ao serviço de upload.');
+    }
+});
+
 
 /**
  * Sets a custom claim on a user account to make them an admin.
@@ -101,3 +147,4 @@ exports.getAllUsers = functions
             );
         }
     });
+

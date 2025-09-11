@@ -1122,7 +1122,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const { components, meta, styles } = pageState;
 
     const hasForm = components.some(c => c.type === 'Form');
-    const hasDEUpload = components.some(c => c.type === 'DataExtensionUpload');
     const needsSecurity = meta.security && meta.security.type !== 'none';
     
     const needsAmpscript = !isForPreview && !hideAmpscript;
@@ -1130,45 +1129,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const rootComponents = components.filter(c => c.parentId === null);
     const mainContentHtml = renderComponents(rootComponents, components, pageState, isForPreview, baseUrl, hideAmpscript);
     
-    let serverLogic = '';
-    if(needsAmpscript) {
-        // Correct SSJS block for DE Upload
-        if (hasDEUpload) {
-            serverLogic += `
-                if (Request.Method == "POST" && Request.GetFormField("__is_de_upload") == "true") {
-                    Platform.Load("Core", "1.1.1");
-                    var debug = false;
-                    try {
-                        var payloadStr = Request.GetFormField("__de_upload_payload");
-                        if (payloadStr != "") {
-                             // This is the corrected part
-                            var apiPayload = '{ "payload": ' + payloadStr + ' }';
-                            var url = "${baseUrl}/api/sfmc-upload";
-                            var contentType = "application/json";
-                            
-                            var responseJSON = HTTP.Post(url, contentType, apiPayload);
-                            var responseContent = responseJSON.Content;
-                            
-                            Platform.Response.SetResponseHeader("Content-Type","application/json");
-                            Write(responseContent);
-
-                        } else {
-                            Write('{"success": false, "message": "Payload vazio."}');
-                        }
-                    } catch(e) {
-                         Write('{"success": false, "message": "Erro no servidor SSJS: ' + Stringify(e) + '"}');
-                    }
-                    Platform.Response.Send();
-                }
-            `;
-        }
-         if(needsSecurity) {
-            serverLogic += getSSJSSecurityBlock(pageState);
-        }
-    }
-    
-    const serverScriptBlock = serverLogic ? `<script runat="server">${serverLogic}</script>` : '';
-
     const amspcriptBlock = `%%[ ${getPrefillAmpscript(pageState)} ]%%`;
 
     const { typography } = pageState.brand || {};
@@ -1230,7 +1190,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${serverScriptBlock}
+${needsAmpscript && needsSecurity ? `<script runat="server">${getSSJSSecurityBlock(pageState)}</script>` : ''}
 ${needsAmpscript ? amspcriptBlock : ''}
 ${trackingScripts.head}
 <style>

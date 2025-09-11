@@ -480,7 +480,25 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
 
     // Add Firebase SDK if needed for components like DataExtensionUpload
     const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload');
-    const firebaseSdkScript = needsFirebase ? '<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>' : '';
+    const firebaseSdkScript = needsFirebase
+        ? `
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
+        <script>
+            var firebaseConfig = {
+               apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
+               authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}",
+               projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}",
+               storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}",
+               messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
+               appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}"
+            };
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+               firebase.initializeApp(firebaseConfig);
+            }
+        </script>
+        `
+        : '';
 
 
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
@@ -1167,22 +1185,6 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     } else {
         bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
-
-    const firebaseConfigScript = isForPreview && (pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload'))
-        ? `<script>
-             var firebaseConfig = {
-                apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
-                authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}",
-                projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}",
-                storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}",
-                messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
-                appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}"
-             };
-             if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-             }
-           </script>`
-        : '';
 
     return `<!DOCTYPE html>
 <html>
@@ -2518,7 +2520,6 @@ ${renderLoader(meta, styles.themeColor)}
 ${bodyContent}
 ${cookieBannerHtml}
 ${clientSideScripts}
-${firebaseConfigScript}
 </body>
 </html>
 `

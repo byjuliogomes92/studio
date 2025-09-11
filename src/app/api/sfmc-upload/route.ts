@@ -4,15 +4,7 @@ import { getBrand } from '@/lib/firestore';
 import { decryptPassword } from '@/lib/crypto';
 import axios from 'axios';
 
-const getCorsHeaders = () => ({
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-});
-
-export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, { headers: getCorsHeaders() });
-}
+// The OPTIONS method is now handled by the middleware.ts file
 
 export async function POST(request: NextRequest) {
     try {
@@ -22,7 +14,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ 
                 success: false, 
                 message: 'Parâmetros faltando (records, deKey, brandId).' 
-            }, { status: 400, headers: getCorsHeaders() });
+            }, { status: 400 });
         }
 
         // 1. Get brand credentials from Firestore
@@ -31,7 +23,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ 
                 success: false, 
                 message: 'Configurações da API do SFMC não encontradas para esta marca.' 
-            }, { status: 400, headers: getCorsHeaders() });
+            }, { status: 400 });
         }
         
         const { clientId, encryptedClientSecret, authBaseUrl } = brand.integrations.sfmcApi;
@@ -39,7 +31,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ 
                 success: false, 
                 message: 'Credenciais da API do SFMC incompletas.' 
-            }, { status: 400, headers: getCorsHeaders() });
+            }, { status: 400 });
         }
         
         const clientSecret = decryptPassword(encryptedClientSecret);
@@ -61,7 +53,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ 
                 success: true, 
                 message: 'Nenhum registro no lote. Nada foi adicionado.' 
-            }, { status: 200, headers: getCorsHeaders() });
+            }, { status: 200 });
         }
         
         // 4. Apply column mapping if provided
@@ -126,7 +118,7 @@ export async function POST(request: NextRequest) {
             success: true, 
             message: `Lote de ${sfmcPayload.length} registros processado com sucesso.`,
             rowsProcessed: sfmcPayload.length,
-        }, { status: 200, headers: getCorsHeaders() });
+        }, { status: 200 });
 
     } catch (error: any) {
         console.error("❌ SFMC Process Error:", {
@@ -165,6 +157,6 @@ export async function POST(request: NextRequest) {
                 stack: error.stack,
                 response: error.response?.data
             } : undefined,
-        }, { status: statusCode, headers: getCorsHeaders() });
+        }, { status: statusCode });
     }
 }

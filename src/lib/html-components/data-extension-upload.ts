@@ -216,7 +216,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
               mappingContainer.style.display = 'block';
 
-              const optionsHtml = csvHeaders.map(h => \`<option value="\${h}">\${h}</option>\`).join('');
+              const optionsHtml = csvHeaders.map(h => `<option value="${h}">${h}</option>`).join('');
               
               mappingTable.innerHTML = \`
                 <table class="de-upload-v2-mapping-table">
@@ -364,4 +364,5 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           });
       })();
       </script>
-    
+    `;
+}

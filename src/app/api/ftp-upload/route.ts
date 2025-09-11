@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToFtp } from '@/lib/ftp-service';
 import { getBrand } from '@/lib/firestore';

@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getBrand } from '@/lib/firestore';
 import { decryptPassword } from '@/lib/crypto';

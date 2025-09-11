@@ -480,7 +480,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
 
     // Add Firebase SDK if needed for components like DataExtensionUpload
     const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload');
-    const firebaseSdkScript = needsFirebase
+    const firebaseSdkScript = (needsFirebase || isForPreview)
         ? `
         <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
         <script>

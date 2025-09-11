@@ -56,11 +56,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     return `
       <div class="de-upload-v2-container">
-          <form id="${formId}" method="POST" action="%%=RequestParameter('PAGEURL')=%%">
-             <input type="hidden" name="__is_de_upload" value="true" />
-             <input type="hidden" id="de-upload-payload-${componentId}" name="__de_upload_payload" value="" />
-          </form>
-
           <div class="de-upload-v2-step" id="step1-${componentId}">
               <h4>${title}</h4>
               ${campaignSelectorHtml}
@@ -106,8 +101,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
       </div>
       <script>
       (function() {
-          const form = document.getElementById('${formId}');
-          if (!form) return;
+          const container = document.querySelector('.de-upload-v2-container');
+          if (!container) return;
           const componentId = '${componentId}';
           const brandId = '${brandId}';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
@@ -117,8 +112,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const step2 = document.getElementById('step2-' + componentId);
           const step3 = document.getElementById('step3-' + componentId);
           
-          const dropZone = form.parentElement.querySelector('.de-upload-v2-drop-zone');
-          const fileInput = form.parentElement.querySelector('#file-input-' + componentId);
+          const dropZone = container.querySelector('.de-upload-v2-drop-zone');
+          const fileInput = container.querySelector('#file-input-' + componentId);
           const submitBtn = document.getElementById('submit-btn-' + componentId);
           const cancelBtn = document.getElementById('cancel-btn-' + componentId);
           const backToStartBtn = document.getElementById('back-to-start-btn-' + componentId);
@@ -214,6 +209,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   mappingContainer.style.display = 'none';
                   return;
               }
+              
               mappingContainer.style.display = 'block';
 
               const table = document.createElement('table');
@@ -221,13 +217,12 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               
               const thead = table.createTHead();
               const headerRow = thead.insertRow();
-              const th1 = document.createElement('th');
-              th1.textContent = 'Coluna na Data Extension';
-              headerRow.appendChild(th1);
-              const th2 = document.createElement('th');
-              th2.textContent = 'Coluna no seu Arquivo';
-              headerRow.appendChild(th2);
-
+              ['Coluna na Data Extension', 'Coluna no seu Arquivo'].forEach(text => {
+                  const th = document.createElement('th');
+                  th.textContent = text;
+                  headerRow.appendChild(th);
+              });
+              
               const tbody = table.createTBody();
 
               target.columns.forEach(col => {
@@ -329,8 +324,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
               
               showStep(step3);
-              const statusEl = form.parentElement.querySelector('.de-upload-v2-status');
-              const progressBar = form.parentElement.querySelector('.de-upload-v2-progress-bar');
+              const statusEl = container.querySelector('.de-upload-v2-status');
+              const progressBar = container.querySelector('.de-upload-v2-progress-bar');
               
               let totalProcessed = 0;
               const totalBatches = Math.ceil(allRecords.length / CHUNK_SIZE);
@@ -343,19 +338,31 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   statusEl.textContent = 'Enviando lote ' + batchNum + ' de ' + totalBatches + ' (' + chunk.length + ' registros)...';
                   
                   try {
-                      const payload = {
+                       const payload = {
                           records: chunk, 
                           deKey: selectedTarget.deKey, 
                           brandId: brandId,
                           columnMapping: columnMapping
                       };
                       
-                      const payloadInput = document.getElementById('de-upload-payload-' + componentId);
-                      payloadInput.value = JSON.stringify(payload);
+                      const body = new URLSearchParams();
+                      body.append('__is_de_upload', 'true');
+                      body.append('__de_upload_payload', JSON.stringify(payload));
                       
-                      form.submit();
+                      const response = await fetch(window.location.href, {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/x-www-form-urlencoded',
+                          },
+                          body: body.toString()
+                      });
                       
-                      totalProcessed += chunk.length;
+                      const result = await response.json();
+                      if (!result.success) {
+                          throw new Error(result.message || 'Erro desconhecido no servidor.');
+                      }
+                      
+                      totalProcessed += result.rowsProcessed || chunk.length;
                       const progressPercent = (totalProcessed / allRecords.length) * 100;
                       progressBar.style.width = progressPercent + '%';
 

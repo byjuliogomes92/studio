@@ -109,7 +109,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const brandId = '${brandId}';
           const apiBaseUrl = '${baseUrl}';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
-          const CHUNK_SIZE = 2000; // Process 2000 rows at a time
+          const CHUNK_SIZE = 2000;
 
           const step1 = form.querySelector('#step1-' + componentId);
           const step2 = form.querySelector('#step2-' + componentId);
@@ -319,6 +319,9 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               let totalProcessed = 0;
               const totalBatches = Math.ceil(allRecords.length / CHUNK_SIZE);
               
+              const functions = firebase.app().functions('us-central1');
+              const proxySfmcUpload = functions.httpsCallable('proxySfmcUpload');
+
               for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
                   const chunk = allRecords.slice(i, i + CHUNK_SIZE);
                   const batchNum = (i / CHUNK_SIZE) + 1;
@@ -327,25 +330,23 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   statusEl.textContent = \`Processando lote \${batchNum} de \${totalBatches} (\${chunk.length} registros)...\`;
                   
                   try {
-                      const response = await fetch(apiBaseUrl + '/api/sfmc-upload', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            records: chunk, 
-                            deKey: selectedTarget.deKey, 
-                            brandId: brandId,
-                            columnMapping: columnMapping
-                        }),
+                      const result = await proxySfmcUpload({
+                          records: chunk, 
+                          deKey: selectedTarget.deKey, 
+                          brandId: brandId,
+                          columnMapping: columnMapping
                       });
-                      
-                      const result = await response.json();
-                      if (!response.ok) throw new Error(result.message || 'Erro no servidor.');
-                      
+
+                      if (!result.data.success) {
+                          throw new Error(result.data.message || 'Erro retornado pela API de proxy.');
+                      }
+
                       totalProcessed += chunk.length;
                       const progressPercent = (totalProcessed / allRecords.length) * 100;
                       progressBar.style.width = progressPercent + '%';
 
                   } catch (error) {
+                      console.error('Proxy Upload Error:', error);
                       statusEl.className = 'de-upload-v2-status error';
                       statusEl.textContent = 'Erro no lote ' + batchNum + ': ' + error.message;
                       backToStartBtn.style.display = 'block';

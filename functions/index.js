@@ -100,3 +100,41 @@ exports.getAllUsers = functions
             );
         }
     });
+
+
+/**
+ * Acts as a proxy to the Vercel API for SFMC uploads to bypass CORS issues.
+ */
+exports.proxySfmcUpload = functions
+    .region('us-central1')
+    .https.onCall(async (data, context) => {
+        const vercelApiUrl = process.env.NEXT_PUBLIC_BASE_URL 
+            ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/sfmc-upload`
+            : 'http://localhost:9002/api/sfmc-upload';
+
+        try {
+            const response = await axios.post(vercelApiUrl, data, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    // You could add a secret header here for extra security
+                    // 'X-Internal-Proxy-Secret': process.env.PROXY_SECRET
+                }
+            });
+            
+            return response.data;
+
+        } catch (error) {
+            console.error("Proxy Error to Vercel:", {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            });
+
+            // Re-throw an HttpsError to be caught by the client SDK
+            throw new functions.https.HttpsError(
+                'internal',
+                `Erro ao se comunicar com a API de upload: ${error.response?.data?.message || error.message}`
+            );
+        }
+    });
+

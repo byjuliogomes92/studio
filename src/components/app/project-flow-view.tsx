@@ -48,8 +48,8 @@ const nodeTypes: NodeTypes = {
   custom: CustomNode,
 };
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[] = [], direction = 'LR') => {
-  // Defensive check to prevent crash on invalid data
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
+  // Defensive check for invalid inputs
   if (!nodes || nodes.length === 0) {
     return { nodes: [], edges: [] };
   }
@@ -64,11 +64,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[] = [], direction = 'LR'
     dagreGraph.setNode(node.id, { width: 200, height: 100 });
   });
 
-  const nodeIds = new Set(nodes.map((n) => n.id));
-  const validEdges = (edges || []).filter(
-    (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)
-  );
-
+  const validEdges = edges || [];
   validEdges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target);
   });
@@ -104,7 +100,11 @@ export function ProjectFlowView({ pages }: ProjectFlowViewProps) {
   };
 
   const { initialNodes, initialEdges } = useMemo(() => {
-    const nodes: Node<CustomNodeData>[] = (pages || []).map((page, index) => ({
+    if (!pages || pages.length === 0) {
+        return { initialNodes: [], initialEdges: [] };
+    }
+
+    const nodes: Node<CustomNodeData>[] = pages.map((page, index) => ({
       id: page.id,
       type: 'custom',
       data: { 
@@ -116,14 +116,16 @@ export function ProjectFlowView({ pages }: ProjectFlowViewProps) {
       position: { x: index * 250, y: 100 }, // Initial position
     }));
 
-    const pageIds = new Set((pages || []).map(p => p.id));
+    const pageIds = new Set(pages.map(p => p.id));
     const edges: Edge[] = [];
-    (pages || []).forEach(page => {
+
+    pages.forEach(page => {
+      // Ensure components is an array before iterating
       (page.components || []).forEach(component => {
-        // Check for Button and Form components with a page link action
         if ((component.type === 'Button' || component.type === 'Form') && component.props.action?.type === 'PAGE') {
           const targetPageId = component.props.action.pageId;
-          if (targetPageId && pageIds.has(targetPageId)) {
+          // Ensure both source and target nodes exist before creating an edge
+          if (targetPageId && pageIds.has(page.id) && pageIds.has(targetPageId)) {
             edges.push({
               id: `e-${page.id}-${targetPageId}-${component.id}`,
               source: page.id,

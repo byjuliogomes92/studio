@@ -48,13 +48,15 @@ const nodeTypes: NodeTypes = {
   custom: CustomNode,
 };
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
   if (!nodes || nodes.length === 0) {
     return { nodes, edges };
   }
+  
+  // Re-initialize the graph on every call to prevent state corruption
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+
   const isHorizontal = direction === 'LR';
   dagreGraph.setGraph({ rankdir: direction, nodesep: 100, ranksep: 150 });
 

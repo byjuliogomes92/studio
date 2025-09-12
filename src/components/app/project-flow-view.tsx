@@ -52,6 +52,9 @@ const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
+  if (!nodes || nodes.length === 0) {
+    return { nodes, edges };
+  }
   const isHorizontal = direction === 'LR';
   dagreGraph.setGraph({ rankdir: direction, nodesep: 100, ranksep: 150 });
 
@@ -67,12 +70,14 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
 
   nodes.forEach((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
-    node.targetPosition = isHorizontal ? 'left' : 'top';
-    node.sourcePosition = isHorizontal ? 'right' : 'bottom';
-    node.position = {
-      x: nodeWithPosition.x - 100,
-      y: nodeWithPosition.y - 50,
-    };
+    if (nodeWithPosition) {
+        node.targetPosition = isHorizontal ? 'left' : 'top';
+        node.sourcePosition = isHorizontal ? 'right' : 'bottom';
+        node.position = {
+            x: nodeWithPosition.x - 100,
+            y: nodeWithPosition.y - 50,
+        };
+    }
     return node;
   });
 
@@ -104,13 +109,14 @@ export function ProjectFlowView({ pages }: ProjectFlowViewProps) {
       position: { x: index * 250, y: 100 }, // Initial position
     }));
 
+    const pageIds = new Set(pages.map(p => p.id));
     const edges: Edge[] = [];
     pages.forEach(page => {
       page.components.forEach(component => {
         // Check for Button and Form components with a page link action
         if ((component.type === 'Button' || component.type === 'Form') && component.props.action?.type === 'PAGE') {
           const targetPageId = component.props.action.pageId;
-          if (targetPageId) {
+          if (targetPageId && pageIds.has(targetPageId)) {
             edges.push({
               id: `e-${page.id}-${targetPageId}-${component.id}`,
               source: page.id,

@@ -476,7 +476,6 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
     const hasAutoplayCarousel = hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay);
     const hasCalendly = pageState.components.some(c => c.type === 'Calendly');
-    const hasDataExtensionUpload = pageState.components.some(c => c.type === 'DataExtensionUpload');
 
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
     const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
@@ -1158,7 +1157,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
             ssjsContent += getFormSubmissionScript(pageState);
         }
         if (hasDataExtensionUpload) {
-            ssjsContent += getDEUploadSSJS();
+            ssjsContent += getDEUploadSSJS(pageState);
         }
         if (needsSecurity && meta.security?.type === 'password') {
             ssjsContent += getSSJSSecurityBlock(pageState);
@@ -2506,5 +2505,7 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
 </html>
+`
+}
 
-    
+```

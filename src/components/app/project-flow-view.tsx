@@ -64,7 +64,13 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
     dagreGraph.setNode(node.id, { width: 200, height: 100 });
   });
 
-  edges.forEach((edge) => {
+  // CRITICAL FIX: Ensure all edges connect to existing nodes before adding them
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  const validEdges = edges.filter(
+    (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)
+  );
+
+  validEdges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target);
   });
 
@@ -83,7 +89,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
     return node;
   });
 
-  return { nodes, edges };
+  return { nodes, edges: validEdges };
 };
 
 

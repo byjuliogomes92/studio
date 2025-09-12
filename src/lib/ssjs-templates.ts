@@ -30,23 +30,43 @@ export function getPrefillAmpscript(pageState: CloudPage): string {
     return `/* --- Prefill --- */\n${prefillLines.join('\n')}`;
 }
 
-export const getDEUploadSSJS = (vercelApiUrl: string): string => {
+export const getDEUploadSSJS = (): string => {
     return `
-/* --- DE UPLOAD PROXY --- */
-if (Request.Method == "POST" && Request.GetFormField("__is_de_upload") == "true") {
-    var payloadStr = Request.GetFormField("__de_upload_payload");
-    if (payloadStr != "") {
-        var url = "${vercelApiUrl}/api/sfmc-upload";
-        var contentType = "application/json";
-        var response = HTTP.Post(url, contentType, payloadStr);
-        
-        // This will stop the rest of the page from rendering and return the API response
-        Write(response.Content);
-        Platform.Response.SetResponseHeader("Content-Type","application/json");
-        Platform.Response.Send();
+/* --- Início: Processamento de Upload de Data Extension --- */
+if (Request.Method == "POST" && Request.GetFormField("__is_de_upload_submission") == "true") {
+    var deKey = Request.GetFormField("deKey");
+    var jsonDataStr = Request.GetFormField("jsonData");
+    var redirectURL = Request.GetQueryStringParameter("PAGEURL");
+    var status = "";
+    var message = "";
+
+    try {
+        if (deKey && jsonDataStr) {
+            var de = DataExtension.Init(deKey);
+            var jsonData = Platform.Function.ParseJSON(jsonDataStr);
+            
+            if (jsonData.length > 0) {
+                status = de.Rows.Add(jsonData);
+                message = "Foram inseridos " + jsonData.length + " registros.";
+            } else {
+                 message = "Nenhum registro para inserir.";
+            }
+            
+            redirectURL = TreatAsContent(redirectURL + "?resultado=success&mensagem=" + URLEncode(message));
+        } else {
+            throw new Error("Parâmetros 'deKey' ou 'jsonData' não encontrados na requisição.");
+        }
+    } catch(e) {
+        message = "Ocorreu um erro: " + Stringify(e);
+        redirectURL = TreatAsContent(redirectURL + "?resultado=error&mensagem=" + URLEncode(message));
     }
-}`;
+    
+    Redirect(redirectURL, false);
+}
+/* --- Fim: Processamento de Upload de Data Extension --- */
+`;
 };
+
 
 export function getFormSubmissionScript(pageState: CloudPage): string {
     const formComponent = pageState.components.find(c => c.type === 'Form');

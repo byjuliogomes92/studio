@@ -1,6 +1,6 @@
 
 import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
-import { getPrefillAmpscript } from './ssjs-templates';
+import { getPrefillAmpscript, getDEUploadSSJS } from './ssjs-templates';
 import { getSSJSSecurityBlock, getSecurityFormHtml } from './html-components/security';
 import { renderHeader } from './html-components/header';
 import { renderBanner } from './html-components/banner';
@@ -1122,6 +1122,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     const { components, meta, styles } = pageState;
 
     const hasForm = components.some(c => c.type === 'Form');
+    const hasDataExtensionUpload = components.some(c => c.type === 'DataExtensionUpload');
     const needsSecurity = meta.security && meta.security.type !== 'none';
     
     const needsAmpscript = !isForPreview && !hideAmpscript;
@@ -1172,6 +1173,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     } else {
         bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
+    
+    const ssjsBlock = hasDataExtensionUpload ? `<script runat="server">${getDEUploadSSJS()}</script>` : '';
+
 
     return `<!DOCTYPE html>
 <html>
@@ -1190,6 +1194,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
+${ssjsBlock}
 ${needsAmpscript && needsSecurity ? `<script runat="server">${getSSJSSecurityBlock(pageState)}</script>` : ''}
 ${needsAmpscript ? amspcriptBlock : ''}
 ${trackingScripts.head}
@@ -2509,5 +2514,3 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
 </html>
-`
-}

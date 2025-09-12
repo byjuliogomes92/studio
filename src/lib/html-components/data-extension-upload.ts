@@ -9,7 +9,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         buttonProps = {}
     } = component.props;
     
-    const { brandId } = pageState;
     const componentId = component.id;
     const formId = `de-upload-form-${componentId}`;
 
@@ -34,17 +33,17 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         </div>
         <div class="de-upload-v2-campaign-selector" id="upload-target-container-${componentId}" style="display: none;">
             <label for="upload-target-select-${componentId}">2. Selecione o destino do arquivo:</label>
-            <select id="upload-target-select-${componentId}" class="de-upload-v2-select"></select>
+            <select name="deKey" id="upload-target-select-${componentId}" class="de-upload-v2-select"></select>
         </div>
     ` : (campaignGroups.length === 1 && campaignGroups[0].uploadTargets.length > 1 ? `
         <div class="de-upload-v2-campaign-selector">
             <label for="upload-target-select-${componentId}">1. Selecione o destino do arquivo:</label>
-            <select id="upload-target-select-${componentId}" class="de-upload-v2-select">
+            <select name="deKey" id="upload-target-select-${componentId}" class="de-upload-v2-select">
                 <option value="" disabled selected>-- Escolha uma opção --</option>
-                ${campaignGroups[0].uploadTargets.map((target: UploadTarget) => `<option value="${target.id}">${target.name}</option>`).join('')}
+                ${campaignGroups[0].uploadTargets.map((target: UploadTarget) => `<option value="${target.deKey}">${target.name}</option>`).join('')}
             </select>
         </div>
-    ` : '');
+    ` : `<input type="hidden" name="deKey" value="${campaignGroups[0]?.uploadTargets[0]?.deKey || ''}">`);
     
     const lucideIconSvgs: Record<string, string> = {
         none: '',
@@ -56,79 +55,64 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     return `
       <div class="de-upload-v2-container">
-          <div class="de-upload-v2-step" id="step1-${componentId}">
-              <h4>${title}</h4>
-              ${campaignSelectorHtml}
-              <div class="de-upload-v2-drop-zone">
-                  <input type="file" id="file-input-${componentId}" accept=".csv, text/csv" required style="display: none;">
-                  <div class="de-upload-v2-drop-content">
-                      <div class="de-upload-v2-icon">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                      </div>
-                      <p>${instructionText}</p>
-                  </div>
-              </div>
-          </div>
+          <form id="${formId}" method="POST" action="%%=RequestParameter('PAGEURL')=%%">
+            <input type="hidden" name="__is_de_upload_submission" value="true">
+            <input type="hidden" id="json-payload-${componentId}" name="jsonData">
+            
+            <div class="de-upload-v2-step" id="step1-${componentId}">
+                <h4>${title}</h4>
+                ${campaignSelectorHtml}
+                <div class="de-upload-v2-drop-zone">
+                    <input type="file" id="file-input-${componentId}" accept=".csv, text/csv" required style="display: none;">
+                    <div class="de-upload-v2-drop-content">
+                        <div class="de-upload-v2-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                        </div>
+                        <p>${instructionText}</p>
+                    </div>
+                </div>
+            </div>
 
-          <div class="de-upload-v2-step" id="step2-${componentId}" style="display: none;">
-              <h4>Confirmar Arquivo</h4>
-              <p class="de-upload-v2-filename-confirm"></p>
-              <div class="de-upload-v2-stats-grid">
-                  <div class="de-upload-v2-stat-card"><h5>Registros</h5><p id="stat-rows-${componentId}">-</p></div>
-                  <div class="de-upload-v2-stat-card"><h5>Colunas</h5><p id="stat-cols-${componentId}">-</p></div>
-                  <div class="de-upload-v2-stat-card"><h5>Tamanho</h5><p id="stat-size-${componentId}">-</p></div>
-              </div>
-              <div class="de-upload-v2-columns-container" id="mapping-container-${componentId}">
-                  <h5>Mapeamento de Colunas</h5>
-                  <div id="mapping-table-${componentId}"></div>
-              </div>
-              <div class="de-upload-v2-actions">
-                  <button type="button" id="cancel-btn-${componentId}" class="custom-button custom-button--outline">Trocar Arquivo</button>
-                  <button type="button" id="submit-btn-${componentId}" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">${buttonContent}</button>
-              </div>
-          </div>
-
-          <div class="de-upload-v2-step" id="step3-${componentId}" style="display: none;">
-               <h4>Processando</h4>
-               <div class="de-upload-v2-feedback">
-                   <div class="de-upload-v2-progress-container"><div class="de-upload-v2-progress-bar"></div></div>
-                   <p class="de-upload-v2-status info">Aguarde, estamos processando seu arquivo...</p>
-               </div>
-               <div class="de-upload-v2-actions">
-                  <button type="button" id="back-to-start-btn-${componentId}" class="custom-button custom-button--outline" style="display: none;">Voltar ao Início</button>
-               </div>
-          </div>
+            <div class="de-upload-v2-step" id="step2-${componentId}" style="display: none;">
+                <h4>Confirmar Arquivo</h4>
+                <p class="de-upload-v2-filename-confirm"></p>
+                <div class="de-upload-v2-stats-grid">
+                    <div class="de-upload-v2-stat-card"><h5>Registros</h5><p id="stat-rows-${componentId}">-</p></div>
+                    <div class="de-upload-v2-stat-card"><h5>Colunas</h5><p id="stat-cols-${componentId}">-</p></div>
+                    <div class="de-upload-v2-stat-card"><h5>Tamanho</h5><p id="stat-size-${componentId}">-</p></div>
+                </div>
+                <div class="de-upload-v2-actions">
+                    <button type="button" id="cancel-btn-${componentId}" class="custom-button custom-button--outline">Trocar Arquivo</button>
+                    <button type="submit" id="submit-btn-${componentId}" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">${buttonContent}</button>
+                </div>
+            </div>
+          </form>
       </div>
+      <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
       <script>
       (function() {
-          const container = document.querySelector('.de-upload-v2-container');
+          const container = document.querySelector('#${formId}');
           if (!container) return;
           const componentId = '${componentId}';
-          const brandId = '${brandId}';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
-          const CHUNK_SIZE = 2000;
 
-          const step1 = document.getElementById('step1-' + componentId);
-          const step2 = document.getElementById('step2-' + componentId);
-          const step3 = document.getElementById('step3-' + componentId);
+          const step1 = container.querySelector('#step1-' + componentId);
+          const step2 = container.querySelector('#step2-' + componentId);
           
           const dropZone = container.querySelector('.de-upload-v2-drop-zone');
           const fileInput = container.querySelector('#file-input-' + componentId);
-          const submitBtn = document.getElementById('submit-btn-' + componentId);
-          const cancelBtn = document.getElementById('cancel-btn-' + componentId);
-          const backToStartBtn = document.getElementById('back-to-start-btn-' + componentId);
-          const groupSelect = document.getElementById('campaign-group-select-' + componentId);
-          const targetSelect = document.getElementById('upload-target-select-' + componentId);
-          const targetContainer = document.getElementById('upload-target-container-' + componentId);
-          const mappingContainer = document.getElementById('mapping-container-' + componentId);
-          const mappingTable = document.getElementById('mapping-table-' + componentId);
+          const jsonPayloadInput = container.querySelector('#json-payload-' + componentId);
+          const submitBtn = container.querySelector('#submit-btn-' + componentId);
+          const cancelBtn = container.querySelector('#cancel-btn-' + componentId);
+
+          const groupSelect = container.querySelector('#campaign-group-select-' + componentId);
+          const targetSelect = container.querySelector('#upload-target-select-' + componentId);
+          const targetContainer = container.querySelector('#upload-target-container-' + componentId);
 
           let currentFile;
-          let csvHeaders = [];
-          let allRecords = [];
 
           function showStep(step) {
-            [step1, step2, step3].forEach(s => s.style.display = 'none');
+            [step1, step2].forEach(s => s.style.display = 'none');
             step.style.display = 'block';
           };
           
@@ -136,11 +120,11 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               targetSelect.innerHTML = '<option value="" disabled selected>-- Escolha um destino --</option>';
               targets.forEach(target => {
                   const option = document.createElement('option');
-                  option.value = target.id;
+                  option.value = target.deKey;
                   option.textContent = target.name;
                   targetSelect.appendChild(option);
               });
-              targetContainer.style.display = 'block';
+              if (targetContainer) targetContainer.style.display = 'block';
           }
           
           if (groupSelect) {
@@ -149,7 +133,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   const selectedGroup = campaignGroupsData.find(g => g.id === selectedGroupId);
                   if (selectedGroup && selectedGroup.uploadTargets) {
                       updateTargetOptions(selectedGroup.uploadTargets);
-                  } else {
+                  } else if (targetContainer) {
                        targetContainer.style.display = 'none';
                   }
               });
@@ -171,105 +155,14 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
           function resetAll() {
               currentFile = null;
-              csvHeaders = [];
-              allRecords = [];
               fileInput.value = '';
               if (groupSelect) groupSelect.value = '';
               if (targetSelect) targetSelect.innerHTML = '';
               if (targetContainer) targetContainer.style.display = 'none';
-              backToStartBtn.style.display = 'none';
               showStep(step1);
           }
           cancelBtn.addEventListener('click', resetAll);
-          backToStartBtn.addEventListener('click', resetAll);
           
-          function detectDelimiter(header) {
-              const commaCount = (header.match(/,/g) || []).length;
-              const semicolonCount = (header.match(/;/g) || []).length;
-              return semicolonCount > commaCount ? ';' : ',';
-          }
-
-          function getSelectedTarget() {
-              let selectedTargetId;
-              if (targetSelect && targetSelect.value) {
-                 selectedTargetId = targetSelect.value;
-              } else if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length === 1) {
-                 return campaignGroupsData[0].uploadTargets[0];
-              }
-
-              for(const group of campaignGroupsData) {
-                  const found = group.uploadTargets.find(t => t.id === selectedTargetId);
-                  if (found) return found;
-              }
-              return null;
-          }
-
-          function renderMappingUI(target) {
-              if (!target || !target.columns || target.columns.length === 0) {
-                  mappingContainer.style.display = 'none';
-                  return;
-              }
-              mappingContainer.style.display = 'block';
-
-              const table = document.createElement('table');
-              table.className = 'de-upload-v2-mapping-table';
-              
-              const thead = table.createTHead();
-              const headerRow = thead.insertRow();
-              ['Coluna na Data Extension', 'Coluna no seu Arquivo'].forEach(text => {
-                  const th = document.createElement('th');
-                  th.textContent = text;
-                  headerRow.appendChild(th);
-              });
-              
-              const tbody = table.createTBody();
-
-              target.columns.forEach(col => {
-                  const row = tbody.insertRow();
-                  
-                  const cell1 = row.insertCell();
-                  cell1.innerHTML = col.name + (col.isPrimaryKey ? ' <strong>(PK)</strong>' : '');
-
-                  const cell2 = row.insertCell();
-                  const select = document.createElement('select');
-                  select.className = 'de-upload-v2-select';
-                  select.dataset.deColumn = col.name;
-                  
-                  const optionsHtml = csvHeaders.map(h => '<option value="' + h + '">' + h + '</option>').join('');
-                  select.innerHTML = '<option value="">-- Ignorar --</option>' + optionsHtml;
-                  
-                  // Simple auto-mapping by name
-                  const matchedHeader = csvHeaders.find(h => h.toLowerCase() === col.name.toLowerCase());
-                  if (matchedHeader) {
-                      select.value = matchedHeader;
-                  }
-
-                  cell2.appendChild(select);
-              });
-              
-              mappingTable.innerHTML = '';
-              mappingTable.appendChild(table);
-          }
-
-          function parseCsv(text) {
-              const lines = text.split(/\\r\\n|\\n/).filter(l => l.trim() !== '');
-              if (lines.length < 1) return { headers: [], records: [] };
-              
-              const delimiter = detectDelimiter(lines[0]);
-              const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-              const records = [];
-
-              for (let i = 1; i < lines.length; i++) {
-                  const values = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
-                  const record = {};
-                  headers.forEach((header, index) => {
-                      record[header] = values[index];
-                  });
-                  records.push(record);
-              }
-              return { headers, records };
-          }
-
           function handleFileSelect(file) {
               if (!file || !(file.type.match('text/csv') || file.name.endsWith('.csv'))) {
                   alert('Por favor, selecione um arquivo CSV.');
@@ -277,101 +170,32 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
               currentFile = file;
               
-              const reader = new FileReader();
-              reader.onload = function(e) {
-                  const { headers, records } = parseCsv(e.target.result);
-                  csvHeaders = headers;
-                  allRecords = records;
-                  
-                  container.querySelector('#stat-rows-' + componentId).textContent = allRecords.length;
-                  container.querySelector('#stat-cols-' + componentId).textContent = csvHeaders.length;
-                  container.querySelector('#stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
-                  container.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
-                  
-                  const selectedTarget = getSelectedTarget();
-                  renderMappingUI(selectedTarget);
-                  
-                  showStep(step2);
-              };
-              reader.readAsText(file, 'ISO-8859-1');
-          }
-          
-          if(targetSelect) {
-              targetSelect.addEventListener('change', () => {
-                  const selectedTarget = getSelectedTarget();
-                  renderMappingUI(selectedTarget);
+              Papa.parse(file, {
+                  header: true,
+                  skipEmptyLines: true,
+                  complete: function(results) {
+                      jsonPayloadInput.value = JSON.stringify(results.data);
+                      
+                      container.querySelector('#stat-rows-' + componentId).textContent = results.data.length;
+                      container.querySelector('#stat-cols-' + componentId).textContent = results.meta.fields.length;
+                      container.querySelector('#stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
+                      container.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
+                      
+                      showStep(step2);
+                  },
+                  error: function(err) {
+                      alert("Erro ao processar o CSV: " + err.message);
+                      resetAll();
+                  }
               });
           }
 
-          submitBtn.addEventListener('click', async function(e) {
-                e.preventDefault();
-
-                const selectedTarget = getSelectedTarget();
-                if (!selectedTarget || !selectedTarget.deKey) { alert('Por favor, selecione um destino para o arquivo.'); return; }
-                if (allRecords.length === 0) { alert('O arquivo está vazio ou não pôde ser lido.'); return; }
-
-                const columnMapping = {};
-                if (mappingTable && mappingContainer.style.display !== 'none') {
-                    mappingTable.querySelectorAll('select').forEach(select => {
-                        if (select.value) {
-                            columnMapping[select.dataset.deColumn] = select.value;
-                        }
-                    });
-                }
-
-                showStep(step3);
-                const statusEl = container.querySelector('.de-upload-v2-status');
-                const progressBar = container.querySelector('.de-upload-v2-progress-bar');
-                
-                let totalProcessed = 0;
-                const totalBatches = Math.ceil(allRecords.length / CHUNK_SIZE);
-                
-                if (typeof firebase === 'undefined' || !firebase.apps.length) {
-                    statusEl.className = 'de-upload-v2-status error';
-                    statusEl.textContent = 'Erro: Firebase não está inicializado.';
-                    backToStartBtn.style.display = 'block';
-                    return;
-                }
-
-                try {
-                  const proxySfmcUpload = firebase.functions().httpsCallable('proxySfmcUpload');
-
-                  for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
-                      const chunk = allRecords.slice(i, i + CHUNK_SIZE);
-                      const batchNum = (i / CHUNK_SIZE) + 1;
-                      
-                      statusEl.className = 'de-upload-v2-status info';
-                      statusEl.textContent = 'Enviando lote ' + batchNum + ' de ' + totalBatches + '...';
-
-                      const payload = {
-                          records: chunk, 
-                          deKey: selectedTarget.deKey, 
-                          brandId: brandId,
-                          columnMapping: columnMapping
-                      };
-                      
-                      const result = await proxySfmcUpload(payload);
-                      
-                      if (!result.data.success) {
-                        throw new Error(result.data.message || 'Erro desconhecido no processamento do lote.');
-                      }
-
-                      totalProcessed += chunk.length;
-                      const progressPercent = (totalProcessed / allRecords.length) * 100;
-                      progressBar.style.width = progressPercent + '%';
-                  }
-
-                   statusEl.className = 'de-upload-v2-status success';
-                   statusEl.textContent = 'Envio concluído! ' + totalProcessed + ' registros foram processados com sucesso.';
-
-                } catch(error) {
-                    console.error('Proxy Upload Error:', error);
-                    statusEl.className = 'de-upload-v2-status error';
-                    statusEl.textContent = 'Erro: ' + error.message;
-                } finally {
-                    backToStartBtn.style.display = 'block';
-                }
-            });
+          container.addEventListener('submit', function(e) {
+              if (submitBtn) {
+                  submitBtn.disabled = true;
+                  submitBtn.innerHTML = 'Enviando...';
+              }
+          });
       })();
       </script>
     `;

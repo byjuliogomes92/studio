@@ -478,27 +478,6 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     const hasCalendly = pageState.components.some(c => c.type === 'Calendly');
     const hasDataExtensionUpload = pageState.components.some(c => c.type === 'DataExtensionUpload');
 
-    const firebaseSdkScript = (hasDataExtensionUpload && !isForPreview)
-        ? `
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
-        <script>
-            var firebaseConfig = {
-               apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
-               authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}",
-               projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}",
-               storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}",
-               messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
-               appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}"
-            };
-            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-               firebase.initializeApp(firebaseConfig);
-            }
-        </script>
-        `
-        : '';
-
-
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
     const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
     const autoplayPluginScript = hasAutoplayCarousel 
@@ -983,7 +962,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     </script>
     `;
 
-    return `${firebaseSdkScript}${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}`;
+    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}`;
 };
 
 
@@ -1174,11 +1153,19 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     
     let ssjsBlock = '';
     if (needsAmpscript) {
-      ssjsBlock = `<script runat="server">
-        ${hasForm ? getFormSubmissionScript(pageState) : ''}
-        ${hasDataExtensionUpload ? getDEUploadSSJS(baseUrl) : ''}
-        ${(needsSecurity && meta.security?.type === 'password') ? getSSJSSecurityBlock(pageState) : ''}
-      </script>`;
+        let ssjsContent = '';
+        if (hasForm) {
+            ssjsContent += getFormSubmissionScript(pageState);
+        }
+        if (hasDataExtensionUpload) {
+            ssjsContent += getDEUploadSSJS();
+        }
+        if (needsSecurity && meta.security?.type === 'password') {
+            ssjsContent += getSSJSSecurityBlock(pageState);
+        }
+        if (ssjsContent) {
+            ssjsBlock = `<script runat="server">${ssjsContent}</script>`;
+        }
     }
 
 
@@ -2519,4 +2506,5 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
 </html>
-`
+
+    

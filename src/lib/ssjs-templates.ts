@@ -30,22 +30,41 @@ export function getPrefillAmpscript(pageState: CloudPage): string {
     return `/* --- Prefill --- */\n${prefillLines.join('\n')}`;
 }
 
-export const getDEUploadSSJS = (vercelApiUrl: string): string => {
+export const getDEUploadSSJS = (): string => {
     return `
-/* --- DE UPLOAD PROXY --- */
-if (Request.Method == "POST" && Request.GetFormField("__is_de_upload") == "true") {
-    var payloadStr = Request.GetFormField("__de_upload_payload");
-    if (payloadStr != "") {
-        var url = "${vercelApiUrl}/api/sfmc-upload";
-        var contentType = "application/json";
-        var response = HTTP.Post(url, contentType, payloadStr);
+    if (Request.Method == "POST" && Request.GetFormField("__isDEUpload") == "true") {
+        var deKey = Request.GetFormField("__deKey");
+        var recordsStr = Request.GetFormField("__records");
+        var redirectURL = Request.GetFormField("PAGEURL");
+        var resultado = "";
+        var mensagem = "";
         
-        // This will stop the rest of the page from rendering and return the API response
-        Write(response.Content);
-        Platform.Response.SetResponseHeader("Content-Type","application/json");
-        Platform.Response.Send();
+        try {
+            if (deKey && recordsStr) {
+                var records = Platform.Function.ParseJSON(recordsStr);
+                
+                if (records.length > 0) {
+                    var de = DataExtension.Init(deKey);
+                    var status = de.Rows.Add(records);
+                    resultado = "success";
+                    mensagem = records.length + " registros foram enviados para processamento.";
+                } else {
+                    resultado = "success";
+                    mensagem = "Nenhum registro para processar.";
+                }
+            } else {
+                 resultado = "error";
+                 mensagem = "Parâmetros ausentes (chave da DE ou registros).";
+            }
+        } catch(e) {
+            resultado = "error";
+            mensagem = "Erro no servidor: " + Stringify(e);
+        }
+        
+        var finalRedirectURL = redirectURL + "?resultado=" + resultado + "&mensagem=" + Platform.Function.URLEncode(mensagem);
+        Platform.Response.Redirect(finalRedirectURL);
     }
-}`;
+`;
 };
 
 export function getFormSubmissionScript(pageState: CloudPage): string {
@@ -145,3 +164,5 @@ try {
     // Return the SSJS logic only, without script tags.
     return ssjsLogic;
 }
+
+    

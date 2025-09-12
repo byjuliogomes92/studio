@@ -9,9 +9,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         buttonProps = {}
     } = component.props;
     
-    const { brandId } = pageState;
     const componentId = component.id;
-    const functionUrl = `https://us-central1-${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.cloudfunctions.net/proxySfmcUpload`;
 
     const {
         text: buttonText = "Processar Arquivo",
@@ -77,24 +75,20 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               </div>
           </div>
           
-          <form id="hidden-form-${componentId}" method="POST" action="${functionUrl}" style="display:none;">
-              <input type="hidden" name="deKey">
-              <input type="hidden" name="brandId">
-              <input type="hidden" name="columnMapping">
-              <input type="hidden" name="records">
-              <input type="hidden" name="returnUrl" value="%%=RequestParameter('PAGEURL')=%%">
+          <form id="hidden-form-${componentId}" method="POST" action="%%=RequestParameter('PAGEURL')=%%" style="display:none;">
+              <input type="hidden" name="__deKey" value="">
+              <input type="hidden" name="__records" value="">
+              <input type="hidden" name="__isDEUpload" value="true">
           </form>
 
       </div>
       <script>
       (function() {
-          const container = document.querySelector('.de-upload-v2-container');
+          const container = document.querySelector('#${component.id}');
           if (!container) return;
           const componentId = '${componentId}';
-          const brandId = '${brandId}';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
-          const CHUNK_SIZE = 5000;
-
+          
           const dropZone = container.querySelector('.de-upload-v2-drop-zone');
           const fileInput = container.querySelector('#file-input-' + componentId);
           const submitBtn = document.getElementById('submit-btn-' + componentId);
@@ -106,46 +100,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           const hiddenForm = document.getElementById('hidden-form-' + componentId);
           const filenameDisplay = dropZone.querySelector('.de-upload-v2-filename-display');
 
-
           let currentFile;
-          let allRecords = [];
-
-          function updateTargetOptions(targets) {
-              targetSelect.innerHTML = '<option value="" disabled selected>-- Escolha um destino --</option>';
-              targets.forEach(target => {
-                  const option = document.createElement('option');
-                  option.value = target.id;
-                  option.textContent = target.name;
-                  targetSelect.appendChild(option);
-              });
-              targetContainer.style.display = 'block';
-          }
-          
-          if (groupSelect) {
-              groupSelect.addEventListener('change', () => {
-                  const selectedGroupId = groupSelect.value;
-                  const selectedGroup = campaignGroupsData.find(g => g.id === selectedGroupId);
-                  if (selectedGroup && selectedGroup.uploadTargets) {
-                      updateTargetOptions(selectedGroup.uploadTargets);
-                  } else {
-                       targetContainer.style.display = 'none';
-                  }
-              });
-          } else if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length > 1) {
-              updateTargetOptions(campaignGroupsData[0].uploadTargets);
-          }
-
-          dropZone.addEventListener('click', () => fileInput.click());
-          dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('highlight'); });
-          dropZone.addEventListener('dragleave', () => dropZone.classList.remove('highlight'));
-          dropZone.addEventListener('drop', (e) => {
-              e.preventDefault();
-              dropZone.classList.remove('highlight');
-              if (e.dataTransfer.files.length) {
-                  handleFileSelect(e.dataTransfer.files[0]);
-              }
-          });
-          fileInput.addEventListener('change', () => { if (fileInput.files.length) { handleFileSelect(fileInput.files[0]); } });
           
           function getSelectedTarget() {
               let selectedTargetId;
@@ -162,9 +117,12 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               return null;
           }
 
-          function parseCsv(text) {
+          function parseCsv(text, callback) {
               const lines = text.split(/\\r\\n|\\n/).filter(l => l.trim() !== '');
-              if (lines.length < 1) return { headers: [], records: [] };
+              if (lines.length < 1) {
+                callback([]);
+                return;
+              }
               
               const delimiter = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ',';
               const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
@@ -178,7 +136,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   });
                   records.push(record);
               }
-              return { headers, records };
+              callback(records);
           }
 
           function handleFileSelect(file) {
@@ -189,85 +147,83 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               currentFile = file;
               filenameDisplay.textContent = file.name;
               filenameDisplay.style.display = 'block';
-              
-              const reader = new FileReader();
-              reader.onload = function(e) {
-                  const { records } = parseCsv(e.target.result);
-                  allRecords = records;
-              };
-              reader.readAsText(file, 'ISO-8859-1');
           }
           
-          submitBtn.addEventListener('click', async function(e) {
-                e.preventDefault();
+          function submitData() {
                 const selectedTarget = getSelectedTarget();
                 if (!selectedTarget || !selectedTarget.deKey) { alert('Por favor, selecione um destino para o arquivo.'); return; }
-                if (!currentFile || allRecords.length === 0) { alert('Por favor, selecione um arquivo CSV válido.'); return; }
+                if (!currentFile) { alert('Por favor, selecione um arquivo CSV válido.'); return; }
 
                 statusContainer.style.display = 'block';
                 statusEl.className = 'de-upload-v2-status info';
-                statusEl.textContent = 'Iniciando upload...';
-                submitBtn.disabled = true;
+                statusEl.textContent = 'Aguarde, estamos processando seu arquivo...';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    parseCsv(e.target.result, function(parsedRecords) {
+                        if (parsedRecords.length > 0) {
+                            hiddenForm.elements['__deKey'].value = selectedTarget.deKey;
+                            hiddenForm.elements['__records'].value = JSON.stringify(parsedRecords);
+                            hiddenForm.submit();
+                        } else {
+                            alert('O arquivo CSV parece estar vazio ou mal formatado.');
+                        }
+                    });
+                };
+                reader.readAsText(currentFile, 'ISO-8859-1');
+          }
 
-                // Simple column mapping based on what's configured, assuming direct match for now
-                const columnMapping = {}; 
-                const totalChunks = Math.ceil(allRecords.length / CHUNK_SIZE);
-                let processedChunks = 0;
-                let totalSuccess = 0;
+          if (groupSelect) {
+              groupSelect.addEventListener('change', () => {
+                  const selectedGroupId = groupSelect.value;
+                  const selectedGroup = campaignGroupsData.find(g => g.id === selectedGroupId);
+                  if (selectedGroup && selectedGroup.uploadTargets) {
+                      targetContainer.style.display = 'block';
+                      targetSelect.innerHTML = '<option value="" disabled selected>-- Escolha um destino --</option>';
+                      selectedGroup.uploadTargets.forEach(target => {
+                          const option = document.createElement('option');
+                          option.value = target.id;
+                          option.textContent = target.name;
+                          targetSelect.appendChild(option);
+                      });
+                  } else {
+                       targetContainer.style.display = 'none';
+                  }
+              });
+          }
 
-                for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
-                    const chunk = allRecords.slice(i, i + CHUNK_SIZE);
-                    
-                    statusEl.textContent = 'Enviando lote ' + (processedChunks + 1) + ' de ' + totalChunks + '...';
-                    
-                    // Populate and submit the hidden form for each chunk
-                    hiddenForm.deKey.value = selectedTarget.deKey;
-                    hiddenForm.brandId.value = brandId;
-                    hiddenForm.columnMapping.value = JSON.stringify(columnMapping);
-                    hiddenForm.records.value = JSON.stringify(chunk);
-                    
-                    // We need a way to know when the form submission is "done"
-                    // The easiest way is to use an iframe as a target
-                    const iframeId = 'upload-iframe-' + componentId;
-                    let iframe = document.getElementById(iframeId);
-                    if (!iframe) {
-                        iframe = document.createElement('iframe');
-                        iframe.id = iframeId;
-                        iframe.name = iframeId;
-                        iframe.style.display = 'none';
-                        document.body.appendChild(iframe);
-                    }
-                    hiddenForm.target = iframeId;
-                    
-                    // Submit the form
-                    hiddenForm.submit();
-                    
-                    processedChunks++;
-                    totalSuccess += chunk.length;
-                }
-
-                // Since we can't get a direct response, we assume success after submission
-                statusEl.className = 'de-upload-v2-status success';
-                statusEl.textContent = 'Envio concluído! ' + totalSuccess + ' registros foram enviados para processamento.';
-                submitBtn.disabled = false;
+          dropZone.addEventListener('click', () => fileInput.click());
+          dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('highlight'); });
+          dropZone.addEventListener('dragleave', () => dropZone.classList.remove('highlight'));
+          dropZone.addEventListener('drop', (e) => {
+              e.preventDefault();
+              dropZone.classList.remove('highlight');
+              if (e.dataTransfer.files.length) {
+                  handleFileSelect(e.dataTransfer.files[0]);
+              }
           });
+          fileInput.addEventListener('change', () => { if (fileInput.files.length) { handleFileSelect(fileInput.files[0]); } });
           
-          // Logic to show status from URL after redirection
+          if(submitBtn) {
+            submitBtn.addEventListener('click', submitData);
+          }
+          
           const urlParams = new URLSearchParams(window.location.search);
-          const uploadStatus = urlParams.get('uploadStatus');
+          const uploadStatus = urlParams.get('resultado');
           if (uploadStatus) {
               statusContainer.style.display = 'block';
+              const msg = urlParams.get('mensagem');
               if (uploadStatus === 'success') {
-                  const count = urlParams.get('count');
                   statusEl.className = 'de-upload-v2-status success';
-                  statusEl.textContent = 'Upload bem-sucedido! ' + count + ' registros processados.';
+                  statusEl.textContent = '✅ ' + decodeURIComponent(msg);
               } else {
-                  const errorMsg = urlParams.get('error') || 'Ocorreu um erro desconhecido.';
                   statusEl.className = 'de-upload-v2-status error';
-                  statusEl.textContent = 'Falha no upload: ' + decodeURIComponent(errorMsg);
+                  statusEl.textContent = '❌ ' + decodeURIComponent(msg);
               }
           }
       })();
       </script>
     `;
 }
+
+    

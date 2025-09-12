@@ -48,15 +48,15 @@ const nodeTypes: NodeTypes = {
   custom: CustomNode,
 };
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
+const getLayoutedElements = (nodes: Node[], edges: Edge[] = [], direction = 'LR') => {
+  // Defensive check to prevent crash on invalid data
   if (!nodes || nodes.length === 0) {
-    return { nodes, edges };
+    return { nodes: [], edges: [] };
   }
-  
-  // Re-initialize the graph on every call to prevent state corruption
+
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-
+  
   const isHorizontal = direction === 'LR';
   dagreGraph.setGraph({ rankdir: direction, nodesep: 100, ranksep: 150 });
 
@@ -64,9 +64,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
     dagreGraph.setNode(node.id, { width: 200, height: 100 });
   });
 
-  // CRITICAL FIX: Ensure all edges connect to existing nodes before adding them
   const nodeIds = new Set(nodes.map((n) => n.id));
-  const validEdges = edges.filter(
+  const validEdges = (edges || []).filter(
     (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)
   );
 
@@ -105,7 +104,7 @@ export function ProjectFlowView({ pages }: ProjectFlowViewProps) {
   };
 
   const { initialNodes, initialEdges } = useMemo(() => {
-    const nodes: Node<CustomNodeData>[] = pages.map((page, index) => ({
+    const nodes: Node<CustomNodeData>[] = (pages || []).map((page, index) => ({
       id: page.id,
       type: 'custom',
       data: { 
@@ -117,10 +116,10 @@ export function ProjectFlowView({ pages }: ProjectFlowViewProps) {
       position: { x: index * 250, y: 100 }, // Initial position
     }));
 
-    const pageIds = new Set(pages.map(p => p.id));
+    const pageIds = new Set((pages || []).map(p => p.id));
     const edges: Edge[] = [];
-    pages.forEach(page => {
-      page.components.forEach(component => {
+    (pages || []).forEach(page => {
+      (page.components || []).forEach(component => {
         // Check for Button and Form components with a page link action
         if ((component.type === 'Button' || component.type === 'Form') && component.props.action?.type === 'PAGE') {
           const targetPageId = component.props.action.pageId;
@@ -145,7 +144,7 @@ export function ProjectFlowView({ pages }: ProjectFlowViewProps) {
     return { initialNodes: layoutedNodes, initialEdges: layoutedEdges };
   }, [pages]);
 
-  if (pages.length === 0) {
+  if (!pages || pages.length === 0) {
     return (
         <div className="text-center py-16">
             <GitFork size={48} className="mx-auto text-muted-foreground" />

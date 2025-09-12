@@ -2507,5 +2507,3 @@ ${clientSideScripts}
 </html>
 `
 }
-
-```

@@ -476,6 +476,30 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     const hasCarousel = pageState.components.some(c => c.type === 'Carousel');
     const hasAutoplayCarousel = hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay);
     const hasCalendly = pageState.components.some(c => c.type === 'Calendly');
+    const headerComponent = pageState.components.find(c => c.type === 'Header');
+
+    // Add Firebase SDK if needed for components like DataExtensionUpload
+    const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload');
+    const firebaseSdkScript = (needsFirebase)
+        ? `
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
+        <script>
+            var firebaseConfig = {
+               apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
+               authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}",
+               projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}",
+               storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}",
+               messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
+               appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}"
+            };
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+               firebase.initializeApp(firebaseConfig);
+            }
+        </script>
+        `
+        : '';
+
 
     const lottiePlayerScript = hasLottieAnimation ? '<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>' : '';
     const carouselScript = hasCarousel ? '<script src="https://unpkg.com/embla-carousel@latest/embla-carousel.umd.js"></script>' : '';
@@ -961,7 +985,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     </script>
     `;
 
-    return `${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}`;
+    return `${firebaseSdkScript}${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}`;
 };
 
 
@@ -1153,7 +1177,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     let ssjsBlock = '';
     if (needsAmpscript) {
         if(hasForm) {
-            ssjsBlock += getFormSubmissionScript(pageState);
+            // ssjsBlock += getFormSubmissionScript(pageState);
         }
         if(hasDataExtensionUpload) {
             ssjsBlock += getDEUploadSSJS(baseUrl);
@@ -2500,5 +2524,3 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
 </html>
-`
-}

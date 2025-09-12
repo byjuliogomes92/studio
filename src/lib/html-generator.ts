@@ -1174,7 +1174,18 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
     }
     
-    const ssjsBlock = hasDataExtensionUpload ? `<script runat="server">${getDEUploadSSJS()}</script>` : '';
+    let ssjsBlock = '';
+    if (needsAmpscript) {
+        if(hasForm) {
+            // ssjsBlock += getFormSubmissionScript(pageState);
+        }
+        if(hasDataExtensionUpload) {
+            ssjsBlock += getDEUploadSSJS(baseUrl);
+        }
+        if (needsSecurity && meta.security?.type === 'password') {
+            ssjsBlock += getSSJSSecurityBlock(pageState);
+        }
+    }
 
 
     return `<!DOCTYPE html>
@@ -1194,8 +1205,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ssjsBlock}
-${needsAmpscript && needsSecurity ? `<script runat="server">${getSSJSSecurityBlock(pageState)}</script>` : ''}
+${ssjsBlock ? `<script runat="server">${ssjsBlock}</script>` : ''}
 ${needsAmpscript ? amspcriptBlock : ''}
 ${trackingScripts.head}
 <style>

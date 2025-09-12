@@ -214,7 +214,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
             <AccordionItem value="general" className="border-b-0">
                 <AccordionTrigger className="text-sm font-medium py-0">Configurações Gerais</AccordionTrigger>
                 <AccordionContent className="pt-4">
-                    {renderComponentSettings(component, handlePropChange, handleSubPropChange, projectPages, pageState)}
+                    {renderComponentSettings(component, handlePropChange, onSubPropChange, projectPages, pageState)}
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="responsive" className="border-b-0">

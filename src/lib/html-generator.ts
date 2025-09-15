@@ -2524,5 +2524,5 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
 </html>
-\`;
+`;
 }

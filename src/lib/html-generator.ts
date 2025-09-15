@@ -1188,7 +1188,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     }
 
 
-    return \`<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">

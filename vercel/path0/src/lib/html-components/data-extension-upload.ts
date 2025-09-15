@@ -10,6 +10,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     } = component.props;
     
     const componentId = component.id;
+    const formId = `de-upload-form-${componentId}`;
 
     const {
         text: buttonText = "Processar Arquivo",
@@ -32,17 +33,17 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         </div>
         <div class="de-upload-v2-campaign-selector" id="upload-target-container-${componentId}" style="display: none;">
             <label for="upload-target-select-${componentId}">2. Selecione o destino do arquivo:</label>
-            <select id="upload-target-select-${componentId}" class="de-upload-v2-select"></select>
+            <select name="deKey" id="upload-target-select-${componentId}" class="de-upload-v2-select"></select>
         </div>
     ` : (campaignGroups.length === 1 && campaignGroups[0].uploadTargets.length > 1 ? `
         <div class="de-upload-v2-campaign-selector">
             <label for="upload-target-select-${componentId}">1. Selecione o destino do arquivo:</label>
-            <select id="upload-target-select-${componentId}" class="de-upload-v2-select">
+            <select name="deKey" id="upload-target-select-${componentId}" class="de-upload-v2-select">
                 <option value="" disabled selected>-- Escolha uma opção --</option>
-                ${campaignGroups[0].uploadTargets.map((target: UploadTarget) => `<option value="${target.id}">${target.name}</option>`).join('')}
+                ${campaignGroups[0].uploadTargets.map((target: UploadTarget) => `<option value="${target.deKey}">${target.name}</option>`).join('')}
             </select>
         </div>
-    ` : '');
+    ` : `<input type="hidden" name="deKey" value="${campaignGroups[0]?.uploadTargets[0]?.deKey || ''}">`);
     
     const lucideIconSvgs: Record<string, string> = {
         none: '',
@@ -54,62 +55,76 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     return `
       <div class="de-upload-v2-container">
-          <div id="step1-${componentId}">
-              <h4>${title}</h4>
-              ${campaignSelectorHtml}
-              <div class="de-upload-v2-drop-zone">
-                  <input type="file" id="file-input-${componentId}" accept=".csv, text/csv" required style="display: none;">
-                  <div class="de-upload-v2-drop-content">
-                      <div class="de-upload-v2-icon">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                      </div>
-                      <p>${instructionText}</p>
-                      <p class="de-upload-v2-filename-display" style="display:none; margin-top: 10px; font-weight: bold;"></p>
-                  </div>
-              </div>
-              <div id="status-container-${componentId}" class="de-upload-v2-feedback" style="display: none; margin-top: 1rem;">
-                   <p class="de-upload-v2-status"></p>
-              </div>
-          </div>
-          
-          <form id="hidden-form-${componentId}" method="POST" action="%%=RequestParameter('PAGEURL')=%%" style="display:none;">
-              <input type="hidden" name="__deKey" value="">
-              <input type="hidden" name="__records" value="">
-              <input type="hidden" name="__isDEUpload" value="true">
-          </form>
+          <form id="${formId}" method="POST" action="%%=RequestParameter('PAGEURL')=%%">
+            <input type="hidden" name="__is_de_upload_submission" value="true">
+            <input type="hidden" id="json-payload-${componentId}" name="jsonData">
+            
+            <div class="de-upload-v2-step" id="step1-${componentId}">
+                <h4>${title}</h4>
+                ${campaignSelectorHtml}
+                <div class="de-upload-v2-drop-zone">
+                    <input type="file" id="file-input-${componentId}" accept=".csv, text/csv" required style="display: none;">
+                    <div class="de-upload-v2-drop-content">
+                        <div class="de-upload-v2-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                        </div>
+                        <p>${instructionText}</p>
+                    </div>
+                </div>
+            </div>
 
+            <div class="de-upload-v2-step" id="step2-${componentId}" style="display: none;">
+                <h4>Confirmar Arquivo</h4>
+                <p class="de-upload-v2-filename-confirm"></p>
+                <div class="de-upload-v2-stats-grid">
+                    <div class="de-upload-v2-stat-card"><h5>Registros</h5><p id="stat-rows-${componentId}">-</p></div>
+                    <div class="de-upload-v2-stat-card"><h5>Colunas</h5><p id="stat-cols-${componentId}">-</p></div>
+                    <div class="de-upload-v2-stat-card"><h5>Tamanho</h5><p id="stat-size-${componentId}">-</p></div>
+                </div>
+                <div class="de-upload-v2-actions">
+                    <button type="button" id="cancel-btn-${componentId}" class="custom-button custom-button--outline">Trocar Arquivo</button>
+                    <button type="submit" id="submit-btn-${componentId}" class="custom-button" style="background-color: ${buttonBgColor}; color: ${buttonTextColor};">${buttonContent}</button>
+                </div>
+            </div>
+          </form>
       </div>
+      <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
       <script>
       (function() {
-          const container = document.querySelector('.de-upload-v2-container');
+          const container = document.querySelector('#${formId}');
           if (!container) return;
           const componentId = '${componentId}';
           const campaignGroupsData = ${JSON.stringify(campaignGroups)};
-          const CHUNK_SIZE = 5000;
 
+          const step1 = container.querySelector('#step1-' + componentId);
+          const step2 = container.querySelector('#step2-' + componentId);
+          
           const dropZone = container.querySelector('.de-upload-v2-drop-zone');
           const fileInput = container.querySelector('#file-input-' + componentId);
-          const groupSelect = document.getElementById('campaign-group-select-' + componentId);
-          const targetSelect = document.getElementById('upload-target-select-' + componentId);
-          const targetContainer = document.getElementById('upload-target-container-' + componentId);
-          const statusContainer = document.getElementById('status-container-' + componentId);
-          const statusEl = statusContainer.querySelector('.de-upload-v2-status');
-          const hiddenForm = document.getElementById('hidden-form-' + componentId);
-          const filenameDisplay = dropZone.querySelector('.de-upload-v2-filename-display');
+          const jsonPayloadInput = container.querySelector('#json-payload-' + componentId);
+          const submitBtn = container.querySelector('#submit-btn-' + componentId);
+          const cancelBtn = container.querySelector('#cancel-btn-' + componentId);
 
+          const groupSelect = container.querySelector('#campaign-group-select-' + componentId);
+          const targetSelect = container.querySelector('#upload-target-select-' + componentId);
+          const targetContainer = container.querySelector('#upload-target-container-' + componentId);
 
           let currentFile;
-          let allRecords = [];
 
+          function showStep(step) {
+            [step1, step2].forEach(s => s.style.display = 'none');
+            step.style.display = 'block';
+          };
+          
           function updateTargetOptions(targets) {
               targetSelect.innerHTML = '<option value="" disabled selected>-- Escolha um destino --</option>';
               targets.forEach(target => {
                   const option = document.createElement('option');
-                  option.value = target.id;
+                  option.value = target.deKey;
                   option.textContent = target.name;
                   targetSelect.appendChild(option);
               });
-              targetContainer.style.display = 'block';
+              if (targetContainer) targetContainer.style.display = 'block';
           }
           
           if (groupSelect) {
@@ -118,7 +133,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   const selectedGroup = campaignGroupsData.find(g => g.id === selectedGroupId);
                   if (selectedGroup && selectedGroup.uploadTargets) {
                       updateTargetOptions(selectedGroup.uploadTargets);
-                  } else {
+                  } else if (targetContainer) {
                        targetContainer.style.display = 'none';
                   }
               });
@@ -137,91 +152,50 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
           });
           fileInput.addEventListener('change', () => { if (fileInput.files.length) { handleFileSelect(fileInput.files[0]); } });
+
+          function resetAll() {
+              currentFile = null;
+              fileInput.value = '';
+              if (groupSelect) groupSelect.value = '';
+              if (targetSelect) targetSelect.innerHTML = '';
+              if (targetContainer) targetContainer.style.display = 'none';
+              showStep(step1);
+          }
+          cancelBtn.addEventListener('click', resetAll);
           
-          function getSelectedTarget() {
-              let selectedTargetId;
-              if (targetSelect && targetSelect.value) {
-                 selectedTargetId = targetSelect.value;
-              } else if (campaignGroupsData.length === 1 && campaignGroupsData[0].uploadTargets.length === 1) {
-                 return campaignGroupsData[0].uploadTargets[0];
-              }
-
-              for(const group of campaignGroupsData) {
-                  const found = group.uploadTargets.find(t => t.id === selectedTargetId);
-                  if (found) return found;
-              }
-              return null;
-          }
-
-          function parseCsv(text, callback) {
-              const lines = text.split(/\\r\\n|\\n/).filter(l => l.trim() !== '');
-              if (lines.length < 1) {
-                callback([]);
-                return;
-              }
-              
-              const delimiter = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ',';
-              const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-              const records = [];
-
-              for (let i = 1; i < lines.length; i++) {
-                  const values = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
-                  const record = {};
-                  headers.forEach((header, index) => {
-                      record[header] = values[index];
-                  });
-                  records.push(record);
-              }
-              callback(records);
-          }
-
           function handleFileSelect(file) {
               if (!file || !(file.type.match('text/csv') || file.name.endsWith('.csv'))) {
                   alert('Por favor, selecione um arquivo CSV.');
                   return;
               }
               currentFile = file;
-              filenameDisplay.textContent = file.name;
-              filenameDisplay.style.display = 'block';
               
-              const reader = new FileReader();
-              reader.onload = function(e) {
-                  parseCsv(e.target.result, function(parsedRecords) {
-                      allRecords = parsedRecords;
-                      submitData();
-                  });
-              };
-              reader.readAsText(file, 'ISO-8859-1');
+              Papa.parse(file, {
+                  header: true,
+                  skipEmptyLines: true,
+                  complete: function(results) {
+                      jsonPayloadInput.value = JSON.stringify(results.data);
+                      
+                      container.querySelector('#stat-rows-' + componentId).textContent = results.data.length;
+                      container.querySelector('#stat-cols-' + componentId).textContent = results.meta.fields.length;
+                      container.querySelector('#stat-size-' + componentId).textContent = (file.size / 1024).toFixed(2) + ' KB';
+                      container.querySelector('.de-upload-v2-filename-confirm').textContent = file.name;
+                      
+                      showStep(step2);
+                  },
+                  error: function(err) {
+                      alert("Erro ao processar o CSV: " + err.message);
+                      resetAll();
+                  }
+              });
           }
-          
-          function submitData() {
-                const selectedTarget = getSelectedTarget();
-                if (!selectedTarget || !selectedTarget.deKey) { alert('Por favor, selecione um destino para o arquivo.'); return; }
-                if (!currentFile || allRecords.length === 0) { alert('Por favor, selecione um arquivo CSV válido.'); return; }
 
-                statusContainer.style.display = 'block';
-                statusEl.className = 'de-upload-v2-status info';
-                statusEl.textContent = 'Aguarde, estamos processando seu arquivo...';
-                
-                hiddenForm.elements['__deKey'].value = selectedTarget.deKey;
-                hiddenForm.elements['__records'].value = JSON.stringify(allRecords);
-                hiddenForm.submit();
-          }
-          
-          const urlParams = new URLSearchParams(window.location.search);
-          const uploadStatus = urlParams.get('upload_status');
-          if (uploadStatus) {
-              statusContainer.style.display = 'block';
-              if (uploadStatus === 'success') {
-                  const count = urlParams.get('count');
-                  statusEl.className = 'de-upload-v2-status success';
-                  statusEl.textContent = 'Upload bem-sucedido! ' + count + ' registros processados.';
-              } else {
-                  const errorMsg = urlParams.get('error') || 'Ocorreu um erro desconhecido.';
-                  statusEl.className = 'de-upload-v2-status error';
-                  statusEl.textContent = 'Falha no upload: ' + decodeURIComponent(errorMsg);
+          container.addEventListener('submit', function(e) {
+              if (submitBtn) {
+                  submitBtn.disabled = true;
+                  submitBtn.innerHTML = 'Enviando...';
               }
-          }
+          });
       })();
       </script>
     `;

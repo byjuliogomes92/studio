@@ -1,39 +1,39 @@
 
 import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
 import { getPrefillAmpscript, getDEUploadSSJS } from './ssjs-templates';
-import { getSSJSSecurityBlock, getSecurityFormHtml } from './html-components/security';
-import { renderHeader } from './html-components/header';
-import { renderBanner } from './html-components/banner';
-import { renderTitle } from './html-components/title';
-import { renderSubtitle } from './html-components/subtitle';
-import { renderParagraph } from './html-components/paragraph';
-import { renderDivider } from './html-components/divider';
-import { renderImage } from './html-components/image';
-import { renderVideo } from './html-components/video';
-import { renderCountdown } from './html-components/countdown';
-import { renderSpacer } from './html-components/spacer';
-import { renderButton } from './html-components/button';
-import { renderDownloadButton } from './html-components/download-button';
-import { renderAccordion } from './html-components/accordion';
-import { renderTabs } from './html-components/tabs';
-import { renderVoting } from './html-components/voting';
-import { renderStripe } from './html-components/stripe';
-import { renderNPS } from './html-components/nps';
-import { renderMap } from './html-components/map';
-import { renderSocialIcons } from './html-components/social-icons';
-import { renderColumns } from './html-components/columns';
-import { renderWhatsApp } from './html-components/whatsapp';
-import { renderCarousel } from './html-components/carousel';
-import { renderForm } from './html-components/form';
-import { renderFooter } from './html-components/footer';
-import { renderFTPUpload } from './html-components/ftpupload';
-import { renderDataExtensionUpload } from './html-components/data-extension-upload';
-import { renderFloatingImage } from './html-components/floating-image';
-import { renderFloatingButton } from './html-components/floating-button';
-import { renderCalendly } from './html-components/calendly';
-import { renderDiv } from './html-components/div';
-import { renderAddToCalendar } from './html-components/add-to-calendar';
-import { renderPopUp } from './html-components/popup';
+import { getSSJSSecurityBlock, getSecurityFormHtml } from '@/lib/html-components/security';
+import { renderHeader } from '@/lib/html-components/header';
+import { renderBanner } from '@/lib/html-components/banner';
+import { renderTitle } from '@/lib/html-components/title';
+import { renderSubtitle } from '@/lib/html-components/subtitle';
+import { renderParagraph } from '@/lib/html-components/paragraph';
+import { renderDivider } from '@/lib/html-components/divider';
+import { renderImage } from '@/lib/html-components/image';
+import { renderVideo } from '@/lib/html-components/video';
+import { renderCountdown } from '@/lib/html-components/countdown';
+import { renderSpacer } from '@/lib/html-components/spacer';
+import { renderButton } from '@/lib/html-components/button';
+import { renderDownloadButton } from '@/lib/html-components/download-button';
+import { renderAccordion } from '@/lib/html-components/accordion';
+import { renderTabs } from '@/lib/html-components/tabs';
+import { renderVoting } from '@/lib/html-components/voting';
+import { renderStripe } from '@/lib/html-components/stripe';
+import { renderNPS } from '@/lib/html-components/nps';
+import { renderMap } from '@/lib/html-components/map';
+import { renderSocialIcons } from '@/lib/html-components/social-icons';
+import { renderColumns } from '@/lib/html-components/columns';
+import { renderWhatsApp } from '@/lib/html-components/whatsapp';
+import { renderCarousel } from '@/lib/html-components/carousel';
+import { renderForm } from '@/lib/html-components/form';
+import { renderFooter } from '@/lib/html-components/footer';
+import { renderFTPUpload } from '@/lib/html-components/ftpupload';
+import { renderDataExtensionUpload } from '@/lib/html-components/data-extension-upload';
+import { renderFloatingImage } from '@/lib/html-components/floating-image';
+import { renderFloatingButton } from '@/lib/html-components/floating-button';
+import { renderCalendly } from '@/lib/html-components/calendly';
+import { renderDiv } from '@/lib/html-components/div';
+import { renderAddToCalendar } from '@/lib/html-components/add-to-calendar';
+import { renderPopUp } from '@/lib/html-components/popup';
 
 function getStyleString(styles: any = {}, forbiddenKeys: string[] = []): string {
     return Object.entries(styles)
@@ -1188,7 +1188,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     }
 
 
-    return `<!DOCTYPE html>
+    return \`<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1205,7 +1205,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ssjsBlock ? `<script runat="server">${ssjsBlock}<\/script>` : ''}
+${ssjsBlock ? \`<script runat="server">${ssjsBlock}<\/script>\` : ''}
 ${needsAmpscript ? amspcriptBlock : ''}
 ${trackingScripts.head}
 <style>
@@ -2524,5 +2524,5 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
 </html>
-`
+\`;
 }

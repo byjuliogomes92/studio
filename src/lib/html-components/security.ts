@@ -18,66 +18,58 @@ export const getSSJSSecurityBlock = (pageState: CloudPage): string => {
 
     return `
 Platform.Load("core", "1");
-
 try {
-    var deKey = "${dataExtensionKey}";
-    var identifierColumn = "${identifierColumn}";
-    var passwordColumn = "${passwordColumn}";
-    var urlParam = "${urlParameter}";
-    var cookieName = "${cookieName}";
-
-    var identifier = "";
-    var password = "";
     var isAuthenticated = false;
     var errorMessage = "";
-    var sessionCookie = Platform.Request.GetCookieValue(cookieName);
+    var identifierValue = "";
 
-    // 1. Check for an existing session cookie
-    if (sessionCookie == "true") {
+    // 1. Check for session cookie first
+    if (Platform.Request.GetCookieValue("${cookieName}") == "true") {
         isAuthenticated = true;
     } else {
-        // 2. If no cookie, check for form submission or URL parameter
-        if (Request.GetFormField("page_identifier")) {
-            identifier = Request.GetFormField("page_identifier");
-        } else if (Request.GetQueryStringParameter(urlParam)) {
-            identifier = Request.GetQueryStringParameter(urlParam);
-        }
+        // 2. Handle POST request (form submission)
+        if (Request.Method == "POST") {
+            var submittedIdentifier = Request.GetFormField("page_identifier");
+            var submittedPassword = Request.GetFormField("page_password");
 
-        if (Request.GetFormField("page_password")) {
-            password = Request.GetFormField("page_password");
-        }
+            if (submittedIdentifier && submittedPassword) {
+                try {
+                    var de = DataExtension.Init("${dataExtensionKey}");
+                    var data = de.Rows.Lookup(["${identifierColumn}"], [submittedIdentifier]);
 
-        if (password && identifier) {
-            try {
-                var de = DataExtension.Init(deKey);
-                var data = de.Rows.Lookup([identifierColumn], [identifier]);
-
-                if (data && data.length > 0) {
-                    var correctPassword = data[0][passwordColumn];
-                    if (password == correctPassword) {
-                        isAuthenticated = true;
-                        // Set session cookie on successful login
-                        Platform.Response.SetCookie(cookieName, "true", 0, "Session");
+                    if (data && data.length > 0) {
+                        var correctPassword = data[0]["${passwordColumn}"];
+                        if (submittedPassword == correctPassword) {
+                            isAuthenticated = true;
+                            // Set session cookie for subsequent requests
+                            Platform.Response.SetCookie("${cookieName}", "true", 0, "Session");
+                        } else {
+                            errorMessage = "Credenciais inválidas.";
+                        }
                     } else {
-                        errorMessage = "Senha ou identificador incorreto.";
+                        errorMessage = "Usuário não encontrado.";
                     }
-                } else {
-                    errorMessage = "Usuário não encontrado.";
+                } catch (ex) {
+                    errorMessage = "Erro ao verificar credenciais: " + Stringify(ex.message);
                 }
-            } catch(ex) {
-                errorMessage = "Erro ao acessar dados: " + ex.message;
+            } else {
+                errorMessage = "Identificador e senha são obrigatórios.";
             }
-        } else if (Request.Method == "POST" && !password) {
-            errorMessage = "A senha é obrigatória.";
+             // Persist identifier in case of error
+            identifierValue = submittedIdentifier;
+        } 
+        // 3. Handle GET request (initial page load)
+        else {
+            identifierValue = Request.GetQueryStringParameter("${urlParameter}");
         }
     }
-
-    Variable.SetValue("@identifier", identifier);
+    
+    Variable.SetValue("@identifier", identifierValue);
     Variable.SetValue("@isAuthenticated", isAuthenticated);
     Variable.SetValue("@errorMessage", errorMessage);
 
-} catch(ex) {
-    Variable.SetValue("@errorMessage", "Erro geral: " + ex.message);
+} catch (e) {
+    Variable.SetValue("@errorMessage", "Ocorreu um erro inesperado: " + Stringify(e.message));
     Variable.SetValue("@isAuthenticated", false);
 }
 `;
@@ -154,7 +146,9 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
                     ${config.logoUrl ? `<img src="${config.logoUrl}" alt="Logo" style="max-width: 150px; margin: 0 auto 20px auto; display: block;">` : ''}
                     <h2 style="margin-top: 0; color: ${config.textColor || '#111827'};">${config.title || 'Acesso Restrito'}</h2>
                     <p style="color: ${config.textColor ? `rgba(${parseInt(config.textColor.slice(1, 3), 16)}, ${parseInt(config.textColor.slice(3, 5), 16)}, ${parseInt(config.textColor.slice(5, 7), 16)}, 0.7)` : '#6b7280'};">${config.subtitle || 'Por favor, insira suas credenciais para continuar.'}</p>
+                    
                     <input type="hidden" name="page_identifier" value="%%=v(@identifier)=%%">
+                    
                     <input type="password" name="page_password" placeholder="Senha" required autofocus>
                     <button type="submit">Acessar</button>
                     %%[ IF NOT Empty(@errorMessage) THEN ]%%

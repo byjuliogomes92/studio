@@ -329,12 +329,13 @@ const generateSlug = (name: string) => {
 // Helper function to handle the encryption of accessUsers
 const encryptAccessUsers = (users: PageAccessUser[] = []): PageAccessUser[] => {
     return users.map(user => {
+        // Only encrypt if a plain-text password is provided
         if (user.password) {
             const encrypted = encryptPassword(user.password);
             const { password, ...userWithoutPassword } = user;
             return { ...userWithoutPassword, encryptedPassword: encrypted };
         }
-        return user;
+        return user; // Return user as-is if no password to encrypt
     });
 };
 
@@ -342,14 +343,16 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
     const db = getDbInstance();
     const pageId = doc(collection(db, 'dummy_id_generator')).id; 
 
-    if (pageData.meta?.security?.accessUsers) {
-        pageData.meta.security.accessUsers = encryptAccessUsers(pageData.meta.security.accessUsers);
+    const pageDataToSave = JSON.parse(JSON.stringify(pageData));
+
+    if (pageDataToSave.meta?.security?.accessUsers) {
+        pageDataToSave.meta.security.accessUsers = encryptAccessUsers(pageDataToSave.meta.security.accessUsers);
     }
 
     const pageWithTimestamps = {
-      ...pageData,
+      ...pageDataToSave,
       id: pageId,
-      slug: pageData.slug || generateSlug(pageData.name),
+      slug: pageDataToSave.slug || generateSlug(pageDataToSave.name),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -369,29 +372,35 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
 
 export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
+    
+    // Create a deep copy to avoid mutating the original read-only object
+    const pageDataToUpdate = JSON.parse(JSON.stringify(pageData));
 
     // Encrypt any new or updated passwords before saving
-    if (pageData.meta?.security?.accessUsers) {
-        pageData.meta.security.accessUsers = encryptAccessUsers(pageData.meta.security.accessUsers);
+    if (pageDataToUpdate.meta?.security?.accessUsers) {
+        pageDataToUpdate.meta.security.accessUsers = encryptAccessUsers(pageDataToUpdate.meta.security.accessUsers);
     }
 
     const draftRef = doc(db, "pages_drafts", pageId);
     await updateDoc(draftRef, {
-        ...pageData,
+        ...pageDataToUpdate,
         updatedAt: serverTimestamp(),
     });
 };
 
+
 export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, userId: string): Promise<void> => {
     const db = getDbInstance();
 
-    if (pageData.meta?.security?.accessUsers) {
-        pageData.meta.security.accessUsers = encryptAccessUsers(pageData.meta.security.accessUsers);
+    const pageDataToUpdate = JSON.parse(JSON.stringify(pageData));
+
+    if (pageDataToUpdate.meta?.security?.accessUsers) {
+        pageDataToUpdate.meta.security.accessUsers = encryptAccessUsers(pageDataToUpdate.meta.security.accessUsers);
     }
 
     const publishedRef = doc(db, "pages_published", pageId);
     await setDoc(publishedRef, {
-        ...pageData,
+        ...pageDataToUpdate,
         status: 'published',
         updatedAt: serverTimestamp(), 
     }, { merge: true });
@@ -1009,45 +1018,20 @@ export const getActivityLogsForWorkspace = async (workspaceId: string): Promise<
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
 }
 
-// Notifications (User-specific)
-export const createNotificationForMention = async (data: {
-    mentionedEmails: string[],
-    pageId: string,
-    pageName: string,
-    workspaceId: string,
-    mentionedBy: string
-}): Promise<void> => {
+// Notifications (Admin-managed)
+export const addNotification = async (notificationData: Omit<AppNotification, 'id' | 'createdAt'>): Promise<string> => {
     const db = getDbInstance();
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('email', 'in', data.mentionedEmails));
-    const userSnapshots = await getDocs(q);
+    const dataWithTimestamp = {
+        ...notificationData,
+        createdAt: serverTimestamp(),
+    };
+    const docRef = await addDoc(collection(db, 'notifications'), dataWithTimestamp);
+    return docRef.id;
+};
 
-    if (userSnapshots.empty) return;
-
-    const batch = writeBatch(db);
-    userSnapshots.forEach(userDoc => {
-        const notificationRef = doc(collection(db, 'notifications'));
-        const newNotification: Omit<AppNotification, 'id'> = {
-            userId: userDoc.id,
-            title: `${data.mentionedBy} mencionou você`,
-            url: `/editor/${data.pageId}`, // Link directly to the page editor
-            createdAt: serverTimestamp(),
-            readBy: []
-        };
-        batch.set(notificationRef, newNotification);
-    });
-
-    await batch.commit();
-}
-
-export const getNotifications = async (userId: string): Promise<AppNotification[]> => {
+export const getNotifications = async (): Promise<AppNotification[]> => {
     const db = getDbInstance();
-    const q = query(
-        collection(db, 'notifications'), 
-        where('userId', '==', userId), 
-        orderBy('createdAt', 'desc'),
-        limit(20)
-    );
+    const q = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(20));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppNotification));
 };
@@ -1063,6 +1047,7 @@ export const deleteNotification = async (notificationId: string): Promise<void> 
     const docRef = doc(db, 'notifications', notificationId);
     await deleteDoc(docRef);
 };
+
 
 // Platform Settings (Admin)
 const defaultSettings: PlatformSettings = {

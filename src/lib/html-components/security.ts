@@ -1,4 +1,5 @@
 
+
 import type { CloudPage } from '../types';
 
 export const getSSJSSecurityBlock = (pageState: CloudPage): string => {
@@ -42,7 +43,7 @@ try {
                         if (submittedPassword == correctPassword) {
                             isAuthenticated = true;
                             // Set session cookie for subsequent requests for 30 minutes
-                            Platform.Response.SetCookie("${cookieName}", "true", new Date(new Date().getTime() + 30 * 60 * 1000), true);
+                             Platform.Response.SetCookie("${cookieName}", "true", new Date(new Date().getTime() + 30 * 60 * 1000), true);
                         } else {
                             errorMessage = "Credenciais inválidas.";
                         }
@@ -140,6 +141,11 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
                     background-color: ${config.buttonBackgroundColor || 'var(--theme-color)'};
                     color: ${config.buttonTextColor || '#ffffff'};
                 }
+                .password-form .error-message {
+                    display: block;
+                    color: red;
+                    margin-top: 10px;
+                }
             </style>
             <div class="password-protection-container" style="${pageStyle}">
                 <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form" style="${formContainerStyle}">
@@ -153,7 +159,7 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
                     <input type="password" name="page_password" placeholder="Senha" required autofocus>
                     <button type="submit">Acessar</button>
                     %%[ IF NOT Empty(@errorMessage) THEN ]%%
-                        <div class="error-message" style="display:block; color: red; margin-top: 10px;">
+                        <div class="error-message">
                             %%=v(@errorMessage)=%%
                         </div>
                     %%[ ENDIF ]%%

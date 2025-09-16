@@ -55,6 +55,7 @@ import { ColorInput } from "./settings/color-input";
 import { ComponentSettings } from './settings/component-settings';
 import { ImageInput } from "./settings/image-input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PageAccessManager } from "./settings/page-access-manager";
 
 
 interface SettingsPanelProps {
@@ -1186,6 +1187,14 @@ export function SettingsPanel({
                                         <ColorInput label="Fundo do Botão" value={pageState.meta.security.passwordConfig?.buttonBackgroundColor || ''} onChange={v => handlePasswordConfigChange('buttonBackgroundColor', v)} />
                                         <ColorInput label="Texto do Botão" value={pageState.meta.security.passwordConfig?.buttonTextColor || ''} onChange={v => handlePasswordConfigChange('buttonTextColor', v)} />
                                     </div>
+                                </div>
+                            )}
+                            {pageState.meta.security?.type === 'platform_users' && (
+                                <div className="p-3 border rounded-md space-y-3 bg-muted/40">
+                                    <PageAccessManager
+                                        users={pageState.meta.security.accessUsers || []}
+                                        onUsersChange={(newUsers) => handleSecurityChange('accessUsers', newUsers)}
+                                    />
                                 </div>
                             )}
 

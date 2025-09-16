@@ -41,8 +41,8 @@ try {
                         var correctPassword = data[0]["${passwordColumn}"];
                         if (submittedPassword == correctPassword) {
                             isAuthenticated = true;
-                            // Set session cookie for subsequent requests
-                            Platform.Response.SetCookie("${cookieName}", "true", 0, "Session");
+                            // Set session cookie for subsequent requests for 30 minutes
+                            Platform.Response.SetCookie("${cookieName}", "true", new Date(new Date().getTime() + 30 * 60 * 1000), "Session");
                         } else {
                             errorMessage = "Credenciais inválidas.";
                         }
@@ -50,7 +50,7 @@ try {
                         errorMessage = "Usuário não encontrado.";
                     }
                 } catch (ex) {
-                    errorMessage = "Erro ao verificar credenciais: " + Stringify(ex.message);
+                    errorMessage = "Erro ao verificar credenciais: " + Stringify(ex.message) + " DE: " + "${dataExtensionKey}" + " Col: " + "${identifierColumn}" + " Val: " + submittedIdentifier;
                 }
             } else {
                 errorMessage = "Identificador e senha são obrigatórios.";
@@ -87,7 +87,7 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
                 SET @listid = QueryParameter("listid")
                 SET @batchid = QueryParameter("batchid")
                 SET @EnterpriseID = 'ENT_ID' /* <-- Substitua pelo seu Enterprise ID */
-                SET @RedirectURL = CloudPagesURL(PAGE_ID_HERE) /* <-- Substitua pelo ID da sua CloudPage */
+                SET @RedirectURL = CloudPagesURL(${pageState.id}) /* <-- Confirme se o ID está correto */
                 SET @LoginURL = CONCAT("https://", @EnterpriseID, ".login.exacttarget.com/hub-sso.aspx?sso_id=", @Id, "&sso_jobid=", @jobid, "&sso_listid=", @listid, "&sso_batchid=", @batchid, "&sso_redirect=", URLEncode(@RedirectURL))
                 SET @IsAuthorized = IIF(IsEmailAddress(QueryParameter("sso_email")),true,false)
                 IF NOT @IsAuthorized THEN
@@ -163,3 +163,5 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
     
     return '';
 }
+
+    

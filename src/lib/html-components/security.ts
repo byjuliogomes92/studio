@@ -28,7 +28,7 @@ try {
         isAuthenticated = true;
     } else {
         // 2. Handle POST request (form submission)
-        if (Request.Method == "POST") {
+        if (Request.Method == "POST" && Request.GetFormField("__isPasswordAuth") == "true") {
             var submittedIdentifier = Request.GetFormField("page_identifier");
             var submittedPassword = Request.GetFormField("page_password");
 
@@ -42,7 +42,7 @@ try {
                         if (submittedPassword == correctPassword) {
                             isAuthenticated = true;
                             // Set session cookie for subsequent requests for 30 minutes
-                            Platform.Response.SetCookie("${cookieName}", "true", new Date(new Date().getTime() + 30 * 60 * 1000), "Session");
+                            Platform.Response.SetCookie("${cookieName}", "true", new Date(new Date().getTime() + 30 * 60 * 1000), true);
                         } else {
                             errorMessage = "Credenciais inválidas.";
                         }
@@ -50,7 +50,7 @@ try {
                         errorMessage = "Usuário não encontrado.";
                     }
                 } catch (ex) {
-                    errorMessage = "Erro ao verificar credenciais: " + Stringify(ex.message) + " DE: " + "${dataExtensionKey}" + " Col: " + "${identifierColumn}" + " Val: " + submittedIdentifier;
+                    errorMessage = "Erro ao verificar credenciais: " + Stringify(ex.message);
                 }
             } else {
                 errorMessage = "Identificador e senha são obrigatórios.";
@@ -143,6 +143,7 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
             </style>
             <div class="password-protection-container" style="${pageStyle}">
                 <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form" style="${formContainerStyle}">
+                    <input type="hidden" name="__isPasswordAuth" value="true">
                     ${config.logoUrl ? `<img src="${config.logoUrl}" alt="Logo" style="max-width: 150px; margin: 0 auto 20px auto; display: block;">` : ''}
                     <h2 style="margin-top: 0; color: ${config.textColor || '#111827'};">${config.title || 'Acesso Restrito'}</h2>
                     <p style="color: ${config.textColor ? `rgba(${parseInt(config.textColor.slice(1, 3), 16)}, ${parseInt(config.textColor.slice(3, 5), 16)}, ${parseInt(config.textColor.slice(5, 7), 16)}, 0.7)` : '#6b7280'};">${config.subtitle || 'Por favor, insira suas credenciais para continuar.'}</p>
@@ -160,8 +161,47 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
             </div>
         `;
     }
+
+    if (security?.type === 'platform_users') {
+        const config = security.passwordConfig || {}; // Use passwordConfig for styling
+         const pageStyle = `
+            background-color: ${config.backgroundColor || '#f0f2f5'};
+            color: ${config.textColor || '#111827'};
+            font-family: sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        `;
+         const formContainerStyle = `
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+        `;
+        return `
+             <style>
+                .platform-login-form input { width: 100%; padding: 12px; margin-top: 15px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
+                .platform-login-form button { width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background-color: ${config.buttonBackgroundColor || 'var(--theme-color)'}; color: ${config.buttonTextColor || '#ffffff'}; }
+                .platform-login-form .error-message { display:none; color: red; margin-top: 10px; }
+            </style>
+            <div id="platform-auth-container" style="${pageStyle}">
+                <div class="platform-login-form" style="${formContainerStyle}">
+                    ${config.logoUrl ? `<img src="${config.logoUrl}" alt="Logo" style="max-width: 150px; margin: 0 auto 20px auto; display: block;">` : ''}
+                    <h2 style="margin-top: 0;">${config.title || 'Acesso Restrito'}</h2>
+                    <p style="color: ${config.textColor ? `rgba(${parseInt(config.textColor.slice(1, 3), 16)}, ${parseInt(config.textColor.slice(3, 5), 16)}, ${parseInt(config.textColor.slice(5, 7), 16)}, 0.7)` : '#6b7280'};">${config.subtitle || 'Insira suas credenciais para acessar.'}</p>
+                    <input type="text" id="platform-identifier" placeholder="Identificador">
+                    <input type="password" id="platform-password" placeholder="Senha">
+                    <button id="platform-submit-btn">Acessar</button>
+                    <div id="platform-error-message" class="error-message"></div>
+                </div>
+            </div>
+        `;
+    }
     
     return '';
 }
-
-    

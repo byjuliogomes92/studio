@@ -1,6 +1,6 @@
 
 import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
-import { getPrefillAmpscript, getDEUploadSSJS } from './ssjs-templates';
+import { getPrefillAmpscript } from './ssjs-templates';
 import { getSSJSSecurityBlock, getSecurityFormHtml } from '@/lib/html-components/security';
 import { renderHeader } from '@/lib/html-components/header';
 import { renderBanner } from '@/lib/html-components/banner';
@@ -543,6 +543,70 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
             });
         <\/script>
     ` : '';
+    
+    const platformAuthScript = pageState.meta.security?.type === 'platform_users' ? `
+        <script>
+            (function() {
+                const container = document.getElementById('platform-auth-container');
+                const mainContent = document.getElementById('main-content');
+                if (!container || !mainContent) return;
+
+                const checkAuth = () => {
+                    const token = sessionStorage.getItem('page_auth_token_${pageState.id}');
+                    if (token) {
+                        container.style.display = 'none';
+                        mainContent.style.display = 'block';
+                    } else {
+                        container.style.display = 'flex';
+                        mainContent.style.display = 'none';
+                    }
+                };
+
+                const submitBtn = document.getElementById('platform-submit-btn');
+                const identifierInput = document.getElementById('platform-identifier');
+                const passwordInput = document.getElementById('platform-password');
+                const errorMessageEl = document.getElementById('platform-error-message');
+
+                submitBtn.addEventListener('click', async () => {
+                    const identifier = identifierInput.value;
+                    const password = passwordInput.value;
+                    
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Verificando...';
+                    errorMessageEl.style.display = 'none';
+
+                    try {
+                        const response = await fetch('${baseUrl}/api/auth/page-access', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                pageId: '${pageState.id}',
+                                identifier: identifier,
+                                password: password
+                            })
+                        });
+                        const result = await response.json();
+
+                        if (response.ok && result.success) {
+                            sessionStorage.setItem('page_auth_token_${pageState.id}', 'authenticated');
+                            checkAuth();
+                        } else {
+                            throw new Error(result.message || 'Credenciais inválidas.');
+                        }
+                    } catch (error) {
+                        errorMessageEl.textContent = error.message;
+                        errorMessageEl.style.display = 'block';
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Acessar';
+                    }
+                });
+                
+                checkAuth();
+            })();
+        <\/script>
+    ` : '';
+
 
     const script = `
     <script>
@@ -985,7 +1049,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     <\/script>
     `;
 
-    return `${firebaseSdkScript}${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}`;
+    return `${firebaseSdkScript}${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}${platformAuthScript}`;
 };
 
 
@@ -1174,14 +1238,21 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         }
     }
 
-    if (needsAmpscript && needsSecurity) {
-        bodyContent = `%%[ IF @isAuthenticated == true THEN ]%%
-            <main style="${mainStyle}">${mainContentHtml}</main>
-        %%[ ELSE ]%%
-            ${getSecurityFormHtml(pageState)}
-        %%[ ENDIF ]%%`;
+    if (needsSecurity) {
+        if (meta.security?.type === 'platform_users') {
+             bodyContent = `
+                ${getSecurityFormHtml(pageState)}
+                <main id="main-content" style="display: none;">${mainContentHtml}</main>
+            `;
+        } else {
+             bodyContent = `%%[ IF @isAuthenticated == true THEN ]%%
+                <main id="main-content" style="${mainStyle}">${mainContentHtml}</main>
+            %%[ ELSE ]%%
+                ${getSecurityFormHtml(pageState)}
+            %%[ ENDIF ]%%`;
+        }
     } else {
-        bodyContent = `<main style="${mainStyle}">${mainContentHtml}</main>`;
+        bodyContent = `<main id="main-content" style="${mainStyle}">${mainContentHtml}</main>`;
     }
 
 
@@ -1202,9 +1273,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
+${ssjsBlock ? `<script runat="server">${ssjsBlock}<\/script>` : ''}
 ${needsAmpscript ? amspcriptBlock : ''}
 ${trackingScripts.head}
-${ssjsBlock ? `<script runat="server">${ssjsBlock}<\/script>` : ''}
 <style>
     ${fontFaceStyles}
     ${scrollbarStyles}
@@ -2521,5 +2592,3 @@ ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
 </html>
-
-    

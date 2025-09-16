@@ -1,8 +1,7 @@
-
 import { getDb, storage } from "./firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, Firestore, setDoc, Timestamp, writeBatch, limit, arrayUnion } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory, CommunityAsset, PageComment, SfmcApiConfig } from "./types";
+import type { Project, CloudPage, Template, UserProgress, OnboardingObjectives, PageView, FormSubmission, Brand, Workspace, WorkspaceMember, WorkspaceMemberRole, MediaAsset, ActivityLog, ActivityLogAction, UserProfileType, FtpConfig, BitlyConfig, AppNotification, PlatformSettings, SupportTicket, TicketComment, TicketStatus, TicketCategory, CommunityAsset, PageComment, SfmcApiConfig, PageAccessUser } from "./types";
 import { updateProfile, type User } from "firebase/auth";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { UAParser } from 'ua-parser-js';
@@ -327,9 +326,25 @@ const generateSlug = (name: string) => {
   return `${slugBase}-${Date.now()}`;
 };
 
+// Helper function to handle the encryption of accessUsers
+const encryptAccessUsers = (users: PageAccessUser[] = []): PageAccessUser[] => {
+    return users.map(user => {
+        if (user.password) {
+            const encrypted = encryptPassword(user.password);
+            const { password, ...userWithoutPassword } = user;
+            return { ...userWithoutPassword, encryptedPassword: encrypted };
+        }
+        return user;
+    });
+};
+
 export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
     const db = getDbInstance();
     const pageId = doc(collection(db, 'dummy_id_generator')).id; 
+
+    if (pageData.meta?.security?.accessUsers) {
+        pageData.meta.security.accessUsers = encryptAccessUsers(pageData.meta.security.accessUsers);
+    }
 
     const pageWithTimestamps = {
       ...pageData,
@@ -354,6 +369,12 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
 
 export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
+
+    // Encrypt any new or updated passwords before saving
+    if (pageData.meta?.security?.accessUsers) {
+        pageData.meta.security.accessUsers = encryptAccessUsers(pageData.meta.security.accessUsers);
+    }
+
     const draftRef = doc(db, "pages_drafts", pageId);
     await updateDoc(draftRef, {
         ...pageData,
@@ -363,6 +384,11 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
 
 export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, userId: string): Promise<void> => {
     const db = getDbInstance();
+
+    if (pageData.meta?.security?.accessUsers) {
+        pageData.meta.security.accessUsers = encryptAccessUsers(pageData.meta.security.accessUsers);
+    }
+
     const publishedRef = doc(db, "pages_published", pageId);
     await setDoc(publishedRef, {
         ...pageData,

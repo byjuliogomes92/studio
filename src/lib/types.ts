@@ -291,6 +291,14 @@ export interface CookieCategory {
   required: boolean;
 }
 
+export interface PageAccessUser {
+  id: string;
+  identifier: string;
+  password?: string; // Plain text only exists pre-save
+  encryptedPassword?: string;
+}
+
+
 export interface CloudPage {
   id: string;
   name: string;
@@ -344,6 +352,7 @@ export interface CloudPage {
     };
     security?: {
         type: SecurityType;
+        accessUsers?: PageAccessUser[];
         passwordConfig?: {
             dataExtensionKey: string;
             identifierColumn: string;

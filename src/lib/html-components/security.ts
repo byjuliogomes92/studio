@@ -14,6 +14,8 @@ export const getSSJSSecurityBlock = (pageState: CloudPage): string => {
         urlParameter
     } = security.passwordConfig;
 
+    const cookieName = `auth_token_${pageState.id.replace(/-/g, '')}`;
+
     return `
 Platform.Load("core", "1");
 
@@ -22,42 +24,52 @@ try {
     var identifierColumn = "${identifierColumn}";
     var passwordColumn = "${passwordColumn}";
     var urlParam = "${urlParameter}";
+    var cookieName = "${cookieName}";
 
     var identifier = "";
     var password = "";
     var isAuthenticated = false;
     var errorMessage = "";
+    var sessionCookie = Platform.Request.GetCookieValue(cookieName);
 
-    if (Request.GetFormField("page_identifier")) {
-        identifier = Request.GetFormField("page_identifier");
-    } else if (Request.GetQueryStringParameter(urlParam)) {
-        identifier = Request.GetQueryStringParameter(urlParam);
-    }
-
-    if (Request.GetFormField("page_password")) {
-        password = Request.GetFormField("page_password");
-    }
-
-    if (password && identifier) {
-        try {
-            var de = DataExtension.Init(deKey);
-            var data = de.Rows.Lookup([identifierColumn], [identifier]);
-
-            if (data && data.length > 0) {
-                var correctPassword = data[0][passwordColumn];
-                if (password == correctPassword) {
-                    isAuthenticated = true;
-                } else {
-                    errorMessage = "Senha ou identificador incorreto.";
-                }
-            } else {
-                errorMessage = "Usuário não encontrado.";
-            }
-        } catch(ex) {
-            errorMessage = "Erro ao acessar dados: " + ex.message;
+    // 1. Check for an existing session cookie
+    if (sessionCookie == "true") {
+        isAuthenticated = true;
+    } else {
+        // 2. If no cookie, check for form submission or URL parameter
+        if (Request.GetFormField("page_identifier")) {
+            identifier = Request.GetFormField("page_identifier");
+        } else if (Request.GetQueryStringParameter(urlParam)) {
+            identifier = Request.GetQueryStringParameter(urlParam);
         }
-    } else if (Request.Method == "POST" && !password) {
-        errorMessage = "A senha é obrigatória.";
+
+        if (Request.GetFormField("page_password")) {
+            password = Request.GetFormField("page_password");
+        }
+
+        if (password && identifier) {
+            try {
+                var de = DataExtension.Init(deKey);
+                var data = de.Rows.Lookup([identifierColumn], [identifier]);
+
+                if (data && data.length > 0) {
+                    var correctPassword = data[0][passwordColumn];
+                    if (password == correctPassword) {
+                        isAuthenticated = true;
+                        // Set session cookie on successful login
+                        Platform.Response.SetCookie(cookieName, "true", "Session");
+                    } else {
+                        errorMessage = "Senha ou identificador incorreto.";
+                    }
+                } else {
+                    errorMessage = "Usuário não encontrado.";
+                }
+            } catch(ex) {
+                errorMessage = "Erro ao acessar dados: " + ex.message;
+            }
+        } else if (Request.Method == "POST" && !password) {
+            errorMessage = "A senha é obrigatória.";
+        }
     }
 
     Variable.SetValue("@identifier", identifier);

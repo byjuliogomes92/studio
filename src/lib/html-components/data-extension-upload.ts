@@ -1,3 +1,4 @@
+
 import type { PageComponent, CloudPage, CampaignGroup, UploadTarget } from '@/lib/types';
 
 export function renderDataExtensionUpload(component: PageComponent, pageState: CloudPage, baseUrl: string): string {
@@ -9,6 +10,10 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
     } = component.props;
     
     const componentId = component.id;
+    // The action now points to the Firebase Function proxy URL.
+    // Ensure your Firebase project ID is available.
+    const firebaseProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const functionUrl = `https://us-central1-${firebaseProjectId}.cloudfunctions.net/proxySfmcUpload`;
     const formId = `de-upload-form-${componentId}`;
 
     const {
@@ -54,9 +59,13 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
     return `
       <div class="de-upload-v2-container">
-          <form id="${formId}" method="POST" action="%%=RequestParameter('PAGEURL')=%%">
-            <input type="hidden" name="__is_de_upload_submission" value="true">
-            <input type="hidden" id="json-payload-${componentId}" name="jsonData">
+          <div id="feedback-area-${componentId}" style="display: none; margin-bottom: 1rem;"></div>
+          <form id="${formId}" method="POST" action="${functionUrl}">
+             <input type="hidden" name="returnUrl" value="%%=RequestParameter('PAGEURL')=%%">
+             <input type="hidden" name="brandId" value="${pageState.brandId}">
+             <input type="hidden" id="records-${componentId}" name="records">
+             <input type="hidden" id="column-mapping-${componentId}" name="columnMapping">
+
             
             <div class="de-upload-v2-step" id="step1-${componentId}">
                 <h4>${title}</h4>
@@ -87,7 +96,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
             </div>
           </form>
       </div>
-      <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"><\/script>
       <script>
       (function() {
           const container = document.querySelector('#${formId}');
@@ -97,10 +106,12 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
 
           const step1 = container.querySelector('#step1-' + componentId);
           const step2 = container.querySelector('#step2-' + componentId);
+          const feedbackArea = document.querySelector('#feedback-area-' + componentId);
           
           const dropZone = container.querySelector('.de-upload-v2-drop-zone');
           const fileInput = container.querySelector('#file-input-' + componentId);
-          const jsonPayloadInput = container.querySelector('#json-payload-' + componentId);
+          const recordsInput = container.querySelector('#records-' + componentId);
+          const columnMappingInput = container.querySelector('#column-mapping-' + componentId);
           const submitBtn = container.querySelector('#submit-btn-' + componentId);
           const cancelBtn = container.querySelector('#cancel-btn-' + componentId);
 
@@ -122,6 +133,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   const option = document.createElement('option');
                   option.value = target.deKey;
                   option.textContent = target.name;
+                  option.dataset.columns = JSON.stringify(target.columns || []);
                   targetSelect.appendChild(option);
               });
               if (targetContainer) targetContainer.style.display = 'block';
@@ -141,6 +153,21 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               updateTargetOptions(campaignGroupsData[0].uploadTargets);
           }
 
+          function showFeedback(type, message) {
+              feedbackArea.innerHTML = \`<div class="alert \${type}">\${message}</div>\`;
+              feedbackArea.style.display = 'block';
+          }
+          
+          const urlParams = new URLSearchParams(window.location.search);
+          const uploadStatus = urlParams.get('uploadStatus');
+          const errorMessage = urlParams.get('error');
+          const successCount = urlParams.get('count');
+          if (uploadStatus === 'success') {
+              showFeedback('success', \`Sucesso! \${successCount || 0} registros foram processados.\`);
+          } else if (uploadStatus === 'error') {
+              showFeedback('error', \`Erro: \${decodeURIComponent(errorMessage || 'Ocorreu um problema.')}\`);
+          }
+
           dropZone.addEventListener('click', () => fileInput.click());
           dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('highlight'); });
           dropZone.addEventListener('dragleave', () => dropZone.classList.remove('highlight'));
@@ -156,9 +183,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           function resetAll() {
               currentFile = null;
               fileInput.value = '';
-              if (groupSelect) groupSelect.value = '';
-              if (targetSelect) targetSelect.innerHTML = '';
-              if (targetContainer) targetContainer.style.display = 'none';
               showStep(step1);
           }
           cancelBtn.addEventListener('click', resetAll);
@@ -174,7 +198,7 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
                   header: true,
                   skipEmptyLines: true,
                   complete: function(results) {
-                      jsonPayloadInput.value = JSON.stringify(results.data);
+                      recordsInput.value = JSON.stringify(results.data);
                       
                       container.querySelector('#stat-rows-' + componentId).textContent = results.data.length;
                       container.querySelector('#stat-cols-' + componentId).textContent = results.meta.fields.length;
@@ -197,6 +221,6 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
               }
           });
       })();
-      </script>
+      <\/script>
     `;
 }

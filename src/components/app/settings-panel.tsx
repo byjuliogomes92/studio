@@ -1140,6 +1140,7 @@ export function SettingsPanel({
                                         <SelectItem value="none">Nenhuma</SelectItem>
                                         <SelectItem value="sso">SSO do Marketing Cloud</SelectItem>
                                         <SelectItem value="password">Senha da Data Extension</SelectItem>
+                                        <SelectItem value="platform_users">Usuários da Plataforma (via API)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -1376,4 +1377,3 @@ export function SettingsPanel({
 }
 
     
-

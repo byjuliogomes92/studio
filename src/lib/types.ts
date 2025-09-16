@@ -277,7 +277,7 @@ export interface PageComponent {
   children?: PageComponent[]; 
 }
 
-export type SecurityType = 'none' | 'sso' | 'password';
+export type SecurityType = 'none' | 'sso' | 'password' | 'platform_users';
 export type LoaderType = 'none' | 'image' | 'animation';
 export type LoaderAnimation = 'pulse' | 'spin';
 

@@ -1,4 +1,3 @@
-
 import type { CloudPage, CustomFormField, FormFieldConfig } from './types';
 
 export function getPrefillAmpscript(pageState: CloudPage): string {
@@ -32,38 +31,42 @@ export function getPrefillAmpscript(pageState: CloudPage): string {
 
 export const getDEUploadSSJS = (): string => {
     return `
-/* --- Início: Processamento de Upload de Data Extension --- */
-if (Request.Method == "POST" && Request.GetFormField("__is_de_upload_submission") == "true") {
-    var deKey = Request.GetFormField("deKey");
-    var jsonDataStr = Request.GetFormField("jsonData");
-    var redirectURL = Request.GetQueryStringParameter("PAGEURL");
-    var status = "";
-    var message = "";
-
+<script runat="server">
+    Platform.Load("Core", "1.1.1");
+    var debug = false;
     try {
-        if (deKey && jsonDataStr) {
-            var de = DataExtension.Init(deKey);
-            var jsonData = Platform.Function.ParseJSON(jsonDataStr);
-            
-            if (jsonData.length > 0) {
-                status = de.Rows.Add(jsonData);
-                message = "Foram inseridos " + jsonData.length + " registros.";
+        if (Request.Method == "POST" && Request.GetFormField("__is_de_upload_submission") == "true") {
+            var deKey = Request.GetFormField("deKey");
+            var jsonDataStr = Request.GetFormField("jsonData");
+            var redirectURL = Request.GetQueryStringParameter("PAGEURL") || Request.GetURL();
+            var status = "";
+            var message = "";
+
+            if (deKey && jsonDataStr) {
+                var de = DataExtension.Init(deKey);
+                var jsonData = Platform.Function.ParseJSON(jsonDataStr);
+                
+                if (jsonData.length > 0) {
+                    status = de.Rows.Add(jsonData);
+                    message = "Foram inseridos " + jsonData.length + " registros.";
+                } else {
+                     message = "Nenhum registro para inserir.";
+                }
+                
+                redirectURL = TreatAsContent(redirectURL + "?resultado=success&mensagem=" + Platform.Function.URLEncode(message));
             } else {
-                 message = "Nenhum registro para inserir.";
+                throw new Error("Parâmetros 'deKey' ou 'jsonData' não encontrados na requisição.");
             }
-            
-            redirectURL = TreatAsContent(redirectURL + "?resultado=success&mensagem=" + URLEncode(message));
-        } else {
-            throw new Error("Parâmetros 'deKey' ou 'jsonData' não encontrados na requisição.");
         }
     } catch(e) {
-        message = "Ocorreu um erro: " + Stringify(e);
-        redirectURL = TreatAsContent(redirectURL + "?resultado=error&mensagem=" + URLEncode(message));
+        message = "Ocorreu um erro: " + Stringify(e.message);
+        redirectURL = TreatAsContent(redirectURL + "?resultado=error&mensagem=" + Platform.Function.URLEncode(message));
     }
-    
-    Redirect(redirectURL, false);
-}
-/* --- Fim: Processamento de Upload de Data Extension --- */
+
+    if (Request.Method == "POST" && Request.GetFormField("__is_de_upload_submission") == "true") {
+        Platform.Response.Redirect(redirectURL);
+    }
+</script>
 `;
 };
 

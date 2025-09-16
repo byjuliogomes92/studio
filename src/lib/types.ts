@@ -1,4 +1,3 @@
-
 import { Timestamp } from "firebase/firestore";
 
 export type ComponentType =
@@ -350,6 +349,13 @@ export interface CloudPage {
             identifierColumn: string;
             passwordColumn: string;
             urlParameter: string;
+            logoUrl?: string;
+            title?: string;
+            subtitle?: string;
+            backgroundColor?: string;
+            textColor?: string;
+            buttonBackgroundColor?: string;
+            buttonTextColor?: string;
         }
     }
   };

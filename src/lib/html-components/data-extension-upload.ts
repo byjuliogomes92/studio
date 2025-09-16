@@ -1,4 +1,3 @@
-
 import type { PageComponent, CloudPage, CampaignGroup, UploadTarget } from '@/lib/types';
 
 export function renderDataExtensionUpload(component: PageComponent, pageState: CloudPage, baseUrl: string): string {
@@ -33,12 +32,12 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
         </div>
         <div class="de-upload-v2-campaign-selector" id="upload-target-container-${componentId}" style="display: none;">
             <label for="upload-target-select-${componentId}">2. Selecione o destino do arquivo:</label>
-            <select name="deKey" id="upload-target-select-${componentId}" class="de-upload-v2-select"></select>
+            <select name="deKey" id="upload-target-select-${componentId}" class="de-upload-v2-select" required></select>
         </div>
     ` : (campaignGroups.length === 1 && campaignGroups[0].uploadTargets.length > 1 ? `
         <div class="de-upload-v2-campaign-selector">
             <label for="upload-target-select-${componentId}">1. Selecione o destino do arquivo:</label>
-            <select name="deKey" id="upload-target-select-${componentId}" class="de-upload-v2-select">
+            <select name="deKey" id="upload-target-select-${componentId}" class="de-upload-v2-select" required>
                 <option value="" disabled selected>-- Escolha uma opção --</option>
                 ${campaignGroups[0].uploadTargets.map((target: UploadTarget) => `<option value="${target.deKey}">${target.name}</option>`).join('')}
             </select>
@@ -112,7 +111,8 @@ export function renderDataExtensionUpload(component: PageComponent, pageState: C
           let currentFile;
 
           function showStep(step) {
-            [step1, step2].forEach(s => s.style.display = 'none');
+            step1.style.display = 'none';
+            step2.style.display = 'none';
             step.style.display = 'block';
           };
           

@@ -57,7 +57,7 @@ try {
                     if (password == correctPassword) {
                         isAuthenticated = true;
                         // Set session cookie on successful login
-                        Platform.Response.SetCookie(cookieName, "true", "Session");
+                        Platform.Response.SetCookie(cookieName, "true", 0, "Session");
                     } else {
                         errorMessage = "Senha ou identificador incorreto.";
                     }
@@ -150,12 +150,12 @@ export const getSecurityFormHtml = (pageState: CloudPage): string => {
                 }
             </style>
             <div class="password-protection-container" style="${pageStyle}">
-                <form method="post" class="password-form" style="${formContainerStyle}">
+                <form method="post" action="%%=RequestParameter('PAGEURL')=%%" class="password-form" style="${formContainerStyle}">
                     ${config.logoUrl ? `<img src="${config.logoUrl}" alt="Logo" style="max-width: 150px; margin: 0 auto 20px auto; display: block;">` : ''}
                     <h2 style="margin-top: 0; color: ${config.textColor || '#111827'};">${config.title || 'Acesso Restrito'}</h2>
                     <p style="color: ${config.textColor ? `rgba(${parseInt(config.textColor.slice(1, 3), 16)}, ${parseInt(config.textColor.slice(3, 5), 16)}, ${parseInt(config.textColor.slice(5, 7), 16)}, 0.7)` : '#6b7280'};">${config.subtitle || 'Por favor, insira suas credenciais para continuar.'}</p>
-                    <input type="text" name="page_identifier" placeholder="Seu Identificador" value="%%=v(@identifier)=%%" required>
-                    <input type="password" name="page_password" placeholder="Senha" required>
+                    <input type="hidden" name="page_identifier" value="%%=v(@identifier)=%%">
+                    <input type="password" name="page_password" placeholder="Senha" required autofocus>
                     <button type="submit">Acessar</button>
                     %%[ IF NOT Empty(@errorMessage) THEN ]%%
                         <div class="error-message" style="display:block; color: red; margin-top: 10px;">

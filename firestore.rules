@@ -2,200 +2,206 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // =====================================================================
-    // == FUNÇÕES AUXILIARES DE PERMISSÃO
-    // =====================================================================
-    // Estas funções são usadas para simplificar e reutilizar a lógica de
-    // verificação de permissões nas regras abaixo.
-
-    // Verifica se o usuário está logado na plataforma.
+    
+    // =================================
+    //       Funções Auxiliares
+    // =================================
+    
+    // Verifica se o usuário está logado.
     function isAuthenticated() {
       return request.auth != null;
     }
-
-    // Verifica se o usuário tem a permissão de Administrador.
+    
+    // Verifica se o usuário é um Administrador da plataforma.
     function isAdmin() {
       return isAuthenticated() && request.auth.token.admin == true;
     }
     
-    // Verifica se o usuário é um membro (de qualquer tipo) do workspace especificado.
+    // Verifica se o usuário é um membro (de qualquer papel) de um workspace específico.
     function isWorkspaceMember(workspaceId) {
       return isAuthenticated() &&
              workspaceId != null &&
              exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId));
     }
     
-    // Verifica se o usuário é o Dono (Owner) de um workspace.
+    // Verifica se o usuário é o dono de um workspace.
     function isOwner(workspaceId) {
       let memberPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId);
-      return isWorkspaceMember(workspaceId) && get(memberPath).data.role == 'owner';
+      return isAuthenticated() &&
+             workspaceId != null &&
+             exists(memberPath) && 
+             get(memberPath).data.role == 'owner';
     }
     
-    // Verifica se o usuário é um Editor ou Dono de um workspace.
+    // Verifica se o usuário é Editor ou Dono de um workspace.
     function isEditor(workspaceId) {
       let memberPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId);
-      return isWorkspaceMember(workspaceId) && 
+      return isAuthenticated() && 
+             workspaceId != null &&
+             exists(memberPath) && 
              (get(memberPath).data.role == 'owner' || get(memberPath).data.role == 'editor');
     }
-
-    // Verifica se o usuário é o dono do recurso específico (ex: seu próprio perfil).
+    
+    // Verifica se o usuário tem qualquer tipo de acesso a um workspace.
+    function hasWorkspaceAccess(workspaceId) {
+      return isAuthenticated() && workspaceId != null && isWorkspaceMember(workspaceId);
+    }
+    
+    // Verifica se o usuário logado é o mesmo dono do recurso.
     function isResourceOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
+    
+    // =================================
+    //      Regras das Coleções
+    // =================================
 
-    // =====================================================================
-    // == REGRAS POR COLEÇÃO
-    // =====================================================================
-
-    // --- Usuários (`users`) ---
-    // Cada usuário pode ler e escrever apenas em seu próprio documento de usuário.
+    // Coleção de usuários: Cada usuário só pode ler e modificar seus próprios dados.
     match /users/{userId} {
       allow read, write: if isResourceOwner(userId);
     }
-
-    // --- Progresso de Onboarding (`userProgress`) ---
-    // Cada usuário pode ler e escrever apenas em seu próprio progresso de onboarding.
+    
+    // Progresso de onboarding: Cada usuário só pode ver e atualizar seu próprio progresso.
     match /userProgress/{userId} {
       allow read, write: if isResourceOwner(userId);
     }
     
-    // --- Workspaces ---
-    // Locais de trabalho que agrupam projetos, páginas e membros.
+    // Workspaces: Lógica de times e permissões.
     match /workspaces/{workspaceId} {
-      allow read: if isWorkspaceMember(workspaceId);
+      allow read: if hasWorkspaceAccess(workspaceId);
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.ownerId;
       allow update: if isOwner(workspaceId);
-      allow delete: if isAdmin(); // Apenas Admins podem deletar workspaces por segurança.
+      allow delete: if isAdmin(); // Apenas admins podem deletar workspaces inteiros.
     }
     
-    // --- Membros do Workspace (`workspaceMembers`) ---
-    // Define a relação entre um usuário e um workspace.
+    // Membros do Workspace: Quem pertence a qual time.
     match /workspaceMembers/{membershipId} {
       allow read: if isAuthenticated() && 
-                     (request.auth.uid == resource.data.userId || 
-                      isWorkspaceMember(resource.data.workspaceId));
-      allow create, update: if isOwner(request.resource.data.workspaceId);
+                     (request.auth.uid == resource.data.userId || hasWorkspaceAccess(resource.data.workspaceId));
+      allow create: if isOwner(request.resource.data.workspaceId);
+      allow update: if isOwner(resource.data.workspaceId);
       allow delete: if isAuthenticated() && 
-                       (isOwner(resource.data.workspaceId) || 
-                        isResourceOwner(resource.data.userId)); // Dono pode remover ou o próprio usuário pode sair.
+                       (isOwner(resource.data.workspaceId) || request.auth.uid == resource.data.userId); // O próprio usuário pode sair.
     }
-
-    // --- Projetos (`projects`) ---
-    // Pastas para organizar as páginas.
+    
+    // Projetos (Pastas): Organização das páginas.
     match /projects/{projectId} {
-      allow read, create: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow read: if hasWorkspaceAccess(resource.data.workspaceId);
+      allow create: if hasWorkspaceAccess(request.resource.data.workspaceId);
       allow update, delete: if isEditor(resource.data.workspaceId);
     }
-
-    // --- Marcas (`brands`) ---
-    // Kits de marca com logos, cores e fontes.
+    
+    // Kits de Marca
     match /brands/{brandId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId);
-      allow create, update, delete: if isEditor(request.resource.data.workspaceId);
+      allow read: if hasWorkspaceAccess(resource.data.workspaceId);
+      allow create, update, delete: if isEditor(resource.data.workspaceId);
     }
-
-    // --- Páginas (Rascunhos - `pages_drafts`) ---
-    // Versão de edição das páginas.
+    
+    // Rascunhos das Páginas
     match /pages_drafts/{pageId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId);
-      allow create, update, delete: if isEditor(request.resource.data.workspaceId);
+      allow read, update, delete: if isEditor(resource.data.workspaceId);
+      allow create: if isEditor(request.resource.data.workspaceId);
     }
-
-    // --- Páginas (Publicadas - `pages_published`) ---
-    // Versão pública e otimizada das páginas.
+    
+    // Páginas Publicadas: Leitura pública.
     match /pages_published/{pageId} {
-      allow read: if true; // Qualquer pessoa pode ler páginas publicadas.
-      allow create, update: if isEditor(request.resource.data.workspaceId);
+      allow read: if true; 
+      allow create, update, delete: if isEditor(resource.data.workspaceId);
+    }
+    
+    // Credenciais de acesso para páginas com senha.
+    match /pageAccess/{accessId} {
+      allow read: if false; // NUNCA permitir leitura do lado do cliente.
+      allow write: if isEditor(request.resource.data.workspaceId);
       allow delete: if isEditor(resource.data.workspaceId);
     }
     
-    // --- Controle de Acesso à Página (`pageAccess`) ---
-    // Armazena credenciais para páginas protegidas por senha.
-    match /pageAccess/{accessId} {
-      allow read: if false; // Ninguém pode ler as credenciais do lado do cliente.
-      allow write, delete: if isEditor(request.resource.data.workspaceId);
-      allow create: if isEditor(request.resource.data.workspaceId);
-    }
-
-    // --- Templates Padrão (`defaultTemplates`) ---
-    // Templates disponíveis para todos os usuários.
+    // Templates Padrão da Plataforma
     match /defaultTemplates/{templateId} {
         allow read: if isAuthenticated();
-        allow write: if isAdmin(); // Apenas Admins gerenciam templates padrão.
+        allow write: if isAdmin();
     }
 
-    // --- Templates do Usuário (`templates`) ---
-    // Templates criados pelos próprios usuários.
+    // Templates criados pelos usuários.
     match /templates/{templateId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId);
-      allow create: if isWorkspaceMember(request.resource.data.workspaceId);
+      allow read: if hasWorkspaceAccess(resource.data.workspaceId);
+      allow create: if isEditor(request.resource.data.workspaceId);
       allow update, delete: if isEditor(resource.data.workspaceId);
     }
     
-    // --- Mídia (`media`) ---
-    // Arquivos da biblioteca de mídia.
+    // Biblioteca de Mídia
     match /media/{mediaId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId);
-      allow create, update, delete: if isEditor(request.resource.data.workspaceId);
+      allow read: if hasWorkspaceAccess(resource.data.workspaceId);
+      allow create, update, delete: if isEditor(resource.data.workspaceId);
+    }
+
+    // [NOVO] Hub da Comunidade: para templates compartilhados.
+    match /communityAssets/{assetId} {
+        // Todos usuários logados podem ver os assets.
+        allow read: if isAuthenticated();
+        // Usuários logados podem criar (compartilhar) um novo asset.
+        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.authorId;
+        // Apenas o autor original ou um admin podem atualizar/deletar.
+        allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || isAdmin());
     }
     
-    // --- Logs de Atividade (`activityLogs`) ---
-    // Registros imutáveis de ações importantes no workspace.
+    // Logs de Atividade
     match /activityLogs/{logId} {
-      allow read: if isWorkspaceMember(resource.data.workspaceId);
-      allow create: if isAuthenticated(); // Qualquer usuário logado pode gerar um log.
+      allow read: if hasWorkspaceAccess(resource.data.workspaceId);
+      allow create: if isAuthenticated();
       allow update, delete: if false; // Logs são imutáveis.
     }
     
-    // --- Convites (`invitations`) ---
-    // Sistema de convites para workspaces.
-    match /invitations/{invitationId} {
-      allow read: if isAuthenticated();
-      allow create: if isOwner(request.resource.data.workspaceId);
-      allow update, delete: if isAuthenticated();
-    }
-    
-    // --- Analytics (Visualizações e Submissões) ---
+    // Analytics (Visualizações de Página)
     match /pageViews/{viewId} {
-      allow create: if true; // Qualquer pessoa pode gerar uma visualização de página.
+      allow create: if true; 
       allow read, list: if hasWorkspaceAccess(resource.data.workspaceId);
-      allow update, delete: if false; // Imutável.
+      allow update, delete: if false;
     }
     
+    // Analytics (Submissões de Formulário)
     match /formSubmissions/{submissionId} {
-      allow create: if true; // Qualquer pessoa pode enviar um formulário.
-      allow read, list: if isWorkspaceMember(resource.data.workspaceId);
-      allow update, delete: if false; // Imutável.
+      allow create: if true;
+      allow read, list: if exists(/databases/$(database)/documents/pages_published/$(resource.data.pageId)) &&
+                           hasWorkspaceAccess(get(/databases/$(database)/documents/pages_published/$(resource.data.pageId)).data.workspaceId);
+      allow update, delete: if false;
     }
     
-    // --- Notificações (`notifications`) ---
-    // Notificações enviadas por Admins para os usuários.
+    // Notificações para usuários.
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      allow read, update: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create, delete: if isAdmin();
     }
     
-    // --- Configurações da Plataforma (`platformSettings`) ---
-    // Configurações globais, como o banner do dashboard.
+    // Configurações Globais da Plataforma
     match /platformSettings/{settingId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
     
-    // --- Chamados de Suporte (`supportTickets`) ---
+    // Chamados de Suporte
     match /supportTickets/{ticketId} {
-      allow create: if isResourceOwner(request.resource.data.userId);
-      allow read, update: if isAdmin() || isResourceOwner(resource.data.userId);
-      allow list, delete: if isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
     }
     
-    // --- Comentários de Suporte (`ticketComments`) ---
+    // Comentários dos Chamados de Suporte
     match /ticketComments/{commentId} {
       allow create: if isAuthenticated();
-      allow read: if exists(/databases/$(database)/documents/supportTickets/$(request.resource.data.ticketId)) &&
-                     (isAdmin() || get(/databases/$(database)/documents/supportTickets/$(request.resource.data.ticketId)).data.userId == request.auth.uid);
-      allow update, delete: if false; // Imutável.
+      allow read: if isAuthenticated() && 
+                     (exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)) &&
+                      (get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.userId == request.auth.uid || isAdmin()));
+      allow update, delete: if false;
+    }
+
+    // Comentários nas Páginas
+    match /pageComments/{commentId} {
+      allow read, create: if hasWorkspaceAccess(request.resource.data.workspaceId);
+      allow update: if hasWorkspaceAccess(resource.data.workspaceId);
+      allow delete: if isEditor(resource.data.workspaceId) || isResourceOwner(resource.data.userId);
     }
   }
 }

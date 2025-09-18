@@ -345,8 +345,20 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
 
     const pageDataToSave = JSON.parse(JSON.stringify(pageData));
 
+    // Platform user access management
     if (pageDataToSave.meta?.security?.accessUsers) {
-        pageDataToSave.meta.security.accessUsers = encryptAccessUsers(pageDataToSave.meta.security.accessUsers);
+        const batch = writeBatch(db);
+        pageDataToSave.meta.security.accessUsers.forEach((user: PageAccessUser) => {
+            const accessDocRef = doc(collection(db, 'pageAccess'));
+            batch.set(accessDocRef, {
+                pageId: pageId,
+                workspaceId: pageDataToSave.workspaceId,
+                identifier: user.identifier,
+                encryptedPassword: encryptPassword(user.password!)
+            });
+        });
+        await batch.commit();
+        delete pageDataToSave.meta.security.accessUsers; // Don't save users in the page doc
     }
 
     const pageWithTimestamps = {
@@ -376,10 +388,31 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
     // Create a deep copy to avoid mutating the original read-only object
     const pageDataToUpdate = JSON.parse(JSON.stringify(pageData));
 
-    // Encrypt any new or updated passwords before saving
-    if (pageDataToUpdate.meta?.security?.accessUsers) {
-        pageDataToUpdate.meta.security.accessUsers = encryptAccessUsers(pageDataToUpdate.meta.security.accessUsers);
+    // Platform user access management
+    if (pageDataToUpdate.meta?.security?.type === 'platform_users' && Array.isArray(pageDataToUpdate.meta.security.accessUsers)) {
+        const batch = writeBatch(db);
+        const existingUsersQuery = query(collection(db, 'pageAccess'), where('pageId', '==', pageId));
+        const existingUsersSnap = await getDocs(existingUsersQuery);
+        
+        // Delete existing users for this page
+        existingUsersSnap.forEach(doc => batch.delete(doc.ref));
+        
+        // Add current users from the page state
+        pageDataToUpdate.meta.security.accessUsers.forEach((user: PageAccessUser) => {
+            const accessDocRef = doc(collection(db, 'pageAccess'));
+            batch.set(accessDocRef, {
+                pageId: pageId,
+                workspaceId: pageDataToUpdate.workspaceId,
+                identifier: user.identifier,
+                encryptedPassword: user.password ? encryptPassword(user.password) : user.encryptedPassword
+            });
+        });
+        await batch.commit();
+
+        // Remove accessUsers from the object that will be saved to the page document
+        delete pageDataToUpdate.meta.security.accessUsers;
     }
+
 
     const draftRef = doc(db, "pages_drafts", pageId);
     await updateDoc(draftRef, {
@@ -395,7 +428,7 @@ export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, 
     const pageDataToUpdate = JSON.parse(JSON.stringify(pageData));
 
     if (pageDataToUpdate.meta?.security?.accessUsers) {
-        pageDataToUpdate.meta.security.accessUsers = encryptAccessUsers(pageDataToUpdate.meta.security.accessUsers);
+        delete pageDataToUpdate.meta.security.accessUsers;
     }
 
     const publishedRef = doc(db, "pages_published", pageId);

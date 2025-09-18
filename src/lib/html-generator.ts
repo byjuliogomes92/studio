@@ -2591,4 +2591,4 @@ ${bodyContent}
 ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
-</html>
+</html>`}

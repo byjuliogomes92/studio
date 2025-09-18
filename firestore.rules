@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -104,11 +103,12 @@ service cloud.firestore {
       allow create: if isEditor(request.resource.data.workspaceId);
       allow update, delete: if isEditor(resource.data.workspaceId);
     }
-
-    // --- Page Access ---
+    
+    // --- Page Access Credentials ---
     match /pageAccess/{accessId} {
-      // Allow editors to manage access control lists
-      allow read, write, create, delete: if isEditor(request.resource.data.workspaceId);
+      allow read: if false; // Only backend can read
+      allow create: if isEditor(request.resource.data.workspaceId);
+      allow update, delete: if isEditor(resource.data.workspaceId);
     }
     
     // --- Templates (Default templates) ---

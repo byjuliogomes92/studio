@@ -371,62 +371,47 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
 
 export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
-    
-    // Create a deep copy to avoid mutating the original read-only object
-    const pageDataToUpdate = JSON.parse(JSON.stringify(pageData));
-    
-    // Handle Platform User Access Management
-    if (pageDataToUpdate.meta?.security?.type === 'platform_users') {
-        const usersInState = pageDataToUpdate.meta.security.accessUsers || [];
+    const pageDataCopy = JSON.parse(JSON.stringify(pageData));
+
+    if (pageDataCopy.meta?.security?.type === 'platform_users') {
+        const usersInState = pageDataCopy.meta.security.accessUsers || [];
         const batch = writeBatch(db);
         
-        // 1. Get existing access documents for this page
         const existingUsersQuery = query(collection(db, 'pageAccess'), where('pageId', '==', pageId));
         const existingUsersSnap = await getDocs(existingUsersQuery);
         const existingUsersMap = new Map(existingUsersSnap.docs.map(doc => [doc.data().identifier, { id: doc.id, ...doc.data() }]));
-
+        
         const stateUserIdentifiers = new Set(usersInState.map((u: PageAccessUser) => u.identifier));
-
-        // 2. Delete users that are in DB but not in state anymore
-        for (const [identifier, existingUser] of existingUsersMap.entries()) {
+        
+        existingUsersMap.forEach((existingUser, identifier) => {
             if (!stateUserIdentifiers.has(identifier)) {
                 batch.delete(doc(db, 'pageAccess', existingUser.id));
             }
-        }
+        });
         
-        // 3. Add or update users from state
-        for (const user of usersInState) {
+        usersInState.forEach((user: PageAccessUser) => {
             const existingUser = existingUsersMap.get(user.identifier);
-            
-            if (existingUser) {
-                // User exists, update if password is new
-                 if (user.password) { // A new plaintext password means it needs re-encryption
-                     batch.update(doc(db, 'pageAccess', existingUser.id), {
-                        encryptedPassword: encryptPassword(user.password)
-                    });
-                }
-            } else {
-                // New user, add them
-                const newAccessDocRef = doc(collection(db, 'pageAccess'));
-                batch.set(newAccessDocRef, {
+            if (user.password) { // Only update/create if a new plaintext password is provided
+                const dataToSet = {
                     pageId: pageId,
-                    workspaceId: pageDataToUpdate.workspaceId,
+                    workspaceId: pageDataCopy.workspaceId,
                     identifier: user.identifier,
-                    encryptedPassword: encryptPassword(user.password!)
-                });
+                    encryptedPassword: encryptPassword(user.password)
+                };
+                const docRef = existingUser ? doc(db, 'pageAccess', existingUser.id) : doc(collection(db, 'pageAccess'));
+                batch.set(docRef, dataToSet, { merge: true });
             }
-        }
-        
+        });
+
         await batch.commit();
 
-        // Remove accessUsers from the object that will be saved to the page document
-        delete pageDataToUpdate.meta.security.accessUsers;
+        const { accessUsers, ...restOfSecurity } = pageDataCopy.meta.security;
+        pageDataCopy.meta.security = restOfSecurity;
     }
-
 
     const draftRef = doc(db, "pages_drafts", pageId);
     await updateDoc(draftRef, {
-        ...pageDataToUpdate,
+        ...pageDataCopy,
         updatedAt: serverTimestamp(),
     });
 };

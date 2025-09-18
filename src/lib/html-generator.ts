@@ -1,6 +1,6 @@
 
 import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
-import { getPrefillAmpscript } from './ssjs-templates';
+import { getPrefillAmpscript, getDEUploadSSJS } from './ssjs-templates';
 import { getSSJSSecurityBlock, getSecurityFormHtml } from '@/lib/html-components/security';
 import { renderHeader } from '@/lib/html-components/header';
 import { renderBanner } from '@/lib/html-components/banner';
@@ -1231,7 +1231,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     let ssjsBlock = '';
     if (needsAmpscript) {
         if (hasDataExtensionUpload) {
-            ssjsBlock += getDEUploadSSJS();
+            ssjsBlock += getDEUploadSSJS(baseUrl);
         }
         if (needsSecurity && meta.security?.type === 'password') {
             ssjsBlock += getSSJSSecurityBlock(pageState);
@@ -1256,7 +1256,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     }
 
 
-    return `<!DOCTYPE html>
+    return \`<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1273,7 +1273,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ssjsBlock ? `<script runat="server">${ssjsBlock}<\/script>` : ''}
+${ssjsBlock ? \`<script runat="server">${ssjsBlock}<\/script>\` : ''}
 ${needsAmpscript ? amspcriptBlock : ''}
 ${trackingScripts.head}
 <style>
@@ -2591,4 +2591,6 @@ ${bodyContent}
 ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
-</html>`}
+</html>
+\`;
+}

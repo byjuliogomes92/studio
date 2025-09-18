@@ -326,19 +326,6 @@ const generateSlug = (name: string) => {
   return `${slugBase}-${Date.now()}`;
 };
 
-// Helper function to handle the encryption of accessUsers
-const encryptAccessUsers = (users: PageAccessUser[] = []): PageAccessUser[] => {
-    return users.map(user => {
-        // Only encrypt if a plain-text password is provided
-        if (user.password) {
-            const encrypted = encryptPassword(user.password);
-            const { password, ...userWithoutPassword } = user;
-            return { ...userWithoutPassword, encryptedPassword: encrypted };
-        }
-        return user; // Return user as-is if no password to encrypt
-    });
-};
-
 export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
     const db = getDbInstance();
     const pageId = doc(collection(db, 'dummy_id_generator')).id; 
@@ -387,26 +374,49 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
     
     // Create a deep copy to avoid mutating the original read-only object
     const pageDataToUpdate = JSON.parse(JSON.stringify(pageData));
-
-    // Platform user access management
-    if (pageDataToUpdate.meta?.security?.type === 'platform_users' && Array.isArray(pageDataToUpdate.meta.security.accessUsers)) {
+    
+    // Handle Platform User Access Management
+    if (pageDataToUpdate.meta?.security?.type === 'platform_users') {
+        const usersInState = pageDataToUpdate.meta.security.accessUsers || [];
         const batch = writeBatch(db);
+        
+        // 1. Get existing access documents for this page
         const existingUsersQuery = query(collection(db, 'pageAccess'), where('pageId', '==', pageId));
         const existingUsersSnap = await getDocs(existingUsersQuery);
+        const existingUsersMap = new Map(existingUsersSnap.docs.map(doc => [doc.data().identifier, { id: doc.id, ...doc.data() }]));
+
+        const stateUserIdentifiers = new Set(usersInState.map((u: PageAccessUser) => u.identifier));
+
+        // 2. Delete users that are in DB but not in state anymore
+        for (const [identifier, existingUser] of existingUsersMap.entries()) {
+            if (!stateUserIdentifiers.has(identifier)) {
+                batch.delete(doc(db, 'pageAccess', existingUser.id));
+            }
+        }
         
-        // Delete existing users for this page
-        existingUsersSnap.forEach(doc => batch.delete(doc.ref));
+        // 3. Add or update users from state
+        for (const user of usersInState) {
+            const existingUser = existingUsersMap.get(user.identifier);
+            
+            if (existingUser) {
+                // User exists, update if password is new
+                 if (user.password) { // A new plaintext password means it needs re-encryption
+                     batch.update(doc(db, 'pageAccess', existingUser.id), {
+                        encryptedPassword: encryptPassword(user.password)
+                    });
+                }
+            } else {
+                // New user, add them
+                const newAccessDocRef = doc(collection(db, 'pageAccess'));
+                batch.set(newAccessDocRef, {
+                    pageId: pageId,
+                    workspaceId: pageDataToUpdate.workspaceId,
+                    identifier: user.identifier,
+                    encryptedPassword: encryptPassword(user.password!)
+                });
+            }
+        }
         
-        // Add current users from the page state
-        pageDataToUpdate.meta.security.accessUsers.forEach((user: PageAccessUser) => {
-            const accessDocRef = doc(collection(db, 'pageAccess'));
-            batch.set(accessDocRef, {
-                pageId: pageId,
-                workspaceId: pageDataToUpdate.workspaceId,
-                identifier: user.identifier,
-                encryptedPassword: user.password ? encryptPassword(user.password) : user.encryptedPassword
-            });
-        });
         await batch.commit();
 
         // Remove accessUsers from the object that will be saved to the page document
@@ -420,7 +430,6 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
         updatedAt: serverTimestamp(),
     });
 };
-
 
 export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, userId: string): Promise<void> => {
     const db = getDbInstance();
@@ -1286,3 +1295,4 @@ export const resolveCommentThread = async (commentId: string, resolvedBy: string
         resolvedBy: resolvedBy,
     });
 };
+    

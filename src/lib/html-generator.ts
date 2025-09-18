@@ -1256,7 +1256,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     }
 
 
-    return \`<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1273,7 +1273,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="${googleFontUrl}" rel="stylesheet">
-${ssjsBlock ? \`<script runat="server">${ssjsBlock}<\/script>\` : ''}
+${ssjsBlock ? `<script runat="server">${ssjsBlock}<\/script>` : ''}
 ${needsAmpscript ? amspcriptBlock : ''}
 ${trackingScripts.head}
 <style>
@@ -2591,6 +2591,5 @@ ${bodyContent}
 ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
-</html>
-\`;
+</html>`
 }

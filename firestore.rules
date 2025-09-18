@@ -109,22 +109,32 @@ service cloud.firestore {
       allow create, update, delete: if isEditor(resource.data.workspaceId);
     }
     
-    
-    // Credenciais de acesso para páginas com senha.
+    // ====================================================================
+    // [IMPORTANTE] Credenciais de acesso para páginas com senha.
+    // Esta coleção armazena os identificadores e senhas criptografadas.
+    // ====================================================================
     match /pageAccess/{accessId} {
-      // Apenas editores do workspace podem ler a lista de usuários (para gerenciar).
-      // A senha criptografada não é lida no cliente. O backend faz a validação.
-      allow read, list: if isEditor(resource.data.workspaceId); 
-      // Editores podem criar novas credenciais.
-      allow create: if isEditor(request.resource.data.workspaceId);
-      // Editores podem deletar ou atualizar (re-criptografar senha).
-      allow update, delete: if isEditor(resource.data.workspaceId);
+      // PERMISSÃO DE LEITURA (CORRIGIDA):
+      // Apenas um Editor (ou Dono) do workspace pode ler os documentos de acesso.
+      // Isso é necessário para que a função de salvar a página possa verificar
+      // quais usuários já existem antes de criar, atualizar ou deletar.
+      // A senha continua criptografada, então a leitura é segura.
+      allow read: if isEditor(resource.data.workspaceId);
+      
+      // PERMISSÃO DE ESCRITA (CRIAR E ATUALIZAR):
+      // Apenas um Editor (ou Dono) pode criar ou modificar credenciais
+      // para as páginas do seu workspace.
+      allow create, update: if isEditor(request.resource.data.workspaceId);
+      
+      // PERMISSÃO DE EXCLUSÃO:
+      // Apenas um Editor (ou Dono) pode remover o acesso de um usuário.
+      allow delete: if isEditor(resource.data.workspaceId);
     }
     
     // Templates Padrão da Plataforma
     match /defaultTemplates/{templateId} {
         allow read: if isAuthenticated();
-        allow write: if isAdmin(); // Only admins can manage default templates
+        allow write: if isAdmin();
     }
 
     // Templates criados pelos usuários.

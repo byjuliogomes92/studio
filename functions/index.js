@@ -4,9 +4,38 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore");
 const axios = require("axios");
+const crypto = require('crypto-js');
 
 admin.initializeApp();
 const db = getFirestore();
+
+// Helper para descriptografar senhas
+const getEncryptionKey = () => {
+    // No ambiente do Firebase Functions, as variáveis são acessadas via functions.config()
+    const key = functions.config().keys?.secret_encryption_key;
+    if (!key) {
+        console.error("FATAL: SECRET_ENCRYPTION_KEY não está configurada nas Firebase Functions.");
+        // Use `firebase functions:config:set keys.secret_encryption_key="SUA_CHAVE_AQUI"` para configurar
+        throw new functions.https.HttpsError('internal', 'O servidor não está configurado corretamente para segurança.');
+    }
+    return key;
+};
+
+const decryptPassword = (encryptedPassword) => {
+    const key = getEncryptionKey();
+    try {
+        const bytes = crypto.AES.decrypt(encryptedPassword, key);
+        const originalText = bytes.toString(crypto.enc.Utf8);
+        if (!originalText) {
+            throw new Error("A descriptografia resultou em uma string vazia (chave provavelmente incorreta).");
+        }
+        return originalText;
+    } catch (error) {
+        console.error("Erro ao descriptografar:", error);
+        return "DECRYPTION_ERROR"; 
+    }
+};
+
 
 // This is a standard onRequest function that receives a form submission.
 exports.proxySfmcUpload = functions.https.onRequest(async (req, res) => {
@@ -154,6 +183,61 @@ exports.getAllUsers = functions
             throw new functions.https.HttpsError(
                 "internal",
                 "Ocorreu um erro ao buscar a lista de usuários."
+            );
+        }
+    });
+
+/**
+ * Verifies page access credentials against the 'pageAccess' collection.
+ */
+exports.verifyPageAccess = functions
+    .region('us-central1')
+    .https.onCall(async (data, context) => {
+        const { pageId, identifier, password } = data;
+
+        if (!pageId || !identifier || !password) {
+            throw new functions.https.HttpsError(
+                "invalid-argument",
+                "pageId, identifier e password são obrigatórios."
+            );
+        }
+
+        try {
+            const accessQuery = await db.collection('pageAccess')
+                .where('pageId', '==', pageId)
+                .where('identifier', '==', identifier)
+                .limit(1)
+                .get();
+
+            if (accessQuery.empty) {
+                return { success: false, message: 'Identificador ou senha inválidos.' };
+            }
+
+            const accessDoc = accessQuery.docs[0].data();
+            const storedEncryptedPassword = accessDoc.encryptedPassword;
+
+            if (!storedEncryptedPassword) {
+                 throw new functions.https.HttpsError('internal', 'Erro de configuração de segurança para este usuário.');
+            }
+
+            const decryptedPassword = decryptPassword(storedEncryptedPassword);
+
+            if (decryptedPassword === "DECRYPTION_ERROR") {
+                throw new functions.https.HttpsError('internal', 'Erro interno do servidor ao verificar credenciais.');
+            }
+
+            if (password === decryptedPassword) {
+                // Passwords match. Return success. The client will handle the session.
+                return { success: true };
+            } else {
+                return { success: false, message: 'Identificador ou senha inválidos.' };
+            }
+
+        } catch (error) {
+            console.error("Erro na função verifyPageAccess:", error);
+            throw new functions.https.HttpsError(
+                "internal",
+                "Ocorreu um erro inesperado durante a autenticação."
             );
         }
     });

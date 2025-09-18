@@ -479,7 +479,7 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     const headerComponent = pageState.components.find(c => c.type === 'Header');
 
     // Add Firebase SDK if needed for components like DataExtensionUpload
-    const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload');
+    const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload' || pageState.meta.security?.type === 'platform_users');
     const firebaseSdkScript = (needsFirebase)
         ? `
         <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"><\/script>
@@ -576,22 +576,18 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
                     errorMessageEl.style.display = 'none';
 
                     try {
-                        const response = await fetch('${baseUrl}/api/auth/page-access', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                pageId: '${pageState.id}',
-                                identifier: identifier,
-                                password: password
-                            })
+                        const verifyPageAccess = firebase.functions().httpsCallable('verifyPageAccess');
+                        const result = await verifyPageAccess({
+                            pageId: '${pageState.id}',
+                            identifier: identifier,
+                            password: password
                         });
-                        const result = await response.json();
 
-                        if (response.ok && result.success) {
+                        if (result.data.success) {
                             sessionStorage.setItem('page_auth_token_${pageState.id}', 'authenticated');
                             checkAuth();
                         } else {
-                            throw new Error(result.message || 'Credenciais inválidas.');
+                            throw new Error(result.data.message || 'Credenciais inválidas.');
                         }
                     } catch (error) {
                         errorMessageEl.textContent = error.message;
@@ -2591,5 +2587,6 @@ ${bodyContent}
 ${cookieBannerHtml}
 ${clientSideScripts}
 </body>
-</html>`
+</html>
+`
 }

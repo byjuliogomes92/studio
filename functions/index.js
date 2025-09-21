@@ -10,6 +10,7 @@ admin.initializeApp();
 const db = getFirestore();
 
 // Helper para descriptografar senhas
+// A chave é obtida das configurações de ambiente da Firebase Function.
 const getEncryptionKey = () => {
     // No ambiente do Firebase Functions, as variáveis são acessadas via functions.config()
     const key = functions.config().keys?.secret_encryption_key;
@@ -21,6 +22,7 @@ const getEncryptionKey = () => {
     return key;
 };
 
+// Descriptografa a senha usando a chave de ambiente.
 const decryptPassword = (encryptedPassword) => {
     const key = getEncryptionKey();
     try {
@@ -188,7 +190,10 @@ exports.getAllUsers = functions
     });
 
 /**
- * Verifies page access credentials against the 'pageAccess' collection.
+ * Valida as credenciais de acesso a uma página protegida.
+ * Esta função é chamada pelo lado do cliente (pela página publicada).
+ * Ela usa o Admin SDK, que tem acesso privilegiado ao Firestore,
+ * ignorando as regras de segurança para poder ler a coleção `pageAccess`.
  */
 exports.verifyPageAccess = functions
     .region('us-central1')
@@ -203,6 +208,8 @@ exports.verifyPageAccess = functions
         }
 
         try {
+            // STEP 1: Consultar a coleção 'pageAccess' usando o Admin SDK.
+            // O Admin SDK bypassa as regras de segurança do Firestore, permitindo a leitura.
             const accessQuery = await db.collection('pageAccess')
                 .where('pageId', '==', pageId)
                 .where('identifier', '==', identifier)
@@ -210,9 +217,11 @@ exports.verifyPageAccess = functions
                 .get();
 
             if (accessQuery.empty) {
+                // Usuário não encontrado, retorna uma mensagem genérica para segurança.
                 return { success: false, message: 'Identificador ou senha inválidos.' };
             }
 
+            // STEP 2: Obter a senha criptografada do banco de dados.
             const accessDoc = accessQuery.docs[0].data();
             const storedEncryptedPassword = accessDoc.encryptedPassword;
 
@@ -220,16 +229,20 @@ exports.verifyPageAccess = functions
                  throw new functions.https.HttpsError('internal', 'Erro de configuração de segurança para este usuário.');
             }
 
+            // STEP 3: Descriptografar a senha armazenada.
             const decryptedPassword = decryptPassword(storedEncryptedPassword);
 
             if (decryptedPassword === "DECRYPTION_ERROR") {
+                // Erro na chave de criptografia ou no dado.
                 throw new functions.https.HttpsError('internal', 'Erro interno do servidor ao verificar credenciais.');
             }
 
+            // STEP 4: Comparar a senha enviada com a senha descriptografada.
             if (password === decryptedPassword) {
-                // Passwords match. Return success. The client will handle the session.
+                // Sucesso! Retorna sucesso para o cliente.
                 return { success: true };
             } else {
+                // Senha incorreta.
                 return { success: false, message: 'Identificador ou senha inválidos.' };
             }
 

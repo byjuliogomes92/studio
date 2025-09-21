@@ -19,7 +19,6 @@ service cloud.firestore {
     
     // Verifica se o usuário é um membro (de qualquer papel) de um workspace específico.
     function isWorkspaceMember(workspaceId) {
-      // O documento de membro é nomeado com 'userId_workspaceId' para busca direta e eficiente.
       return isAuthenticated() &&
              workspaceId != null &&
              exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId));
@@ -36,11 +35,10 @@ service cloud.firestore {
     
     // Verifica se o usuário é Editor ou Dono de um workspace.
     function isEditor(workspaceId) {
-      if (!isAuthenticated() || workspaceId == null) {
-        return false;
-      }
       let memberPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId);
-      return exists(memberPath) && 
+      return isAuthenticated() && 
+             workspaceId != null &&
+             exists(memberPath) && 
              (get(memberPath).data.role == 'owner' || get(memberPath).data.role == 'editor');
     }
     
@@ -89,7 +87,7 @@ service cloud.firestore {
     // Projetos (Pastas): Organização das páginas.
     match /projects/{projectId} {
       allow read: if hasWorkspaceAccess(resource.data.workspaceId);
-      allow create: if isEditor(request.resource.data.workspaceId);
+      allow create: if hasWorkspaceAccess(request.resource.data.workspaceId);
       allow update, delete: if isEditor(resource.data.workspaceId);
     }
     
@@ -113,10 +111,10 @@ service cloud.firestore {
     
     // Credenciais de acesso para páginas com senha.
     match /pageAccess/{accessId} {
-      allow read, list: if isEditor(resource.data.workspaceId); // Editor pode ler para gerenciar
-      allow create: if isEditor(request.resource.data.workspaceId);
-      allow update: if isEditor(resource.data.workspaceId);
-      allow delete: if isEditor(resource.data.workspaceId);
+      // Apenas o backend (usando Admin SDK) deve ler as senhas. O cliente nunca pode.
+      allow read, list: if false; 
+      // Apenas editores podem criar, atualizar ou deletar credenciais para páginas em seu workspace.
+      allow write: if isAuthenticated() && isEditor(request.resource.data.workspaceId);
     }
     
     // Templates Padrão da Plataforma
@@ -140,9 +138,9 @@ service cloud.firestore {
 
     // Hub da Comunidade: para templates compartilhados.
     match /communityAssets/{assetId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.authorId;
-        allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || isAdmin());
+        allow read: if isAuthenticated(); // Todos usuários logados podem ver.
+        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.authorId; // Apenas o autor pode criar.
+        allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || isAdmin()); // Apenas o autor ou admin podem alterar.
     }
     
     // Logs de Atividade
@@ -182,9 +180,11 @@ service cloud.firestore {
     // Chamados de Suporte
     match /supportTickets/{ticketId} {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isAdmin();
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() &&
+                       (resource.data.userId == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
     

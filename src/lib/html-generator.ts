@@ -1,3 +1,4 @@
+
 import type { CloudPage, PageComponent, EditorMode, ResponsiveProps } from './types';
 import { getPrefillAmpscript, getDEUploadSSJS } from './ssjs-templates';
 import { getSSJSSecurityBlock, getSecurityFormHtml } from '@/lib/html-components/security';
@@ -476,11 +477,10 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     const hasAutoplayCarousel = hasCarousel && pageState.components.some(c => c.type === 'Carousel' && c.props.options?.autoplay);
     const hasCalendly = pageState.components.some(c => c.type === 'Calendly');
     const headerComponent = pageState.components.find(c => c.type === 'Header');
+    const needsSecurity = pageState.meta.security && pageState.meta.security.type === 'platform_users';
 
-    // STEP 1: Determine if Firebase SDK is needed for any component or security feature.
-    const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload') || pageState.meta.security?.type === 'platform_users';
-    
-    // STEP 2: Conditionally include Firebase SDK scripts.
+    // Add Firebase SDK if needed for components like DataExtensionUpload or platform user auth
+    const needsFirebase = pageState.components.some(c => c.type === 'DataExtensionUpload' || c.type === 'FTPUpload') || needsSecurity;
     const firebaseSdkScript = (needsFirebase)
         ? `
         <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"><\/script>
@@ -509,6 +509,70 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
       : '';
     const calendlyScript = hasCalendly ? '<script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async><\/script>' : '';
     const cookieScript = getCookieScripts(pageState.cookieBanner);
+    
+    let platformAuthScript = '';
+    if (needsSecurity && !isForPreview) {
+      platformAuthScript = `
+        <script>
+          (function() {
+            const container = document.getElementById('platform-auth-container');
+            if (!container) return;
+
+            const mainContent = document.getElementById('main-content');
+            const submitBtn = document.getElementById('platform-submit-btn');
+            const identifierInput = document.getElementById('platform-identifier');
+            const passwordInput = document.getElementById('platform-password');
+            const errorMessage = document.getElementById('platform-error-message');
+            
+            const sessionKey = 'page_access_granted_${pageState.id}';
+
+            function showContent() {
+              container.style.display = 'none';
+              mainContent.style.display = 'block';
+            }
+            
+            if (sessionStorage.getItem(sessionKey) === 'true') {
+              showContent();
+              return;
+            }
+
+            submitBtn.addEventListener('click', async function() {
+              const identifier = identifierInput.value;
+              const password = passwordInput.value;
+              errorMessage.style.display = 'none';
+              
+              if (!identifier || !password) {
+                errorMessage.textContent = 'Identificador e senha são obrigatórios.';
+                errorMessage.style.display = 'block';
+                return;
+              }
+
+              try {
+                const functions = firebase.app().functions('us-central1');
+                const verifyAccess = functions.httpsCallable('verifyPageAccess');
+                const result = await verifyAccess({
+                  pageId: '${pageState.id}',
+                  identifier: identifier,
+                  password: password
+                });
+
+                if (result.data.success) {
+                  sessionStorage.setItem(sessionKey, 'true');
+                  showContent();
+                } else {
+                  errorMessage.textContent = result.data.message || 'Credenciais inválidas.';
+                  errorMessage.style.display = 'block';
+                }
+              } catch (error) {
+                console.error('Authentication error:', error);
+                errorMessage.textContent = 'Erro de autenticação: ' + error.message;
+                errorMessage.style.display = 'block';
+              }
+            });
+          })();
+        <\/script>
+      `;
+    }
 
 
     const editorInteractionScript = isForPreview ? `
@@ -544,74 +608,6 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
             });
         <\/script>
     ` : '';
-    
-    // STEP 3: Create the authentication script that calls the Firebase Function.
-    const platformAuthScript = pageState.meta.security?.type === 'platform_users' ? `
-        <script>
-            (function() {
-                const container = document.getElementById('platform-auth-container');
-                const mainContent = document.getElementById('main-content');
-                if (!container || !mainContent) return;
-
-                const checkAuth = () => {
-                    // Check sessionStorage for a token to persist login within a tab session.
-                    const token = sessionStorage.getItem('page_auth_token_${pageState.id}');
-                    if (token === 'authenticated') {
-                        container.style.display = 'none';
-                        mainContent.style.display = 'block';
-                    } else {
-                        container.style.display = 'flex';
-                        mainContent.style.display = 'none';
-                    }
-                };
-
-                const submitBtn = document.getElementById('platform-submit-btn');
-                const identifierInput = document.getElementById('platform-identifier');
-                const passwordInput = document.getElementById('platform-password');
-                const errorMessageEl = document.getElementById('platform-error-message');
-
-                const handleLogin = async () => {
-                    const identifier = identifierInput.value;
-                    const password = passwordInput.value;
-                    
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = 'Verificando...';
-                    errorMessageEl.style.display = 'none';
-
-                    try {
-                        // Initialize and call the 'verifyPageAccess' Firebase Function.
-                        const verifyPageAccess = firebase.functions().httpsCallable('verifyPageAccess');
-                        const result = await verifyPageAccess({
-                            pageId: '${pageState.id}',
-                            identifier: identifier,
-                            password: password
-                        });
-
-                        if (result.data.success) {
-                            sessionStorage.setItem('page_auth_token_${pageState.id}', 'authenticated');
-                            checkAuth();
-                        } else {
-                            throw new Error(result.data.message || 'Credenciais inválidas.');
-                        }
-                    } catch (error) {
-                        errorMessageEl.textContent = error.message;
-                        errorMessageEl.style.display = 'block';
-                    } finally {
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Acessar';
-                    }
-                };
-
-                submitBtn.addEventListener('click', handleLogin);
-                passwordInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') handleLogin();
-                });
-                
-                checkAuth();
-            })();
-        <\/script>
-    ` : '';
-
 
     const script = `
     <script>
@@ -1054,7 +1050,6 @@ const getClientSideScripts = (pageState: CloudPage, isForPreview: boolean, edito
     <\/script>
     `;
 
-    // STEP 4: Combine all scripts, making sure the platform auth script is included when needed.
     return `${firebaseSdkScript}${lottiePlayerScript}${carouselScript}${autoplayPluginScript}${calendlyScript}${script}${cookieScript}${editorInteractionScript}${platformAuthScript}`;
 };
 
@@ -1236,7 +1231,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     
     let ssjsBlock = '';
     if (needsAmpscript) {
-        if (hasDataExtensionUpload) {
+        if(hasDataExtensionUpload) {
             ssjsBlock += getDEUploadSSJS(baseUrl);
         }
         if (needsSecurity && meta.security?.type === 'password') {
@@ -1244,11 +1239,11 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         }
     }
 
-    if (needsSecurity) {
+    if (needsSecurity && !isForPreview) {
         if (meta.security?.type === 'platform_users') {
              bodyContent = `
                 ${getSecurityFormHtml(pageState)}
-                <main id="main-content" style="display: none;">${mainContentHtml}</main>
+                <main id="main-content" style="display: none; ${mainStyle}">${mainContentHtml}</main>
             `;
         } else {
              bodyContent = `%%[ IF @isAuthenticated == true THEN ]%%
@@ -1267,29 +1262,29 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>\${meta.title}</title>
-<meta name="description" content="\${meta.metaDescription}">
-<meta name="keywords" content="\${meta.metaKeywords}">
-<link rel="icon" href="\${meta.faviconUrl}" sizes="16x16" type="image/png">
-<link rel="icon" href="\${meta.faviconUrl}" sizes="32x32" type="image/png">
+<title>${meta.title}</title>
+<meta name="description" content="${meta.metaDescription}">
+<meta name="keywords" content="${meta.metaKeywords}">
+<link rel="icon" href="${meta.faviconUrl}" sizes="16x16" type="image/png">
+<link rel="icon" href="${meta.faviconUrl}" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="https://i.postimg.cc/FkRH2d9j/apple-touch-icon.png">
-<link rel="icon" href="\${meta.faviconUrl}" sizes="192x192" type="image/png">
-<link rel="icon" href="\${meta.faviconUrl}" sizes="512x512" type="image/png">
-<meta name="theme-color" content="\${styles.themeColor}">
+<link rel="icon" href="${meta.faviconUrl}" sizes="192x192" type="image/png">
+<link rel="icon" href="${meta.faviconUrl}" sizes="512x512" type="image/png">
+<meta name="theme-color" content="${styles.themeColor}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="\${googleFontUrl}" rel="stylesheet">
-\${ssjsBlock ? \`<script runat="server">\${ssjsBlock}<\/script>\` : ''}
-\${needsAmpscript ? amspcriptBlock : ''}
-\${trackingScripts.head}
+<link href="${googleFontUrl}" rel="stylesheet">
+${ssjsBlock ? `<script runat="server">${ssjsBlock}<\/script>` : ''}
+${needsAmpscript ? amspcriptBlock : ''}
+${trackingScripts.head}
 <style>
-    \${fontFaceStyles}
-    \${scrollbarStyles}
+    ${fontFaceStyles}
+    ${scrollbarStyles}
     :root {
-      --theme-color: \${styles.themeColor || '#000000'};
-      --theme-color-hover: \${styles.themeColorHover || '#333333'};
-      --header-link-color: \${pageState.components.find(c => c.type === 'Header')?.props.linkColor || '#333333'};
-      --header-link-hover-color: \${pageState.components.find(c => c.type === 'Header')?.props.linkHoverColor || '#000000'};
+      --theme-color: ${styles.themeColor || '#000000'};
+      --theme-color-hover: ${styles.themeColorHover || '#333333'};
+      --header-link-color: ${pageState.components.find(c => c.type === 'Header')?.props.linkColor || '#333333'};
+      --header-link-hover-color: ${pageState.components.find(c => c.type === 'Header')?.props.linkHoverColor || '#000000'};
     }
     html {
       box-sizing: border-box;
@@ -1302,7 +1297,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
       word-wrap: break-word; /* Crucial for preventing overflow */
     }
     body {
-        \${bodyStyles}
+        ${bodyStyles}
     }
 
     main {
@@ -1568,12 +1563,12 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     }
     
     [contenteditable="true"]:focus {
-      outline: 2px solid \${styles.themeColor};
-      box-shadow: 0 0 5px \${styles.themeColor};
+      outline: 2px solid ${styles.themeColor};
+      box-shadow: 0 0 5px ${styles.themeColor};
     }
     
     h1, h2 {
-        font-family: "\${fontFamilyHeadings}", sans-serif;
+        font-family: "${fontFamilyHeadings}", sans-serif;
         font-weight: bold;
     }
 
@@ -1653,7 +1648,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     }
     
     .button-wrapper a {
-        border-radius: \${pageState.brand?.components?.button?.borderRadius || '0.5rem'};
+        border-radius: ${pageState.brand?.components?.button?.borderRadius || '0.5rem'};
     }
 
     .button-wrapper a:hover {
@@ -1671,7 +1666,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     .progress-bar {
         width: 0%;
         height: 20px;
-        background-color: \${styles.themeColor};
+        background-color: ${styles.themeColor};
         text-align: center;
         line-height: 20px;
         color: white;
@@ -1712,9 +1707,9 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         width: 100%;
         padding: 15px;
         margin: 0;
-        border: 1px solid \${pageState.brand?.components?.input?.borderColor || '#ccc'};
-        border-radius: \${pageState.brand?.components?.input?.borderRadius || '0.5rem'};
-        font-family: "\${fontFamilyBody}", sans-serif;
+        border: 1px solid ${pageState.brand?.components?.input?.borderColor || '#ccc'};
+        border-radius: ${pageState.brand?.components?.input?.borderRadius || '0.5rem'};
+        font-family: "${fontFamilyBody}", sans-serif;
         font-weight: 700;
         font-style: normal;
     }
@@ -1729,7 +1724,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         width: auto;
         min-width: 200px;
         padding: 15px 30px;
-        border-radius: \${pageState.brand?.components?.button?.borderRadius || '30px'};
+        border-radius: ${pageState.brand?.components?.button?.borderRadius || '30px'};
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -1785,13 +1780,13 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     }
     
     .consent label { color: #000; }
-    .consent a { color: \${styles.themeColor}; }
+    .consent a { color: ${styles.themeColor}; }
 
     .error-message {
         color: rgb(196, 11, 11);
         display: none;
         margin-bottom: 10px;
-        font-family: "\${fontFamilyBody}", sans-serif;
+        font-family: "${fontFamilyBody}", sans-serif;
         font-weight: 700;
         font-style: normal;
         font-size: small;
@@ -1952,7 +1947,7 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
         -webkit-font-smoothing: antialiased;
         color: rgba(0, 0, 0, 0.87);
         font-size: 0.875rem;
-        font-family: "\${fontFamilyBody}", "Helvetica", "Arial", sans-serif;
+        font-family: "${fontFamilyBody}", "Helvetica", "Arial", sans-serif;
         font-weight: 400;
         line-height: 1.43;
         letter-spacing: 0.01071em;
@@ -2586,16 +2581,16 @@ export function generateHtml(pageState: CloudPage, isForPreview: boolean = false
     .cookie-category-header label { font-weight: bold; }
     .cookie-category p { font-size: 0.9em; color: #666; margin-top: 0.25rem; }
     .cookie-category input[type="checkbox"] { transform: scale(1.2); }
-    \${styles.customCss || ''}
-    \${responsiveStyles}
+    ${styles.customCss || ''}
+    ${responsiveStyles}
 </style>
 </head>
-<body data-editor-mode='\${isForPreview ? editorMode : 'none'}'>
-\${!isForPreview ? trackingScripts.body : ''}
-\${renderLoader(meta, styles.themeColor)}
-\${bodyContent}
-\${cookieBannerHtml}
-\${clientSideScripts}
+<body data-editor-mode='${isForPreview ? editorMode : 'none'}'>
+${!isForPreview ? trackingScripts.body : ''}
+${renderLoader(meta, styles.themeColor)}
+${bodyContent}
+${cookieBannerHtml}
+${clientSideScripts}
 </body>
 </html>
 \`;

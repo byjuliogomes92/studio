@@ -21,6 +21,7 @@ service cloud.firestore {
     function isWorkspaceMember(workspaceId) {
       return isAuthenticated() &&
              workspaceId != null &&
+             // Acessa o documento de membro usando um ID construído, que é permitido.
              exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId));
     }
     
@@ -111,10 +112,13 @@ service cloud.firestore {
     
     // Credenciais de acesso para páginas com senha.
     match /pageAccess/{accessId} {
-      // Apenas o backend (usando Admin SDK) deve ler as senhas. O cliente nunca pode.
-      allow read, list: if false; 
-      // Apenas editores podem criar, atualizar ou deletar credenciais para páginas em seu workspace.
-      allow write: if isAuthenticated() && isEditor(request.resource.data.workspaceId);
+      // Editores podem ler/listar para gerenciar os usuários na interface.
+      allow read, list: if isEditor(resource.data.workspaceId);
+      
+      // Regra de escrita (create, update, delete) corrigida.
+      // Permite a escrita se o usuário for um editor do workspace especificado no documento.
+      // Isso evita a leitura cruzada inválida durante a operação de escrita.
+      allow write: if isEditor(request.resource.data.workspaceId);
     }
     
     // Templates Padrão da Plataforma
@@ -136,11 +140,14 @@ service cloud.firestore {
       allow create, update, delete: if isEditor(resource.data.workspaceId);
     }
 
-    // Hub da Comunidade: para templates compartilhados.
+    // [NOVO] Hub da Comunidade: para templates compartilhados.
     match /communityAssets/{assetId} {
-        allow read: if isAuthenticated(); // Todos usuários logados podem ver.
-        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.authorId; // Apenas o autor pode criar.
-        allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || isAdmin()); // Apenas o autor ou admin podem alterar.
+        // Todos usuários logados podem ver os assets.
+        allow read: if isAuthenticated();
+        // Usuários logados podem criar (compartilhar) um novo asset.
+        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.authorId;
+        // Apenas o autor original ou um admin podem atualizar/deletar.
+        allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.authorId || isAdmin());
     }
     
     // Logs de Atividade
@@ -180,11 +187,9 @@ service cloud.firestore {
     // Chamados de Suporte
     match /supportTickets/{ticketId} {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow read: if isAuthenticated() && 
-                     (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isAdmin();
-      allow update: if isAuthenticated() &&
-                       (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
     

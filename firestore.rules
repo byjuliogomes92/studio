@@ -109,26 +109,18 @@ service cloud.firestore {
       allow create, update, delete: if isEditor(resource.data.workspaceId);
     }
     
-    // ====================================================================
-    // [IMPORTANTE] Credenciais de acesso para páginas com senha.
-    // Esta coleção armazena os identificadores e senhas criptografadas.
-    // ====================================================================
+    // Credenciais de acesso para páginas com senha.
     match /pageAccess/{accessId} {
-      // PERMISSÃO DE LEITURA (CORRIGIDA):
-      // Apenas um Editor (ou Dono) do workspace pode ler os documentos de acesso.
-      // Isso é necessário para que a função de salvar a página possa verificar
-      // quais usuários já existem antes de criar, atualizar ou deletar.
-      // A senha continua criptografada, então a leitura é segura.
-      allow read: if isEditor(resource.data.workspaceId);
-      
-      // PERMISSÃO DE ESCRITA (CRIAR E ATUALIZAR):
-      // Apenas um Editor (ou Dono) pode criar ou modificar credenciais
-      // para as páginas do seu workspace.
-      allow create, update: if isEditor(request.resource.data.workspaceId);
-      
-      // PERMISSÃO DE EXCLUSÃO:
-      // Apenas um Editor (ou Dono) pode remover o acesso de um usuário.
+      // Apenas o backend pode ler (a Cloud Function não é afetada por esta regra).
+      allow read: if false; 
+      // Um editor pode listar os documentos de acesso de um workspace para gerenciá-los.
+      allow list: if isEditor(request.query.workspaceId);
+      // Um editor pode criar documentos de acesso, garantindo que pertençam ao seu workspace.
+      allow create: if isEditor(request.resource.data.workspaceId);
+      // Um editor pode deletar credenciais de páginas em seu workspace.
       allow delete: if isEditor(resource.data.workspaceId);
+      // Ninguém pode atualizar um documento de acesso diretamente, apenas deletar e criar.
+      allow update: if false;
     }
     
     // Templates Padrão da Plataforma

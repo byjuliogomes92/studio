@@ -16,19 +16,25 @@ service cloud.firestore {
     }
     
     function isWorkspaceMember(workspaceId) {
-      let memberDocPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId);
-      return exists(memberDocPath);
+      return isAuthenticated() &&
+             workspaceId != null &&
+             exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId));
     }
     
     function isOwner(workspaceId) {
-      let memberDocPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId);
-      return isWorkspaceMember(workspaceId) && get(memberDocPath).data.role == 'owner';
+      let memberPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId);
+      return isAuthenticated() &&
+             workspaceId != null &&
+             exists(memberPath) && 
+             get(memberPath).data.role == 'owner';
     }
     
     function isEditor(workspaceId) {
-      let memberDocPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId);
-      return isWorkspaceMember(workspaceId) && 
-             (get(memberDocPath).data.role == 'owner' || get(memberDocPath).data.role == 'editor');
+      let memberPath = /databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + workspaceId);
+      return isAuthenticated() && 
+             workspaceId != null &&
+             exists(memberPath) && 
+             (get(memberPath).data.role == 'owner' || get(memberPath).data.role == 'editor');
     }
     
     function hasWorkspaceAccess(workspaceId) {
@@ -59,12 +65,10 @@ service cloud.firestore {
     }
     
     match /workspaceMembers/{membershipId} {
-      allow read: if isAuthenticated() && 
-                     (request.auth.uid == resource.data.userId || hasWorkspaceAccess(resource.data.workspaceId));
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || hasWorkspaceAccess(resource.data.workspaceId));
       allow create: if isOwner(request.resource.data.workspaceId);
       allow update: if isOwner(resource.data.workspaceId);
-      allow delete: if isAuthenticated() && 
-                       (isOwner(resource.data.workspaceId) || request.auth.uid == resource.data.userId);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.workspaceId) || request.auth.uid == resource.data.userId);
     }
     
     match /projects/{projectId} {
@@ -80,30 +84,19 @@ service cloud.firestore {
     
     match /pages_drafts/{pageId} {
       allow read, delete: if isEditor(resource.data.workspaceId);
-      // A permissão de update/create é validada contra o workspaceId do documento sendo escrito, sem usar 'get' ou 'exists'
-      allow create, update: if isAuthenticated() &&
-                              exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)) &&
-                              (get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)).data.role == 'editor' || 
-                               get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)).data.role == 'owner');
+      allow create, update: if request.resource.data.workspaceId == get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)).data.workspaceId;
     }
     
     match /pages_published/{pageId} {
       allow read: if true; 
-      // A permissão de update/create é validada contra o workspaceId do documento sendo escrito
-      allow create, update, delete: if isAuthenticated() &&
-                                      exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)) &&
-                                      (get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)).data.role == 'editor' ||
-                                       get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)).data.role == 'owner');
+      allow create, update, delete: if request.resource.data.workspaceId == get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)).data.workspaceId;
     }
     
     match /pageAccess/{accessId} {
-      // Leitura permitida para editores poderem listar os usuários existentes na interface.
-      allow read: if isEditor(resource.data.workspaceId);
-      // Escrita (create, update, delete) permitida se o usuário for editor DO MESMO WORKSPACE que está no documento a ser escrito.
-      allow write: if isAuthenticated() &&
-                     exists(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)) &&
-                     (get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)).data.role == 'editor' || 
-                      get(/databases/$(database)/documents/workspaceMembers/$(request.auth.uid + '_' + request.resource.data.workspaceId)).data.role == 'owner');
+      // Ninguém pode ler ou listar do cliente. Apenas a Cloud Function com Admin SDK.
+      allow read, list: if false; 
+      // Apenas editores podem criar, atualizar ou deletar credenciais
+      allow write: if isEditor(request.resource.data.workspaceId);
     }
     
     match /defaultTemplates/{templateId} {
@@ -113,12 +106,13 @@ service cloud.firestore {
 
     match /templates/{templateId} {
       allow read: if hasWorkspaceAccess(resource.data.workspaceId);
-      allow create, update, delete: if isEditor(resource.data.workspaceId);
+      allow create: if isEditor(request.resource.data.workspaceId);
+      allow update, delete: if isEditor(resource.data.workspaceId);
     }
     
     match /media/{mediaId} {
       allow read: if hasWorkspaceAccess(resource.data.workspaceId);
-      allow create, update, delete: if isEditor(resource.data.workspaceId);
+      allow create, update, delete: if isEditor(request.resource.data.workspaceId);
     }
 
     match /communityAssets/{assetId} {
@@ -173,7 +167,9 @@ service cloud.firestore {
     }
 
     match /pageComments/{commentId} {
-      allow read, create, update, delete: if hasWorkspaceAccess(request.resource.data.workspaceId);
+      allow read, create: if hasWorkspaceAccess(request.resource.data.workspaceId);
+      allow update: if hasWorkspaceAccess(resource.data.workspaceId);
+      allow delete: if isEditor(resource.data.workspaceId) || isResourceOwner(resource.data.userId);
     }
   }
 }

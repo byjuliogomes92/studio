@@ -61,6 +61,7 @@ export const createWorkspace = async (userId: string, workspaceName: string, pro
     const db = getDbInstance();
     const batch = writeBatch(db);
 
+    // Create the workspace document
     const workspaceRef = doc(collection(db, 'workspaces'));
     const newWorkspace: Omit<Workspace, 'id'> = {
         name: workspaceName,
@@ -70,19 +71,28 @@ export const createWorkspace = async (userId: string, workspaceName: string, pro
     };
     batch.set(workspaceRef, newWorkspace);
 
-    const memberRef = doc(collection(db, 'workspaceMembers'));
+    // Create the membership document for the owner
+    const memberRef = doc(db, 'workspaceMembers', `${userId}_${workspaceRef.id}`);
     const newMember: Omit<WorkspaceMember, 'id'> = {
         userId,
         workspaceId: workspaceRef.id,
         role: 'owner',
+        email: 'owner@local.com', // Placeholder, should be updated
         createdAt: serverTimestamp(),
     };
     batch.set(memberRef, newMember);
+
+    // Create a record in the user's document for efficient rule checking
+    const userRef = doc(db, 'users', userId);
+    batch.set(userRef, {
+        workspaces: { [workspaceRef.id]: 'owner' }
+    }, { merge: true });
     
     await batch.commit();
 
     return { ...newWorkspace, id: workspaceRef.id, createdAt: Timestamp.now() } as Workspace;
 };
+
 
 // Check if user has a workspace, which implies their profile is complete
 export const isProfileComplete = async (userId: string): Promise<boolean> => {
@@ -155,9 +165,6 @@ export const getWorkspaceMembers = async (workspaceId: string): Promise<Workspac
 export const inviteUserToWorkspace = async (workspaceId: string, email: string, role: WorkspaceMemberRole, inviterId: string): Promise<void> => {
     const db = getDbInstance();
     
-    // This is a simplified approach. In a real app, you'd use a callable function to find the user by email.
-    // Firestore security rules would prevent this client-side query across the 'users' collection.
-    // For this prototype, we assume a 'users' collection where doc ID is UID and it has an 'email' field.
     const userQuery = query(collection(db, "users"), where("email", "==", email), limit(1));
     const userSnap = await getDocs(userQuery);
 
@@ -167,54 +174,71 @@ export const inviteUserToWorkspace = async (workspaceId: string, email: string, 
     const userDoc = userSnap.docs[0];
     const userId = userDoc.id;
 
-    // Check if user is already a member
-    const qMembers = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
-    const memberSnap = await getDocs(qMembers);
-    if (!memberSnap.empty) {
+    const memberId = `${userId}_${workspaceId}`;
+    const memberRef = doc(db, "workspaceMembers", memberId);
+
+    if ((await getDoc(memberRef)).exists()) {
         throw new Error("Este usuário já é membro do workspace.");
     }
+
+    const batch = writeBatch(db);
     
     const newMemberData: Omit<WorkspaceMember, 'id'> = {
         userId: userId,
-        email: email, // Store email for display purposes
+        email: email, 
         workspaceId: workspaceId,
         role: role,
         createdAt: serverTimestamp(),
     };
+    batch.set(memberRef, newMemberData);
 
-    const newMemberRef = await addDoc(collection(db, 'workspaceMembers'), newMemberData);
+    const userToUpdateRef = doc(db, 'users', userId);
+    batch.set(userToUpdateRef, {
+        workspaces: { [workspaceId]: role }
+    }, { merge: true });
+
+    await batch.commit();
 
     await logActivity(workspaceId, inviterId, 'MEMBER_INVITED', { invitedEmail: email, role });
 };
 
 export const removeUserFromWorkspace = async (workspaceId: string, userIdToRemove: string, removerId: string, removedUser: WorkspaceMember): Promise<void> => {
     const db = getDbInstance();
-    
-    const q = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userIdToRemove));
-    const querySnapshot = await getDocs(q);
-    
-    if (querySnapshot.empty) {
+    const memberId = `${userIdToRemove}_${workspaceId}`;
+    const memberRef = doc(db, 'workspaceMembers', memberId);
+
+    if (!(await getDoc(memberRef)).exists()) {
         throw new Error("Membro não encontrado para remover.");
     }
+    
+    const batch = writeBatch(db);
+    batch.delete(memberRef);
+    
+    // Also remove from the user's workspace map
+    const userRef = doc(db, 'users', userIdToRemove);
+    batch.update(userRef, { [`workspaces.${workspaceId}`]: deleteDoc(userRef) });
 
-    const memberDoc = querySnapshot.docs[0];
-    await deleteDoc(memberDoc.ref);
+    await batch.commit();
 
     await logActivity(workspaceId, removerId, 'MEMBER_REMOVED', { removedMemberEmail: removedUser.email });
 }
 
 export const updateUserRole = async (workspaceId: string, userId: string, role: WorkspaceMemberRole, updaterId: string, updatedUser: WorkspaceMember): Promise<void> => {
     const db = getDbInstance();
-     
-    const q = query(collection(db, "workspaceMembers"), where("workspaceId", "==", workspaceId), where("userId", "==", userId));
-    const querySnapshot = await getDocs(q);
-     
-    if (querySnapshot.empty) {
+    const memberId = `${userId}_${workspaceId}`;
+    const memberRef = doc(db, "workspaceMembers", memberId);
+
+    if (!(await getDoc(memberRef)).exists()) {
         throw new Error("Membro não encontrado para atualizar.");
     }
- 
-    const memberDoc = querySnapshot.docs[0];
-    await updateDoc(memberDoc.ref, { role });
+    
+    const batch = writeBatch(db);
+    batch.update(memberRef, { role });
+    
+    const userRef = doc(db, 'users', userId);
+    batch.update(userRef, { [`workspaces.${workspaceId}`]: role });
+
+    await batch.commit();
 
     await logActivity(workspaceId, updaterId, 'MEMBER_ROLE_CHANGED', { memberName: updatedUser.email, newRole: role });
 };
@@ -371,16 +395,16 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
 
 export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
-    
+    const batch = writeBatch(db);
+
     // Deep clone the object to ensure we are not working with a read-only state object
     const pageDataToUpdate = JSON.parse(JSON.stringify(pageData));
 
-    // Platform user access management: only create, never read/delete from client
+    // Handle security access users separately
     if (pageDataToUpdate.meta?.security?.type === 'platform_users' && pageDataToUpdate.meta.security.accessUsers) {
         const usersToAdd = pageDataToUpdate.meta.security.accessUsers.filter((user: PageAccessUser) => user.password);
         
         if (usersToAdd.length > 0) {
-            const batch = writeBatch(db);
             usersToAdd.forEach((user: PageAccessUser) => {
                 const accessDocRef = doc(collection(db, 'pageAccess'));
                 batch.set(accessDocRef, {
@@ -390,19 +414,20 @@ export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): 
                     encryptedPassword: encryptPassword(user.password!)
                 });
             });
-            await batch.commit();
         }
         
-        // Remove the sensitive user list before saving the page document itself
+        // IMPORTANT: Remove the sensitive user list before saving the main page document
         delete pageDataToUpdate.meta.security.accessUsers;
     }
 
     // Update the draft version of the page with the cleaned data.
     const draftRef = doc(db, "pages_drafts", pageId);
-    await updateDoc(draftRef, {
+    batch.update(draftRef, {
         ...pageDataToUpdate,
         updatedAt: serverTimestamp(),
     });
+    
+    await batch.commit();
 };
 
 export const publishPage = async (pageId: string, pageData: Partial<CloudPage>, userId: string): Promise<void> => {

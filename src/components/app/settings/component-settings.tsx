@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { produce } from 'immer';
 import { Star, Scaling, Film, Layers, Code, Copy, Trash2, Smartphone } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "../ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 

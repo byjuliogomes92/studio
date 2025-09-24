@@ -372,36 +372,32 @@ export const addPage = async (pageData: Omit<CloudPage, 'id' | 'createdAt' | 'up
 export const updatePage = async (pageId: string, pageData: Partial<CloudPage>): Promise<void> => {
     const db = getDbInstance();
     
-    // Create a mutable copy to work with, using produce for safety.
-    const pageDataToUpdate = produce(pageData, draft => {
-        // STEP 1: Handle platform user access management if security type is 'platform_users'
-        if (draft.meta?.security?.type === 'platform_users' && draft.meta.security.accessUsers) {
-            const usersInState = draft.meta.security.accessUsers;
+    // Deep clone the object to ensure we are not working with a read-only state object
+    const pageDataToUpdate = JSON.parse(JSON.stringify(pageData));
+
+    // Platform user access management: only create, never read/delete from client
+    if (pageDataToUpdate.meta?.security?.type === 'platform_users' && pageDataToUpdate.meta.security.accessUsers) {
+        const usersToAdd = pageDataToUpdate.meta.security.accessUsers.filter((user: PageAccessUser) => user.password);
+        
+        if (usersToAdd.length > 0) {
             const batch = writeBatch(db);
-
-            // Create new access documents in a batch.
-            usersInState.forEach((user: PageAccessUser) => {
-                if (user.password) { // Only write if a plaintext password is provided
-                    const accessDocRef = doc(collection(db, 'pageAccess'));
-                    batch.set(accessDocRef, {
-                        pageId: pageId,
-                        workspaceId: draft.workspaceId,
-                        identifier: user.identifier,
-                        encryptedPassword: encryptPassword(user.password)
-                    });
-                }
+            usersToAdd.forEach((user: PageAccessUser) => {
+                const accessDocRef = doc(collection(db, 'pageAccess'));
+                batch.set(accessDocRef, {
+                    pageId: pageId,
+                    workspaceId: pageDataToUpdate.workspaceId,
+                    identifier: user.identifier,
+                    encryptedPassword: encryptPassword(user.password!)
+                });
             });
-            // We are not deleting old users here to avoid the read permission issue.
-            // This means old users will persist but can be cleaned up later.
-            // For now, the main goal is to allow saving.
-            batch.commit();
-
-            // STEP 2: IMPORTANT - Remove the 'accessUsers' array from the page data to be saved.
-            delete draft.meta.security.accessUsers;
+            await batch.commit();
         }
-    });
+        
+        // Remove the sensitive user list before saving the page document itself
+        delete pageDataToUpdate.meta.security.accessUsers;
+    }
 
-    // STEP 3: Update the draft version of the page with the cleaned data.
+    // Update the draft version of the page with the cleaned data.
     const draftRef = doc(db, "pages_drafts", pageId);
     await updateDoc(draftRef, {
         ...pageDataToUpdate,

@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { produce } from 'immer';
 import { Star, Scaling, Film, Layers, Code, Copy, Trash2, Smartphone } from "lucide-react";
-import { Input } from "../ui/input";
+import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
@@ -140,7 +140,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
     onComponentChange(component.id, updatedComponent);
   };
 
-  const handleSubPropChange = (prop: string, subProp: string, value: any) => {
+  const onSubPropChange = (prop: string, subProp: string, value: any) => {
     const updatedComponent = produce(component, draft => {
         if (!draft.props[prop]) {
             draft.props[prop] = {};
@@ -225,7 +225,7 @@ export function ComponentSettings({ component, onComponentChange, onCodeEdit, pr
                 <AccordionContent className="pt-4">
                     <ResponsiveSettings 
                         component={component} 
-                        onSubPropChange={handleSubPropChange}
+                        onSubPropChange={onSubPropChange}
                         onPropChange={handlePropChange}
                     />
                 </AccordionContent>
